@@ -57,9 +57,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === "/forgot-password" || pathname==="/reset-password";
     const isOnboardingPage = pathname === '/onboarding';
     const isOnboarded = localStorage.getItem("Onboarded") === "true";
-    
+    console.log(`Auth state changed: user=${user}, isLoading=${isLoading}, pathname=${pathname}, isAuthPage=${isAuthPage}, isOnboardingPage=${isOnboardingPage}, isOnboarded=${isOnboarded}`)
     if (!user) { 
-      if (!isAuthPage && !isOnboardingPage && pathname !== '/' ) {
+      if (!isAuthPage) {
         router.push('/login');
       }
     } else { 
