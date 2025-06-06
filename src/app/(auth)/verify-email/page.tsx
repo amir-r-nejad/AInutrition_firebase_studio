@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, Suspense } from 'react';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { MailCheck, MailWarning, Loader2, ShieldCheck, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { applyActionCodeForVerification, auth } from '@/lib/firebase/auth'; // Import auth
+import { applyActionCodeForVerification, auth } from '@/lib/firebase/firebase';
 import Link from 'next/link';
 
 function VerifyEmailContent() {
