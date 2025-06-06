@@ -5,7 +5,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { geminiPro } from '@genkit-ai/googleai';
+// import { geminiPro } from '@genkit-ai/googleai';
 
 // Types
 
@@ -58,14 +58,20 @@ export interface SuggestMealsForMacrosOutput {
 export async function suggestMealsForMacros(
   input: SuggestMealsForMacrosInput
 ): Promise<SuggestMealsForMacrosOutput> {
-  return suggestMealsForMacrosFlow(input);
+  const res = await fetch('/api/openai-suggest-meals', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error('Failed to get suggestions');
+  return await res.json();
 }
 
 // AI Prompt
 
 const prompt = ai.definePrompt({
   name: 'suggestMealsForMacrosPrompt',
-  model: geminiPro,
+  // model: geminiPro, // TODO: Replace with OpenAI call
   input: { type: 'json' },
   output: { type: 'json' },
   prompt: `You are a creative nutritionist and recipe developer. Your task is to suggest 1-3 detailed meal ideas for a specific mealtime that meet the user's macronutrient targets and adhere to their preferences.
