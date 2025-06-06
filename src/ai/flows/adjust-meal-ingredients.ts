@@ -1,7 +1,7 @@
 'use server';
 
 import { ai } from '@/ai/genkit';
-import { geminiPro } from '@genkit-ai/googleai';
+// import { geminiPro } from '@genkit-ai/googleai';
 
 // Types
 
@@ -43,13 +43,21 @@ export interface AdjustMealIngredientsOutput {
 
 // Genkit Flow
 
-export async function adjustMealIngredients(input: AdjustMealIngredientsInput): Promise<AdjustMealIngredientsOutput> {
-  return adjustMealIngredientsFlow(input);
+export async function adjustMealIngredients(
+  input: AdjustMealIngredientsInput
+): Promise<AdjustMealIngredientsOutput> {
+  const res = await fetch('/api/openai-adjust-meal-ingredients', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error('Failed to get adjusted meal ingredients');
+  return await res.json();
 }
 
 const prompt = ai.definePrompt({
   name: 'adjustMealIngredientsPrompt',
-  model: geminiPro,
+  // model: geminiPro, // TODO: Replace with OpenAI call
   input: { type: 'json' },  // <-- use lightweight JSON schema instead of heavy Zod
   output: { type: 'json' },
   prompt: `You are an expert nutritionist and chef. Adjust the following meal to match the target macronutrients, while respecting the user's allergies and preferences.

@@ -5,7 +5,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { geminiPro } from '@genkit-ai/googleai';
+// import { geminiPro } from '@genkit-ai/googleai';
 
 // Types
 
@@ -22,14 +22,20 @@ export interface SupportChatbotOutput {
 export async function handleSupportQuery(
   input: SupportChatbotInput
 ): Promise<SupportChatbotOutput> {
-  return supportChatbotFlow(input);
+  const res = await fetch('/api/openai-support-chatbot', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error('Failed to get chatbot response');
+  return await res.json();
 }
 
 // AI Prompt
 
 const prompt = ai.definePrompt({
   name: 'supportChatbotPrompt',
-  model: geminiPro,
+  // model: geminiPro, // TODO: Replace with OpenAI call
   input: { type: 'json' },
   output: { type: 'json' },
   prompt: `You are a friendly and helpful support chatbot for "NutriPlan", a web application for personalized nutrition and meal planning.

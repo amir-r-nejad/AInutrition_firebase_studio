@@ -5,7 +5,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { geminiPro } from '@genkit-ai/googleai';
+// import { geminiPro } from '@genkit-ai/googleai';
 
 // Types
 
@@ -39,14 +39,20 @@ export type SuggestIngredientSwapOutput = Array<{
 export async function suggestIngredientSwap(
   input: SuggestIngredientSwapInput
 ): Promise<SuggestIngredientSwapOutput> {
-  return suggestIngredientSwapFlow(input);
+  const res = await fetch('/api/openai-suggest-ingredient-swap', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error('Failed to get ingredient swap suggestions');
+  return await res.json();
 }
 
 // AI Prompt
 
 const prompt = ai.definePrompt({
   name: 'suggestIngredientSwapPrompt',
-  model: geminiPro,
+  // model: geminiPro, // TODO: Replace with OpenAI call
   input: { type: 'json' },
   output: { type: 'json' },
   prompt: `You are a nutritional expert. Given a meal and user's preferences, suggest ingredient swaps that preserve nutritional balance.
