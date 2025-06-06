@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -9,7 +8,7 @@ import {
   type User as FirebaseUser 
 } from 'firebase/auth';
 import {  useToast } from '@/hooks/use-toast';
-import { login as fLogin , signIn as fSignIn , signOut as fSignOut } from "@/lib/firebase/auth"
+import { login as fLogin , signIn as fSignIn , signOut as fSignOut, createUserWithEmailAndPassword as fCreateUserWithEmailAndPassword } from "@/lib/firebase/auth"
 
 import type { OnboardingFormValues, } from '@/lib/schemas'; 
 import { useUser } from '@/hooks/use-user';
@@ -113,7 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     let title = "Signup Failed";
     try {
-      await fSignIn(emailProvided,passwordProvided);
+      await fCreateUserWithEmailAndPassword(emailProvided, passwordProvided);
     } catch (error: any) {
       let errorMessage = "Failed to sign up. Please try again.";
       if (error.code === 'auth/email-already-in-use') {
@@ -125,7 +124,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (error.code === 'auth/operation-not-allowed') {
         errorMessage = "Email/Password sign-up is not enabled for this project.";
       }
-      
       toast({ title: title, description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);

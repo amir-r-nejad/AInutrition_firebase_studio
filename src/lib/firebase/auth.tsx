@@ -10,6 +10,7 @@ import {
     sendPasswordResetEmail as firebaseSendPasswordResetEmail,
   confirmPasswordReset,
   verifyPasswordResetCode,
+  createUserWithEmailAndPassword as firebaseCreateUserWithEmailAndPassword,
 } from "firebase/auth";
 import { auth } from "./firebase"
 import { Caveat_Brush } from "next/font/google";
@@ -91,5 +92,14 @@ export async function signIn(email:string,password:string) {
   } catch (error) {
     console.error("Error signing in with Email", error);
     throw error
+  }
+}
+
+export async function createUserWithEmailAndPassword(email: string, password: string) {
+  try {
+    return await firebaseCreateUserWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    console.error("Error creating user with email and password", error);
+    throw error;
   }
 }
