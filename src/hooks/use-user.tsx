@@ -10,16 +10,18 @@ export function useUser() {
   const [user, setUser] = useState<User|null>(null);
 
   useEffect(() => {
-    onAuthStateChanged(auth, (authUser) => {
-      const addServerUser = async () => {
-        if (authUser!=null){
-          await addUser(JSON.stringify(authUser))
-        }
-      }
-      addServerUser();
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
       setUser(authUser);
     });
+    return () => unsubscribe();
   }, []);
+
+  // Ensure addUser is called whenever user is set and not null
+  useEffect(() => {
+    if (user) {
+      addUser(JSON.stringify(user));
+    }
+  }, [user]);
 
   return user;
 }
