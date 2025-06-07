@@ -86,10 +86,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       const userCredential = await fLogin(emailProvided, passwordProvided); // Use aliased fLogin
-      if (userCredential.user) {
+      if (userCredential && userCredential.user) {
         localStorage.setItem('lastUserUid_nutriplan', userCredential.user.uid); // Store UID for logout
+        toast({ title: "Login Successful", description: `Welcome back!` });
+        setIsLoading(false);
+        return; // Prevent error toast after success
       }
-      toast({ title: "Login Successful", description: `Welcome back!` });
     } catch (error: any) {
       console.error("Firebase login error:", error);
       let errorMessage = "Failed to login. Please check your credentials.";
@@ -148,7 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         await onboardingUpdateUser(user.uid,profileData)
         localStorage.setItem("Onboarded", "true");
-        router.push('/dashboard'); // Redirection handled by useEffect
+        router.push('/dashboard'); // Ensure redirect after onboarding
       } catch (error) {
         console.error("Error saving onboarding data to Firestore:", error);
         toast({ title: "Onboarding Error", description: "Could not save your profile. Please try again.", variant: "destructive" });
