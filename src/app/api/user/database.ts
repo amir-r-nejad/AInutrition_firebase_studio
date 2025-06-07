@@ -49,7 +49,7 @@ export async function getSmartPlannerData(userId: string): Promise<{formValues: 
     'use server'
   if (!userId) return { formValues: {} };
   try {
-    const userCollection = collection(db, "users", userId);
+    const userCollection = collection(db, "users");
     const userSnapshot = query(userCollection, where("uid", "==", userId));
     const docSnap = await getDocs(userSnapshot);
     if (!docSnap.empty) {
