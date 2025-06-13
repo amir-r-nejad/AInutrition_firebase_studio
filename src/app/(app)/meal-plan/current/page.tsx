@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -28,23 +27,23 @@ async function getMealPlanData(userId: string): Promise<WeeklyMealPlan | null> {
     const userProfileRef = doc(db, "users", userId);
     const docSnap = await getDoc(userProfileRef);
     if (docSnap.exists()) {
-      const profileData = docSnap.data() as FullProfileType;
+      const profileData = docSnap.data() as any;
       if (profileData.currentWeeklyPlan) {
         const fullPlan: WeeklyMealPlan = {
-          days: daysOfWeek.map(dayName => {
-            const existingDay = profileData.currentWeeklyPlan?.days?.find(d => d.dayOfWeek === dayName);
+          days: daysOfWeek.map((dayName: string) => {
+            const existingDay = profileData.currentWeeklyPlan?.days?.find((d: any) => d.dayOfWeek === dayName);
             if (existingDay) {
               return {
                 ...existingDay,
-                meals: mealNames.map(mealName => {
-                  const existingMeal = existingDay.meals.find(m => m.name === mealName);
+                meals: mealNames.map((mealName: string) => {
+                  const existingMeal = existingDay.meals.find((m: any) => m.name === mealName);
                   return existingMeal || { name: mealName, customName: "", ingredients: [], totalCalories: null, totalProtein: null, totalCarbs: null, totalFat: null };
                 })
               };
             }
             return {
               dayOfWeek: dayName,
-              meals: mealNames.map(mealName => ({ name: mealName, customName: "", ingredients: [], totalCalories: null, totalProtein: null, totalCarbs: null, totalFat: null }))
+              meals: mealNames.map((mealName: string) => ({ name: mealName, customName: "", ingredients: [], totalCalories: null, totalProtein: null, totalCarbs: null, totalFat: null }))
             };
           })
         };

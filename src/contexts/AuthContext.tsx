@@ -45,17 +45,23 @@ function preprocessDataForFirestore(data: Record<string, any>): Record<string, a
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const user = useUser();
+  const rawUser = useUser();
+  const user: User | null = rawUser ? {
+    uid: rawUser.uid,
+    email: rawUser.email,
+    emailVerified: rawUser.emailVerified,
+  } : null;
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(typeof window !== 'undefined' ? localStorage.getItem("Onboarded") === "true" : false);
 
   useEffect(() => {
+    console.log('useEffect fired: user=', user, 'isLoading=', isLoading, 'pathname=', pathname, 'isOnboarded=', isOnboarded);
     if (isLoading) return;
     const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === "/forgot-password" || pathname==="/reset-password";
     const isOnboardingPage = pathname === '/onboarding';
-    const isOnboarded = localStorage.getItem("Onboarded") === "true";
     console.log(`Auth state changed: user=${user}, isLoading=${isLoading}, pathname=${pathname}, isAuthPage=${isAuthPage}, isOnboardingPage=${isOnboardingPage}, isOnboarded=${isOnboarded}`)
     if (!user) { 
       if (!isAuthPage) {
@@ -64,9 +70,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else { 
         if (!user.emailVerified && pathname !== '/login' && !isOnboardingPage && !isAuthPage) {
             toast({ title: "Email Not Verified", description: "Please verify your email address to continue.", variant: "destructive", duration: 7000});
-            // Consider redirecting to login or a specific "please verify" page if strict verification is needed before any app access
-            // For now, if they are on login, signup, or onboarding, they can stay.
-            // If they try to go elsewhere protected, they'll be pushed back by other conditions or this one if refined.
         } else if (!isOnboarded) { 
             if (!isOnboardingPage) { 
               router.push('/onboarding');
@@ -77,7 +80,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
         }
     }
-}, [user, isLoading, pathname, router]);// Added toast to dependency array
+  }, [user, isLoading, pathname, router, isOnboarded, toast]);
+
   const login = async (emailProvided: string, passwordProvided?: string) => { 
     if (!passwordProvided) {
       toast({ title: "Login Failed", description: "Password is required.", variant: "destructive" });
@@ -146,11 +150,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const completeOnboarding = async (profileData: OnboardingFormValues) => {
-    if (user?.uid) { // Ensure user and user.uid exist
+    if (user && user.uid) { // Ensure user and user.uid exist
       try {
         await onboardingUpdateUser(user.uid,profileData)
         localStorage.setItem("Onboarded", "true");
+        setIsOnboarded(true); // Update state so useEffect re-runs
+        console.log('Onboarding complete: setIsOnboarded(true), redirecting to /dashboard');
         router.push('/dashboard'); // Ensure redirect after onboarding
+        // Fallback: force reload after short delay if not redirected
+        setTimeout(() => {
+          if (window.location.pathname !== '/dashboard') {
+            console.log('Fallback: Forcing redirect to /dashboard');
+            window.location.href = '/dashboard';
+          }
+        }, 1500);
       } catch (error) {
         console.error("Error saving onboarding data to Firestore:", error);
         toast({ title: "Onboarding Error", description: "Could not save your profile. Please try again.", variant: "destructive" });

@@ -10,13 +10,16 @@ export async function  addUser(u:string){
         const userRef =  collection(db,"users")
         const q = query(userRef,where("uid","==",""+user.uid))
         const userSnapshot = await getDocs(q);
-        console.log("Quried Users: ",userSnapshot.size)
+        console.log("Queried Users: ",userSnapshot.size, "for UID:", user.uid)
         if(userSnapshot.empty){
-            addDoc(userRef, user)
+            console.log("No user found, adding new user:", user)
+            await addDoc(userRef, user)
+        } else {
+            console.log("User already exists, not adding.");
         }
         return user
     }catch(e){
-        console.log(e)
+        console.log("addUser error:", e)
     }
 }
 
@@ -25,17 +28,20 @@ export async function onboardingUpdateUser(userId: string, onboardingValues: Onb
         const userRef = collection(db, "users");
         const q = query(userRef, where("uid", "==", ""+userId));
         const userSnapshot = await getDocs(q);
-        console.log(userSnapshot,userId,onboardingValues)
+        console.log("onboardingUpdateUser: userSnapshot.size=", userSnapshot.size, "userId=", userId, "onboardingValues=", onboardingValues);
 
         if (userSnapshot.empty) {
+            console.error("onboardingUpdateUser: User not found for UID:", userId);
             throw new Error("User not found");
         }
 
         // Assuming uid is unique, so only one doc
         const userDoc = userSnapshot.docs[0];
         await updateDoc(userDoc.ref, onboardingValues);
+        console.log("onboardingUpdateUser: Successfully updated user doc for UID:", userId);
         return true;
     } catch (e) {
+        console.error("onboardingUpdateUser error:", e);
         throw e;
     }
 }
@@ -43,7 +49,7 @@ export async function getSmartPlannerData(userId: string): Promise<{formValues: 
     'use server'
   if (!userId) return { formValues: {} };
   try {
-    const userCollection = collection(db, "users", userId);
+    const userCollection = collection(db, "users");
     const userSnapshot = query(userCollection, where("uid", "==", userId));
     const docSnap = await getDocs(userSnapshot);
     if (!docSnap.empty) {

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
@@ -22,16 +21,17 @@ import { MealSuggestionPreferencesSchema, type MealSuggestionPreferencesValues }
 import { suggestMealsForMacros, type SuggestMealsForMacrosInput, type SuggestMealsForMacrosOutput } from '@/ai/flows/suggest-meals-for-macros';
 import { mealNames, defaultMacroPercentages, preferredDiets } from '@/lib/constants';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 
 async function getProfileDataForSuggestions(userId: string): Promise<Partial<FullProfileType>> {
   if (!userId) return {};
   try {
-    const userProfileRef = doc(db, "users", userId);
-    const docSnap = await getDoc(userProfileRef);
-    if (docSnap.exists()) {
-      return docSnap.data() as Partial<FullProfileType>;
+    const userCollection = collection(db, "users");
+    const q = query(userCollection, where("uid", "==", userId));
+    const userSnapshot = await getDocs(q);
+    if (!userSnapshot.empty) {
+      return userSnapshot.docs[0].data() as any;
     }
   } catch (error) {
     console.error("Error fetching profile data from Firestore for suggestions:", error);
@@ -113,14 +113,14 @@ function MealSuggestionsContent() {
     const profileToUse = fullProfileData;
     const exampleTargets = { mealName: selectedMealName, calories: 500, protein: 30, carbs: 60, fat: 20 };
     
-    const requiredProfileFields: (keyof FullProfileType)[] = ['age', 'gender', 'current_weight', 'height_cm', 'activityLevel', 'dietGoalOnboarding'];
+    const requiredProfileFields: (keyof FullProfileType)[] = ['age', 'gender', 'currentWeight', 'height_cm', 'activityLevel', 'dietGoalOnboarding'];
     const missingFields = requiredProfileFields.filter(field => !profileToUse?.[field]);
 
     if (missingFields.length === 0 && profileToUse) {
       const dailyTotals = calculateEstimatedDailyTargets({
         age: profileToUse.age!,
         gender: profileToUse.gender!,
-        current_weight: profileToUse.current_weight!,
+        currentWeight: profileToUse.currentWeight!,
         height_cm: profileToUse.height_cm!,
         activityLevel: profileToUse.activityLevel!,
         dietGoalOnboarding: profileToUse.dietGoalOnboarding!,
