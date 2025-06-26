@@ -1,8 +1,4 @@
-'use server';
-
 import { login as loginApi } from '@/lib/firebase/auth';
-import { revalidatePath } from 'next/cache';
-// import { cookies } from 'next/headers';
 
 type loginFormTypes = {
   email: string;
@@ -22,10 +18,6 @@ export async function loginAction(
     const userCredential = await loginApi(email, password);
 
     if (userCredential && userCredential.user) {
-      // (await cookies()).set('lastUserUid_nutriplan', userCredential.user.uid); // Store UID for logout
-      localStorage.setItem('lastUserUid_nutriplan', userCredential.user.uid); // Store UID for logout
-
-      revalidatePath('/', 'layout');
       return { isSuccess: true, userError: null };
     }
   } catch (error: any) {

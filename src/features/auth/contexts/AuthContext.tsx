@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     }
-  }, [user, isLoading, pathname, router, isOnboarded, toast]);
+  }, [rawUser, isLoading, pathname, router, isOnboarded, toast]);
 
   const logout = async () => {
     setIsLoading(true);

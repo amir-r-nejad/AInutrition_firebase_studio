@@ -1,5 +1,3 @@
-'use server';
-
 import { createUserWithEmailAndPassword as createUserWithEmailAndPasswordApi } from '@/lib/firebase/auth';
 
 type SignupFormTypes = {
