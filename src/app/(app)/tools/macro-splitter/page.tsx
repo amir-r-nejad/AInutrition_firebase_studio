@@ -151,7 +151,7 @@ export default function MacroSplitterPage() {
           form.reset({ mealDistributions: profileData.mealDistributions });
           const savedSplitToastExists =
             toast &&
-            Array.isArray(toast.toasts) &&
+            Array.isArray(toastz.toasts) &&
             toast.toasts.find(
               (t) =>
                 t.description ===
@@ -310,7 +310,7 @@ export default function MacroSplitterPage() {
 
   useEffect(() => {
     loadDataForSplitter();
-  }, [loadDataForSplitter]);
+  }, []);
 
   const onSubmit = async (data: MacroSplitterFormValues) => {
     if (!dailyTargets) {

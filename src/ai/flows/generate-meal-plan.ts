@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -6,8 +5,7 @@
  * Optimized for Genkit with minimal token usage.
  */
 
-
-import { ai } from '@/ai/genkit';
+import { ai, geminiModel } from '@/ai/genkit';
 // Removed: import { gpt41Nano } from 'genkitx-openai';
 
 // Types
@@ -96,12 +94,14 @@ export interface GeneratePersonalizedMealPlanOutput {
 export async function generatePersonalizedMealPlan(
   input: GeneratePersonalizedMealPlanInput
 ): Promise<GeneratePersonalizedMealPlanOutput> {
+  console.log(input);
   return generatePersonalizedMealPlanFlow(input);
 }
 
 // AI Prompt
 
 const prompt = ai.definePrompt({
+  model: geminiModel,
   name: 'generatePersonalizedMealPlanPrompt',
   // model: gpt41Nano, // Removed to use default model from ai.ts (gemini15Flash)
   input: { type: 'json' },
@@ -117,7 +117,7 @@ Instructions:
 - Return output as valid JSON exactly matching GeneratePersonalizedMealPlanOutput interface.
 - Ensure weeklySummary reflects actual totals.
 
-Respond only with valid JSON.`
+Respond only with valid JSON.`,
 });
 
 // Genkit Flow
@@ -128,12 +128,13 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     inputSchema: undefined,
     outputSchema: undefined,
   },
-  async (input: GeneratePersonalizedMealPlanInput): Promise<GeneratePersonalizedMealPlanOutput> => {
+  async (
+    input: GeneratePersonalizedMealPlanInput
+  ): Promise<GeneratePersonalizedMealPlanOutput> => {
     const { output } = await prompt(input);
     if (!output) {
-      throw new Error("AI did not return output.");
+      throw new Error('AI did not return output.');
     }
     return output as GeneratePersonalizedMealPlanOutput;
   }
 );
-
