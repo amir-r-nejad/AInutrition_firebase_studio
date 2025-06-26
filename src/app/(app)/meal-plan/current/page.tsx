@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -58,22 +57,6 @@ async function getMealPlanData(userId: string): Promise<WeeklyMealPlan | null> {
       const profileData = docSnap.data() as any;
       if (profileData.currentWeeklyPlan) {
         const fullPlan: WeeklyMealPlan = {
-<<<<<<< HEAD
-          days: daysOfWeek.map((dayName: string) => {
-            const existingDay = profileData.currentWeeklyPlan?.days?.find((d: any) => d.dayOfWeek === dayName);
-=======
-<<<<<<< HEAD
-          days: daysOfWeek.map(dayName => {
-            const existingDay = profileData.currentWeeklyPlan?.days?.find(d => d.dayOfWeek === dayName);
->>>>>>> 73cee16 ([Style] Replace double quotes with single quotes across project)
-            if (existingDay) {
-              return {
-                ...existingDay,
-                meals: mealNames.map((mealName: string) => {
-                  const existingMeal = existingDay.meals.find((m: any) => m.name === mealName);
-                  return existingMeal || { name: mealName, customName: "", ingredients: [], totalCalories: null, totalProtein: null, totalCarbs: null, totalFat: null };
-                })
-=======
           days: daysOfWeek.map((dayName: string) => {
             const existingDay = profileData.currentWeeklyPlan?.days?.find(
               (d: any) => d.dayOfWeek === dayName
@@ -97,17 +80,10 @@ async function getMealPlanData(userId: string): Promise<WeeklyMealPlan | null> {
                     }
                   );
                 }),
->>>>>>> caa3b9c ([Style] Replace double quotes with single quotes across project)
               };
             }
             return {
               dayOfWeek: dayName,
-<<<<<<< HEAD
-              meals: mealNames.map((mealName: string) => ({ name: mealName, customName: "", ingredients: [], totalCalories: null, totalProtein: null, totalCarbs: null, totalFat: null }))
-=======
-<<<<<<< HEAD
-              meals: mealNames.map(mealName => ({ name: mealName, customName: "", ingredients: [], totalCalories: null, totalProtein: null, totalCarbs: null, totalFat: null }))
-=======
               meals: mealNames.map((mealName: string) => ({
                 name: mealName,
                 customName: '',
@@ -117,8 +93,6 @@ async function getMealPlanData(userId: string): Promise<WeeklyMealPlan | null> {
                 totalCarbs: null,
                 totalFat: null,
               })),
->>>>>>> caa3b9c ([Style] Replace double quotes with single quotes across project)
->>>>>>> 73cee16 ([Style] Replace double quotes with single quotes across project)
             };
           }),
         };

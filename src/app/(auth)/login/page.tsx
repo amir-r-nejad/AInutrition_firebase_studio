@@ -10,7 +10,7 @@ import LoginForm from '@/features/auth/components/login/LoginForm';
 import { Leaf } from 'lucide-react';
 import Link from 'next/link';
 
-export default function LoginPage() {
+export default async function LoginPage() {
   return (
     <Card className='w-full max-w-sm shadow-xl'>
       <CardHeader className='space-y-1 text-center'>

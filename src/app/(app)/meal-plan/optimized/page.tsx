@@ -1,43 +1,24 @@
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-
->>>>>>> 73cee16 ([Style] Replace double quotes with single quotes across project)
-"use client";
-=======
 'use client';
->>>>>>> caa3b9c ([Style] Replace double quotes with single quotes across project)
 
-import React, { useState, useEffect, useCallback } from 'react';
+import {
+  generatePersonalizedMealPlan,
+  type GeneratePersonalizedMealPlanInput,
+  type GeneratePersonalizedMealPlanOutput,
+} from '@/ai/flows/generate-meal-plan';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import type { ChartConfig } from '@/components/ui/chart';
 import {
-  Loader2,
-  Wand2,
-  Utensils,
-  AlertTriangle,
-  ChefHat,
-  BarChart3,
-} from 'lucide-react';
-import {
-  generatePersonalizedMealPlan,
-  type GeneratePersonalizedMealPlanInput,
-  type GeneratePersonalizedMealPlanOutput,
-} from '@/ai/flows/generate-meal-plan';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import type {
-  FullProfileType,
-  CalculatedTargets,
-  MacroResults,
-} from '@/lib/schemas';
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Table,
@@ -48,25 +29,29 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { daysOfWeek } from '@/lib/constants';
+import { db } from '@/lib/firebase/clientApp';
+import type { FullProfileType } from '@/lib/schemas';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-} from '@/components/ui/chart';
+  AlertTriangle,
+  BarChart3,
+  ChefHat,
+  Loader2,
+  Utensils,
+  Wand2,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  LabelList,
   XAxis,
   YAxis,
-  LabelList,
 } from 'recharts';
-import type { ChartConfig } from '@/components/ui/chart';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
 
 async function getFullProfileData(
   userId: string

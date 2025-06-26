@@ -1,17 +1,17 @@
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-
->>>>>>> 73cee16 ([Style] Replace double quotes with single quotes across project)
-"use client";
-=======
 'use client';
->>>>>>> caa3b9c ([Style] Replace double quotes with single quotes across project)
 
-import React, { useState, useEffect, Suspense, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import {
+  suggestMealsForMacros,
+  type SuggestMealsForMacrosInput,
+  type SuggestMealsForMacrosOutput,
+} from '@/ai/flows/suggest-meals-for-macros';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -19,7 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -28,14 +27,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Loader2,
-  ChefHat,
-  AlertTriangle,
-  Sparkles,
-  Settings,
-} from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -43,13 +36,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import {
   Table,
   TableBody,
@@ -58,68 +44,44 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import {
+  defaultMacroPercentages,
+  mealNames,
+  preferredDiets,
+} from '@/lib/constants';
+import { db } from '@/lib/firebase/clientApp';
+import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import type { FullProfileType } from '@/lib/schemas';
 import {
   MealSuggestionPreferencesSchema,
   type MealSuggestionPreferencesValues,
 } from '@/lib/schemas';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import {
-  suggestMealsForMacros,
-  type SuggestMealsForMacrosInput,
-  type SuggestMealsForMacrosOutput,
-} from '@/ai/flows/suggest-meals-for-macros';
-import {
-  mealNames,
-  defaultMacroPercentages,
-  preferredDiets,
-} from '@/lib/constants';
-import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
-<<<<<<< HEAD
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-=======
-<<<<<<< HEAD
-import { doc, getDoc } from 'firebase/firestore';
-=======
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from 'firebase/firestore';
->>>>>>> caa3b9c ([Style] Replace double quotes with single quotes across project)
->>>>>>> 73cee16 ([Style] Replace double quotes with single quotes across project)
-import { db } from '@/lib/firebase/clientApp';
+  AlertTriangle,
+  ChefHat,
+  Loader2,
+  Settings,
+  Sparkles,
+} from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 async function getProfileDataForSuggestions(
   userId: string
 ): Promise<Partial<FullProfileType>> {
   if (!userId) return {};
   try {
-<<<<<<< HEAD
-    const userCollection = collection(db, "users");
-    const q = query(userCollection, where("uid", "==", userId));
-    const userSnapshot = await getDocs(q);
-    if (!userSnapshot.empty) {
-      return userSnapshot.docs[0].data() as any;
-=======
-<<<<<<< HEAD
-    const userProfileRef = doc(db, "users", userId);
-    const docSnap = await getDoc(userProfileRef);
-    if (docSnap.exists()) {
-      return docSnap.data() as Partial<FullProfileType>;
-=======
     const userCollection = collection(db, 'users');
     const q = query(userCollection, where('uid', '==', userId));
     const userSnapshot = await getDocs(q);
     if (!userSnapshot.empty) {
       return userSnapshot.docs[0].data() as any;
->>>>>>> caa3b9c ([Style] Replace double quotes with single quotes across project)
->>>>>>> 73cee16 ([Style] Replace double quotes with single quotes across project)
     }
   } catch (error) {
     console.error(
@@ -222,12 +184,6 @@ function MealSuggestionsContent() {
     setSuggestions([]);
 
     const profileToUse = fullProfileData;
-<<<<<<< HEAD
-    const exampleTargets = { mealName: selectedMealName, calories: 500, protein: 30, carbs: 60, fat: 20 };
-    
-    const requiredProfileFields: (keyof FullProfileType)[] = ['age', 'gender', 'currentWeight', 'height_cm', 'activityLevel', 'dietGoalOnboarding'];
-    const missingFields = requiredProfileFields.filter(field => !profileToUse?.[field]);
-=======
     const exampleTargets = {
       mealName: selectedMealName,
       calories: 500,
@@ -247,7 +203,6 @@ function MealSuggestionsContent() {
     const missingFields = requiredProfileFields.filter(
       (field) => !profileToUse?.[field]
     );
->>>>>>> caa3b9c ([Style] Replace double quotes with single quotes across project)
 
     if (missingFields.length === 0 && profileToUse) {
       const dailyTotals = calculateEstimatedDailyTargets({
