@@ -242,6 +242,7 @@ export default function OptimizedMealPlanPage() {
   }
 
   console.log(mealPlan);
+
   return (
     <div className='container mx-auto py-8'>
       <Card className='shadow-xl'>
@@ -307,7 +308,7 @@ export default function OptimizedMealPlanPage() {
                           Total Calories
                         </p>
                         <p className='text-xl font-bold'>
-                          {mealPlan.weeklySummary.calories.toFixed(0)} kcal
+                          {mealPlan.weeklySummary.totalCalories.toFixed(0)} kcal
                         </p>
                       </div>
                       <div>
@@ -315,7 +316,7 @@ export default function OptimizedMealPlanPage() {
                           Total Protein
                         </p>
                         <p className='text-xl font-bold'>
-                          {mealPlan.weeklySummary.protein.toFixed(1)} g
+                          {mealPlan.weeklySummary.totalProtein.toFixed(1)} g
                         </p>
                       </div>
                       <div>
@@ -323,7 +324,7 @@ export default function OptimizedMealPlanPage() {
                           Total Carbs
                         </p>
                         <p className='text-xl font-bold'>
-                          {mealPlan.weeklySummary.carbohydrates.toFixed(1)} g
+                          {mealPlan.weeklySummary.totalCarbs.toFixed(1)} g
                         </p>
                       </div>
                       <div>
@@ -331,7 +332,7 @@ export default function OptimizedMealPlanPage() {
                           Total Fat
                         </p>
                         <p className='text-xl font-bold'>
-                          {mealPlan.weeklySummary.fat.toFixed(1)} g
+                          {mealPlan.weeklySummary.totalFat.toFixed(1)} g
                         </p>
                       </div>
                     </div>
@@ -344,17 +345,17 @@ export default function OptimizedMealPlanPage() {
                         data={[
                           {
                             name: 'Protein',
-                            value: mealPlan.weeklySummary.protein,
+                            value: mealPlan.weeklySummary.totalProtein,
                             fill: 'var(--color-protein)',
                           },
                           {
                             name: 'Carbs',
-                            value: mealPlan.weeklySummary.carbohydrates,
+                            value: mealPlan.weeklySummary.totalCarbs,
                             fill: 'var(--color-carbs)',
                           },
                           {
                             name: 'Fat',
-                            value: mealPlan.weeklySummary.fat,
+                            value: mealPlan.weeklySummary.totalFat,
                             fill: 'var(--color-fat)',
                           },
                         ]}
@@ -422,7 +423,7 @@ export default function OptimizedMealPlanPage() {
                           <CardHeader>
                             <CardTitle className='text-xl font-semibold flex items-center'>
                               <ChefHat className='mr-2 h-5 w-5 text-accent' />
-                              {meal.name}
+                              {meal.meal_name}
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
@@ -452,19 +453,15 @@ export default function OptimizedMealPlanPage() {
                                 </TableHeader>
                                 <TableBody>
                                   {meal.ingredients.map((ing, ingIndex) => {
-                                    const [q1, q2, ...ingName] = ing.split(' ');
-
-                                    console.log(q1, q2, ingName);
-
                                     return (
                                       <TableRow key={ingIndex}>
                                         <TableCell className='font-medium py-1.5'>
-                                          {ingName}
+                                          {ing.ingredient_name}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {q1} {q2}
+                                          {ing.quantity_g}
                                         </TableCell>
-                                        {/* <TableCell className='text-right py-1.5'>
+                                        <TableCell className='text-right py-1.5'>
                                           {ing.macros_per_100g.calories
                                             ? (
                                                 (ing.macros_per_100g.calories *
@@ -490,7 +487,7 @@ export default function OptimizedMealPlanPage() {
                                                 100
                                               ).toFixed(1)
                                             : 'N/A'}
-                                        </TableCell> */}
+                                        </TableCell>
                                       </TableRow>
                                     );
                                   })}
@@ -499,9 +496,9 @@ export default function OptimizedMealPlanPage() {
                               <ScrollBar orientation='horizontal' />
                             </ScrollArea>
                             <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
-                              Total: {meal.calories.toFixed(0)} kcal | Protein:{' '}
-                              {meal.protein.toFixed(1)}g | Fat:{' '}
-                              {meal.fat.toFixed(1)}g
+                              Total: {meal.total_calories.toFixed(0)} kcal |
+                              Protein: {meal.total_protein_g.toFixed(1)}g | Fat:{' '}
+                              {meal.total_fat_g.toFixed(1)}g
                             </div>
                           </CardContent>
                         </Card>

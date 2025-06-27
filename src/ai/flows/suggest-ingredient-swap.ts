@@ -1,14 +1,8 @@
 'use server';
 
-/**
- * AI-powered Ingredient Swap Suggestions — Fully optimized for Genkit
- */
-
-import { ai } from '@/ai/genkit';
-// import { geminiPro } from '@genkit-ai/googleai';
+import { ai, geminiModel } from '@/ai/genkit';
 
 // Types
-
 export interface SuggestIngredientSwapInput {
   mealName: string;
   ingredients: Array<{
@@ -39,35 +33,36 @@ export type SuggestIngredientSwapOutput = Array<{
 export async function suggestIngredientSwap(
   input: SuggestIngredientSwapInput
 ): Promise<SuggestIngredientSwapOutput> {
-  const res = await fetch('/api/openai-suggest-ingredient-swap', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) throw new Error('Failed to get ingredient swap suggestions');
-  return await res.json();
+  return suggestIngredientSwapFlow(input);
 }
 
 // AI Prompt
 
 const prompt = ai.definePrompt({
+  model: geminiModel,
   name: 'suggestIngredientSwapPrompt',
-  // model: geminiPro, // TODO: Replace with OpenAI call
   input: { type: 'json' },
   output: { type: 'json' },
-  prompt: `You are a nutritional expert. Given a meal and user's preferences, suggest ingredient swaps that preserve nutritional balance.
+  prompt: `You are a nutritional expert. Your task is to suggest ingredient swaps for a given meal, while strictly preserving its nutritional balance and respecting user preferences.
 
 {{{input}}}
 
-Instructions:
-- Respect allergies, dislikes, and dietary preferences.
-- Maintain approximate calorie, protein, carb, and fat targets.
-- For each suggestion, provide:
-  - ingredientName: the swapped ingredient.
-  - reason: explain why this swap is suggested.
-- Return result as valid JSON matching SuggestIngredientSwapOutput (array of objects).
+Strict Instructions:
+- Analyze the provided meal and the user's preferences (allergies, dislikes, dietary needs).
+- Suggest ingredient swaps that maintain approximate calorie, protein, carbohydrate, and fat targets of the original meal.
+- Your response MUST be a JSON array. Each item in this array MUST be an object with ONLY these exact two properties:
+    - "ingredientName": string — The name of the suggested swapped ingredient (e.g., "Quinoa", "Almond Milk").
+    - "reason": string — A concise explanation of why this swap is suggested, specifically mentioning how it addresses preferences or maintains nutritional balance (e.g., "Gluten-free alternative with similar protein content", "Lactose-free option for dairy allergy").
 
-Only output valid JSON.`
+⚠️ Important Rules:
+- Use the exact field names and spelling provided: "ingredientName" and "reason".
+- DO NOT add any extra fields, properties, or keys to the objects within the array.
+- DO NOT include any introductory text, concluding remarks, markdown formatting (like json), or any other commentary outside of the pure JSON array.
+- Ensure all suggestions are realistic and nutritionally sound.
+
+Respond ONLY with the pure JSON array that strictly matches the following TypeScript type:
+Array<{ ingredientName: string; reason: string; }>
+`,
 });
 
 // Genkit Flow
@@ -78,10 +73,12 @@ const suggestIngredientSwapFlow = ai.defineFlow(
     inputSchema: undefined,
     outputSchema: undefined,
   },
-  async (input: SuggestIngredientSwapInput): Promise<SuggestIngredientSwapOutput> => {
+  async (
+    input: SuggestIngredientSwapInput
+  ): Promise<SuggestIngredientSwapOutput> => {
     const { output } = await prompt(input);
     if (!output) {
-      throw new Error("AI did not return output.");
+      throw new Error('AI did not return output.');
     }
     return output as SuggestIngredientSwapOutput;
   }
