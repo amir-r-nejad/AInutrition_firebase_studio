@@ -195,7 +195,7 @@ function MealSuggestionsContent() {
     const requiredProfileFields: (keyof FullProfileType)[] = [
       'age',
       'gender',
-      'currentWeight',
+      'current_weight',
       'height_cm',
       'activityLevel',
       'dietGoalOnboarding',
@@ -208,10 +208,10 @@ function MealSuggestionsContent() {
       const dailyTotals = calculateEstimatedDailyTargets({
         age: profileToUse.age!,
         gender: profileToUse.gender!,
-        currentWeight: profileToUse.currentWeight!,
-        height_cm: profileToUse.height_cm!,
+        currentWeight: profileToUse.current_weight!,
+        height: profileToUse.height_cm!,
         activityLevel: profileToUse.activityLevel!,
-        dietGoalOnboarding: profileToUse.dietGoalOnboarding!,
+        dietGoal: profileToUse.dietGoalOnboarding!,
       });
       const mealDistribution = defaultMacroPercentages[selectedMealName];
 
@@ -407,7 +407,7 @@ function MealSuggestionsContent() {
       name={fieldName}
       render={({ field }) => {
         const displayValue = Array.isArray(field.value)
-          ? field.value.join(', ')
+          ? field.value.join(',')
           : field.value || '';
         return (
           <FormItem>
@@ -417,14 +417,7 @@ function MealSuggestionsContent() {
                 <Textarea
                   placeholder={placeholder}
                   value={displayValue}
-                  onChange={(e) =>
-                    field.onChange(
-                      e.target.value
-                        .split(',')
-                        .map((s) => s.trim())
-                        .filter((s) => s)
-                    )
-                  }
+                  onChange={(e) => field.onChange(e.target.value.split(','))}
                   className='h-10 resize-none'
                   onWheel={(e) =>
                     (e.currentTarget as HTMLTextAreaElement).blur()

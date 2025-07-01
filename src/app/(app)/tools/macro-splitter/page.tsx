@@ -1,10 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Card,
   CardContent,
@@ -12,53 +8,49 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'; // Added ScrollBar
 import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
-  TableFooter,
 } from '@/components/ui/table';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  MacroSplitterFormSchema,
-  type MacroSplitterFormValues,
-  type FullProfileType,
-  type MealMacroDistribution,
-  type GlobalCalculatedTargets as AppGlobalCalculatedTargets,
-  type CustomCalculatedTargets,
-} from '@/lib/schemas';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
-  mealNames as defaultMealNames,
   defaultMacroPercentages,
+  mealNames as defaultMealNames,
 } from '@/lib/constants';
+import { db } from '@/lib/firebase/clientApp';
+import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import {
+  MacroSplitterFormSchema,
+  preprocessDataForFirestore,
+  type FullProfileType,
+  type MacroSplitterFormValues,
+  type MealMacroDistribution,
+} from '@/lib/schemas';
+import { cn, formatNumber } from '@/lib/utils';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Lightbulb,
   Loader2,
   RefreshCw,
   SplitSquareHorizontal,
-  Lightbulb,
-  Info,
-  CheckCircle2,
-  AlertTriangle,
 } from 'lucide-react';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'; // Added ScrollBar
-import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
-import { preprocessDataForFirestore } from '@/lib/schemas';
+import { useCallback, useEffect, useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
 
 interface TotalMacros {
   calories: number;
@@ -97,7 +89,7 @@ function customMacroSplit(
 
 export default function MacroSplitterPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { toast, toasts } = useToast();
   const router = useRouter();
   const [dailyTargets, setDailyTargets] = useState<TotalMacros | null>(null);
   const [calculatedSplit, setCalculatedSplit] = useState<
@@ -150,9 +142,9 @@ export default function MacroSplitterPage() {
         ) {
           form.reset({ mealDistributions: profileData.mealDistributions });
           const savedSplitToastExists =
-            toast &&
-            Array.isArray(toastz.toasts) &&
-            toast.toasts.find(
+            toasts &&
+            Array.isArray(toasts) &&
+            toasts.find(
               (t) =>
                 t.description ===
                 'Your previously saved macro split percentages have been loaded.'
@@ -220,11 +212,11 @@ export default function MacroSplitterPage() {
           const estimatedTargets = calculateEstimatedDailyTargets({
             age: profileData.age,
             gender: profileData.gender,
-            current_weight: profileData.current_weight,
-            height_cm: profileData.height_cm,
+            currentWeight: profileData.current_weight,
+            height: profileData.height_cm,
             activityLevel: profileData.activityLevel,
-            dietGoalOnboarding: profileData.dietGoalOnboarding,
-            goal_weight_1m: profileData.goal_weight_1m,
+            dietGoal: profileData.dietGoalOnboarding,
+            goalWeight: profileData.goal_weight_1m,
             bf_current: profileData.bf_current,
             bf_target: profileData.bf_target,
             waist_current: profileData.waist_current,
@@ -285,8 +277,8 @@ export default function MacroSplitterPage() {
 
     if (targets && sourceMessage) {
       const shouldShowToast =
-        toast && Array.isArray(toast.toasts)
-          ? !toast.toasts.find((t) => t.description === sourceMessage)
+        toasts && Array.isArray(toasts)
+          ? !toasts.find((t) => t.description === sourceMessage)
           : true;
       if (shouldShowToast) {
         toast({
@@ -613,7 +605,7 @@ export default function MacroSplitterPage() {
                                       <div>
                                         <Input
                                           type='number'
-                                          step='1'
+                                          step='0.1'
                                           {...itemField}
                                           value={itemField.value ?? ''}
                                           onChange={(e) => {
@@ -641,7 +633,6 @@ export default function MacroSplitterPage() {
                                         />
                                       </div>
                                     </FormControl>
-                                    {/* FormMessage removed from here to prevent layout shift, shown below table */}
                                   </FormItem>
                                 )}
                               />
@@ -680,7 +671,8 @@ export default function MacroSplitterPage() {
                       </TableCell>
                       {macroPctKeys.map((key) => {
                         const sum = columnSums[key];
-                        const isSum100 = Math.abs(sum - 100) < 0.1;
+                        const isSum100 = Math.abs(sum - 100) < 0.01;
+
                         return (
                           <TableCell
                             key={`sum-${key}`}
@@ -690,7 +682,11 @@ export default function MacroSplitterPage() {
                               key === 'fat_pct' ? 'border-r' : ''
                             )}
                           >
-                            {sum.toFixed(0)}%
+                            {formatNumber(sum / 100, {
+                              style: 'percent',
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            })}
                             {isSum100 ? (
                               <CheckCircle2 className='ml-1 h-3 w-3 inline-block' />
                             ) : (

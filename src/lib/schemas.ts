@@ -66,7 +66,8 @@ export const ProfileFormSchema = z.object({
     })
     .refine((val) => val === undefined || (!isNaN(val) && val > 0), {
       message: 'Goal weight must be a positive number',
-    }),
+    })
+    .optional(),
   // Medical Info & Physical Limitations
   painMobilityIssues: z.string().optional(),
   injuries: z.array(z.string()).optional(),

@@ -1,52 +1,49 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Pencil, PlusCircle, Trash2, Wand2, Loader2 } from 'lucide-react';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import {
-  daysOfWeek,
-  mealNames,
-  defaultMacroPercentages,
-} from '@/lib/constants';
-import type {
-  Meal,
-  DailyMealPlan,
-  WeeklyMealPlan,
-  Ingredient,
-  FullProfileType,
-} from '@/lib/schemas';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import {
   adjustMealIngredients,
   type AdjustMealIngredientsInput,
 } from '@/ai/flows/adjust-meal-ingredients';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import {
+  daysOfWeek,
+  defaultMacroPercentages,
+  mealNames,
+} from '@/lib/constants';
 import { db } from '@/lib/firebase/clientApp';
+import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
+import type {
+  FullProfileType,
+  Ingredient,
+  Meal,
+  WeeklyMealPlan,
+} from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { Loader2, Pencil, PlusCircle, Trash2, Wand2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 
 async function getMealPlanData(userId: string): Promise<WeeklyMealPlan | null> {
   if (!userId) return null;
@@ -110,6 +107,7 @@ async function saveMealPlanData(userId: string, planData: WeeklyMealPlan) {
   try {
     const userProfileRef = doc(db, 'users', userId);
     const sanitizedPlanData = preprocessDataForFirestore(planData);
+
     await setDoc(
       userProfileRef,
       { currentWeeklyPlan: sanitizedPlanData },
@@ -128,16 +126,17 @@ async function getProfileDataForOptimization(
   try {
     const userProfileRef = doc(db, 'users', userId);
     const docSnap = await getDoc(userProfileRef);
+
     if (docSnap.exists()) {
       const data = docSnap.data() as FullProfileType;
-      // Return only the fields relevant for optimization to keep it lean
+
       const profile: Partial<FullProfileType> = {
-        age: data.age,
-        gender: data.gender,
-        current_weight: data.current_weight,
-        height_cm: data.height_cm,
-        activityLevel: data.activityLevel,
-        dietGoalOnboarding: data.dietGoalOnboarding,
+        age: data.smartPlannerData?.formValues?.age,
+        gender: data.smartPlannerData?.formValues?.gender,
+        current_weight: data.smartPlannerData?.formValues?.current_weight,
+        height_cm: data.smartPlannerData?.formValues?.height_cm,
+        activityLevel: data.smartPlannerData?.formValues?.activity_factor_key,
+        dietGoalOnboarding: data.smartPlannerData?.formValues?.dietGoal,
         preferredDiet: data.preferredDiet,
         allergies: data.allergies || [],
         dispreferredIngredients: data.dispreferredIngredients || [],
@@ -309,17 +308,17 @@ export default function CurrentMealPlanPage() {
       const dailyTargets = calculateEstimatedDailyTargets({
         age: profileData.age!,
         gender: profileData.gender!,
-        current_weight: profileData.current_weight!,
-        height_cm: profileData.height_cm!,
+        currentWeight: profileData.current_weight!,
+        height: profileData.height_cm!,
         activityLevel: profileData.activityLevel!,
-        dietGoalOnboarding: profileData.dietGoalOnboarding!,
+        dietGoal: profileData.dietGoalOnboarding!,
       });
 
       if (
-        !dailyTargets.finalTargetCalories ||
-        !dailyTargets.proteinGrams ||
-        !dailyTargets.carbGrams ||
-        !dailyTargets.fatGrams
+        !dailyTargets.targetCalories ||
+        !dailyTargets.targetProtein ||
+        !dailyTargets.targetCarbs ||
+        !dailyTargets.targetFat
       ) {
         toast({
           title: 'Calculation Error',
@@ -340,17 +339,16 @@ export default function CurrentMealPlanPage() {
 
       const targetMacrosForMeal = {
         calories: Math.round(
-          dailyTargets.finalTargetCalories *
-            (mealDistribution.calories_pct / 100)
+          dailyTargets.targetCalories * (mealDistribution.calories_pct / 100)
         ),
         protein: Math.round(
-          dailyTargets.proteinGrams * (mealDistribution.protein_pct / 100)
+          dailyTargets.targetProtein * (mealDistribution.protein_pct / 100)
         ),
         carbs: Math.round(
-          dailyTargets.carbGrams * (mealDistribution.carbs_pct / 100)
+          dailyTargets.targetCarbs * (mealDistribution.carbs_pct / 100)
         ),
         fat: Math.round(
-          dailyTargets.fatGrams * (mealDistribution.fat_pct / 100)
+          dailyTargets.targetFat * (mealDistribution.fat_pct / 100)
         ),
       };
 
