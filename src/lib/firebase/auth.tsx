@@ -6,6 +6,7 @@ import {
   sendPasswordResetEmail as firebaseSendPasswordResetEmail,
   GoogleAuthProvider,
   NextOrObserver,
+  sendEmailVerification as sendEmailVerificationAPI,
   signInWithEmailAndPassword,
   signInWithPopup,
   User,
@@ -101,6 +102,15 @@ export async function createUserWithEmailAndPassword(
     return await firebaseCreateUserWithEmailAndPassword(auth, email, password);
   } catch (error) {
     console.error('Error creating user with email and password', error);
+    throw error;
+  }
+}
+
+export async function sendEmailVerification(user: User) {
+  try {
+    return await sendEmailVerificationAPI(user);
+  } catch (error) {
+    console.error('Error sending email verification');
     throw error;
   }
 }

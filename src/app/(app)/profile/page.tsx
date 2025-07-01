@@ -93,6 +93,7 @@ export default function ProfilePage() {
     resolver: zodResolver(ProfileFormSchema),
     defaultValues: {
       name: undefined,
+      goalWeight: 0,
       subscriptionStatus: undefined,
       painMobilityIssues: undefined,
       injuries: [],
@@ -110,6 +111,7 @@ export default function ProfilePage() {
       setIsLoading(true);
       getProfileData(user.uid)
         .then((profileDataSubset) => {
+          console.log(profileDataSubset);
           form.reset(profileDataSubset);
           setIsLoading(false);
         })
@@ -128,6 +130,7 @@ export default function ProfilePage() {
   }, [user, form, toast]);
 
   async function onSubmit(data: ProfileFormValues) {
+    console.log('Submitting profile data:', data);
     if (!user?.uid) {
       toast({
         title: 'Error',
@@ -151,6 +154,11 @@ export default function ProfilePage() {
     }
   }
 
+  function onError(error: any) {
+    console.log(error);
+    console.log(form.getValues());
+  }
+
   const renderCommaSeparatedInput = (
     fieldName: keyof ProfileFormValues,
     label: string,
@@ -162,7 +170,7 @@ export default function ProfilePage() {
       render={({ field }) => {
         // Ensure value is always a string for the textarea
         const displayValue = Array.isArray(field.value)
-          ? field.value.join(', ')
+          ? field.value.join(',')
           : field.value || '';
         return (
           <FormItem>
@@ -172,14 +180,7 @@ export default function ProfilePage() {
                 <Textarea
                   placeholder={placeholder}
                   value={displayValue}
-                  onChange={(e) =>
-                    field.onChange(
-                      e.target.value
-                        .split(',')
-                        .map((s) => s.trim())
-                        .filter((s) => s)
-                    )
-                  }
+                  onChange={(e) => field.onChange(e.target.value.split(','))}
                   className='h-10 resize-none'
                 />
               </div>
@@ -242,7 +243,10 @@ export default function ProfilePage() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+          <form
+            onSubmit={form.handleSubmit(onSubmit, onError)}
+            className='space-y-8'
+          >
             <Accordion
               type='multiple'
               defaultValue={['account-info']}
@@ -436,6 +440,26 @@ export default function ProfilePage() {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name='goalWeight'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Goal Weight</FormLabel>
+                        <FormControl>
+                          <Input
+                            type='number'
+                            placeholder='Enter your goal weight in kg'
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   {renderCommaSeparatedInput(
                     'equipmentAccess',
                     'Equipment Access (comma-separated, Optional)',
