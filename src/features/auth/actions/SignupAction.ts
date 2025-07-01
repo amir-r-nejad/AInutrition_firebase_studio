@@ -1,4 +1,7 @@
-import { createUserWithEmailAndPassword as createUserWithEmailAndPasswordApi } from '@/lib/firebase/auth';
+import {
+  createUserWithEmailAndPassword as createUserWithEmailAndPasswordApi,
+  sendEmailVerification,
+} from '@/lib/firebase/auth';
 
 type SignupFormTypes = {
   email: string;
@@ -15,9 +18,12 @@ export async function signupAction(
 ): Promise<ActionType> {
   try {
     const { email, password } = formData;
-    await createUserWithEmailAndPasswordApi(email, password);
+    const newUser = await createUserWithEmailAndPasswordApi(email, password);
 
-    return { isSuccess: true, userError: null };
+    if (newUser) {
+      await sendEmailVerification(newUser.user);
+      return { isSuccess: true, userError: null };
+    }
   } catch (error: any) {
     if (error.code === 'auth/email-already-in-use')
       return {
