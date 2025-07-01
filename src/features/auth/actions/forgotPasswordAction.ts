@@ -1,5 +1,3 @@
-'use server';
-
 import { sendForgetPassword } from '@/lib/firebase/auth';
 
 type ActionType = {
@@ -8,15 +6,14 @@ type ActionType = {
   userError: string | null;
 };
 
-export async function forgotPasswordAction(formData: {
-  email: string;
-}): Promise<ActionType> {
+export async function forgotPasswordAction(
+  formData: string
+): Promise<ActionType> {
   const FORGOT_PASSWORD_MESSAGE =
     'If an account exists for this email, a password reset link has been sent. Please check your inbox (and spam folder).';
 
   try {
-    const { email } = formData;
-
+    const email = formData;
     await sendForgetPassword(email);
     return {
       isSuccess: true,
