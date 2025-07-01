@@ -322,6 +322,25 @@ export default function ProfilePage() {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name='goalWeight'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Goal Weight</FormLabel>
+                        <FormControl>
+                          <Input
+                            type='number'
+                            placeholder='Enter your goal weight in kg'
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </AccordionContent>
               </AccordionItem>
 
@@ -436,25 +455,6 @@ export default function ProfilePage() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name='goalWeight'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Goal Weight</FormLabel>
-                        <FormControl>
-                          <Input
-                            type='number'
-                            placeholder='Enter your goal weight in kg'
-                            {...field}
-                            value={field.value ?? ''}
-                          />
-                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

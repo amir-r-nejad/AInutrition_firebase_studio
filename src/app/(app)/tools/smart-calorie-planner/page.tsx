@@ -1,13 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, Controller, FieldPath } from 'react-hook-form';
+import { getSmartPlannerData } from '@/app/api/user/database';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,63 +31,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+import { Slider } from '@/components/ui/slider';
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-  TableCaption,
 } from '@/components/ui/table';
-import {
-  BrainCircuit,
-  Calculator,
-  HelpCircle,
-  AlertTriangle,
-  RefreshCcw,
-  Edit3,
-  Info,
-} from 'lucide-react';
-import {
-  SmartCaloriePlannerFormSchema,
-  type SmartCaloriePlannerFormValues,
-  type FullProfileType,
-  type GlobalCalculatedTargets,
-  type CustomCalculatedTargets,
-} from '@/lib/schemas';
-import {
-  activityLevels,
-  genders,
-  smartPlannerDietGoals,
-} from '@/lib/constants';
-import { calculateBMR, calculateTDEE } from '@/lib/nutrition-calculator';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { Slider } from '@/components/ui/slider';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import {
+  activityLevels,
+  genders,
+  smartPlannerDietGoals,
+} from '@/lib/constants';
 import { db } from '@/lib/firebase/clientApp';
-import { preprocessDataForFirestore } from '@/lib/schemas';
-import { getSmartPlannerData } from '@/app/api/user/database';
+import { calculateBMR, calculateTDEE } from '@/lib/nutrition-calculator';
+import {
+  preprocessDataForFirestore,
+  SmartCaloriePlannerFormSchema,
+  type CustomCalculatedTargets,
+  type GlobalCalculatedTargets,
+  type SmartCaloriePlannerFormValues,
+} from '@/lib/schemas';
+import { formatNumber } from '@/lib/utils';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { doc, setDoc } from 'firebase/firestore';
+import {
+  BrainCircuit,
+  Calculator,
+  Edit3,
+  HelpCircle,
+  Info,
+  RefreshCcw,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { FieldPath, useForm } from 'react-hook-form';
 
 async function saveSmartPlannerData(
   userId: string,
@@ -89,8 +87,10 @@ async function saveSmartPlannerData(
   if (!userId) throw new Error('User ID is required.');
   try {
     const userProfileRef = doc(db, 'users', userId);
+    console.log('User Profile', userProfileRef);
     const dataToSave = { smartPlannerData: preprocessDataForFirestore(data) };
-    await setDoc(userProfileRef, dataToSave, { merge: true });
+    const dataSave = await setDoc(userProfileRef, dataToSave, { merge: true });
+    console.log('Saved smart planner data:', dataSave);
   } catch (error) {
     console.error('Error saving smart planner data to Firestore:', error);
     throw error;
@@ -354,6 +354,11 @@ export default function SmartCaloriePlannerPage() {
     }
   };
 
+  function onError(error: any) {
+    console.log(error);
+    console.log(smartPlannerForm.formState.errors);
+  }
+
   const handleSmartPlannerReset = async () => {
     smartPlannerForm.reset({
       age: undefined,
@@ -565,7 +570,7 @@ export default function SmartCaloriePlannerPage() {
           <CardContent>
             <Form {...smartPlannerForm}>
               <form
-                onSubmit={smartPlannerForm.handleSubmit(onSubmit)}
+                onSubmit={smartPlannerForm.handleSubmit(onSubmit, onError)}
                 className='space-y-8'
               >
                 <Accordion
@@ -1176,11 +1181,11 @@ export default function SmartCaloriePlannerPage() {
                   <div className='grid md:grid-cols-2 gap-4 text-base'>
                     <p>
                       <strong>Maintenance Calories (TDEE):</strong>{' '}
-                      {results.tdee?.toFixed(0) ?? 'N/A'} kcal
+                      {results.tdee ? formatNumber(results.tdee) : 'N/A'} kcal
                     </p>
                     <p>
                       <strong>Basal Metabolic Rate (BMR):</strong>{' '}
-                      {results.bmr?.toFixed(0) ?? 'N/A'} kcal
+                      {results.bmr ? formatNumber(results.bmr) : 'N/A'} kcal
                     </p>
                   </div>
                   <hr />
@@ -1188,7 +1193,10 @@ export default function SmartCaloriePlannerPage() {
                     <strong>
                       Primary Target Daily Calories:{' '}
                       <span className='text-primary'>
-                        {results.finalTargetCalories?.toFixed(0) ?? 'N/A'} kcal
+                        {results.finalTargetCalories
+                          ? formatNumber(results.finalTargetCalories)
+                          : 'N/A'}{' '}
+                        kcal
                       </span>
                     </strong>
                   </p>
@@ -1200,14 +1208,16 @@ export default function SmartCaloriePlannerPage() {
 
                   <p>
                     <strong>Estimated Weekly Progress:</strong>{' '}
-                    {results.estimatedWeeklyWeightChangeKg !== undefined &&
+                    {results.estimatedWeeklyWeightChangeKg &&
                     results.estimatedWeeklyWeightChangeKg >= 0
-                      ? `${(
-                          results.estimatedWeeklyWeightChangeKg ?? 0
-                        )?.toFixed(2)} kg surplus/week (Potential Gain)`
-                      : `${Math.abs(
-                          results.estimatedWeeklyWeightChangeKg ?? 0
-                        ).toFixed(2)} kg deficit/week (Potential Loss)`}
+                      ? `${formatNumber(
+                          results.estimatedWeeklyWeightChangeKg ?? 0,
+                          { maximumFractionDigits: 2 }
+                        )} kg surplus/week (Potential Gain)`
+                      : `${formatNumber(
+                          Math.abs(results.estimatedWeeklyWeightChangeKg ?? 0),
+                          { maximumFractionDigits: 2 }
+                        )} kg deficit/week (Potential Loss)`}
                   </p>
                   <hr />
                   <div className='pt-4'>
@@ -1237,70 +1247,88 @@ export default function SmartCaloriePlannerPage() {
                       </TableHeader>
                       <TableBody>
                         <TableRow>
-                          {/* */}
                           <TableCell className='font-medium'>Protein</TableCell>
-                          {/* */}
                           <TableCell className='text-right'>
-                            {results.proteinTargetPct !== undefined
-                              ? (results.proteinTargetPct * 100)?.toFixed(0)
+                            {results.proteinTargetPct
+                              ? formatNumber(results.proteinTargetPct * 100, {
+                                  maximumFractionDigits: 0,
+                                })
                               : 'N/A'}
                             %
                           </TableCell>
-                          {/* */}
                           <TableCell className='text-right'>
-                            {results.proteinGrams?.toFixed(1) ?? 'N/A'} g
+                            {results.proteinGrams
+                              ? formatNumber(results.proteinGrams, {
+                                  maximumFractionDigits: 1,
+                                })
+                              : 'N/A'}{' '}
+                            g
                           </TableCell>
-                          {/* */}
                           <TableCell className='text-right'>
-                            {results.proteinCalories?.toFixed(0) ?? 'N/A'} kcal
+                            {results.proteinCalories
+                              ? formatNumber(results.proteinCalories, {
+                                  maximumFractionDigits: 0,
+                                })
+                              : 'N/A'}{' '}
+                            kcal
                           </TableCell>
-                          {/* */}
                         </TableRow>
-                        {/* */}
                         <TableRow>
-                          {/* */}
                           <TableCell className='font-medium'>
                             Carbohydrates
                           </TableCell>
-                          {/* */}
                           <TableCell className='text-right'>
-                            {results.carbTargetPct !== undefined
-                              ? (results.carbTargetPct * 100)?.toFixed(0)
+                            {results.carbTargetPct
+                              ? formatNumber(results.carbTargetPct * 100, {
+                                  maximumFractionDigits: 0,
+                                })
                               : 'N/A'}
                             %
                           </TableCell>
-                          {/* */}
                           <TableCell className='text-right'>
-                            {results.carbGrams?.toFixed(1) ?? 'N/A'} g
+                            {results.carbGrams
+                              ? formatNumber(results.carbGrams, {
+                                  maximumFractionDigits: 1,
+                                })
+                              : 'N/A'}{' '}
+                            g
                           </TableCell>
-                          {/* */}
                           <TableCell className='text-right'>
-                            {results.carbCalories?.toFixed(0) ?? 'N/A'} kcal
+                            {results.carbCalories
+                              ? formatNumber(results.carbCalories, {
+                                  maximumFractionDigits: 0,
+                                })
+                              : 'N/A'}{' '}
+                            kcal
                           </TableCell>
-                          {/* */}
                         </TableRow>
-                        {/* */}
                         <TableRow>
-                          {/* */}
                           <TableCell className='font-medium'>Fat</TableCell>
-                          {/* */}
                           <TableCell className='text-right'>
-                            {results.fatTargetPct !== undefined
-                              ? (results.fatTargetPct * 100)?.toFixed(0)
+                            {results.fatTargetPct
+                              ? formatNumber(results.fatTargetPct * 100, {
+                                  maximumFractionDigits: 0,
+                                })
                               : 'N/A'}
                             %
                           </TableCell>
-                          {/* */}
                           <TableCell className='text-right'>
-                            {results.fatGrams?.toFixed(1) ?? 'N/A'} g
+                            {results.fatGrams
+                              ? formatNumber(results.fatGrams, {
+                                  maximumFractionDigits: 1,
+                                })
+                              : 'N/A'}{' '}
+                            g
                           </TableCell>
-                          {/* */}
                           <TableCell className='text-right'>
-                            {results.fatCalories?.toFixed(0) ?? 'N/A'} kcal
+                            {results.fatCalories
+                              ? formatNumber(results.fatCalories, {
+                                  maximumFractionDigits: 0,
+                                })
+                              : 'N/A'}{' '}
+                            kcal
                           </TableCell>
-                          {/* */}
                         </TableRow>
-                        {/* */}
                       </TableBody>
                       <TableCaption className='text-xs mt-2 text-left'>
                         {' '}
@@ -1357,9 +1385,14 @@ export default function SmartCaloriePlannerPage() {
                                       Override the system-calculated total daily
                                       calories. Leave blank to use the original
                                       estimate:{' '}
-                                      {results.finalTargetCalories?.toFixed(
-                                        0
-                                      ) ?? 'N/A'}{' '}
+                                      {results.finalTargetCalories
+                                        ? formatNumber(
+                                            results.finalTargetCalories,
+                                            {
+                                              maximumFractionDigits: 0,
+                                            }
+                                          )
+                                        : 'N/A'}{' '}
                                       kcal.
                                     </p>
                                   </TooltipContent>
@@ -1370,8 +1403,14 @@ export default function SmartCaloriePlannerPage() {
                                   <Input
                                     type='number'
                                     placeholder={`e.g., ${
-                                      results.finalTargetCalories?.toFixed(0) ??
-                                      '2000'
+                                      results.finalTargetCalories
+                                        ? formatNumber(
+                                            results.finalTargetCalories,
+                                            {
+                                              maximumFractionDigits: 0,
+                                            }
+                                          )
+                                        : '2000'
                                     }`}
                                     {...field}
                                     value={field.value ?? ''}
@@ -1418,23 +1457,36 @@ export default function SmartCaloriePlannerPage() {
                                     <p>
                                       Set your desired protein intake in grams
                                       per kg of your current body weight (
-                                      {results.current_weight_for_custom_calc?.toFixed(
-                                        1
-                                      ) ??
-                                        smartPlannerForm
-                                          .getValues('current_weight')
-                                          ?.toFixed(1) ??
-                                        'N/A'}{' '}
+                                      {results.current_weight_for_custom_calc
+                                        ? formatNumber(
+                                            results.current_weight_for_custom_calc,
+                                            {
+                                              maximumFractionDigits: 1,
+                                            }
+                                          )
+                                        : smartPlannerForm.getValues(
+                                            'current_weight'
+                                          )
+                                        ? formatNumber(
+                                            smartPlannerForm.getValues(
+                                              'current_weight'
+                                            ),
+                                            {
+                                              maximumFractionDigits: 1,
+                                            }
+                                          )
+                                        : 'N/A'}{' '}
                                       kg). Affects protein, carbs, and fat
                                       distribution. Original estimate:{' '}
                                       {results.current_weight_for_custom_calc &&
                                       results.current_weight_for_custom_calc >
                                         0 &&
                                       results.proteinGrams
-                                        ? (
+                                        ? formatNumber(
                                             results.proteinGrams /
-                                            results.current_weight_for_custom_calc
-                                          ).toFixed(1)
+                                              results.current_weight_for_custom_calc,
+                                            { maximumFractionDigits: 1 }
+                                          )
                                         : 'N/A'}{' '}
                                       g/kg.
                                     </p>
@@ -1450,10 +1502,11 @@ export default function SmartCaloriePlannerPage() {
                                       results.current_weight_for_custom_calc >
                                         0 &&
                                       results.proteinGrams
-                                        ? (
+                                        ? formatNumber(
                                             results.proteinGrams /
-                                            results.current_weight_for_custom_calc
-                                          ).toFixed(1)
+                                              results.current_weight_for_custom_calc,
+                                            { maximumFractionDigits: 1 }
+                                          )
                                         : '1.6'
                                     }`}
                                     {...field}
@@ -1524,10 +1577,18 @@ export default function SmartCaloriePlannerPage() {
                                     />
                                     <div className='flex justify-between text-xs text-muted-foreground'>
                                       <span>
-                                        Carbs: {currentCarbPct.toFixed(0)}%
+                                        Carbs:{' '}
+                                        {formatNumber(currentCarbPct, {
+                                          maximumFractionDigits: 0,
+                                        })}
+                                        %
                                       </span>
                                       <span>
-                                        Fat: {currentFatPct.toFixed(0)}%
+                                        Fat:{' '}
+                                        {formatNumber(currentFatPct, {
+                                          maximumFractionDigits: 0,
+                                        })}
+                                        %
                                       </span>
                                     </div>
                                   </div>
@@ -1583,22 +1644,29 @@ export default function SmartCaloriePlannerPage() {
                                 </TableCell>
                                 {/* */}
                                 <TableCell className='text-right'>
-                                  {customPlanResults.proteinTargetPct?.toFixed(
-                                    0
-                                  ) ?? 'N/A'}
+                                  {customPlanResults.proteinTargetPct
+                                    ? formatNumber(
+                                        customPlanResults.proteinTargetPct
+                                      )
+                                    : 'N/A'}
                                   %
                                 </TableCell>
                                 {/* */}
                                 <TableCell className='text-right'>
-                                  {customPlanResults.proteinGrams?.toFixed(1) ??
-                                    'N/A'}{' '}
+                                  {customPlanResults.proteinGrams
+                                    ? formatNumber(
+                                        customPlanResults.proteinGrams
+                                      )
+                                    : 'N/A'}{' '}
                                   g
                                 </TableCell>
                                 {/* */}
                                 <TableCell className='text-right'>
-                                  {customPlanResults.proteinCalories?.toFixed(
-                                    0
-                                  ) ?? 'N/A'}{' '}
+                                  {customPlanResults.proteinCalories
+                                    ? formatNumber(
+                                        customPlanResults.proteinCalories
+                                      )
+                                    : 'N/A'}{' '}
                                   kcal
                                 </TableCell>
                                 {/* */}
@@ -1611,21 +1679,27 @@ export default function SmartCaloriePlannerPage() {
                                 </TableCell>
                                 {/* */}
                                 <TableCell className='text-right'>
-                                  {customPlanResults.carbTargetPct?.toFixed(
-                                    0
-                                  ) ?? 'N/A'}
+                                  {customPlanResults.carbTargetPct
+                                    ? formatNumber(
+                                        customPlanResults.carbTargetPct
+                                      )
+                                    : 'N/A'}
                                   %
                                 </TableCell>
                                 {/* */}
                                 <TableCell className='text-right'>
-                                  {customPlanResults.carbGrams?.toFixed(1) ??
-                                    'N/A'}{' '}
+                                  {customPlanResults.carbGrams
+                                    ? formatNumber(customPlanResults.carbGrams)
+                                    : 'N/A'}{' '}
                                   g
                                 </TableCell>
                                 {/* */}
                                 <TableCell className='text-right'>
-                                  {customPlanResults.carbCalories?.toFixed(0) ??
-                                    'N/A'}{' '}
+                                  {customPlanResults.carbCalories
+                                    ? formatNumber(
+                                        customPlanResults.carbCalories
+                                      )
+                                    : 'N/A'}{' '}
                                   kcal
                                 </TableCell>
                                 {/* */}
@@ -1638,20 +1712,27 @@ export default function SmartCaloriePlannerPage() {
                                 </TableCell>
                                 {/* */}
                                 <TableCell className='text-right'>
-                                  {customPlanResults.fatTargetPct?.toFixed(0) ??
-                                    'N/A'}
+                                  {customPlanResults.fatTargetPct
+                                    ? formatNumber(
+                                        customPlanResults.fatTargetPct
+                                      )
+                                    : 'N/A'}
                                   %
                                 </TableCell>
                                 {/* */}
                                 <TableCell className='text-right'>
-                                  {customPlanResults.fatGrams?.toFixed(1) ??
-                                    'N/A'}{' '}
+                                  {customPlanResults.fatGrams
+                                    ? formatNumber(customPlanResults.fatGrams)
+                                    : 'N/A'}{' '}
                                   g
                                 </TableCell>
                                 {/* */}
                                 <TableCell className='text-right'>
-                                  {customPlanResults.fatCalories?.toFixed(0) ??
-                                    'N/A'}{' '}
+                                  {customPlanResults.fatCalories
+                                    ? formatNumber(
+                                        customPlanResults.fatCalories
+                                      )
+                                    : 'N/A'}{' '}
                                   kcal
                                 </TableCell>
                                 {/* */}
@@ -1668,9 +1749,11 @@ export default function SmartCaloriePlannerPage() {
                                 <TableCell className='text-right'>-</TableCell>
                                 {/* */}
                                 <TableCell className='text-right'>
-                                  {customPlanResults.totalCalories?.toFixed(
-                                    0
-                                  ) ?? 'N/A'}{' '}
+                                  {customPlanResults.finalTargetCalories
+                                    ? formatNumber(
+                                        customPlanResults.finalTargetCalories
+                                      )
+                                    : 'N/A'}{' '}
                                   kcal
                                 </TableCell>
                                 {/* */}
