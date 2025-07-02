@@ -1,9 +1,8 @@
+'use client';
 
-"use client";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -12,34 +11,52 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ProfileFormSchema, type FullProfileType, type ProfileFormValues } from "@/lib/schemas"; 
-import { useAuth } from "@/contexts/AuthContext"; 
-import { useToast } from "@/hooks/use-toast";
-import React, { useEffect, useState } from "react";
-import { subscriptionStatuses, exerciseFrequencies, exerciseIntensities } from "@/lib/constants";
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
+  ProfileFormSchema,
+  type FullProfileType,
+  type ProfileFormValues,
+} from '@/lib/schemas';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import React, { useEffect, useState } from 'react';
+import {
+  subscriptionStatuses,
+  exerciseFrequencies,
+  exerciseIntensities,
+} from '@/lib/constants';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
-import { AlertTriangle, RefreshCcw } from "lucide-react";
-import { getProfileData } from "@/app/api/user/database";
-
+import { AlertTriangle, RefreshCcw } from 'lucide-react';
+import { getProfileData } from '@/app/api/user/database';
 
 async function saveProfileData(userId: string, data: ProfileFormValues) {
-  if (!userId) throw new Error("User ID is required to save profile data.");
-  
+  if (!userId) throw new Error('User ID is required to save profile data.');
+
   try {
-    const userProfileRef = doc(db, "users", userId);
+    const userProfileRef = doc(db, 'users', userId);
     const docSnap = await getDoc(userProfileRef);
     let existingProfile: Partial<FullProfileType> = {};
     if (docSnap.exists()) {
@@ -47,7 +64,7 @@ async function saveProfileData(userId: string, data: ProfileFormValues) {
     }
 
     const dataToSave: Record<string, any> = { ...existingProfile };
-    
+
     // Merge only the fields present in ProfileFormValues
     for (const key in data) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
@@ -59,14 +76,13 @@ async function saveProfileData(userId: string, data: ProfileFormValues) {
         }
       }
     }
-    
-    await setDoc(userProfileRef, dataToSave, { merge: true }); 
+
+    await setDoc(userProfileRef, dataToSave, { merge: true });
   } catch (error) {
-     console.error("Error saving profile to Firestore:", error);
-     throw error; 
+    console.error('Error saving profile to Firestore:', error);
+    throw error;
   }
 }
-
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -77,6 +93,7 @@ export default function ProfilePage() {
     resolver: zodResolver(ProfileFormSchema),
     defaultValues: {
       name: undefined,
+      goalWeight: 0,
       subscriptionStatus: undefined,
       painMobilityIssues: undefined,
       injuries: [],
@@ -90,37 +107,61 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    if (user?.uid) { 
+    if (user?.uid) {
       setIsLoading(true);
-      getProfileData(user.uid).then((profileDataSubset) => {
-        form.reset(profileDataSubset); 
-        setIsLoading(false);
-      }).catch(error => {
-        console.error("Error loading profile data:", error);
-        toast({ title: "Error", description: "Could not load profile data.", variant: "destructive"});
-        setIsLoading(false);
-      });
+      getProfileData(user.uid)
+        .then((profileDataSubset) => {
+          console.log(profileDataSubset);
+          form.reset(profileDataSubset);
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error loading profile data:', error);
+          toast({
+            title: 'Error',
+            description: 'Could not load profile data.',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+        });
     } else {
-        setIsLoading(false); 
+      setIsLoading(false);
     }
   }, [user, form, toast]);
 
   async function onSubmit(data: ProfileFormValues) {
-    if (!user?.uid) { 
-      toast({ title: "Error", description: "User not found.", variant: "destructive" });
+    console.log('Submitting profile data:', data);
+    if (!user?.uid) {
+      toast({
+        title: 'Error',
+        description: 'User not found.',
+        variant: 'destructive',
+      });
       return;
     }
     try {
       await saveProfileData(user.uid, data);
-      toast({ title: "Profile Updated", description: "Your profile has been successfully updated." });
+      toast({
+        title: 'Profile Updated',
+        description: 'Your profile has been successfully updated.',
+      });
     } catch (error) {
-      toast({ title: "Update Failed", description: "Could not update profile. Please try again.", variant: "destructive" });
+      toast({
+        title: 'Update Failed',
+        description: 'Could not update profile. Please try again.',
+        variant: 'destructive',
+      });
     }
   }
 
-   const renderCommaSeparatedInput = (
-    fieldName: keyof ProfileFormValues, 
-    label: string, 
+  function onError(error: any) {
+    console.log(error);
+    console.log(form.getValues());
+  }
+
+  const renderCommaSeparatedInput = (
+    fieldName: keyof ProfileFormValues,
+    label: string,
     placeholder: string
   ) => (
     <FormField
@@ -128,17 +169,21 @@ export default function ProfilePage() {
       name={fieldName}
       render={({ field }) => {
         // Ensure value is always a string for the textarea
-        const displayValue = Array.isArray(field.value) ? field.value.join(', ') : (field.value || '');
+        const displayValue = Array.isArray(field.value)
+          ? field.value.join(',')
+          : field.value || '';
         return (
           <FormItem>
             <FormLabel>{label}</FormLabel>
-            <FormControl><div>
-              <Textarea
-                placeholder={placeholder}
-                value={displayValue}
-                onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()).filter(s => s))}
-                className="h-10 resize-none" 
-              /></div>
+            <FormControl>
+              <div>
+                <Textarea
+                  placeholder={placeholder}
+                  value={displayValue}
+                  onChange={(e) => field.onChange(e.target.value.split(','))}
+                  className='h-10 resize-none'
+                />
+              </div>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -149,51 +194,84 @@ export default function ProfilePage() {
 
   const handleResetOnboarding = async () => {
     if (!user?.uid) {
-      toast({ title: "Error", description: "User not found.", variant: "destructive" });
+      toast({
+        title: 'Error',
+        description: 'User not found.',
+        variant: 'destructive',
+      });
       return;
     }
     try {
-      const userProfileRef = doc(db, "users", user.uid);
-      await setDoc(userProfileRef, { onboardingComplete: false }, { merge: true });
+      const userProfileRef = doc(db, 'users', user.uid);
+      await setDoc(
+        userProfileRef,
+        { onboardingComplete: false },
+        { merge: true }
+      );
       toast({
-        title: "Onboarding Reset",
-        description: "Your onboarding status has been reset. The app will now reload.",
+        title: 'Onboarding Reset',
+        description:
+          'Your onboarding status has been reset. The app will now reload.',
       });
       // Force a reload to trigger AuthContext to re-evaluate onboarding status
       window.location.reload();
     } catch (error) {
-      console.error("Error resetting onboarding status:", error);
-      toast({ title: "Reset Failed", description: "Could not reset onboarding status.", variant: "destructive" });
+      console.error('Error resetting onboarding status:', error);
+      toast({
+        title: 'Reset Failed',
+        description: 'Could not reset onboarding status.',
+        variant: 'destructive',
+      });
     }
   };
-  
-  if (isLoading && user) { 
-    return <div className="flex justify-center items-center h-full"><p>Loading profile...</p></div>;
+
+  if (isLoading && user) {
+    return (
+      <div className='flex justify-center items-center h-full'>
+        <p>Loading profile...</p>
+      </div>
+    );
   }
 
   return (
-    <Card className="max-w-xl mx-auto shadow-lg">
+    <Card className='max-w-xl mx-auto shadow-lg'>
       <CardHeader>
-        <CardTitle className="text-3xl font-bold">Your Account</CardTitle>
-        <CardDescription>Manage your account and related preferences.</CardDescription>
+        <CardTitle className='text-3xl font-bold'>Your Account</CardTitle>
+        <CardDescription>
+          Manage your account and related preferences.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            
-            <Accordion type="multiple" defaultValue={['account-info']} className="w-full">
-              <AccordionItem value="account-info">
-                <AccordionTrigger className="text-xl font-semibold">Account Information</AccordionTrigger>
-                <AccordionContent className="space-y-6 pt-4 px-1">
+          <form
+            onSubmit={form.handleSubmit(onSubmit, onError)}
+            className='space-y-8'
+          >
+            <Accordion
+              type='multiple'
+              defaultValue={['account-info']}
+              className='w-full'
+            >
+              <AccordionItem value='account-info'>
+                <AccordionTrigger className='text-xl font-semibold'>
+                  Account Information
+                </AccordionTrigger>
+                <AccordionContent className='space-y-6 pt-4 px-1'>
                   <FormField
                     control={form.control}
-                    name="name"
+                    name='name'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Name</FormLabel>
-                        <FormControl><div>
-                          <Input placeholder="Your full name" {...field} value={field.value ?? ''} />
-                        </div></FormControl>
+                        <FormControl>
+                          <div>
+                            <Input
+                              placeholder='Your full name'
+                              {...field}
+                              value={field.value ?? ''}
+                            />
+                          </div>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -201,25 +279,40 @@ export default function ProfilePage() {
 
                   <FormItem>
                     <FormLabel>Email</FormLabel>
-                    <Input value={user?.email ?? 'N/A'} readOnly disabled className="bg-muted/50" />
-                    <FormDescription>Your email address cannot be changed here.</FormDescription>
+                    <Input
+                      value={user?.email ?? 'N/A'}
+                      readOnly
+                      disabled
+                      className='bg-muted/50'
+                    />
+                    <FormDescription>
+                      Your email address cannot be changed here.
+                    </FormDescription>
                   </FormItem>
 
                   <FormField
                     control={form.control}
-                    name="subscriptionStatus"
+                    name='subscriptionStatus'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Subscription Status</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? undefined}>
-                          <FormControl><div>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select your subscription status" />
-                            </SelectTrigger>
-                          </div></FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value ?? undefined}
+                        >
+                          <FormControl>
+                            <div>
+                              <SelectTrigger>
+                                <SelectValue placeholder='Select your subscription status' />
+                              </SelectTrigger>
+                            </div>
+                          </FormControl>
                           <SelectContent>
-                            {subscriptionStatuses.map(status => (
-                              <SelectItem key={status.value} value={status.value}>
+                            {subscriptionStatuses.map((status) => (
+                              <SelectItem
+                                key={status.value}
+                                value={status.value}
+                              >
                                 {status.label}
                               </SelectItem>
                             ))}
@@ -229,53 +322,105 @@ export default function ProfilePage() {
                       </FormItem>
                     )}
                   />
-                </AccordionContent>
-              </AccordionItem>
-             
-               {/* Medical Info & Physical Limitations and Exercise Preferences accordions were removed */}
-               {/* Adding them back for completeness as per user's current file state */}
-               <AccordionItem value="medical-physical">
-                <AccordionTrigger className="text-xl font-semibold">Medical Info & Physical Limitations</AccordionTrigger>
-                <AccordionContent className="space-y-6 pt-4 px-1">
+
                   <FormField
                     control={form.control}
-                    name="painMobilityIssues"
+                    name='goalWeight'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Pain/Mobility Issues (Optional)</FormLabel>
-                        <FormControl><div>
-                          <Textarea 
-                            placeholder="Describe any pain or mobility issues, e.g., knee pain, limited shoulder range" 
-                            {...field} 
-                            value={field.value ?? ''} 
-                            className="h-20"
-                          /></div>
+                        <FormLabel>Goal Weight</FormLabel>
+                        <FormControl>
+                          <Input
+                            type='number'
+                            placeholder='Enter your goal weight in kg'
+                            {...field}
+                            value={field.value ?? ''}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  {renderCommaSeparatedInput("injuries", "Injuries (comma-separated, Optional)", "e.g., ACL tear, Rotator cuff")}
-                  {renderCommaSeparatedInput("surgeries", "Surgeries (comma-separated, Optional)", "e.g., Knee replacement, Appendix removal")}
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="exercise-preferences">
-                <AccordionTrigger className="text-xl font-semibold">Exercise Preferences</AccordionTrigger>
-                <AccordionContent className="space-y-6 pt-4 px-1">
-                  {renderCommaSeparatedInput("exerciseGoals", "Exercise Goals (comma-separated, Optional)", "e.g., Weight loss, Muscle gain, Improve endurance")}
-                  {renderCommaSeparatedInput("exercisePreferences", "Preferred Types of Exercise (comma-separated, Optional)", "e.g., Running, Weightlifting, Yoga")}
+              {/* Medical Info & Physical Limitations and Exercise Preferences accordions were removed */}
+              {/* Adding them back for completeness as per user's current file state */}
+              <AccordionItem value='medical-physical'>
+                <AccordionTrigger className='text-xl font-semibold'>
+                  Medical Info & Physical Limitations
+                </AccordionTrigger>
+                <AccordionContent className='space-y-6 pt-4 px-1'>
                   <FormField
                     control={form.control}
-                    name="exerciseFrequency"
+                    name='painMobilityIssues'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pain/Mobility Issues (Optional)</FormLabel>
+                        <FormControl>
+                          <div>
+                            <Textarea
+                              placeholder='Describe any pain or mobility issues, e.g., knee pain, limited shoulder range'
+                              {...field}
+                              value={field.value ?? ''}
+                              className='h-20'
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {renderCommaSeparatedInput(
+                    'injuries',
+                    'Injuries (comma-separated, Optional)',
+                    'e.g., ACL tear, Rotator cuff'
+                  )}
+                  {renderCommaSeparatedInput(
+                    'surgeries',
+                    'Surgeries (comma-separated, Optional)',
+                    'e.g., Knee replacement, Appendix removal'
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value='exercise-preferences'>
+                <AccordionTrigger className='text-xl font-semibold'>
+                  Exercise Preferences
+                </AccordionTrigger>
+                <AccordionContent className='space-y-6 pt-4 px-1'>
+                  {renderCommaSeparatedInput(
+                    'exerciseGoals',
+                    'Exercise Goals (comma-separated, Optional)',
+                    'e.g., Weight loss, Muscle gain, Improve endurance'
+                  )}
+                  {renderCommaSeparatedInput(
+                    'exercisePreferences',
+                    'Preferred Types of Exercise (comma-separated, Optional)',
+                    'e.g., Running, Weightlifting, Yoga'
+                  )}
+                  <FormField
+                    control={form.control}
+                    name='exerciseFrequency'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Exercise Frequency (Optional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? undefined}>
-                          <FormControl><div><SelectTrigger><SelectValue placeholder="Select how often you exercise" /></SelectTrigger></div></FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value ?? undefined}
+                        >
+                          <FormControl>
+                            <div>
+                              <SelectTrigger>
+                                <SelectValue placeholder='Select how often you exercise' />
+                              </SelectTrigger>
+                            </div>
+                          </FormControl>
                           <SelectContent>
-                            {exerciseFrequencies.map(ef => (
-                                <SelectItem key={ef.value} value={ef.value}>{ef.label}</SelectItem>
+                            {exerciseFrequencies.map((ef) => (
+                              <SelectItem key={ef.value} value={ef.value}>
+                                {ef.label}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -283,17 +428,30 @@ export default function ProfilePage() {
                       </FormItem>
                     )}
                   />
-                   <FormField
+                  <FormField
                     control={form.control}
-                    name="exerciseIntensity"
+                    name='exerciseIntensity'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Typical Exercise Intensity (Optional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? undefined}>
-                          <FormControl><div><SelectTrigger><SelectValue placeholder="Select intensity" /></SelectTrigger></div></FormControl>
+                        <FormLabel>
+                          Typical Exercise Intensity (Optional)
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value ?? undefined}
+                        >
+                          <FormControl>
+                            <div>
+                              <SelectTrigger>
+                                <SelectValue placeholder='Select intensity' />
+                              </SelectTrigger>
+                            </div>
+                          </FormControl>
                           <SelectContent>
-                            {exerciseIntensities.map(ei => (
-                                <SelectItem key={ei.value} value={ei.value}>{ei.label}</SelectItem>
+                            {exerciseIntensities.map((ei) => (
+                              <SelectItem key={ei.value} value={ei.value}>
+                                {ei.label}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -301,23 +459,31 @@ export default function ProfilePage() {
                       </FormItem>
                     )}
                   />
-                  {renderCommaSeparatedInput("equipmentAccess", "Equipment Access (comma-separated, Optional)", "e.g., Dumbbells, Resistance bands, Full gym")}
+
+                  {renderCommaSeparatedInput(
+                    'equipmentAccess',
+                    'Equipment Access (comma-separated, Optional)',
+                    'e.g., Dumbbells, Resistance bands, Full gym'
+                  )}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
 
-
-            <Button type="submit" className="w-full text-lg py-6" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Saving..." : "Save Profile"}
+            <Button
+              type='submit'
+              className='w-full text-lg py-6'
+              disabled={form.formState.isSubmitting}
+            >
+              {form.formState.isSubmitting ? 'Saving...' : 'Save Profile'}
             </Button>
           </form>
         </Form>
 
         {/* Developer Section for Resetting Onboarding */}
-        <Card className="mt-12 border-destructive/50">
+        <Card className='mt-12 border-destructive/50'>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center text-destructive">
-              <AlertTriangle className="mr-2 h-5 w-5" /> Developer Tools
+            <CardTitle className='text-lg flex items-center text-destructive'>
+              <AlertTriangle className='mr-2 h-5 w-5' /> Developer Tools
             </CardTitle>
             <CardDescription>
               Use these tools for testing purposes only.
@@ -325,18 +491,18 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <Button
-              variant="destructive"
+              variant='destructive'
               onClick={handleResetOnboarding}
-              className="w-full"
+              className='w-full'
             >
-              <RefreshCcw className="mr-2 h-4 w-4" /> Reset Onboarding Status
+              <RefreshCcw className='mr-2 h-4 w-4' /> Reset Onboarding Status
             </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-              This will set your onboarding status to incomplete, allowing you to go through the onboarding flow again. The page will reload.
+            <p className='text-xs text-muted-foreground mt-2'>
+              This will set your onboarding status to incomplete, allowing you
+              to go through the onboarding flow again. The page will reload.
             </p>
           </CardContent>
         </Card>
-
       </CardContent>
     </Card>
   );

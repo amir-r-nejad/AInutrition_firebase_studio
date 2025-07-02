@@ -1,5 +1,4 @@
-
-import type { ProfileFormValues } from './schemas'; 
+import type { ProfileFormValues } from './schemas';
 import { activityLevels } from './constants';
 
 /**
@@ -34,7 +33,7 @@ export function calculateBMR(
  * @returns TDEE in kcal/day.
  */
 export function calculateTDEE(bmr: number, activityLevelValue: string): number {
-  const level = activityLevels.find(l => l.value === activityLevelValue);
+  const level = activityLevels.find((l) => l.value === activityLevelValue);
   const activityFactor = level?.activityFactor || 1.2; // Default to sedentary if not found
   return bmr * activityFactor;
 }
@@ -45,8 +44,11 @@ export function calculateTDEE(bmr: number, activityLevelValue: string): number {
  * @param activityLevelValue - User's activity level.
  * @returns Recommended protein in grams/day.
  */
-export function calculateRecommendedProtein(weightKg: number, activityLevelValue: string): number {
-  const level = activityLevels.find(l => l.value === activityLevelValue);
+export function calculateRecommendedProtein(
+  weightKg: number,
+  activityLevelValue: string
+): number {
+  const level = activityLevels.find((l) => l.value === activityLevelValue);
   const proteinFactor = level?.proteinFactorPerKg || 0.8; // Default to sedentary if not found
   return weightKg * proteinFactor;
 }
@@ -66,17 +68,18 @@ function adjustTDEEForDietGoal(tdee: number, dietGoal: string): number {
   return tdee; // Maintain weight
 }
 
-
 /**
  * Calculates estimated daily targets based on profile.
  */
-export function calculateEstimatedDailyTargets(profile: Partial<ProfileFormValues>): {
+export function calculateEstimatedDailyTargets(
+  profile: Partial<ProfileFormValues>
+): {
   targetCalories?: number;
   targetProtein?: number;
-  targetCarbs?: number; 
-  targetFat?: number; 
+  targetCarbs?: number;
+  targetFat?: number;
   bmr?: number;
-  tdee?: number
+  tdee?: number;
 } {
   if (
     !profile.gender ||
@@ -89,19 +92,28 @@ export function calculateEstimatedDailyTargets(profile: Partial<ProfileFormValue
     return {}; // Not enough data
   }
 
-  const bmr = calculateBMR(profile.gender, profile.currentWeight, profile.height, profile.age);
+  const bmr = calculateBMR(
+    profile.gender,
+    profile.currentWeight,
+    profile.height,
+    profile.age
+  );
   let tdee = calculateTDEE(bmr, profile.activityLevel);
-  const protein = calculateRecommendedProtein(profile.currentWeight, profile.activityLevel);
+  const protein = calculateRecommendedProtein(
+    profile.currentWeight,
+    profile.activityLevel
+  );
 
   const targetCalories = adjustTDEEForDietGoal(tdee, profile.dietGoal);
-  
+
   const proteinCalories = protein * 4;
   // Aim for fat to be ~25% of total calories
-  const fatGrams = Math.round((targetCalories * 0.25) / 9); 
+  const fatGrams = Math.round((targetCalories * 0.25) / 9);
   const fatCalories = fatGrams * 9;
   // Remaining calories for carbs
-  const carbGrams = Math.round((targetCalories - proteinCalories - fatCalories) / 4);
-
+  const carbGrams = Math.round(
+    (targetCalories - proteinCalories - fatCalories) / 4
+  );
 
   return {
     targetCalories: targetCalories,
