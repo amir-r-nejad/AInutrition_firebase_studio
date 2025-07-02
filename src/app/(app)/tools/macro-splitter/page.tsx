@@ -327,16 +327,20 @@ export default function MacroSplitterPage() {
     setCalculatedSplit(result);
 
     try {
+      console.log(user);
       const userProfileRef = doc(db, 'users', user.uid);
-      // Ensure data.mealDistributions is preprocessed to convert undefined to null
       const distributionsToSave = preprocessDataForFirestore(
         data.mealDistributions
       );
-      await setDoc(
+
+      const mamd = await setDoc(
         userProfileRef,
         { mealDistributions: distributionsToSave },
         { merge: true }
       );
+
+      console.log('✅✅✅ SUCCESSFULL', mamd);
+
       toast({
         title: 'Split Calculated & Saved',
         description:

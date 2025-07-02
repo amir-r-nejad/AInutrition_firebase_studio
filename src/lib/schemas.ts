@@ -1,14 +1,11 @@
+import { User } from 'firebase/auth';
 import * as z from 'zod';
 import {
-  preferredDiets,
-  genders,
   activityLevels as allActivityLevels,
+  genders,
+  preferredDiets,
   smartPlannerDietGoals,
-  subscriptionStatuses,
-  mealNames as defaultMealNames,
-  defaultMacroPercentages,
 } from './constants';
-import { User } from 'firebase/auth';
 
 // Helper for preprocessing optional number fields: empty string, null, or non-numeric becomes undefined
 const preprocessOptionalNumber = (val: unknown) => {
@@ -22,32 +19,22 @@ const preprocessOptionalNumber = (val: unknown) => {
 // Helper to convert undefined to null for Firestore
 export function preprocessDataForFirestore(
   data: Record<string, any> | null | undefined
-): Record<string, any> | null {
+): Record<string, any> | null | any[] {
   if (data === null || data === undefined) return null;
+
+  if (typeof data !== 'object' || data instanceof Date) {
+    return data === undefined ? null : data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map((item) => preprocessDataForFirestore(item));
+  }
 
   const processedData: Record<string, any> = {};
   for (const key in data) {
     if (Object.prototype.hasOwnProperty.call(data, key)) {
       const value = data[key];
-      if (
-        typeof value === 'object' &&
-        value !== null &&
-        !Array.isArray(value) &&
-        !(value instanceof Date)
-      ) {
-        // Check if it's a plain object
-        processedData[key] = preprocessDataForFirestore(value); // Recurse for nested objects
-      } else if (Array.isArray(value)) {
-        processedData[key] = value.map((item) =>
-          typeof item === 'object'
-            ? preprocessDataForFirestore(item)
-            : item === undefined
-            ? null
-            : item
-        );
-      } else {
-        processedData[key] = value === undefined ? null : value;
-      }
+      processedData[key] = preprocessDataForFirestore(value);
     }
   }
   return processedData;

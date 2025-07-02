@@ -97,24 +97,6 @@ async function saveSmartPlannerData(
   }
 }
 
-async function saveManualMacroResults(
-  userId: string,
-  results: CustomCalculatedTargets | null
-) {
-  if (!userId)
-    throw new Error('User ID required to save manual macro results.');
-  try {
-    const userProfileRef = doc(db, 'users', userId);
-    const dataToSave = {
-      manualMacroResults: preprocessDataForFirestore(results),
-    };
-    await setDoc(userProfileRef, dataToSave, { merge: true });
-  } catch (error) {
-    console.error('Error saving manual macro results to Firestore:', error);
-    throw error;
-  }
-}
-
 export default function SmartCaloriePlannerPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -170,6 +152,7 @@ export default function SmartCaloriePlannerPage() {
   useEffect(() => {
     if (user?.uid) {
       setIsLoadingData(true);
+
       getSmartPlannerData(user.uid)
         .then((data) => {
           if (data.formValues) smartPlannerForm.reset(data.formValues);
