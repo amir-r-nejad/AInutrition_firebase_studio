@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,6 @@ import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import {
   FullProfileType,
   type GlobalCalculatedTargets,
-  type MealMacroDistribution,
   OnboardingFormSchema,
   type OnboardingFormValues,
   preprocessDataForFirestore,
@@ -56,9 +56,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle, Leaf, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
+import { onboardingUpdateUser } from '@/app/api/user/database';
 
 export default function OnboardingPage() {
-  const { user, completeOnboarding } = useAuth();
+  const { user, refreshOnboardingStatus } = useAuth();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -291,7 +292,6 @@ export default function OnboardingPage() {
       const result = await form.trigger(
         activeStepData.fieldsToValidate as FieldPath<OnboardingFormValues>[]
       );
-      console.log('Getting new result from form on next', form.getValues());
       if (!result) {
         let firstErrorField: FieldPath<OnboardingFormValues> | undefined =
           undefined;
@@ -350,7 +350,6 @@ export default function OnboardingPage() {
   };
 
   const processAndSaveData = async (data: OnboardingFormValues) => {
-    console.log('processing the data', data);
     if (!user) {
       toast({
         title: 'Error',
@@ -360,127 +359,133 @@ export default function OnboardingPage() {
       return;
     }
 
-    let processedData: Record<string, any> = { ...data };
-
-    const arrayLikeFields: (keyof OnboardingFormValues)[] = [
-      'allergies',
-      'preferredCuisines',
-      'dispreferredCuisines',
-      'preferredIngredients',
-      'dispreferredIngredients',
-      'preferredMicronutrients',
-      'medicalConditions',
-      'medications',
-    ];
-
-    arrayLikeFields.forEach((field) => {
-      if (
-        typeof processedData[field] === 'string' &&
-        (processedData[field] as string).trim() !== ''
-      ) {
-        processedData[field] = (processedData[field] as string)
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s);
-      } else if (
-        typeof processedData[field] === 'string' &&
-        (processedData[field] as string).trim() === ''
-      ) {
-        processedData[field] = [];
-      } else if (
-        processedData[field] === undefined ||
-        processedData[field] === null
-      ) {
-        processedData[field] = [];
-      }
-    });
-
     let finalResultsToSave: GlobalCalculatedTargets | null = null;
     if (
       customCalculatedTargets &&
-      ((data.custom_total_calories !== undefined &&
-        data.custom_total_calories !== null) ||
-        (data.custom_protein_per_kg !== undefined &&
-          data.custom_protein_per_kg !== null))
+      (data.custom_total_calories != null || data.custom_protein_per_kg != null)
     ) {
       finalResultsToSave = customCalculatedTargets;
     } else if (calculatedTargets) {
       finalResultsToSave = calculatedTargets;
     }
 
-    const smartPlannerFormValuesForStorage = {
-      age: processedData.age,
-      gender: processedData.gender,
-      height_cm: processedData.height_cm,
-      current_weight: processedData.current_weight,
-      goal_weight_1m: processedData.goal_weight_1m,
-      ideal_goal_weight: processedData.ideal_goal_weight,
-      activity_factor_key: processedData.activityLevel,
-      dietGoal: processedData.dietGoalOnboarding,
-      bf_current: processedData.bf_current,
-      bf_target: processedData.bf_target,
-      bf_ideal: processedData.bf_ideal,
-      mm_current: processedData.mm_current,
-      mm_target: processedData.mm_target,
-      mm_ideal: processedData.mm_ideal,
-      bw_current: processedData.bw_current,
-      bw_target: processedData.bw_target,
-      bw_ideal: processedData.bw_ideal,
-      waist_current: processedData.waist_current,
-      waist_goal_1m: processedData.waist_goal_1m,
-      waist_ideal: processedData.waist_ideal,
-      hips_current: processedData.hips_current,
-      hips_goal_1m: processedData.hips_goal_1m,
-      hips_ideal: processedData.hips_ideal,
-      right_leg_current: processedData.right_leg_current,
-      right_leg_goal_1m: processedData.right_leg_goal_1m,
-      right_leg_ideal: processedData.right_leg_ideal,
-      left_leg_current: processedData.left_leg_current,
-      left_leg_goal_1m: processedData.left_leg_goal_1m,
-      left_leg_ideal: processedData.left_leg_ideal,
-      right_arm_current: processedData.right_arm_current,
-      right_arm_goal_1m: processedData.right_arm_goal_1m,
-      right_arm_ideal: processedData.right_arm_ideal,
-      left_arm_current: processedData.left_arm_current,
-      left_arm_goal_1m: processedData.left_arm_goal_1m,
-      left_arm_ideal: processedData.left_arm_ideal,
-      custom_total_calories: processedData.custom_total_calories,
-      custom_protein_per_kg: processedData.custom_protein_per_kg,
-      remaining_calories_carb_pct: processedData.remaining_calories_carb_pct,
+    const processStringArray = (
+      fieldValue: string | string[] | undefined
+    ): string[] => {
+      if (Array.isArray(fieldValue)) return fieldValue;
+      if (typeof fieldValue === 'string' && fieldValue.trim() !== '') {
+        return fieldValue.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+      return [];
     };
 
-    const firestoreReadyData: Partial<FullProfileType> = {
-      ...preprocessDataForFirestore(processedData),
+    const profileDataToSave: Partial<FullProfileType> = {
+      // Basic Info
+      age: data.age,
+      gender: data.gender,
+      height_cm: data.height_cm,
+      current_weight: data.current_weight,
+      goal_weight_1m: data.goal_weight_1m,
+      ideal_goal_weight: data.ideal_goal_weight,
+      activityLevel: data.activityLevel,
+      dietGoalOnboarding: data.dietGoalOnboarding,
+
+      // Preferences and other optional string/array fields
+      preferredDiet: data.preferredDiet,
+      allergies: processStringArray(data.allergies),
+      preferredCuisines: processStringArray(data.preferredCuisines),
+      dispreferredCuisines: processStringArray(data.dispreferredCuisines),
+      preferredIngredients: processStringArray(data.preferredIngredients),
+      dispreferredIngredients: processStringArray(
+        data.dispreferredIngredients
+      ),
+      preferredMicronutrients: processStringArray(data.preferredMicronutrients),
+      medicalConditions: processStringArray(data.medicalConditions),
+      medications: processStringArray(data.medications),
+      typicalMealsDescription: data.typicalMealsDescription,
+
+      // Nested smartPlannerData
       smartPlannerData: {
-        formValues: preprocessDataForFirestore(
-          smartPlannerFormValuesForStorage
-        ),
-        results: preprocessDataForFirestore(finalResultsToSave),
+        formValues: {
+          age: data.age,
+          gender: data.gender,
+          height_cm: data.height_cm,
+          current_weight: data.current_weight,
+          goal_weight_1m: data.goal_weight_1m,
+          ideal_goal_weight: data.ideal_goal_weight,
+          activity_factor_key: data.activityLevel,
+          dietGoal: data.dietGoalOnboarding,
+          bf_current: data.bf_current,
+          bf_target: data.bf_target,
+          bf_ideal: data.bf_ideal,
+          mm_current: data.mm_current,
+          mm_target: data.mm_target,
+          mm_ideal: data.mm_ideal,
+          bw_current: data.bw_current,
+          bw_target: data.bw_target,
+          bw_ideal: data.bw_ideal,
+          waist_current: data.waist_current,
+          waist_goal_1m: data.waist_goal_1m,
+          waist_ideal: data.waist_ideal,
+          hips_current: data.hips_current,
+          hips_goal_1m: data.hips_goal_1m,
+          hips_ideal: data.hips_ideal,
+          right_leg_current: data.right_leg_current,
+          right_leg_goal_1m: data.right_leg_goal_1m,
+          right_leg_ideal: data.right_leg_ideal,
+          left_leg_current: data.left_leg_current,
+          left_leg_goal_1m: data.left_leg_goal_1m,
+          left_leg_ideal: data.left_leg_ideal,
+          right_arm_current: data.right_arm_current,
+          right_arm_goal_1m: data.right_arm_goal_1m,
+          right_arm_ideal: data.right_arm_ideal,
+          left_arm_current: data.left_arm_current,
+          left_arm_goal_1m: data.left_arm_goal_1m,
+          left_arm_ideal: data.left_arm_ideal,
+          custom_total_calories: data.custom_total_calories,
+          custom_protein_per_kg: data.custom_protein_per_kg,
+          remaining_calories_carb_pct: data.remaining_calories_carb_pct,
+        },
+        results: finalResultsToSave,
       },
+
+      // Meal distributions
       mealDistributions:
-        processedData.mealDistributions &&
-        processedData.mealDistributions.length > 0
-          ? (preprocessDataForFirestore(
-              processedData.mealDistributions
-            ) as MealMacroDistribution[])
-          : defaultMealNames.map(
-              (name) =>
-                ({
-                  mealName: name,
-                  calories_pct:
-                    defaultMacroPercentages[name]?.calories_pct || 0,
-                  protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
-                  carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
-                  fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
-                } as MealMacroDistribution)
-            ),
+        data.mealDistributions ??
+        defaultMealNames.map((name) => ({
+          mealName: name,
+          calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
+          protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
+          carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
+          fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
+        })),
     };
 
-    await completeOnboarding(firestoreReadyData);
-    toast({
-      title: 'Onboarding Complete!',
-      description: 'Your profile has been saved. Welcome to NutriPlan!',
-    });
+    try {
+      const finalDataToSave = {
+        ...preprocessDataForFirestore(profileDataToSave),
+        onboardingComplete: true,
+      };
+      await onboardingUpdateUser(
+        user.uid,
+        finalDataToSave as Partial<FullProfileType>
+      );
+      await refreshOnboardingStatus();
+      toast({
+        title: 'Onboarding Complete!',
+        description: 'Your profile has been saved. Welcome to NutriPlan!',
+      });
+      // AuthProvider will handle the redirect
+    } catch (error) {
+      toast({
+        title: 'Onboarding Error',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Could not save your profile. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const renderNumberField = (
@@ -618,9 +623,7 @@ export default function OnboardingPage() {
         <CardContent>
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit((data) => {
-                processAndSaveData(data), console.log('Submiting data' + data);
-              })}
+              onSubmit={form.handleSubmit(processAndSaveData)}
               className='space-y-8'
             >
               {currentStep === 1 && (
@@ -907,12 +910,7 @@ export default function OnboardingPage() {
                       Next
                     </Button>
                   ) : (
-                    <Button
-                      onClick={() => processAndSaveData(form.getValues())}
-                      type='submit'
-                    >
-                      Finish Onboarding
-                    </Button>
+                    <Button type='submit'>Finish Onboarding</Button>
                   )}
                 </div>
               </div>

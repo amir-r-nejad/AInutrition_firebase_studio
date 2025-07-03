@@ -1,4 +1,5 @@
 'use server';
+
 import { db } from '@/lib/firebase/firebase';
 import {
   collection,
@@ -22,7 +23,6 @@ import {
 } from '../../../lib/schemas';
 
 export async function addUser(u: string) {
-  'use server';
   let user = JSON.parse(u) as User;
   try {
     const userDocRef = doc(db, 'users', user.uid);
@@ -73,7 +73,6 @@ export async function getSmartPlannerData(userId: string): Promise<{
   results?: GlobalCalculatedTargets | null;
   manualMacroResults?: CustomCalculatedTargets | null;
 }> {
-  'use server';
   if (!userId) return { formValues: {} };
 
   try {
@@ -173,7 +172,6 @@ export async function getSmartPlannerData(userId: string): Promise<{
 export async function getProfileData(
   userId: string
 ): Promise<Partial<ProfileFormValues>> {
-  'use server';
   if (!userId) return {};
 
   try {
@@ -211,7 +209,6 @@ export async function getProfileData(
 export async function getUserProfile(
   userId: string
 ): Promise<FullProfileType | null> {
-  'use server';
   if (!userId) return null;
 
   try {

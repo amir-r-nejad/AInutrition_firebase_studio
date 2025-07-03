@@ -721,9 +721,7 @@ export const OnboardingFormSchema = z.object({
   // Step 6: Medical Information (Optional)
   medicalConditions: z.string().or(z.array(z.string())).optional(),
   medications: z.string().or(z.array(z.string())).optional(),
-  //step 7: calculated by  function
-  systemCalculatedTargets: CalculatedTargetsSchema,
-  userCustomizedTargets: CustomCalculatedTargetsSchema,
+
   // Step 8: Customize Your Targets (Optional)
   custom_total_calories: z.preprocess(
     preprocessOptionalNumber,

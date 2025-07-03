@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useToast } from '@/hooks/use-toast';
@@ -12,11 +13,7 @@ import {
   useState,
 } from 'react';
 
-import {
-  addUser,
-  getUserProfile,
-  onboardingUpdateUser,
-} from '@/app/api/user/database';
+import { addUser, getUserProfile } from '@/app/api/user/database';
 import { useUser } from '@/hooks/use-user';
 import type { FullProfileType } from '@/lib/schemas';
 import { Loader2 } from 'lucide-react';
@@ -32,7 +29,6 @@ interface AuthContextType {
   isLoading: boolean;
   isOnboarded: boolean;
   logout: () => Promise<void>;
-  completeOnboarding: (profileData: Partial<FullProfileType>) => Promise<void>;
   refreshOnboardingStatus: () => Promise<void>;
 }
 
@@ -118,7 +114,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           router.push('/onboarding');
         }
       } else {
-        if ((isPublicPage || isOnboardingPage || pathname === '/') && pathname !== '/dashboard') {
+        if (
+          (isPublicPage || isOnboardingPage || pathname === '/') &&
+          pathname !== '/dashboard'
+        ) {
           router.push('/dashboard');
         }
       }
@@ -144,47 +143,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isMutating, toast]);
 
-  const completeOnboarding = useCallback(
-    async (profileData: Partial<FullProfileType>) => {
-      if (!user?.uid) {
-        toast({
-          title: 'Authentication Error',
-          description: 'No user found. Cannot complete onboarding.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      if (isMutating) return;
-
-      setIsMutating(true);
-      try {
-        const dataToSave = {
-          ...profileData,
-          onboardingComplete: true,
-        };
-        await onboardingUpdateUser(user.uid, dataToSave);
-        await fetchUserProfile(); // Refresh profile state from DB
-        toast({
-          title: 'Profile Complete!',
-          description: 'Your profile has been saved successfully.',
-        });
-        // The redirection useEffect will handle the push to /dashboard
-      } catch (error) {
-        toast({
-          title: 'Onboarding Error',
-          description:
-            error instanceof Error
-              ? error.message
-              : 'Could not save your profile. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsMutating(false);
-      }
-    },
-    [user?.uid, isMutating, toast, fetchUserProfile]
-  );
-
   if (isLoading) {
     return (
       <div className='flex h-screen w-full items-center justify-center'>
@@ -199,7 +157,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading,
     isOnboarded,
     logout,
-    completeOnboarding,
     refreshOnboardingStatus: fetchUserProfile,
   };
 
