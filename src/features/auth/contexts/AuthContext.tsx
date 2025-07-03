@@ -4,13 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { signOut as fSignOut } from '@/lib/firebase/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 import { getUserProfile, onboardingUpdateUser } from '@/app/api/user/database';
 import { useUser } from '@/hooks/use-user';
@@ -74,7 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
   const { toast } = useToast();
 
-  const isAuthPage = useCallback(() => {
+  const isAuthPage = () => {
     const authPages = [
       '/login',
       '/signup',
@@ -82,19 +76,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       '/reset-password',
     ];
     return authPages.includes(pathname);
-  }, [pathname]);
+  };
 
-  const isOnboardingPage = useCallback(() => {
+  const isOnboardingPage = () => {
     return pathname === '/onboarding';
-  }, [pathname]);
+  };
 
-  const isDashboardPage = useCallback(() => {
+  const isDashboardPage = () => {
     const publicPages = ['/dashboard'];
     return publicPages.includes(pathname);
-  }, [pathname]);
+  };
 
   // Function to refresh onboarding status from server
-  const refreshOnboardingStatus = useCallback(async () => {
+  async function refreshOnboardingStatus() {
     if (!user?.uid) return;
 
     try {
@@ -107,7 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Failed to refresh onboarding status:', error);
     }
-  }, [user?.uid]);
+  }
 
   useEffect(() => {
     if (isInitialLoad) {
@@ -177,7 +171,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user?.uid, isOnboarded, refreshOnboardingStatus]);
 
-  const logout = useCallback(async () => {
+  async function logout() {
     if (isLoading) return;
 
     setIsLoading(true);
@@ -196,53 +190,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, toast]);
+  }
 
-  const completeOnboarding = useCallback(
-    async (profileData: OnboardingFormValues) => {
-      if (!user?.uid) {
-        toast({
-          title: 'Authentication Error',
-          description: 'No user found. Cannot complete onboarding.',
-          variant: 'destructive',
-        });
-        return;
-      }
+  async function completeOnboarding(profileData: OnboardingFormValues) {
+    if (!user?.uid) {
+      toast({
+        title: 'Authentication Error',
+        description: 'No user found. Cannot complete onboarding.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-      if (isLoading) return;
+    if (isLoading) return;
 
-      setIsLoading(true);
-      try {
-        await onboardingUpdateUser(user.uid, profileData);
+    setIsLoading(true);
+    try {
+      await onboardingUpdateUser(user.uid, profileData);
 
-        setIsOnboarded(true);
-        setStoredOnboardingStatus(true);
+      setIsOnboarded(true);
+      setStoredOnboardingStatus(true);
 
-        console.log('Onboarding completed successfully');
+      console.log('Onboarding completed successfully');
 
-        toast({
-          title: 'Profile Complete!',
-          description: 'Your profile has been saved successfully.',
-          variant: 'default',
-        });
+      toast({
+        title: 'Profile Complete!',
+        description: 'Your profile has been saved successfully.',
+        variant: 'default',
+      });
 
-        router.push('/dashboard');
-      } catch (error) {
-        console.error('Error saving onboarding data:', error);
-        toast({
-          title: 'Onboarding Error',
-          description:
-            error instanceof Error
-              ? error.message
-              : 'Could not save your profile. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [user?.uid, isLoading, router, toast]
-  );
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error saving onboarding data:', error);
+      toast({
+        title: 'Onboarding Error',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Could not save your profile. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   const contextValue: AuthContextType = {
     user,
