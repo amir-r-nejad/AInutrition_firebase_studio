@@ -68,8 +68,8 @@ import {
   Settings,
   Sparkles,
 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 async function getProfileDataForSuggestions(
@@ -94,17 +94,11 @@ async function getProfileDataForSuggestions(
 
 function MealSuggestionsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const { user } = useAuth();
   const { toast } = useToast();
-
-  const [selectedMealName, setSelectedMealName] = useState<string | null>(null);
-  const [targetMacros, setTargetMacros] = useState<{
-    mealName: string;
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  } | null>(null);
 
   const [fullProfileData, setFullProfileData] =
     useState<Partial<FullProfileType> | null>(null);
@@ -116,6 +110,39 @@ function MealSuggestionsContent() {
   >([]);
   const [error, setError] = useState<string | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
+
+  // Derive values from URL query parameters
+  const selectedMealName = useMemo(() => {
+    const mealNameParam = searchParams?.get('mealName');
+    return mealNameParam && mealNames.includes(mealNameParam)
+      ? mealNameParam
+      : null;
+  }, [searchParams]);
+
+  const targetMacros = useMemo(() => {
+    if (!searchParams || !selectedMealName) return null;
+
+    const caloriesParam = searchParams.get('calories');
+    const proteinParam = searchParams.get('protein');
+    const carbsParam = searchParams.get('carbs');
+    const fatParam = searchParams.get('fat');
+
+    if (caloriesParam && proteinParam && carbsParam && fatParam) {
+      return {
+        mealName: selectedMealName,
+        calories: parseFloat(caloriesParam),
+        protein: parseFloat(proteinParam),
+        carbs: parseFloat(carbsParam),
+        fat: parseFloat(fatParam),
+      };
+    }
+    return null;
+  }, [searchParams, selectedMealName]);
+
+  // Check if we're in demo mode from URL
+  const isDemoModeFromUrl = useMemo(() => {
+    return searchParams?.get('demo') === 'true';
+  }, [searchParams]);
 
   const preferenceForm = useForm<MealSuggestionPreferencesValues>({
     resolver: zodResolver(MealSuggestionPreferencesSchema),
@@ -132,23 +159,27 @@ function MealSuggestionsContent() {
     },
   });
 
+  // Load profile data and set form values only once
   useEffect(() => {
     if (user?.uid) {
       setIsLoadingProfile(true);
       getProfileDataForSuggestions(user.uid)
         .then((data) => {
           setFullProfileData(data);
-          preferenceForm.reset({
-            preferredDiet: data.preferredDiet || undefined,
-            preferredCuisines: data.preferredCuisines || [],
-            dispreferredCuisines: data.dispreferredCuisines || [],
-            preferredIngredients: data.preferredIngredients || [],
-            dispreferredIngredients: data.dispreferredIngredients || [],
-            allergies: data.allergies || [],
-            preferredMicronutrients: data.preferredMicronutrients || [],
-            medicalConditions: data.medicalConditions || [],
-            medications: data.medications || [],
-          });
+          // Only reset form if it hasn't been modified by user
+          if (!preferenceForm.formState.isDirty) {
+            preferenceForm.reset({
+              preferredDiet: data.preferredDiet || undefined,
+              preferredCuisines: data.preferredCuisines || [],
+              dispreferredCuisines: data.dispreferredCuisines || [],
+              preferredIngredients: data.preferredIngredients || [],
+              dispreferredIngredients: data.dispreferredIngredients || [],
+              allergies: data.allergies || [],
+              preferredMicronutrients: data.preferredMicronutrients || [],
+              medicalConditions: data.medicalConditions || [],
+              medications: data.medications || [],
+            });
+          }
         })
         .catch(() =>
           toast({
@@ -160,37 +191,33 @@ function MealSuggestionsContent() {
         .finally(() => setIsLoadingProfile(false));
     } else {
       setIsLoadingProfile(false);
-      preferenceForm.reset({
-        preferredDiet: undefined,
-        preferredCuisines: [],
-        dispreferredCuisines: [],
-        preferredIngredients: [],
-        dispreferredIngredients: [],
-        allergies: [],
-        preferredMicronutrients: [],
-        medicalConditions: [],
-        medications: [],
-      });
+      // Only reset if form hasn't been modified
+      if (!preferenceForm.formState.isDirty) {
+        preferenceForm.reset({
+          preferredDiet: undefined,
+          preferredCuisines: [],
+          dispreferredCuisines: [],
+          preferredIngredients: [],
+          dispreferredIngredients: [],
+          allergies: [],
+          preferredMicronutrients: [],
+          medicalConditions: [],
+          medications: [],
+        });
+      }
     }
-  }, [user, toast, preferenceForm]);
+  }, [user, toast]);
 
   const calculateTargetsForSelectedMeal = useCallback(() => {
     if (!selectedMealName) {
-      setTargetMacros(null);
-      setIsDemoMode(false);
       return;
     }
-    setError(null);
+
+    // Clear previous suggestions and errors when calculating new targets
     setSuggestions([]);
+    setError(null);
 
     const profileToUse = fullProfileData;
-    const exampleTargets = {
-      mealName: selectedMealName,
-      calories: 500,
-      protein: 30,
-      carbs: 60,
-      fat: 20,
-    };
 
     const requiredProfileFields: (keyof FullProfileType)[] = [
       'age',
@@ -213,34 +240,39 @@ function MealSuggestionsContent() {
         activityLevel: profileToUse.activityLevel!,
         dietGoal: profileToUse.dietGoalOnboarding!,
       });
+
       const mealDistribution = defaultMacroPercentages[selectedMealName];
 
       if (
-        dailyTotals.finalTargetCalories &&
-        dailyTotals.proteinGrams &&
-        dailyTotals.carbGrams &&
-        dailyTotals.fatGrams &&
+        dailyTotals.targetCalories &&
+        dailyTotals.targetProtein &&
+        dailyTotals.targetCarbs &&
+        dailyTotals.targetFat &&
         mealDistribution
       ) {
-        setTargetMacros({
+        const newTargets = {
           mealName: selectedMealName,
           calories: Math.round(
-            dailyTotals.finalTargetCalories *
-              (mealDistribution.calories_pct / 100)
+            dailyTotals.targetCalories * (mealDistribution.calories_pct / 100)
           ),
           protein: Math.round(
-            dailyTotals.proteinGrams * (mealDistribution.protein_pct / 100)
+            dailyTotals.targetProtein * (mealDistribution.protein_pct / 100)
           ),
           carbs: Math.round(
-            dailyTotals.carbGrams * (mealDistribution.carbs_pct / 100)
+            dailyTotals.targetCarbs * (mealDistribution.carbs_pct / 100)
           ),
           fat: Math.round(
-            dailyTotals.fatGrams * (mealDistribution.fat_pct / 100)
+            dailyTotals.targetFat * (mealDistribution.fat_pct / 100)
           ),
-        });
+        };
+
+        // Update URL with calculated targets
+        updateUrlWithTargets(newTargets, false);
         setIsDemoMode(false);
       } else {
-        setTargetMacros(exampleTargets);
+        // Set demo mode and use example targets
+        const exampleTargets = getExampleTargetsForMeal(selectedMealName);
+        updateUrlWithTargets(exampleTargets, true);
         setIsDemoMode(true);
         toast({
           title: 'Using Example Targets',
@@ -250,7 +282,9 @@ function MealSuggestionsContent() {
         });
       }
     } else {
-      setTargetMacros(exampleTargets);
+      // Set demo mode and use example targets
+      const exampleTargets = getExampleTargetsForMeal(selectedMealName);
+      updateUrlWithTargets(exampleTargets, true);
       setIsDemoMode(true);
       toast({
         title: 'Profile Incomplete or Demo',
@@ -261,41 +295,36 @@ function MealSuggestionsContent() {
     }
   }, [selectedMealName, fullProfileData, toast]);
 
-  useEffect(() => {
-    if (!searchParams) return;
+  // Helper function to get example targets for a meal
+  const getExampleTargetsForMeal = (mealName: string) => {
+    const exampleDailyTotals = {
+      targetCalories: 2000,
+      targetProtein: 150,
+      targetCarbs: 250,
+      targetFat: 67,
+    };
 
-    const mealNameParam = searchParams.get('mealName');
-    const caloriesParam = searchParams.get('calories');
-    const proteinParam = searchParams.get('protein');
-    const carbsParam = searchParams.get('carbs');
-    const fatParam = searchParams.get('fat');
+    const mealDistribution = defaultMacroPercentages[mealName];
 
-    if (
-      mealNameParam &&
-      mealNames.includes(mealNameParam) &&
-      caloriesParam &&
-      proteinParam &&
-      carbsParam &&
-      fatParam
-    ) {
-      const newTargets = {
-        mealName: mealNameParam,
-        calories: parseFloat(caloriesParam),
-        protein: parseFloat(proteinParam),
-        carbs: parseFloat(carbsParam),
-        fat: parseFloat(fatParam),
-      };
+    return {
+      mealName,
+      calories: Math.round(
+        exampleDailyTotals.targetCalories *
+          (mealDistribution.calories_pct / 100)
+      ),
+      protein: Math.round(
+        exampleDailyTotals.targetProtein * (mealDistribution.protein_pct / 100)
+      ),
+      carbs: Math.round(
+        exampleDailyTotals.targetCarbs * (mealDistribution.carbs_pct / 100)
+      ),
+      fat: Math.round(
+        exampleDailyTotals.targetFat * (mealDistribution.fat_pct / 100)
+      ),
+    };
+  };
 
-      setSelectedMealName(mealNameParam);
-      setTargetMacros(newTargets);
-      setIsDemoMode(false);
-      setSuggestions([]);
-      setError(null);
-    } else if (mealNameParam && mealNames.includes(mealNameParam)) {
-      setSelectedMealName(mealNameParam);
-    }
-  }, [searchParams]);
-
+  // Calculate targets when meal is selected and we don't have targets in URL
   useEffect(() => {
     if (selectedMealName && !targetMacros && !isLoadingProfile) {
       calculateTargetsForSelectedMeal();
@@ -307,12 +336,56 @@ function MealSuggestionsContent() {
     calculateTargetsForSelectedMeal,
   ]);
 
+  // Sync isDemoMode state with URL
+  useEffect(() => {
+    setIsDemoMode(isDemoModeFromUrl);
+  }, [isDemoModeFromUrl]);
+
+  // Function to update URL with meal selection only
+  const updateUrlWithMeal = (mealName: string) => {
+    const urlSearchParams = new URLSearchParams(searchParams);
+
+    urlSearchParams.set('mealName', mealName);
+    urlSearchParams.delete('calories');
+    urlSearchParams.delete('protein');
+    urlSearchParams.delete('carbs');
+    urlSearchParams.delete('fat');
+    urlSearchParams.delete('demo');
+
+    router.push(`${pathname}?${urlSearchParams.toString()}`, {
+      scroll: false,
+    });
+  };
+
+  // Function to update URL with all target macros
+  const updateUrlWithTargets = (
+    targets: typeof targetMacros,
+    isDemo: boolean = false
+  ) => {
+    if (!targets) return;
+
+    const urlSearchParams = new URLSearchParams(searchParams);
+    urlSearchParams.set('mealName', targets.mealName);
+    urlSearchParams.set('calories', targets.calories.toString());
+    urlSearchParams.set('protein', targets.protein.toString());
+    urlSearchParams.set('carbs', targets.carbs.toString());
+    urlSearchParams.set('fat', targets.fat.toString());
+
+    if (isDemo) urlSearchParams.set('demo', 'true');
+    else urlSearchParams.delete('demo');
+
+    router.push(`${pathname}?${urlSearchParams.toString()}`, {
+      scroll: false,
+    });
+  };
+
   const handleMealSelectionChange = (mealValue: string) => {
-    setSelectedMealName(mealValue);
-    setTargetMacros(null);
+    // Clear suggestions and errors when changing meal
     setSuggestions([]);
     setError(null);
-    setIsDemoMode(false);
+
+    // Update URL with selected meal (this will trigger recalculation)
+    updateUrlWithMeal(mealValue);
   };
 
   const handleGetSuggestions = async () => {
@@ -326,7 +399,7 @@ function MealSuggestionsContent() {
     }
     if (
       isLoadingProfile &&
-      !isDemoMode &&
+      !isDemoModeFromUrl &&
       (!fullProfileData || Object.keys(fullProfileData).length === 0)
     ) {
       toast({
@@ -349,10 +422,10 @@ function MealSuggestionsContent() {
       targetProteinGrams: targetMacros.protein,
       targetCarbsGrams: targetMacros.carbs,
       targetFatGrams: targetMacros.fat,
-      age: !isDemoMode ? fullProfileData?.age : undefined,
-      gender: !isDemoMode ? fullProfileData?.gender : undefined,
-      activityLevel: !isDemoMode ? fullProfileData?.activityLevel : undefined,
-      dietGoal: !isDemoMode ? fullProfileData?.dietGoalOnboarding : undefined,
+      age: fullProfileData?.age ?? undefined,
+      gender: fullProfileData?.gender ?? undefined,
+      activityLevel: fullProfileData?.activityLevel ?? undefined,
+      dietGoal: fullProfileData?.dietGoalOnboarding ?? undefined,
       preferredDiet: currentPreferences.preferredDiet,
       preferredCuisines: currentPreferences.preferredCuisines,
       dispreferredCuisines: currentPreferences.dispreferredCuisines,
@@ -601,7 +674,7 @@ function MealSuggestionsContent() {
                 <h3 className='text-lg font-semibold mb-2 text-primary'>
                   Target Macros for {targetMacros.mealName}:
                 </h3>
-                {isDemoMode && (
+                {isDemoModeFromUrl && (
                   <p className='text-sm text-amber-600 dark:text-amber-400 mb-2'>
                     (Displaying example targets. Complete your profile via
                     Onboarding or Smart Calorie Planner for personalized
@@ -631,7 +704,8 @@ function MealSuggestionsContent() {
               <Button
                 onClick={handleGetSuggestions}
                 disabled={
-                  isLoadingAiSuggestions || (isLoadingProfile && !isDemoMode)
+                  isLoadingAiSuggestions ||
+                  (isLoadingProfile && !isDemoModeFromUrl)
                 }
                 size='lg'
                 className='w-full md:w-auto'
@@ -641,7 +715,9 @@ function MealSuggestionsContent() {
                 ) : (
                   <Sparkles className='mr-2 h-5 w-5' />
                 )}
-                {isLoadingProfile && !isDemoMode && !isLoadingAiSuggestions
+                {isLoadingProfile &&
+                !isDemoModeFromUrl &&
+                !isLoadingAiSuggestions
                   ? 'Loading Profile...'
                   : isLoadingAiSuggestions
                   ? 'Getting Suggestions...'

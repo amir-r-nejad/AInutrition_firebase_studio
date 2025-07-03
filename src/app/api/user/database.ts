@@ -75,6 +75,7 @@ export async function onboardingUpdateUser(
     throw e;
   }
 }
+
 export async function getSmartPlannerData(userId: string): Promise<{
   formValues: Partial<SmartCaloriePlannerFormValues>;
   results?: GlobalCalculatedTargets | null;

@@ -451,6 +451,7 @@ export default function OnboardingPage() {
 
     const firestoreReadyData: Partial<FullProfileType> = {
       ...preprocessDataForFirestore(processedData),
+      onboardingComplete: true,
       smartPlannerData: {
         formValues: preprocessDataForFirestore(
           smartPlannerFormValuesForStorage
