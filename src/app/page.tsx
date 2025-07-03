@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
-
 export default function HomePage() {
-  redirect('/login');
+  // This page is a placeholder.
+  // The redirect logic is handled in the AuthProvider in the root layout.
+  return null;
 }

@@ -12,19 +12,24 @@ import {
   useState,
 } from 'react';
 
-import { getUserProfile, onboardingUpdateUser } from '@/app/api/user/database';
+import {
+  addUser,
+  getUserProfile,
+  onboardingUpdateUser,
+} from '@/app/api/user/database';
 import { useUser } from '@/hooks/use-user';
 import type { OnboardingFormValues } from '@/lib/schemas';
+import { Loader2 } from 'lucide-react';
 
-interface User {
+interface AuthUser {
   uid: string;
   email: string | null;
   emailVerified: boolean;
 }
 
 interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
+  user: AuthUser | null;
+  isLoading: boolean; // Represents overall auth context loading (auth + onboarding check)
   isOnboarded: boolean;
   logout: () => Promise<void>;
   completeOnboarding: (profileData: OnboardingFormValues) => Promise<void>;
@@ -55,136 +60,116 @@ const setStoredOnboardingStatus = (status: boolean): void => {
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const rawUser = useUser();
-  const user: User | null = rawUser
+  const { user: firebaseUser, isLoading: isLoadingUser } = useUser();
+  const user: AuthUser | null = firebaseUser
     ? {
-        uid: rawUser.uid,
-        email: rawUser.email,
-        emailVerified: rawUser.emailVerified,
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        emailVerified: firebaseUser.emailVerified,
       }
     : null;
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [isOnboarded, setIsOnboarded] = useState<boolean>(
-    getStoredOnboardingStatus
-  );
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isMutating, setIsMutating] = useState(false);
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(false);
+  const [isOnboardingStatusLoading, setIsOnboardingStatusLoading] =
+    useState(true);
 
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
 
-  const isAuthPage = useCallback(() => {
-    const authPages = [
+  const isPublicPage = useCallback(() => {
+    const publicPages = [
       '/login',
       '/signup',
       '/forgot-password',
       '/reset-password',
+      '/verify-email',
     ];
-    return authPages.includes(pathname);
+    return publicPages.includes(pathname);
   }, [pathname]);
 
   const isOnboardingPage = useCallback(() => {
     return pathname === '/onboarding';
   }, [pathname]);
 
-  const isDashboardPage = useCallback(() => {
-    const publicPages = ['/dashboard'];
-    return publicPages.includes(pathname);
-  }, [pathname]);
-
-  // Function to refresh onboarding status from server
   const refreshOnboardingStatus = useCallback(async () => {
-    if (!user?.uid) return;
-
+    if (!user?.uid) {
+      setIsOnboarded(false);
+      setIsOnboardingStatusLoading(false);
+      return;
+    }
+    setIsOnboardingStatusLoading(true);
     try {
       const userProfile = await getUserProfile(user.uid);
-      const hasCompletedOnboarding =
-        userProfile && userProfile.onboardingComplete ? true : false;
+      const hasCompletedOnboarding = !!userProfile?.onboardingComplete;
       setIsOnboarded(hasCompletedOnboarding);
       setStoredOnboardingStatus(hasCompletedOnboarding);
     } catch (error) {
       console.error('Failed to refresh onboarding status:', error);
+    } finally {
+      setIsOnboardingStatusLoading(false);
     }
   }, [user?.uid]);
 
+  // Add user to DB when they log in
   useEffect(() => {
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
+    if (firebaseUser) {
+      addUser(JSON.stringify(firebaseUser));
+    }
+  }, [firebaseUser]);
+
+  // Fetch onboarding status when user object is available
+  useEffect(() => {
+    if (!isLoadingUser) {
+      refreshOnboardingStatus();
+    }
+  }, [user?.uid, isLoadingUser, refreshOnboardingStatus]);
+
+  // Redirection logic
+  useEffect(() => {
+    if (isLoadingUser || isOnboardingStatusLoading) {
+      // Still loading user or their onboarding status, do nothing.
       return;
     }
 
-    console.log('Auth state changed:', {
-      user: user?.uid,
-      isLoading,
-      pathname,
-      isOnboarded,
-    });
-
-    if (isLoading) return;
-
-    // Handle unauthenticated users
     if (!user) {
-      if (!isAuthPage() && isDashboardPage()) {
-        console.log('Redirecting unauthenticated user to login');
+      // Not logged in
+      if (!isPublicPage()) {
         router.push('/login');
       }
-      return;
-    }
-
-    if (user) {
-      if (!user.emailVerified && !isAuthPage() && !isOnboardingPage()) {
-        toast({
-          title: 'Email Not Verified',
-          description: 'Please verify your email address to continue.',
-          variant: 'destructive',
-          duration: 7000,
-        });
-        return;
-      }
-
+    } else {
+      // Logged in
       if (!isOnboarded) {
         if (!isOnboardingPage()) {
-          console.log('Redirecting to onboarding');
           router.push('/onboarding');
         }
-        return;
-      }
-
-      if (isAuthPage() || isOnboardingPage()) {
-        console.log('Redirecting authenticated user to dashboard');
-        router.push('/dashboard');
+      } else {
+        // Onboarded
+        if (isPublicPage() || isOnboardingPage() || pathname === '/') {
+          router.push('/dashboard');
+        }
       }
     }
   }, [
-    rawUser,
-    isLoading,
-    pathname,
+    user,
+    isLoadingUser,
+    isOnboardingStatusLoading,
     isOnboarded,
-    isInitialLoad,
+    pathname,
     router,
-    toast,
-    isAuthPage,
+    isPublicPage,
     isOnboardingPage,
-    isDashboardPage,
   ]);
 
-  // Refresh onboarding status when user changes
-  useEffect(() => {
-    if (user?.uid && !isOnboarded) {
-      refreshOnboardingStatus();
-    }
-  }, [user?.uid, isOnboarded, refreshOnboardingStatus]);
-
   const logout = useCallback(async () => {
-    if (isLoading) return;
-
-    setIsLoading(true);
+    if (isMutating) return;
+    setIsMutating(true);
     try {
       await fSignOut();
       setIsOnboarded(false);
       setStoredOnboardingStatus(false);
-      console.log('User logged out successfully');
+      // The redirection useEffect will handle pushing to /login
     } catch (error) {
       console.error('Firebase logout error:', error);
       toast({
@@ -193,9 +178,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setIsMutating(false);
     }
-  }, [isLoading, toast]);
+  }, [isMutating, toast]);
 
   const completeOnboarding = useCallback(
     async (profileData: OnboardingFormValues) => {
@@ -207,27 +192,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         return;
       }
+      if (isMutating) return;
 
-      if (isLoading) return;
-
-      setIsLoading(true);
+      setIsMutating(true);
       try {
         await onboardingUpdateUser(user.uid, profileData);
-
-        setIsOnboarded(true);
-        setStoredOnboardingStatus(true);
-
-        console.log('Onboarding completed successfully');
-
+        await refreshOnboardingStatus(); // Refresh status from DB
         toast({
           title: 'Profile Complete!',
           description: 'Your profile has been saved successfully.',
-          variant: 'default',
         });
-
-        router.push('/dashboard');
+        // The redirection useEffect will handle the push to /dashboard
       } catch (error) {
-        console.error('Error saving onboarding data:', error);
         toast({
           title: 'Onboarding Error',
           description:
@@ -237,15 +213,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           variant: 'destructive',
         });
       } finally {
-        setIsLoading(false);
+        setIsMutating(false);
       }
     },
-    [user?.uid, isLoading, router, toast]
+    [user?.uid, isMutating, toast, refreshOnboardingStatus]
   );
+
+  if (isLoadingUser || isOnboardingStatusLoading) {
+    return (
+      <div className='flex h-screen w-full items-center justify-center'>
+        <Loader2 className='h-12 w-12 animate-spin text-primary' />
+        <p className='ml-4 text-lg'>Loading session...</p>
+      </div>
+    );
+  }
 
   const contextValue: AuthContextType = {
     user,
-    isLoading,
+    isLoading: isMutating || isLoadingUser || isOnboardingStatusLoading,
     isOnboarded,
     logout,
     completeOnboarding,
