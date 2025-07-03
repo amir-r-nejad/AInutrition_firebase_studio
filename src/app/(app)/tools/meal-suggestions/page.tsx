@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { updateMealSuggestion } from '@/features/meal-suggestions/lib/data-service';
 import { useToast } from '@/hooks/use-toast';
 import {
   defaultMacroPercentages,
@@ -60,7 +61,7 @@ import {
   type MealSuggestionPreferencesValues,
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDocFromServer } from 'firebase/firestore';
 import {
   AlertTriangle,
   ChefHat,
@@ -76,12 +77,13 @@ async function getProfileDataForSuggestions(
   userId: string
 ): Promise<Partial<FullProfileType>> {
   if (!userId) return {};
+
   try {
-    const userCollection = collection(db, 'users');
-    const q = query(userCollection, where('uid', '==', userId));
-    const userSnapshot = await getDocs(q);
-    if (!userSnapshot.empty) {
-      return userSnapshot.docs[0].data() as any;
+    const docRef = doc(db, 'users', userId);
+    const docSnapshot = await getDocFromServer(docRef);
+
+    if (docSnapshot.exists()) {
+      return docSnapshot.data() as any;
     }
   } catch (error) {
     console.error(
@@ -166,6 +168,7 @@ function MealSuggestionsContent() {
       getProfileDataForSuggestions(user.uid)
         .then((data) => {
           setFullProfileData(data);
+
           // Only reset form if it hasn't been modified by user
           if (!preferenceForm.formState.isDirty) {
             preferenceForm.reset({
@@ -191,6 +194,7 @@ function MealSuggestionsContent() {
         .finally(() => setIsLoadingProfile(false));
     } else {
       setIsLoadingProfile(false);
+
       // Only reset if form hasn't been modified
       if (!preferenceForm.formState.isDirty) {
         preferenceForm.reset({
@@ -441,6 +445,7 @@ function MealSuggestionsContent() {
     );
 
     try {
+      await updateMealSuggestion(user?.uid!, currentPreferences);
       const result = await suggestMealsForMacros(aiInput);
       if (result && result.suggestions) {
         setSuggestions(result.suggestions);
