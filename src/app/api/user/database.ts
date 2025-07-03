@@ -8,6 +8,7 @@ import {
   where,
   getDocs,
   doc,
+  setDoc,
   getDoc,
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
@@ -24,13 +25,23 @@ export async function addUser(u: string) {
   'use server';
   let user = JSON.parse(u) as User;
   try {
-    const userRef = collection(db, 'users');
-    const q = query(userRef, where('uid', '==', '' + user.uid));
-    const userSnapshot = await getDocs(q);
-    console.log('Queried Users: ', userSnapshot.size, 'for UID:', user.uid);
-    if (userSnapshot.empty) {
-      console.log('No user found, adding new user:', user);
-      await addDoc(userRef, user);
+    const userDocRef = doc(db, 'users', user.uid);
+    const docSnap = await getDoc(userDocRef);
+
+    if (!docSnap.exists()) {
+      const userData = {
+        uid: user.uid,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        onboardingComplete: false,
+      };
+      await setDoc(userDocRef, userData, { merge: true });
+      console.log(
+        'No user found, adding new user with UID as doc ID:',
+        user.uid
+      );
     } else {
       console.log('User already exists, not adding.');
     }
@@ -42,29 +53,11 @@ export async function addUser(u: string) {
 
 export async function onboardingUpdateUser(
   userId: string,
-  onboardingValues: OnboardingFormValues
+  onboardingValues: Partial<FullProfileType>
 ) {
   try {
-    const userRef = collection(db, 'users');
-    const q = query(userRef, where('uid', '==', '' + userId));
-    const userSnapshot = await getDocs(q);
-    console.log(
-      'onboardingUpdateUser: userSnapshot.size=',
-      userSnapshot.size,
-      'userId=',
-      userId,
-      'onboardingValues=',
-      onboardingValues
-    );
-
-    if (userSnapshot.empty) {
-      console.error('onboardingUpdateUser: User not found for UID:', userId);
-      throw new Error('User not found');
-    }
-
-    // Assuming uid is unique, so only one doc
-    const userDoc = userSnapshot.docs[0];
-    await updateDoc(userDoc.ref, onboardingValues);
+    const userDocRef = doc(db, 'users', userId);
+    await setDoc(userDocRef, onboardingValues, { merge: true });
     console.log(
       'onboardingUpdateUser: Successfully updated user doc for UID:',
       userId

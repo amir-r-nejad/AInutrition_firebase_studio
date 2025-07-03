@@ -18,7 +18,7 @@ import {
   onboardingUpdateUser,
 } from '@/app/api/user/database';
 import { useUser } from '@/hooks/use-user';
-import type { OnboardingFormValues } from '@/lib/schemas';
+import type { FullProfileType } from '@/lib/schemas';
 import { Loader2 } from 'lucide-react';
 
 interface AuthUser {
@@ -29,35 +29,14 @@ interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
-  isLoading: boolean; // Represents overall auth context loading (auth + onboarding check)
+  isLoading: boolean;
   isOnboarded: boolean;
   logout: () => Promise<void>;
-  completeOnboarding: (profileData: OnboardingFormValues) => Promise<void>;
+  completeOnboarding: (profileData: Partial<FullProfileType>) => Promise<void>;
   refreshOnboardingStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const ONBOARDED_KEY = 'isOnboarded';
-
-const getStoredOnboardingStatus = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  try {
-    return localStorage.getItem(ONBOARDED_KEY) === 'true';
-  } catch (error) {
-    console.warn('Failed to read onboarding status from localStorage:', error);
-    return false;
-  }
-};
-
-const setStoredOnboardingStatus = (status: boolean): void => {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(ONBOARDED_KEY, status.toString());
-  } catch (error) {
-    console.warn('Failed to store onboarding status:', error);
-  }
-};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { user: firebaseUser, isLoading: isLoadingUser } = useUser();
@@ -70,15 +49,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     : null;
 
   const [isMutating, setIsMutating] = useState(false);
-  const [isOnboarded, setIsOnboarded] = useState<boolean>(false);
-  const [isOnboardingStatusLoading, setIsOnboardingStatusLoading] =
-    useState(true);
+  const [profile, setProfile] = useState<FullProfileType | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
 
-  const isPublicPage = useCallback(() => {
+  const isOnboarded = !!profile?.onboardingComplete;
+  const isLoading = isLoadingUser || isProfileLoading;
+
+  const fetchUserProfile = useCallback(async () => {
+    if (!user?.uid) {
+      setProfile(null);
+      setIsProfileLoading(false);
+      return;
+    }
+    setIsProfileLoading(true);
+    try {
+      const userProfile = await getUserProfile(user.uid);
+      setProfile(userProfile);
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+      toast({
+        title: 'Error',
+        description: 'Could not fetch user profile.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProfileLoading(false);
+    }
+  }, [user?.uid, toast]);
+
+  useEffect(() => {
+    if (firebaseUser) {
+      addUser(JSON.stringify(firebaseUser));
+    }
+  }, [firebaseUser]);
+
+  useEffect(() => {
+    if (!isLoadingUser) {
+      fetchUserProfile();
+    }
+  }, [user?.uid, isLoadingUser, fetchUserProfile]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return; // Wait until all loading is complete before attempting to redirect
+    }
+
     const publicPages = [
       '/login',
       '/signup',
@@ -86,89 +105,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       '/reset-password',
       '/verify-email',
     ];
-    return publicPages.includes(pathname);
-  }, [pathname]);
-
-  const isOnboardingPage = useCallback(() => {
-    return pathname === '/onboarding';
-  }, [pathname]);
-
-  const refreshOnboardingStatus = useCallback(async () => {
-    if (!user?.uid) {
-      setIsOnboarded(false);
-      setIsOnboardingStatusLoading(false);
-      return;
-    }
-    setIsOnboardingStatusLoading(true);
-    try {
-      const userProfile = await getUserProfile(user.uid);
-      const hasCompletedOnboarding = !!userProfile?.onboardingComplete;
-      setIsOnboarded(hasCompletedOnboarding);
-      setStoredOnboardingStatus(hasCompletedOnboarding);
-    } catch (error) {
-      console.error('Failed to refresh onboarding status:', error);
-    } finally {
-      setIsOnboardingStatusLoading(false);
-    }
-  }, [user?.uid]);
-
-  // Add user to DB when they log in
-  useEffect(() => {
-    if (firebaseUser) {
-      addUser(JSON.stringify(firebaseUser));
-    }
-  }, [firebaseUser]);
-
-  // Fetch onboarding status when user object is available
-  useEffect(() => {
-    if (!isLoadingUser) {
-      refreshOnboardingStatus();
-    }
-  }, [user?.uid, isLoadingUser, refreshOnboardingStatus]);
-
-  // Redirection logic
-  useEffect(() => {
-    if (isLoadingUser || isOnboardingStatusLoading) {
-      // Still loading user or their onboarding status, do nothing.
-      return;
-    }
+    const isPublicPage = publicPages.includes(pathname);
+    const isOnboardingPage = pathname === '/onboarding';
 
     if (!user) {
-      // Not logged in
-      if (!isPublicPage()) {
+      if (!isPublicPage && pathname !== '/login') {
         router.push('/login');
       }
     } else {
-      // Logged in
       if (!isOnboarded) {
-        if (!isOnboardingPage()) {
+        if (!isOnboardingPage) {
           router.push('/onboarding');
         }
       } else {
-        // Onboarded
-        if (isPublicPage() || isOnboardingPage() || pathname === '/') {
+        if ((isPublicPage || isOnboardingPage || pathname === '/') && pathname !== '/dashboard') {
           router.push('/dashboard');
         }
       }
     }
-  }, [
-    user,
-    isLoadingUser,
-    isOnboardingStatusLoading,
-    isOnboarded,
-    pathname,
-    router,
-    isPublicPage,
-    isOnboardingPage,
-  ]);
+  }, [isLoading, user, isOnboarded, pathname, router]);
 
   const logout = useCallback(async () => {
     if (isMutating) return;
     setIsMutating(true);
     try {
       await fSignOut();
-      setIsOnboarded(false);
-      setStoredOnboardingStatus(false);
+      setProfile(null); // Clear profile on logout
       // The redirection useEffect will handle pushing to /login
     } catch (error) {
       console.error('Firebase logout error:', error);
@@ -183,7 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [isMutating, toast]);
 
   const completeOnboarding = useCallback(
-    async (profileData: OnboardingFormValues) => {
+    async (profileData: Partial<FullProfileType>) => {
       if (!user?.uid) {
         toast({
           title: 'Authentication Error',
@@ -196,8 +158,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setIsMutating(true);
       try {
-        await onboardingUpdateUser(user.uid, profileData);
-        await refreshOnboardingStatus(); // Refresh status from DB
+        const dataToSave = {
+          ...profileData,
+          onboardingComplete: true,
+        };
+        await onboardingUpdateUser(user.uid, dataToSave);
+        await fetchUserProfile(); // Refresh profile state from DB
         toast({
           title: 'Profile Complete!',
           description: 'Your profile has been saved successfully.',
@@ -216,10 +182,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsMutating(false);
       }
     },
-    [user?.uid, isMutating, toast, refreshOnboardingStatus]
+    [user?.uid, isMutating, toast, fetchUserProfile]
   );
 
-  if (isLoadingUser || isOnboardingStatusLoading) {
+  if (isLoading) {
     return (
       <div className='flex h-screen w-full items-center justify-center'>
         <Loader2 className='h-12 w-12 animate-spin text-primary' />
@@ -230,11 +196,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const contextValue: AuthContextType = {
     user,
-    isLoading: isMutating || isLoadingUser || isOnboardingStatusLoading,
+    isLoading,
     isOnboarded,
     logout,
     completeOnboarding,
-    refreshOnboardingStatus,
+    refreshOnboardingStatus: fetchUserProfile,
   };
 
   return (
