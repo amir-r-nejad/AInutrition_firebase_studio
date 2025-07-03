@@ -44,7 +44,8 @@ export async function signupAction(
     else if (error.code === 'auth/operation-not-allowed')
       return {
         isSuccess: false,
-        userError: 'Email/Password sign-up is not enabled for this project.',
+        userError:
+          'Email/Password sign-up is not enabled. Please enable it in your Firebase Console: Authentication > Sign-in method.',
       };
   }
   return {
