@@ -1,6 +1,11 @@
 
 'use client';
 
+import {
+  getMacroSplitterData,
+  resetMealDistributions,
+  saveMealDistributions,
+} from '@/app/api/user/database';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,7 +16,7 @@ import {
 } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'; // Added ScrollBar
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -27,18 +32,14 @@ import {
   defaultMacroPercentages,
   mealNames as defaultMealNames,
 } from '@/lib/constants';
-import { db } from '@/lib/firebase/clientApp';
-import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import {
-  MacroSplitterFormSchema,
   preprocessDataForFirestore,
-  type FullProfileType,
   type MacroSplitterFormValues,
   type MealMacroDistribution,
 } from '@/lib/schemas';
 import { cn, formatNumber } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { MacroSplitterFormSchema } from '@/lib/schemas';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -125,165 +126,79 @@ export default function MacroSplitterPage() {
       return;
     }
     setIsLoading(true);
-    let targets: TotalMacros | null = null;
-    let sourceMessage = '';
 
     try {
-      const userProfileRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(userProfileRef);
+      const { dailyTargets, mealDistributions, sourceMessage } =
+        await getMacroSplitterData(user.uid);
 
-      if (docSnap.exists()) {
-        const profileData = docSnap.data() as FullProfileType;
+      setDailyTargets(dailyTargets);
+      setDataSourceMessage(sourceMessage);
 
-        // Load meal distributions if saved
-        if (
-          profileData.mealDistributions &&
-          Array.isArray(profileData.mealDistributions) &&
-          profileData.mealDistributions.length === defaultMealNames.length
-        ) {
-          form.reset({ mealDistributions: profileData.mealDistributions });
-          const savedSplitToastExists =
-            toasts &&
-            Array.isArray(toasts) &&
-            toasts.find(
-              (t) =>
-                t.description ===
-                'Your previously saved macro split percentages have been loaded.'
-            );
-          if (!savedSplitToastExists) {
-            toast({
-              title: 'Loaded Saved Split',
-              description:
-                'Your previously saved macro split percentages have been loaded.',
-              duration: 3000,
-            });
-          }
-        } else {
-          form.reset({
-            // Reset to default percentages if none saved or invalid
-            mealDistributions: defaultMealNames.map((name) => ({
-              mealName: name,
-              calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
-              protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
-              carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
-              fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
-            })),
-          });
-        }
-
-        // Priority: Smart Planner results, then Profile estimation
-        if (
-          profileData.smartPlannerData?.results?.finalTargetCalories !==
-            undefined &&
-          profileData.smartPlannerData?.results?.finalTargetCalories !== null
-        ) {
-          const smartResults = profileData.smartPlannerData.results;
-          targets = {
-            calories: smartResults.finalTargetCalories || 0,
-            protein_g: smartResults.proteinGrams || 0,
-            carbs_g: smartResults.carbGrams || 0,
-            fat_g: smartResults.fatGrams || 0,
-            source: 'Smart Calorie Planner Targets',
-          };
-          sourceMessage =
-            "Daily totals from 'Smart Calorie Planner'. Adjust there for changes.";
-        } else if (
-          profileData.age &&
-          profileData.gender &&
-          profileData.current_weight &&
-          profileData.height_cm &&
-          profileData.activityLevel &&
-          profileData.dietGoalOnboarding
-        ) {
-          const estimatedTargets = calculateEstimatedDailyTargets({
-            age: profileData.age,
-            gender: profileData.gender,
-            currentWeight: profileData.current_weight,
-            height: profileData.height_cm,
-            activityLevel: profileData.activityLevel,
-            dietGoal: profileData.dietGoalOnboarding,
-            goalWeight: profileData.goal_weight_1m,
-            bf_current: profileData.bf_current,
-            bf_target: profileData.bf_target,
-            waist_current: profileData.waist_current,
-            waist_goal_1m: profileData.waist_goal_1m,
-          });
-          if (
-            estimatedTargets.finalTargetCalories &&
-            estimatedTargets.proteinGrams &&
-            estimatedTargets.carbGrams &&
-            estimatedTargets.fatGrams
-          ) {
-            targets = {
-              calories: estimatedTargets.finalTargetCalories,
-              protein_g: estimatedTargets.proteinGrams,
-              carbs_g: estimatedTargets.carbGrams,
-              fat_g: estimatedTargets.fatGrams,
-              source: 'Profile Estimation',
-            };
-            sourceMessage =
-              'Daily totals estimated from Profile. Use Smart Calorie Planner for more precision or manual input.';
-          } else {
-            toast({
-              title: 'Profile Incomplete for Calculation',
-              description:
-                'Could not calculate daily totals from profile. Ensure all basic info, activity, and diet goal are set in Onboarding or Smart Planner.',
-              variant: 'destructive',
-              duration: 5000,
-            });
-          }
-        } else {
+      if (mealDistributions) {
+        form.reset({ mealDistributions });
+        const savedSplitToastExists =
+          toasts &&
+          Array.isArray(toasts) &&
+          toasts.find(
+            (t) =>
+              t.description ===
+              'Your previously saved macro split percentages have been loaded.'
+          );
+        if (!savedSplitToastExists) {
           toast({
-            title: 'Profile Incomplete',
+            title: 'Loaded Saved Split',
             description:
-              'Profile is incomplete. Please fill it via Onboarding or Smart Calorie Planner for daily totals.',
-            variant: 'destructive',
-            duration: 5000,
+              'Your previously saved macro split percentages have been loaded.',
+            duration: 3000,
           });
         }
       } else {
+        // Reset to default percentages if none saved
+        form.reset({
+          mealDistributions: defaultMealNames.map((name) => ({
+            mealName: name,
+            calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
+            protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
+            carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
+            fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
+          })),
+        });
+      }
+
+      if (sourceMessage && dailyTargets) {
+        const shouldShowToast =
+          toasts && Array.isArray(toasts)
+            ? !toasts.find((t) => t.description === sourceMessage)
+            : true;
+        if (shouldShowToast) {
+          toast({
+            title: 'Daily Totals Loaded',
+            description: sourceMessage,
+            duration: 6000,
+          });
+        }
+      }
+
+      if (!dailyTargets) {
         toast({
-          title: 'Profile Not Found',
-          description: 'Could not find user profile for daily totals.',
+          title: 'No Daily Totals',
+          description:
+            'Could not find or calculate daily macro totals. Please use the Smart Calorie Planner or complete your profile.',
           variant: 'destructive',
-          duration: 5000,
+          duration: 6000,
         });
       }
     } catch (error) {
       toast({
         title: 'Error Loading Data',
-        description: 'Failed to load data for macro estimation.',
+        description:
+          'Failed to load data for the Macro Splitter. Please try again.',
         variant: 'destructive',
       });
       console.error('Error in loadDataForSplitter:', error);
+    } finally {
+      setIsLoading(false);
     }
-
-    setDailyTargets(targets);
-    setDataSourceMessage(sourceMessage);
-
-    if (targets && sourceMessage) {
-      const shouldShowToast =
-        toasts && Array.isArray(toasts)
-          ? !toasts.find((t) => t.description === sourceMessage)
-          : true;
-      if (shouldShowToast) {
-        toast({
-          title: 'Daily Totals Loaded',
-          description: sourceMessage,
-          duration: 6000,
-        });
-      }
-    } else if (!targets) {
-      toast({
-        title: 'No Daily Totals',
-        description:
-          'Could not find or calculate daily macro totals. Please use the Smart Calorie Planner or complete your profile.',
-        variant: 'destructive',
-        duration: 6000,
-      });
-    }
-
-    setIsLoading(false);
   }, [user, toast, form, toasts]);
 
   useEffect(() => {
@@ -313,19 +228,10 @@ export default function MacroSplitterPage() {
     setCalculatedSplit(result);
 
     try {
-      console.log(user);
-      const userProfileRef = doc(db, 'users', user.uid);
       const distributionsToSave = preprocessDataForFirestore(
         data.mealDistributions
       );
-
-      const mamd = await setDoc(
-        userProfileRef,
-        { mealDistributions: distributionsToSave },
-        { merge: true }
-      );
-
-      console.log('✅✅✅ SUCCESSFULL', mamd);
+      await saveMealDistributions(user.uid, distributionsToSave);
 
       toast({
         title: 'Split Calculated & Saved',
@@ -354,12 +260,7 @@ export default function MacroSplitterPage() {
     setCalculatedSplit(null);
     if (user?.uid) {
       try {
-        const userProfileRef = doc(db, 'users', user.uid);
-        await setDoc(
-          userProfileRef,
-          { mealDistributions: null },
-          { merge: true }
-        );
+        await resetMealDistributions(user.uid);
         toast({
           title: 'Reset Complete',
           description: 'Percentages reset to defaults and saved.',
@@ -368,13 +269,10 @@ export default function MacroSplitterPage() {
         toast({
           title: 'Reset Warning',
           description:
-            'Percentages reset locally, but failed to save defaults to cloud.',
+            'Percentages reset locally, but failed to clear saved defaults in the cloud.',
           variant: 'destructive',
         });
-        console.error(
-          'Error saving default meal distributions to Firestore:',
-          error
-        );
+        console.error('Error resetting meal distributions:', error);
       }
     } else {
       toast({
@@ -915,6 +813,7 @@ export default function MacroSplitterPage() {
                   </TableRow>
                 </TableBody>
               </Table>
+              <ScrollBar orientation='horizontal' />
             </ScrollArea>
           </CardContent>
         </Card>
