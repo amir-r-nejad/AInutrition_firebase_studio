@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const userProfile = await getUserProfile(user.uid);
-      console.log(userProfile);
+      console.log(userProfile?.onboardingComplete);
       const hasCompletedOnboarding =
         userProfile && userProfile.onboardingComplete ? true : false;
       setIsOnboarded(hasCompletedOnboarding);
@@ -102,74 +102,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Failed to refresh onboarding status:', error);
     }
   }
-
-  useEffect(() => {
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
-      return;
-    }
-
-    console.log('Auth state changed:', {
-      user: user?.uid,
-      isLoading,
-      pathname,
-      isOnboarded,
-    });
-
-    if (isLoading) return;
-
-    // Handle unauthenticated users
-    if (!user) {
-      if (!isAuthPage() && isDashboardPage()) {
-        console.log('Redirecting unauthenticated user to login');
-        router.push('/login');
-      }
-      return;
-    }
-
-    if (user) {
-      if (!user.emailVerified && !isAuthPage() && !isOnboardingPage()) {
-        toast({
-          title: 'Email Not Verified',
-          description: 'Please verify your email address to continue.',
-          variant: 'destructive',
-          duration: 7000,
-        });
-        return;
-      }
-
-      if (!isOnboarded) {
-        if (!isOnboardingPage()) {
-          console.log('Redirecting to onboarding');
-          router.push('/onboarding');
-        }
-        return;
-      }
-
-      if (isAuthPage() || isOnboardingPage()) {
-        console.log('Redirecting authenticated user to dashboard');
-        router.push('/dashboard');
-      }
-    }
-  }, [
-    rawUser,
-    isLoading,
-    pathname,
-    isOnboarded,
-    isInitialLoad,
-    router,
-    toast,
-    isAuthPage,
-    isOnboardingPage,
-    isDashboardPage,
-  ]);
-
-  // Refresh onboarding status when user changes
-  useEffect(() => {
-    if (user?.uid && !isOnboarded) {
-      refreshOnboardingStatus();
-    }
-  }, [user?.uid, isOnboarded, refreshOnboardingStatus]);
 
   async function logout() {
     if (isLoading) return;
@@ -234,6 +166,67 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (isInitialLoad) {
+      setIsInitialLoad(false);
+      return;
+    }
+
+    if (isLoading) return;
+
+    // Handle unauthenticated users
+    if (!user) {
+      if (!isAuthPage() && isDashboardPage()) {
+        console.log('Redirecting unauthenticated user to login');
+        router.push('/login');
+      }
+      return;
+    }
+
+    if (user) {
+      if (!user.emailVerified && !isAuthPage() && !isOnboardingPage()) {
+        toast({
+          title: 'Email Not Verified',
+          description: 'Please verify your email address to continue.',
+          variant: 'destructive',
+          duration: 7000,
+        });
+        return;
+      }
+
+      if (!isOnboarded) {
+        if (!isOnboardingPage()) {
+          console.log('Redirecting to onboarding');
+          router.push('/onboarding');
+        }
+        return;
+      }
+
+      if (isAuthPage() || isOnboardingPage()) {
+        console.log('Redirecting authenticated user to dashboard');
+        router.push('/dashboard');
+      }
+    }
+  }, [
+    rawUser,
+    isLoading,
+    pathname,
+    isOnboarded,
+    isInitialLoad,
+    router,
+    toast,
+    isAuthPage,
+    isOnboardingPage,
+    isDashboardPage,
+  ]);
+
+  // Refresh onboarding status when user changes
+  useEffect(() => {
+    if (user?.uid && !isOnboarded) {
+      refreshOnboardingStatus();
+    }
+  }, [user?.uid, isOnboarded, refreshOnboardingStatus]);
 
   const contextValue: AuthContextType = {
     user,
