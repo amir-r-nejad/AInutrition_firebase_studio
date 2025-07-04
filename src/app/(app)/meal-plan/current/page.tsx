@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
@@ -297,14 +298,7 @@ export default function CurrentMealPlanPage() {
     }
   };
 
-  if (isLoadingPlan || (user && isLoadingProfile)) {
-    return (
-      <div className='flex justify-center items-center h-screen'>
-        <Loader2 className='h-12 w-12 animate-spin text-primary' />
-        <p className='ml-4 text-lg'>Loading data...</p>
-      </div>
-    );
-  }
+  if (isLoadingPlan || (user && isLoadingProfile)) return <LoadingScreen />;
 
   return (
     <div className='container mx-auto py-8'>

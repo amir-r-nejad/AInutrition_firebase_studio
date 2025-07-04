@@ -17,6 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import {
@@ -47,7 +48,7 @@ import {
   preprocessDataForFirestore,
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, CheckCircle, Leaf, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Leaf } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
 
@@ -478,21 +479,10 @@ export default function OnboardingPage() {
     });
   };
 
-  if (!activeStepData)
-    return (
-      <div className='flex justify-center items-center h-screen'>
-        <p>Loading step...</p>
-      </div>
-    );
+  if (!activeStepData) return <LoadingScreen loadingLabel='Loading step...' />;
+
   if (!user)
-    return (
-      <div className='flex justify-center items-center h-screen'>
-        <div className='flex justify-center items-center'>
-          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-          <p>Loading user information...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen loadingLabel='Loading user information...' />;
 
   const progressValue = (currentStep / onboardingStepsData.length) * 100;
 
