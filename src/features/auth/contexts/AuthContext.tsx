@@ -44,7 +44,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     : null;
 
-  const [isMutating, setIsMutating] = useState(false);
   const [profile, setProfile] = useState<FullProfileType | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
 
@@ -55,13 +54,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isOnboarded = !!profile?.onboardingComplete;
   const isLoading = isLoadingUser || isProfileLoading;
 
-  const fetchUserProfile = useCallback(async () => {
+  const fetchUserProfile = useCallback(async (isRefresh = false) => {
     if (!user?.uid) {
       setProfile(null);
       setIsProfileLoading(false);
       return;
     }
-    setIsProfileLoading(true);
+    
+    // Only show global loading on initial load, not on manual refresh
+    if (!isRefresh) {
+        setIsProfileLoading(true);
+    }
+
     try {
       const userProfile = await getUserProfile(user.uid);
       setProfile(userProfile);
@@ -86,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!isLoadingUser) {
-      fetchUserProfile();
+      fetchUserProfile(false);
     }
   }, [user?.uid, isLoadingUser, fetchUserProfile]);
 
@@ -126,12 +130,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [isLoading, user, isOnboarded, pathname, router]);
 
   const logout = useCallback(async () => {
-    if (isMutating) return;
-    setIsMutating(true);
     try {
       await fSignOut();
       setProfile(null); // Clear profile on logout
-      // The redirection useEffect will handle pushing to /login
+      router.push('/login');
     } catch (error) {
       console.error('Firebase logout error:', error);
       toast({
@@ -139,10 +141,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: 'Could not log out. Please try again.',
         variant: 'destructive',
       });
-    } finally {
-      setIsMutating(false);
     }
-  }, [isMutating, toast]);
+  }, [router, toast]);
 
   if (isLoading) {
     return (
@@ -158,7 +158,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading,
     isOnboarded,
     logout,
-    refreshOnboardingStatus: fetchUserProfile,
+    refreshOnboardingStatus: () => fetchUserProfile(true),
   };
 
   return (

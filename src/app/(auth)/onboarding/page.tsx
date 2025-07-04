@@ -86,6 +86,8 @@ export default function OnboardingPage() {
     },
   });
 
+  const { isSubmitting } = form.formState;
+
   const activeStepData = onboardingStepsData.find(
     (s) => s.stepNumber === currentStep
   );
@@ -336,7 +338,7 @@ export default function OnboardingPage() {
 
   const handlePrevious = () => {
     if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
@@ -841,22 +843,27 @@ export default function OnboardingPage() {
                   type='button'
                   variant='outline'
                   onClick={handlePrevious}
-                  disabled={currentStep === 1}
+                  disabled={currentStep === 1 || isSubmitting}
                 >
                   Previous
                 </Button>
                 <div className='space-x-2'>
                   {activeStepData.isOptional && currentStep < 5 && (
-                    <Button type='button' variant='ghost' onClick={handleSkip}>
+                    <Button type='button' variant='ghost' onClick={handleSkip} disabled={isSubmitting}>
                       Skip
                     </Button>
                   )}
                   {currentStep < 5 ? (
-                    <Button type='button' onClick={handleNext}>
+                    <Button type='button' onClick={handleNext} disabled={isSubmitting}>
                       Next
                     </Button>
                   ) : (
-                    <Button type='submit'>Finish Onboarding</Button>
+                    <Button type='submit' disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                      ) : null}
+                      {isSubmitting ? 'Finishing...' : 'Finish Onboarding'}
+                    </Button>
                   )}
                 </div>
               </div>
