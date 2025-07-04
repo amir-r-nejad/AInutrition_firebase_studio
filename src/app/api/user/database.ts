@@ -3,6 +3,10 @@
 
 import { db } from '@/lib/firebase/firebase';
 import {
+  defaultMacroPercentages,
+  mealNames as defaultMealNames,
+} from '@/lib/constants';
+import {
   type FullProfileType,
   type OnboardingFormValues,
   type ProfileFormValues,
@@ -10,8 +14,6 @@ import {
   type WeeklyMealPlan,
   preprocessDataForFirestore,
   type GlobalCalculatedTargets,
-  defaultMacroPercentages,
-  mealNames as defaultMealNames,
 } from '@/lib/schemas';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { GeneratePersonalizedMealPlanOutput } from '@/ai/flows/generate-meal-plan';
