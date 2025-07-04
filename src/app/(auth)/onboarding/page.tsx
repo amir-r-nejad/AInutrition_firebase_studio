@@ -41,18 +41,23 @@ import {
   genders,
   onboardingStepsData,
   smartPlannerDietGoals,
+  defaultMealNames,
+  defaultMacroPercentages,
 } from '@/lib/constants';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import {
   type GlobalCalculatedTargets,
   OnboardingFormSchema,
   type OnboardingFormValues,
+  type FullProfileType,
+  preprocessDataForFirestore,
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle, Leaf, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
-import { onboardingUpdateUser } from '@/app/api/user/database';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 export default function OnboardingPage() {
   const { user, refreshOnboardingStatus } = useAuth();
@@ -355,8 +360,49 @@ export default function OnboardingPage() {
       return;
     }
 
+    const finalResults = customCalculatedTargets ?? calculatedTargets ?? null;
+
+    const profileDataToSave: Partial<FullProfileType> = {
+      age: data.age,
+      gender: data.gender,
+      height_cm: data.height_cm,
+      current_weight: data.current_weight,
+      goal_weight_1m: data.goal_weight_1m,
+      ideal_goal_weight: data.ideal_goal_weight,
+      activityLevel: data.activityLevel,
+      dietGoalOnboarding: data.dietGoalOnboarding,
+      smartPlannerData: {
+        formValues: {
+          age: data.age,
+          gender: data.gender,
+          height_cm: data.height_cm,
+          current_weight: data.current_weight,
+          goal_weight_1m: data.goal_weight_1m,
+          ideal_goal_weight: data.ideal_goal_weight,
+          activity_factor_key: data.activityLevel,
+          dietGoal: data.dietGoalOnboarding,
+          custom_total_calories: data.custom_total_calories,
+          custom_protein_per_kg: data.custom_protein_per_kg,
+          remaining_calories_carb_pct: data.remaining_calories_carb_pct,
+        },
+        results: finalResults,
+      },
+      mealDistributions: defaultMealNames.map((name) => ({
+        mealName: name,
+        calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
+        protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
+        carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
+        fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
+      })),
+      onboardingComplete: true,
+    };
+
     try {
-      await onboardingUpdateUser(user.uid, data);
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, preprocessDataForFirestore(profileDataToSave), {
+        merge: true,
+      });
+
       await refreshOnboardingStatus();
       toast({
         title: 'Onboarding Complete!',
@@ -364,12 +410,11 @@ export default function OnboardingPage() {
       });
       // The AuthProvider will handle the redirect
     } catch (error) {
+      console.error("Onboarding save error:", error);
       toast({
         title: 'Onboarding Error',
         description:
-          error instanceof Error
-            ? error.message
-            : 'Could not save your profile. Please try again.',
+          'Failed to save onboarding data. Please try again.',
         variant: 'destructive',
       });
     }

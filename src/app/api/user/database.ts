@@ -8,7 +8,6 @@ import {
 } from '@/lib/constants';
 import {
   type FullProfileType,
-  type OnboardingFormValues,
   type ProfileFormValues,
   type WeeklyMealPlan,
   preprocessDataForFirestore,
@@ -41,68 +40,6 @@ export async function getUserProfile(
   } catch (error) {
     console.error('Error fetching user profile:', error);
     throw new Error('Could not fetch user profile from database.');
-  }
-}
-
-/**
- * Processes and saves data from the onboarding form.
- * Sets onboardingComplete to true.
- */
-export async function onboardingUpdateUser(
-  userId: string,
-  data: OnboardingFormValues
-) {
-  if (!userId) throw new Error('User ID is required for onboarding.');
-
-  // This server action is now responsible for constructing the database object
-  const profileDataToSave: Partial<FullProfileType> = {
-    age: data.age,
-    gender: data.gender,
-    height_cm: data.height_cm,
-    current_weight: data.current_weight,
-    goal_weight_1m: data.goal_weight_1m,
-    ideal_goal_weight: data.ideal_goal_weight,
-    activityLevel: data.activityLevel,
-    dietGoalOnboarding: data.dietGoalOnboarding,
-    smartPlannerData: {
-      formValues: {
-        age: data.age,
-        gender: data.gender,
-        height_cm: data.height_cm,
-        current_weight: data.current_weight,
-        goal_weight_1m: data.goal_weight_1m,
-        ideal_goal_weight: data.ideal_goal_weight,
-        activity_factor_key: data.activityLevel,
-        dietGoal: data.dietGoalOnboarding,
-        custom_total_calories: data.custom_total_calories,
-        custom_protein_per_kg: data.custom_protein_per_kg,
-        remaining_calories_carb_pct: data.remaining_calories_carb_pct,
-      },
-      results: null, // Results will be calculated and saved via the planner tool
-    },
-    mealDistributions: defaultMealNames.map((name) => ({
-      mealName: name,
-      calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
-      protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
-      carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
-      fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
-    })),
-    onboardingComplete: true,
-  };
-
-  try {
-    const userDocRef = doc(db, 'users', userId);
-    await setDoc(userDocRef, preprocessDataForFirestore(profileDataToSave), {
-      merge: true,
-    });
-    console.log(
-      'onboardingUpdateUser: Successfully updated user doc for UID:',
-      userId
-    );
-    return true;
-  } catch (e) {
-    console.error('onboardingUpdateUser error:', e);
-    throw new Error('Failed to save onboarding data.');
   }
 }
 
