@@ -1,6 +1,6 @@
 'use client';
 
-import { getSmartPlannerData } from '@/app/api/user/database';
+import { getSmartPlannerData, saveSmartPlannerData } from '@/app/api/user/database';
 import {
   Accordion,
   AccordionContent,
@@ -54,18 +54,14 @@ import {
   genders,
   smartPlannerDietGoals,
 } from '@/lib/constants';
-import { db } from '@/lib/firebase/clientApp';
 import { calculateBMR, calculateTDEE } from '@/lib/nutrition-calculator';
 import {
-  preprocessDataForFirestore,
-  SmartCaloriePlannerFormSchema,
-  type CustomCalculatedTargets,
   type GlobalCalculatedTargets,
+  SmartCaloriePlannerFormSchema,
   type SmartCaloriePlannerFormValues,
 } from '@/lib/schemas';
 import { formatNumber } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { doc, setDoc } from 'firebase/firestore';
 import {
   BrainCircuit,
   Calculator,
@@ -76,26 +72,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
-
-async function saveSmartPlannerData(
-  userId: string,
-  data: {
-    formValues: SmartCaloriePlannerFormValues;
-    results: GlobalCalculatedTargets | null;
-  }
-) {
-  if (!userId) throw new Error('User ID is required.');
-  try {
-    const userProfileRef = doc(db, 'users', userId);
-    console.log('User Profile', userProfileRef);
-    const dataToSave = { smartPlannerData: preprocessDataForFirestore(data) };
-    const dataSave = await setDoc(userProfileRef, dataToSave, { merge: true });
-    console.log('Saved smart planner data:', dataSave);
-  } catch (error) {
-    console.error('Error saving smart planner data to Firestore:', error);
-    throw error;
-  }
-}
 
 export default function SmartCaloriePlannerPage() {
   const { user } = useAuth();

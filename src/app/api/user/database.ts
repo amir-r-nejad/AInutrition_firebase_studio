@@ -20,6 +20,7 @@ import {
   OnboardingFormValues,
   ProfileFormValues,
   SmartCaloriePlannerFormValues,
+  preprocessDataForFirestore,
 } from '../../../lib/schemas';
 
 export async function addUser(user: {
@@ -73,6 +74,25 @@ export async function onboardingUpdateUser(
     throw e;
   }
 }
+
+export async function saveSmartPlannerData(
+  userId: string,
+  data: {
+    formValues: SmartCaloriePlannerFormValues;
+    results: GlobalCalculatedTargets | null;
+  }
+) {
+  if (!userId) throw new Error('User ID is required.');
+  try {
+    const userProfileRef = doc(db, 'users', userId);
+    const dataToSave = { smartPlannerData: preprocessDataForFirestore(data) };
+    await setDoc(userProfileRef, dataToSave, { merge: true });
+  } catch (error) {
+    console.error('Error saving smart planner data to Firestore:', error);
+    throw error;
+  }
+}
+
 export async function getSmartPlannerData(userId: string): Promise<{
   formValues: Partial<SmartCaloriePlannerFormValues>;
   results?: GlobalCalculatedTargets | null;
