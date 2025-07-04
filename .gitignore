@@ -46,3 +46,5 @@ firestore-debug.log
 *firebase.json
 certificates
 next.config.ts
+node_modules
+*.json
