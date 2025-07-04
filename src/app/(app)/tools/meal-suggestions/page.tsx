@@ -6,7 +6,6 @@ import {
   type SuggestMealsForMacrosInput,
   type SuggestMealsForMacrosOutput,
 } from '@/ai/flows/suggest-meals-for-macros';
-import { getUserProfile } from '@/app/api/user/database';
 import {
   Accordion,
   AccordionContent,
@@ -71,6 +70,8 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 function MealSuggestionsContent() {
   const searchParams = useSearchParams();
@@ -115,27 +116,34 @@ function MealSuggestionsContent() {
   useEffect(() => {
     if (user?.uid) {
       setIsLoadingProfile(true);
-      getUserProfile(user.uid)
-        .then((data) => {
-          setFullProfileData(data);
-          if (data) {
-            preferenceForm.reset({
-              preferredDiet: data.preferredDiet ?? undefined,
-              preferredCuisines: data.preferredCuisines ?? [],
-              dispreferredCuisines: data.dispreferredCuisines ?? [],
-              preferredIngredients: data.preferredIngredients ?? [],
-              dispreferredIngredients: data.dispreferredIngredients ?? [],
-              allergies: data.allergies ?? [],
-              preferredMicronutrients: data.preferredMicronutrients ?? [],
-              medicalConditions: data.medicalConditions ?? [],
-              medications: data.medications ?? [],
-            });
+      const userDocRef = doc(db, 'users', user.uid);
+      getDoc(userDocRef)
+        .then((docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data() as FullProfileType;
+            setFullProfileData(data);
+            if (data) {
+              preferenceForm.reset({
+                preferredDiet: data.preferredDiet ?? undefined,
+                preferredCuisines: data.preferredCuisines ?? [],
+                dispreferredCuisines: data.dispreferredCuisines ?? [],
+                preferredIngredients: data.preferredIngredients ?? [],
+                dispreferredIngredients: data.dispreferredIngredients ?? [],
+                allergies: data.allergies ?? [],
+                preferredMicronutrients: data.preferredMicronutrients ?? [],
+                medicalConditions: data.medicalConditions ?? [],
+                medications: data.medications ?? [],
+              });
+            }
           }
         })
         .catch((err) =>
           toast({
             title: 'Error Loading Profile',
-            description: err instanceof Error ? err.message : 'Could not load your profile preferences.',
+            description:
+              err instanceof Error
+                ? err.message
+                : 'Could not load your profile preferences.',
             variant: 'destructive',
           })
         )
