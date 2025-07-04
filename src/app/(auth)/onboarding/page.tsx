@@ -58,6 +58,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
+import { getAuth } from 'firebase/auth';
 
 export default function OnboardingPage() {
   const { user, refreshOnboardingStatus } = useAuth();
@@ -351,10 +352,13 @@ export default function OnboardingPage() {
   };
 
   const processAndSaveData = async (data: OnboardingFormValues) => {
-    if (!user) {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
       toast({
         title: 'Error',
-        description: 'User not authenticated.',
+        description: 'User not authenticated. Please log in again to continue.',
         variant: 'destructive',
       });
       return;
@@ -398,7 +402,7 @@ export default function OnboardingPage() {
     };
 
     try {
-      const userDocRef = doc(db, 'users', user.uid);
+      const userDocRef = doc(db, 'users', currentUser.uid);
       await setDoc(userDocRef, preprocessDataForFirestore(profileDataToSave), {
         merge: true,
       });
