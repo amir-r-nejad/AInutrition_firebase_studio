@@ -10,7 +10,7 @@ type ButtonProps = {
   isLoading: boolean;
   loadingLabel: string;
   label: string;
-  className: string;
+  className?: string;
 };
 
 function SubmitButton({
