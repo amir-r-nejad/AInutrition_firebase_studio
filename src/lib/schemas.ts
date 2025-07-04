@@ -671,7 +671,16 @@ export const AdjustMealIngredientsInputSchema = z.object({
     carbs: z.number(),
     fat: z.number(),
   }),
-  userProfile: z.custom<FullProfileType>(),
+  userProfile: z.object({
+    age: z.number().optional(),
+    gender: z.string().optional(),
+    activityLevel: z.string().optional(),
+    dietGoal: z.string().optional(),
+    preferredDiet: z.string().optional(),
+    allergies: z.array(z.string()).optional(),
+    dispreferredIngredients: z.array(z.string()).optional(),
+    preferredIngredients: z.array(z.string()).optional(),
+  }),
 });
 export type AdjustMealIngredientsInput = z.infer<
   typeof AdjustMealIngredientsInputSchema
