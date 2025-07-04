@@ -112,39 +112,45 @@ export default function OnboardingPage() {
         goalWeight: data.goal_weight_1m,
       });
 
+      // Use the CORRECT keys from the returned 'estimated' object
       if (
-        estimated.targetCalories &&
-        estimated.targetProtein &&
-        estimated.targetCarbs &&
-        estimated.targetFat
+        estimated.finalTargetCalories &&
+        estimated.proteinGrams &&
+        estimated.carbGrams &&
+        estimated.fatGrams
       ) {
-        const proteinCals = estimated.targetProtein! * 4;
-        const carbCals = estimated.targetCarbs! * 4;
-        const fatCals = estimated.targetFat! * 9;
+        const proteinCals = estimated.proteinGrams * 4;
+        const carbCals = estimated.carbGrams * 4;
+        const fatCals = estimated.fatGrams * 9;
+        const totalCalculatedCals = proteinCals + carbCals + fatCals;
+
         const newTargets: GlobalCalculatedTargets = {
           bmr: Math.round(estimated.bmr || 0),
           tdee: Math.round(estimated.tdee || 0),
-          finalTargetCalories: Math.round(estimated.targetCalories),
-          proteinGrams: Math.round(estimated.targetProtein),
+          finalTargetCalories: Math.round(estimated.finalTargetCalories),
+          proteinGrams: Math.round(estimated.proteinGrams),
           proteinCalories: Math.round(proteinCals),
           proteinTargetPct:
-            estimated.targetProtein > 0
-              ? Math.round((proteinCals / estimated.targetCalories) * 100)
+            totalCalculatedCals > 0
+              ? Math.round((proteinCals / totalCalculatedCals) * 100)
               : undefined,
-          carbGrams: Math.round(estimated.targetCarbs),
+          carbGrams: Math.round(estimated.carbGrams),
           carbCalories: Math.round(carbCals),
           carbTargetPct:
-            estimated.targetCalories > 0
-              ? Math.round((carbCals / estimated.targetCalories) * 100)
+            totalCalculatedCals > 0
+              ? Math.round((carbCals / totalCalculatedCals) * 100)
               : undefined,
-          fatGrams: Math.round(estimated.targetFat),
+          fatGrams: Math.round(estimated.fatGrams),
           fatCalories: Math.round(fatCals),
           fatTargetPct:
-            estimated.targetCalories > 0
-              ? Math.round((fatCals / estimated.targetCalories) * 100)
+            totalCalculatedCals > 0
+              ? Math.round((fatCals / totalCalculatedCals) * 100)
               : undefined,
           current_weight_for_custom_calc: data.current_weight,
-          estimatedWeeklyWeightChangeKg: estimated.tdee,
+          // Correctly calculate estimated weekly weight change
+          estimatedWeeklyWeightChangeKg: estimated.tdee
+            ? ((estimated.tdee - estimated.finalTargetCalories) * 7) / 7700
+            : undefined,
         };
         setCalculatedTargets(newTargets);
       } else {
@@ -338,7 +344,7 @@ export default function OnboardingPage() {
 
   const handlePrevious = () => {
     if (currentStep > 1) {
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep((prev) => prev - 1);
     }
   };
 
