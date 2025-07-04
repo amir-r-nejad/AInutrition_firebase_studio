@@ -19,6 +19,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Table,
@@ -232,16 +233,8 @@ export default function OptimizedMealPlanPage() {
     carbs: { label: 'Carbs (g)', color: 'hsl(var(--chart-4))' },
   };
 
-  if (isLoadingProfile) {
-    return (
-      <div className='flex justify-center items-center h-screen'>
-        <Loader2 className='h-12 w-12 animate-spin text-primary' />
-        <p className='ml-4 text-lg'>Loading profile data...</p>
-      </div>
-    );
-  }
-
-  console.log(mealPlan);
+  if (isLoadingProfile)
+    return <LoadingScreen loadingLabel='Loading profile data...' />;
 
   return (
     <div className='container mx-auto py-8'>

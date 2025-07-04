@@ -111,7 +111,6 @@ export default function ProfilePage() {
       setIsLoading(true);
       getProfileData(user.uid)
         .then((profileDataSubset) => {
-          console.log(profileDataSubset);
           form.reset(profileDataSubset);
           setIsLoading(false);
         })
@@ -127,7 +126,7 @@ export default function ProfilePage() {
     } else {
       setIsLoading(false);
     }
-  }, [user, form, toast]);
+  }, [form, toast]);
 
   async function onSubmit(data: ProfileFormValues) {
     console.log('Submitting profile data:', data);

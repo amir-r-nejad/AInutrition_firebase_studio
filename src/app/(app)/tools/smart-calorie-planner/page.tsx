@@ -178,7 +178,7 @@ export default function SmartCaloriePlannerPage() {
     } else {
       setIsLoadingData(false);
     }
-  }, [user, smartPlannerForm, toast]);
+  }, [smartPlannerForm, toast]);
 
   const onSubmit = async (data: SmartCaloriePlannerFormValues) => {
     const activity = activityLevels.find(
