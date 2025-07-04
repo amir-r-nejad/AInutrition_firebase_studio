@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -170,23 +171,8 @@ export default function MacroSplitterPage() {
           });
         }
 
-        // Priority: Manual Macro Breakdown results, then Smart Planner results, then Profile estimation
+        // Priority: Smart Planner results, then Profile estimation
         if (
-          profileData.manualMacroResults &&
-          profileData.manualMacroResults.totalCalories !== undefined &&
-          profileData.manualMacroResults.totalCalories !== null
-        ) {
-          const manualResults = profileData.manualMacroResults;
-          targets = {
-            calories: manualResults.totalCalories || 0,
-            protein_g: manualResults.proteinGrams || 0,
-            carbs_g: manualResults.carbGrams || 0,
-            fat_g: manualResults.fatGrams || 0,
-            source: 'Manual Macro Breakdown (Smart Planner)',
-          };
-          sourceMessage =
-            "Daily totals from 'Manual Macro Breakdown' in Smart Planner. Adjust there for changes.";
-        } else if (
           profileData.smartPlannerData?.results?.finalTargetCalories !==
             undefined &&
           profileData.smartPlannerData?.results?.finalTargetCalories !== null
@@ -298,11 +284,11 @@ export default function MacroSplitterPage() {
     }
 
     setIsLoading(false);
-  }, [user, toast, form]);
+  }, [user, toast, form, toasts]);
 
   useEffect(() => {
     loadDataForSplitter();
-  }, []);
+  }, [loadDataForSplitter]);
 
   const onSubmit = async (data: MacroSplitterFormValues) => {
     if (!dailyTargets) {

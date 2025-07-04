@@ -1,3 +1,4 @@
+
 'use client';
 
 import { getSmartPlannerData, saveSmartPlannerData } from '@/app/api/user/database';
@@ -69,6 +70,7 @@ import {
   HelpCircle,
   Info,
   RefreshCcw,
+  Save,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
@@ -386,6 +388,38 @@ export default function SmartCaloriePlannerPage() {
       title: 'Custom Plan Reset',
       description: 'Custom plan inputs have been reset.',
     });
+  };
+
+  const handleSaveCustomPlan = async () => {
+    if (!user?.uid || !customPlanResults) {
+      toast({
+        title: 'Cannot Save',
+        description: 'No custom plan results to save or user not logged in.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const currentFormValues = smartPlannerForm.getValues();
+
+    try {
+      await saveSmartPlannerData(user.uid, {
+        formValues: currentFormValues,
+        results: customPlanResults, // SAVING THE CUSTOM RESULTS!
+      });
+      setResults(customPlanResults); // Update the main results display as well
+      toast({
+        title: 'Custom Plan Saved!',
+        description:
+          'Your custom macros are now the active targets for other tools.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Save Error',
+        description: 'Could not save your custom plan.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const watchedCustomInputs = smartPlannerForm.watch([
@@ -1720,6 +1754,15 @@ export default function SmartCaloriePlannerPage() {
                               {/* */}
                             </TableBody>
                           </Table>
+                          <Button
+                            type='button'
+                            onClick={handleSaveCustomPlan}
+                            className='w-full mt-4'
+                            disabled={!customPlanResults}
+                          >
+                            <Save className='mr-2 h-4 w-4' />
+                            Save Custom Plan as Main Target
+                          </Button>
                         </div>
                       )}
                     </form>
