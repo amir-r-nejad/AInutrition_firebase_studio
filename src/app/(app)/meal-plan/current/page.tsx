@@ -61,6 +61,16 @@ const generateInitialWeeklyPlan = (): WeeklyMealPlan => ({
   })),
 });
 
+// Helper function to safely convert values to numbers or a fallback
+const safeConvertToNumber = (value: any, fallback: number | null = null) => {
+    if (value === null || value === undefined || value === '') {
+        return fallback;
+    }
+    const num = Number(value);
+    return isNaN(num) ? fallback : num;
+};
+
+
 export default function CurrentMealPlanPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -285,20 +295,20 @@ export default function CurrentMealPlanPage() {
       if (result.adjustedMeal && user?.uid) {
         const newWeeklyPlan = JSON.parse(JSON.stringify(weeklyPlan));
         const updatedMealData = {
-          ...result.adjustedMeal,
-          id: mealToOptimize.id,
-          totalCalories: Number(result.adjustedMeal.totalCalories) || null,
-          totalProtein: Number(result.adjustedMeal.totalProtein) || null,
-          totalCarbs: Number(result.adjustedMeal.totalCarbs) || null,
-          totalFat: Number(result.adjustedMeal.totalFat) || null,
-          ingredients: result.adjustedMeal.ingredients.map((ing) => ({
-            ...ing,
-            quantity: Number(ing.quantity) || 0,
-            calories: Number(ing.calories) || null,
-            protein: Number(ing.protein) || null,
-            carbs: Number(ing.carbs) || null,
-            fat: Number(ing.fat) || null,
-          })),
+            ...result.adjustedMeal,
+            id: mealToOptimize.id,
+            totalCalories: safeConvertToNumber(result.adjustedMeal.totalCalories),
+            totalProtein: safeConvertToNumber(result.adjustedMeal.totalProtein),
+            totalCarbs: safeConvertToNumber(result.adjustedMeal.totalCarbs),
+            totalFat: safeConvertToNumber(result.adjustedMeal.totalFat),
+            ingredients: result.adjustedMeal.ingredients.map((ing) => ({
+                ...ing,
+                quantity: safeConvertToNumber(ing.quantity, 0),
+                calories: safeConvertToNumber(ing.calories),
+                protein: safeConvertToNumber(ing.protein),
+                carbs: safeConvertToNumber(ing.carbs),
+                fat: safeConvertToNumber(ing.fat),
+            })),
         };
         newWeeklyPlan.days[dayIndex].meals[mealIndex] = updatedMealData;
         setWeeklyPlan(newWeeklyPlan);
