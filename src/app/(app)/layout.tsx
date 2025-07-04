@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Logo } from '@/components/Logo';
@@ -105,6 +106,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </React.Fragment>
                 );
               } else {
+                // This guard ensures that 'item' has the properties of a nav link, satisfying TypeScript.
+                if (!item.href || !item.icon) {
+                  return null;
+                }
                 const IconComponent = item.icon;
                 return (
                   <SidebarMenuItem key={item.label}>
