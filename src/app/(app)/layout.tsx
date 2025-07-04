@@ -104,22 +104,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     {/* Removed the label for section as it's just a separator now based on previous styling */}
                   </React.Fragment>
                 );
+              } else {
+                const IconComponent = item.icon;
+                return (
+                  <SidebarMenuItem key={item.label}>
+                    <Link href={item.href} legacyBehavior passHref>
+                      <SidebarMenuButton
+                        isActive={false} // This needs to be dynamic based on current path
+                        tooltip={item.label}
+                      >
+                        <IconComponent className='h-5 w-5' />{' '}
+                        {/* Render the icon component */}
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                );
               }
-              const IconComponent = item.icon; // Get the icon component
-              return (
-                <SidebarMenuItem key={item.label}>
-                  <Link href={item.href!} legacyBehavior passHref>
-                    <SidebarMenuButton
-                      isActive={false} // This needs to be dynamic based on current path
-                      tooltip={item.label}
-                    >
-                      <IconComponent className='h-5 w-5' />{' '}
-                      {/* Render the icon component */}
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              );
             })}
           </SidebarMenu>
         </SidebarContent>
