@@ -1,11 +1,16 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read, create, update, and delete their own document.
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // WARNING: These rules are for development and testing.
+    // They allow any authenticated user to read/write to the database.
+    // For production, you should implement more restrictive rules.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
+
+    // A more secure rule for production would be:
+    // match /users/{userId} {
+    //   allow read, write: if request.auth != null && request.auth.uid == userId;
+    // }
   }
 }
