@@ -3,72 +3,19 @@
 
 import { db } from '@/lib/firebase/firebase';
 import {
-  defaultMacroPercentages,
-  mealNames as defaultMealNames,
-} from '@/lib/constants';
-import {
-  type FullProfileType,
   type ProfileFormValues,
   type WeeklyMealPlan,
   preprocessDataForFirestore,
 } from '@/lib/schemas';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import type { GeneratePersonalizedMealPlanOutput } from '@/ai/flows/generate-meal-plan';
 
-// =================================================================
-// MAIN USER PROFILE FUNCTIONS
-// =================================================================
-
-/**
- * Fetches the complete user profile from Firestore.
- * This is the primary function for reading user data.
- */
-export async function getUserProfile(
-  userId: string
-): Promise<FullProfileType | null> {
-  if (!userId) return null;
-  try {
-    const userDocRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userDocRef);
-
-    if (docSnap.exists()) {
-      return docSnap.data() as FullProfileType;
-    } else {
-      console.warn('getUserProfile: No user profile found for userId:', userId);
-      return null;
-    }
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    throw new Error('Could not fetch user profile from database.');
-  }
-}
-
-// =================================================================
-// PAGE-SPECIFIC DATA HANDLERS
-// =================================================================
+// The get... functions have been removed as they are the source of the server crash.
+// Their logic has been moved client-side to the components that use them.
+// This ensures that Firestore requests are made from the authenticated client browser,
+// which correctly passes Firestore security rules.
 
 // --- Profile Page ---
-export async function getProfileData(
-  userId: string
-): Promise<Partial<ProfileFormValues>> {
-  const fullProfile = await getUserProfile(userId);
-  if (!fullProfile) return {};
-
-  return {
-    name: fullProfile.name ?? undefined,
-    subscriptionStatus: fullProfile.subscriptionStatus ?? undefined,
-    goalWeight: fullProfile.goalWeight ?? undefined,
-    painMobilityIssues: fullProfile.painMobilityIssues ?? undefined,
-    injuries: fullProfile.injuries || [],
-    surgeries: fullProfile.surgeries || [],
-    exerciseGoals: fullProfile.exerciseGoals || [],
-    exercisePreferences: fullProfile.exercisePreferences || [],
-    exerciseFrequency: fullProfile.exerciseFrequency ?? undefined,
-    exerciseIntensity: fullProfile.exerciseIntensity ?? undefined,
-    equipmentAccess: fullProfile.equipmentAccess || [],
-  };
-}
-
 export async function saveProfileData(
   userId: string,
   data: ProfileFormValues
@@ -88,13 +35,6 @@ export async function saveProfileData(
 }
 
 // --- Current Meal Plan Page ---
-export async function getMealPlanData(
-  userId: string
-): Promise<WeeklyMealPlan | null> {
-  const profile = await getUserProfile(userId);
-  return profile?.currentWeeklyPlan ?? null;
-}
-
 export async function saveMealPlanData(
   userId: string,
   planData: WeeklyMealPlan

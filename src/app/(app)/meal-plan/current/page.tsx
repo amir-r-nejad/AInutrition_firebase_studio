@@ -5,7 +5,7 @@ import {
   adjustMealIngredients,
   type AdjustMealIngredientsInput,
 } from '@/ai/flows/adjust-meal-ingredients';
-import { getMealPlanData, getUserProfile, saveMealPlanData } from '@/app/api/user/database';
+import { saveMealPlanData } from '@/app/api/user/database';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -43,6 +43,8 @@ import type {
 } from '@/lib/schemas';
 import { Loader2, Pencil, PlusCircle, Trash2, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 const generateInitialWeeklyPlan = (): WeeklyMealPlan => ({
   days: daysOfWeek.map((day) => ({
@@ -81,35 +83,38 @@ export default function CurrentMealPlanPage() {
   useEffect(() => {
     if (user?.uid) {
       setIsLoadingPlan(true);
-      getMealPlanData(user.uid)
-        .then((plan) => {
-          if (plan) {
-            setWeeklyPlan(plan);
+      setIsLoadingProfile(true);
+
+      // Client-side fetch for both profile and meal plan
+      const userDocRef = doc(db, 'users', user.uid);
+      getDoc(userDocRef)
+        .then((docSnap) => {
+          if (docSnap.exists()) {
+            const fullProfile = docSnap.data() as FullProfileType;
+            setProfileData(fullProfile);
+            if (fullProfile.currentWeeklyPlan) {
+              setWeeklyPlan(fullProfile.currentWeeklyPlan);
+            } else {
+              setWeeklyPlan(generateInitialWeeklyPlan());
+            }
           } else {
+            setProfileData(null);
             setWeeklyPlan(generateInitialWeeklyPlan());
           }
         })
         .catch((error) => {
           toast({
-            title: 'Error Loading Meal Plan',
-            description: error instanceof Error ? error.message : 'Could not load your meal plan.',
+            title: 'Error Loading Data',
+            description: error instanceof Error ? error.message : 'Could not load your data.',
             variant: 'destructive',
           });
           setWeeklyPlan(generateInitialWeeklyPlan());
         })
-        .finally(() => setIsLoadingPlan(false));
+        .finally(() => {
+            setIsLoadingPlan(false);
+            setIsLoadingProfile(false);
+        });
 
-      setIsLoadingProfile(true);
-      getUserProfile(user.uid)
-        .then((data) => setProfileData(data))
-        .catch((error) =>
-          toast({
-            title: 'Error Loading Profile',
-            description: error instanceof Error ? error.message : 'Could not load profile data for optimization.',
-            variant: 'destructive',
-          })
-        )
-        .finally(() => setIsLoadingProfile(false));
     } else {
       setIsLoadingPlan(false);
       setIsLoadingProfile(false);

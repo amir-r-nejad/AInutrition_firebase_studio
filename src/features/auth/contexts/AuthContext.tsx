@@ -13,7 +13,6 @@ import {
   useState,
 } from 'react';
 
-import { getUserProfile } from '@/app/api/user/database';
 import { useUser } from '@/hooks/use-user';
 import type { FullProfileType } from '@/lib/schemas';
 import { Loader2 } from 'lucide-react';
@@ -59,7 +58,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isLoading = isLoadingUser || isProfileLoading;
 
   const fetchUserProfile = useCallback(async (isRefresh = false) => {
-    // FIX: Get current user directly from auth to prevent race conditions.
     const auth = getAuth();
     const currentUser = auth.currentUser;
     if (!currentUser?.uid) {
@@ -67,20 +65,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsProfileLoading(false);
       return;
     }
-    
-    // Only show global loading on initial load, not on manual refresh
+
     if (!isRefresh) {
         setIsProfileLoading(true);
     }
 
     try {
-      const userProfile = await getUserProfile(currentUser.uid);
-      setProfile(userProfile);
+      // REPLACED SERVER ACTION WITH CLIENT-SIDE SDK CALL
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const docSnap = await getDoc(userDocRef);
+      if (docSnap.exists()) {
+        setProfile(docSnap.data() as FullProfileType);
+      } else {
+        console.warn('AuthContext: No user profile found for userId:', currentUser.uid);
+        setProfile(null);
+      }
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
       toast({
         title: 'Error',
-        description: 'Could not fetch user profile.',
+        description: 'Could not fetch user profile from the database.',
         variant: 'destructive',
       });
     } finally {
@@ -89,10 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [toast]);
 
   useEffect(() => {
-    // This logic runs on the client after a user logs in or auth state changes.
-    // It checks if a user profile document exists in Firestore and creates one if not.
     const addUserProfileOnClient = async () => {
-      // FIX: Get current user directly from auth to prevent race conditions.
       const auth = getAuth();
       const authedUser = auth.currentUser;
 
@@ -128,13 +129,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     if (firebaseUser) {
       addUserProfileOnClient().then(() => {
-        // After ensuring profile exists, fetch it
         if (!isLoadingUser) {
             fetchUserProfile(false);
         }
       });
     } else {
-        // If no firebaseUser, ensure profile is cleared and not loading.
         setProfile(null);
         setIsProfileLoading(false);
     }
@@ -142,7 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (isLoading) {
-      return; // Wait until all loading is complete before attempting to redirect
+      return;
     }
 
     const publicPages = [
@@ -178,7 +177,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = useCallback(async () => {
     try {
       await fSignOut();
-      setProfile(null); // Clear profile on logout
+      setProfile(null);
       router.push('/login');
     } catch (error) {
       console.error('Firebase logout error:', error);

@@ -36,6 +36,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
+  type FullProfileType,
   type ProfileFormValues,
   ProfileFormSchema,
 } from '@/lib/schemas';
@@ -48,8 +49,8 @@ import {
   exerciseIntensities,
 } from '@/lib/constants';
 import { AlertTriangle, RefreshCcw, Loader2 } from 'lucide-react';
-import { getProfileData, saveProfileData } from '@/app/api/user/database';
-import { doc, setDoc } from 'firebase/firestore';
+import { saveProfileData } from '@/app/api/user/database';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 
 
@@ -78,9 +79,28 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user?.uid) {
       setIsLoading(true);
-      getProfileData(user.uid)
-        .then((profileDataSubset) => {
-          form.reset(profileDataSubset);
+      // Client-side fetch
+      const userDocRef = doc(db, 'users', user.uid);
+      getDoc(userDocRef)
+        .then((docSnap) => {
+          if (docSnap.exists()) {
+            const profileData = docSnap.data() as FullProfileType;
+            // Map the full profile to the form values
+            const profileDataSubset = {
+                name: profileData.name ?? undefined,
+                subscriptionStatus: profileData.subscriptionStatus ?? undefined,
+                goalWeight: profileData.goalWeight ?? undefined,
+                painMobilityIssues: profileData.painMobilityIssues ?? undefined,
+                injuries: profileData.injuries || [],
+                surgeries: profileData.surgeries || [],
+                exerciseGoals: profileData.exerciseGoals || [],
+                exercisePreferences: profileData.exercisePreferences || [],
+                exerciseFrequency: profileData.exerciseFrequency ?? undefined,
+                exerciseIntensity: profileData.exerciseIntensity ?? undefined,
+                equipmentAccess: profileData.equipmentAccess || [],
+            };
+            form.reset(profileDataSubset);
+          }
         })
         .catch((error) => {
           console.error('Error loading profile data:', error);
