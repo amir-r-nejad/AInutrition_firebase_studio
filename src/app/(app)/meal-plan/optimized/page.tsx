@@ -126,8 +126,8 @@ export default function OptimizedMealPlanPage() {
       activityLevel: profileData.activityLevel!,
       dietGoalOnboarding: profileData.dietGoalOnboarding!,
 
-      // Optional fields
-      ideal_goal_weight: profileData.ideal_goal_weight,
+      // Optional fields - ensure nulls are converted to undefined
+      ideal_goal_weight: profileData.ideal_goal_weight ?? undefined,
       bf_current: profileData.bf_current ?? undefined,
       bf_target: profileData.bf_target ?? undefined,
       bf_ideal: profileData.bf_ideal ?? undefined,
@@ -155,16 +155,16 @@ export default function OptimizedMealPlanPage() {
       left_arm_current: profileData.left_arm_current ?? undefined,
       left_arm_goal_1m: profileData.left_arm_goal_1m ?? undefined,
       left_arm_ideal: profileData.left_arm_ideal ?? undefined,
-      preferredDiet: profileData.preferredDiet,
-      allergies: profileData.allergies,
-      preferredCuisines: profileData.preferredCuisines,
-      dispreferredCuisines: profileData.dispreferredCuisines,
-      preferredIngredients: profileData.preferredIngredients,
-      dispreferredIngredients: profileData.dispreferredIngredients,
-      preferredMicronutrients: profileData.preferredMicronutrients,
-      medicalConditions: profileData.medicalConditions,
-      medications: profileData.medications,
-      typicalMealsDescription: profileData.typicalMealsDescription,
+      preferredDiet: profileData.preferredDiet ?? undefined,
+      allergies: profileData.allergies ?? undefined,
+      preferredCuisines: profileData.preferredCuisines ?? undefined,
+      dispreferredCuisines: profileData.dispreferredCuisines ?? undefined,
+      preferredIngredients: profileData.preferredIngredients ?? undefined,
+      dispreferredIngredients: profileData.dispreferredIngredients ?? undefined,
+      preferredMicronutrients: profileData.preferredMicronutrients ?? undefined,
+      medicalConditions: profileData.medicalConditions ?? undefined,
+      medications: profileData.medications ?? undefined,
+      typicalMealsDescription: profileData.typicalMealsDescription ?? undefined,
     };
     // Filter out undefined optional fields to keep AI input clean
     Object.keys(input).forEach(
