@@ -129,6 +129,8 @@ export default function SmartCaloriePlannerPage() {
     },
   });
 
+  const { reset, watch } = smartPlannerForm;
+
   useEffect(() => {
     if (user?.uid) {
       setIsLoadingData(true);
@@ -192,7 +194,7 @@ export default function SmartCaloriePlannerPage() {
                   formSource.remaining_calories_carb_pct ?? 50,
               };
 
-              smartPlannerForm.reset(formValues);
+              reset(formValues);
 
               if (
                 profile.smartPlannerData?.results &&
@@ -219,7 +221,7 @@ export default function SmartCaloriePlannerPage() {
     } else {
       setIsLoadingData(false);
     }
-  }, [user, smartPlannerForm, toast]);
+  }, [user, reset, toast]);
 
   const onSubmit = async (data: SmartCaloriePlannerFormValues) => {
     const activity = activityLevels.find(
@@ -501,21 +503,12 @@ export default function SmartCaloriePlannerPage() {
     }
   };
 
-  const watchedCustomInputs = smartPlannerForm.watch([
-    'custom_total_calories',
-    'custom_protein_per_kg',
-    'remaining_calories_carb_pct',
-    'current_weight',
-  ]);
+  const customTotalCalories = watch('custom_total_calories');
+  const customProteinPerKg = watch('custom_protein_per_kg');
+  const remainingCarbPct = watch('remaining_calories_carb_pct');
+  const currentWeightMainForm = watch('current_weight');
 
   useEffect(() => {
-    const [
-      customTotalCalories,
-      customProteinPerKg,
-      remainingCarbPct,
-      currentWeightMainForm,
-    ] = watchedCustomInputs;
-
     if (
       !results ||
       currentWeightMainForm === undefined ||
@@ -615,7 +608,14 @@ export default function SmartCaloriePlannerPage() {
     if (JSON.stringify(customPlanResults) !== JSON.stringify(newCustomPlan)) {
       setCustomPlanResults(newCustomPlan);
     }
-  }, [watchedCustomInputs, results, customPlanResults, toast]);
+  }, [
+    customTotalCalories,
+    customProteinPerKg,
+    remainingCarbPct,
+    currentWeightMainForm,
+    results,
+    customPlanResults,
+  ]);
 
   if (isLoadingData) {
     return (
