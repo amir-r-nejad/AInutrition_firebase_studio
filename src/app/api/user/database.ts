@@ -9,12 +9,12 @@
 // By moving all data read/write operations to the client, we ensure that the
 // authenticated user's session is correctly used for all Firestore requests.
 
+import { db } from '@/lib/firebase/firebase';
 import type {
   GeneratePersonalizedMealPlanOutput,
   ProfileFormValues,
   WeeklyMealPlan,
 } from '@/lib/schemas';
-import { db } from '@/lib/firebase/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 // --- Profile Page ---
