@@ -1,3 +1,4 @@
+
 'use server';
 
 import { ai, geminiModel } from '@/ai/genkit';
@@ -63,36 +64,36 @@ const prompt = ai.definePrompt({
   name: 'suggestMealsForMacrosPrompt',
   input: { type: 'json' },
   output: { type: 'json' },
-  prompt: `You are an expert AI nutritionist. Your goal is to act as a helpful and knowledgeable guide, providing meal suggestions that are not only delicious but also perfectly aligned with the user's health goals and restrictions.
+  prompt: `You are an expert AI nutritionist and personal chef. Your primary role is to act as a dietary consultant, analyzing a comprehensive user profile and specific macronutrient targets for a single meal. Based on this data, you will provide 1 to 3 creative, delicious, and precisely tailored meal suggestions. Your suggestions must be holistic, considering not just the numbers, but the user's entire lifestyle, preferences, and health status.
 
-User Profile & Preferences:
-{{#if age}}Age: {{age}}{{/if}}
-{{#if gender}}Gender: {{gender}}{{/if}}
-{{#if activityLevel}}Activity Level: {{activityLevel}}{{/if}}
-{{#if dietGoal}}Diet Goal: {{dietGoal}}{{/if}}
-{{#if preferredDiet}}Preferred Diet: {{preferredDiet}}{{/if}}
-{{#if allergies.length}}Allergies: {{allergies}}{{/if}}
-{{#if dispreferredIngredients.length}}Dislikes: {{dispreferredIngredients}}{{/if}}
-{{#if preferredIngredients.length}}Preferred Ingredients: {{preferredIngredients}}{{/if}}
-{{#if preferredCuisines.length}}Preferred Cuisines: {{preferredCuisines}}{{/if}}
-{{#if dispreferredCuisines.length}}Dispreferred Cuisines: {{dispreferredCuisines}}{{/if}}
-{{#if medicalConditions.length}}Medical Conditions: {{medicalConditions}}{{/if}}
-{{#if medications.length}}Medications: {{medications}}{{/if}}
+**User's Comprehensive Profile:**
+{{#if age}}**Age:** {{age}}{{/if}}
+{{#if gender}}**Gender:** {{gender}}{{/if}}
+{{#if activityLevel}}**Activity Level:** {{activityLevel}}{{/if}}
+{{#if dietGoal}}**Primary Diet Goal:** {{dietGoal}}{{/if}}
+{{#if preferredDiet}}**Stated Dietary Preference:** {{preferredDiet}}{{/if}}
+{{#if allergies.length}}**Critical Allergies to Avoid:** {{allergies}}{{/if}}
+{{#if medicalConditions.length}}**Medical Conditions to Consider:** {{medicalConditions}}{{/if}}
+{{#if medications.length}}**Medications:** {{medications}}{{/if}}
+{{#if preferredCuisines.length}}**Preferred Cuisines:** {{preferredCuisines}}{{/if}}
+{{#if dispreferredCuisines.length}}**Cuisines to Avoid:** {{dispreferredCuisines}}{{/if}}
+{{#if preferredIngredients.length}}**Likes:** {{preferredIngredients}}{{/if}}
+{{#if dispreferredIngredients.length}}**Dislikes:** {{dispreferredIngredients}}{{/if}}
 
-Target Macros for {{mealName}}:
-- Calories: {{targetCalories}}
-- Protein: {{targetProteinGrams}}g
-- Carbs: {{targetCarbsGrams}}g
-- Fat: {{targetFatGrams}}g
+**Target Macronutrients for this specific meal: "{{mealName}}":**
+- **Calories:** ~{{targetCalories}} kcal
+- **Protein:** ~{{targetProteinGrams}}g
+- **Carbohydrates:** ~{{targetCarbsGrams}}g
+- **Fat:** ~{{targetFatGrams}}g
 
-Your Task:
-Suggest 1-3 detailed meal ideas that precisely meet the user's macronutrient targets and strictly adhere to all their preferences, allergies, and medical conditions. The 'description' for each meal should briefly explain *why* it's a good choice for the user, considering their profile.
+**Your Task & Expert Explanation Requirement:**
+Generate 1 to 3 detailed meal suggestions that meet the user's macronutrient targets. For each suggestion, you MUST provide an insightful 'description' that explains *why* this meal is an excellent choice for the user, as a real nutritionist would. This explanation should connect the meal to the user's profile. For example: "This meal is high in fiber and lean protein, which will keep you feeling full longer, supporting your **fat loss goal**. We've used Greek yogurt as a base to boost the protein content while respecting your preference for **Mediterranean cuisine**."
 
-Strict Instructions for Output:
+**Strict Instructions for JSON Output:**
 - Your response MUST be a JSON object with ONLY one exact top-level property: "suggestions".
     - "suggestions": This MUST be an array containing 1 to 3 meal suggestion objects. Each meal suggestion object MUST contain ONLY these exact properties:
         - "mealTitle": string — A concise and appealing title for the meal (e.g., "Mediterranean Chicken Salad").
-        - "description": string — A brief, engaging description of the meal that also explains *why* it fits the user's goals (e.g., "High in protein to support muscle gain and uses ingredients that align with your Mediterranean diet preference.").
+        - "description": string — A brief, engaging, and **expert** description of the meal that explains *why* it fits the user's goals and profile, as detailed in the task description above.
         - "ingredients": An array of objects, where each object represents a single ingredient. Each ingredient object MUST contain ONLY these exact properties:
             - "name": string — The name of the ingredient (e.g., "Chicken Breast").
             - "amount": string — The quantity of the ingredient as a string (e.g., "150", "1/2").
@@ -108,7 +109,7 @@ Strict Instructions for Output:
         - "totalFat": number — The sum of fat (grams) from all ingredients in this meal.
         - "instructions"?: string — (Optional) Step-by-step cooking instructions for the meal. If not applicable or not requested, omit this field.
 
-⚠️ Important Rules:
+**⚠️ Important Rules:**
 - Ensure all meal suggestions are realistic, diverse, and nutritionally valid.
 - Strictly respect all specified allergies, preferences, and medical conditions.
 - Double-check all macro sums: "totalCalories", "totalProtein", "totalCarbs", and "totalFat" MUST be accurately calculated and match the sum of their respective values from the "ingredients" list for each meal.
@@ -141,3 +142,5 @@ const suggestMealsForMacrosFlow = ai.defineFlow(
     return output as SuggestMealsForMacrosOutput;
   }
 );
+
+    
