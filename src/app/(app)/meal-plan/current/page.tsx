@@ -4,6 +4,7 @@ import {
   adjustMealIngredients,
   type AdjustMealIngredientsInput,
 } from '@/ai/flows/adjust-meal-ingredients';
+import { saveMealPlanData } from '@/app/api/user/database';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -100,23 +101,6 @@ async function getMealPlanData(userId: string): Promise<WeeklyMealPlan | null> {
     console.error('Error fetching meal plan data from Firestore:', error);
   }
   return null;
-}
-
-async function saveMealPlanData(userId: string, planData: WeeklyMealPlan) {
-  if (!userId) throw new Error('User ID required to save meal plan.');
-  try {
-    const userProfileRef = doc(db, 'users', userId);
-    const sanitizedPlanData = preprocessDataForFirestore(planData);
-
-    await setDoc(
-      userProfileRef,
-      { currentWeeklyPlan: sanitizedPlanData },
-      { merge: true }
-    );
-  } catch (error) {
-    console.error('Error saving meal plan data to Firestore:', error);
-    throw error;
-  }
 }
 
 async function getProfileDataForOptimization(

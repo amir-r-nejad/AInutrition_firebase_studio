@@ -21,6 +21,7 @@ import {
   ProfileFormValues,
   SmartCaloriePlannerFormValues,
   preprocessDataForFirestore,
+  WeeklyMealPlan,
 } from '../../../lib/schemas';
 
 export async function addUser(user: {
@@ -248,6 +249,23 @@ export async function getUserProfile(
     }
   } catch (error) {
     console.error('Error fetching user profile:', error);
+    throw error;
+  }
+}
+
+export async function saveMealPlanData(userId: string, planData: WeeklyMealPlan) {
+  if (!userId) throw new Error('User ID required to save meal plan.');
+  try {
+    const userProfileRef = doc(db, 'users', userId);
+    const sanitizedPlanData = preprocessDataForFirestore(planData);
+
+    await setDoc(
+      userProfileRef,
+      { currentWeeklyPlan: sanitizedPlanData },
+      { merge: true }
+    );
+  } catch (error) {
+    console.error('Error saving meal plan data to Firestore:', error);
     throw error;
   }
 }
