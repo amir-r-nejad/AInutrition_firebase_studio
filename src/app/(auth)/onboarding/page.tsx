@@ -369,16 +369,6 @@ export default function OnboardingPage() {
       finalResultsToSave = calculatedTargets;
     }
 
-    const processStringArray = (
-      fieldValue: string | string[] | undefined
-    ): string[] => {
-      if (Array.isArray(fieldValue)) return fieldValue;
-      if (typeof fieldValue === 'string' && fieldValue.trim() !== '') {
-        return fieldValue.split(',').map((s) => s.trim()).filter(Boolean);
-      }
-      return [];
-    };
-
     const profileDataToSave: Partial<FullProfileType> = {
       // Basic Info
       age: data.age,
@@ -390,21 +380,7 @@ export default function OnboardingPage() {
       activityLevel: data.activityLevel,
       dietGoalOnboarding: data.dietGoalOnboarding,
 
-      // Preferences and other optional string/array fields
-      preferredDiet: data.preferredDiet,
-      allergies: processStringArray(data.allergies),
-      preferredCuisines: processStringArray(data.preferredCuisines),
-      dispreferredCuisines: processStringArray(data.dispreferredCuisines),
-      preferredIngredients: processStringArray(data.preferredIngredients),
-      dispreferredIngredients: processStringArray(
-        data.dispreferredIngredients
-      ),
-      preferredMicronutrients: processStringArray(data.preferredMicronutrients),
-      medicalConditions: processStringArray(data.medicalConditions),
-      medications: processStringArray(data.medications),
-      typicalMealsDescription: data.typicalMealsDescription,
-
-      // Nested smartPlannerData
+      // Nested smartPlannerData with only the fields collected in onboarding
       smartPlannerData: {
         formValues: {
           age: data.age,
@@ -415,33 +391,6 @@ export default function OnboardingPage() {
           ideal_goal_weight: data.ideal_goal_weight,
           activity_factor_key: data.activityLevel,
           dietGoal: data.dietGoalOnboarding,
-          bf_current: data.bf_current,
-          bf_target: data.bf_target,
-          bf_ideal: data.bf_ideal,
-          mm_current: data.mm_current,
-          mm_target: data.mm_target,
-          mm_ideal: data.mm_ideal,
-          bw_current: data.bw_current,
-          bw_target: data.bw_target,
-          bw_ideal: data.bw_ideal,
-          waist_current: data.waist_current,
-          waist_goal_1m: data.waist_goal_1m,
-          waist_ideal: data.waist_ideal,
-          hips_current: data.hips_current,
-          hips_goal_1m: data.hips_goal_1m,
-          hips_ideal: data.hips_ideal,
-          right_leg_current: data.right_leg_current,
-          right_leg_goal_1m: data.right_leg_goal_1m,
-          right_leg_ideal: data.right_leg_ideal,
-          left_leg_current: data.left_leg_current,
-          left_leg_goal_1m: data.left_leg_goal_1m,
-          left_leg_ideal: data.left_leg_ideal,
-          right_arm_current: data.right_arm_current,
-          right_arm_goal_1m: data.right_arm_goal_1m,
-          right_arm_ideal: data.right_arm_ideal,
-          left_arm_current: data.left_arm_current,
-          left_arm_goal_1m: data.left_arm_goal_1m,
-          left_arm_ideal: data.left_arm_ideal,
           custom_total_calories: data.custom_total_calories,
           custom_protein_per_kg: data.custom_protein_per_kg,
           remaining_calories_carb_pct: data.remaining_calories_carb_pct,
@@ -449,16 +398,14 @@ export default function OnboardingPage() {
         results: finalResultsToSave,
       },
 
-      // Meal distributions
-      mealDistributions:
-        data.mealDistributions ??
-        defaultMealNames.map((name) => ({
-          mealName: name,
-          calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
-          protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
-          carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
-          fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
-        })),
+      // Set default meal distributions
+      mealDistributions: defaultMealNames.map((name) => ({
+        mealName: name,
+        calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
+        protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
+        carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
+        fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
+      })),
     };
 
     try {
@@ -475,7 +422,6 @@ export default function OnboardingPage() {
         title: 'Onboarding Complete!',
         description: 'Your profile has been saved. Welcome to NutriPlan!',
       });
-      // AuthProvider will handle the redirect
     } catch (error) {
       toast({
         title: 'Onboarding Error',

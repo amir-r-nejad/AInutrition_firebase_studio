@@ -1,3 +1,4 @@
+
 import { User } from 'firebase/auth';
 import * as z from 'zod';
 import {
@@ -563,7 +564,8 @@ const CustomCalculatedTargetsSchema = z.object({
 
 // TypeScript type from schema
 type CustomCalculatedTargets = z.infer<typeof CustomCalculatedTargetsSchema>;
-// Onboarding Schema
+
+// Onboarding Schema - Simplified to match the UI
 export const OnboardingFormSchema = z.object({
   // Step 2: Basic Profile
   age: z.coerce
@@ -596,133 +598,7 @@ export const OnboardingFormSchema = z.object({
     { required_error: 'Diet goal is required.' }
   ),
 
-  // Step 3: Body Composition (Optional)
-  bf_current: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).max(100).optional()
-  ),
-  bf_target: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).max(100).optional()
-  ),
-  bf_ideal: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).max(100).optional()
-  ),
-  mm_current: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).max(100).optional()
-  ),
-  mm_target: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).max(100).optional()
-  ),
-  mm_ideal: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).max(100).optional()
-  ),
-  bw_current: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).max(100).optional()
-  ),
-  bw_target: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).max(100).optional()
-  ),
-  bw_ideal: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).max(100).optional()
-  ),
-
-  // Step 4: Measurements (Optional)
-  waist_current: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  waist_goal_1m: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  waist_ideal: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  hips_current: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  hips_goal_1m: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  hips_ideal: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  right_leg_current: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  right_leg_goal_1m: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  right_leg_ideal: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  left_leg_current: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  left_leg_goal_1m: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  left_leg_ideal: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  right_arm_current: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  right_arm_goal_1m: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  right_arm_ideal: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  left_arm_current: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  left_arm_goal_1m: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-  left_arm_ideal: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
-  ),
-
-  // Step 5: Dietary Preferences & Restrictions
-  preferredDiet: z.string().optional(),
-  allergies: z.string().or(z.array(z.string())).optional(),
-  preferredCuisines: z.string().or(z.array(z.string())).optional(),
-  dispreferredCuisines: z.string().or(z.array(z.string())).optional(),
-  preferredIngredients: z.string().or(z.array(z.string())).optional(),
-  dispreferredIngredients: z.string().or(z.array(z.string())).optional(),
-  mealsPerDay: z.coerce.number().min(2).max(7).default(3),
-  preferredMicronutrients: z.string().or(z.array(z.string())).optional(),
-
-  // Step 6: Medical Information (Optional)
-  medicalConditions: z.string().or(z.array(z.string())).optional(),
-  medications: z.string().or(z.array(z.string())).optional(),
-
-  // Step 8: Customize Your Targets (Optional)
+  // Step 4: Customize Your Targets (Optional)
   custom_total_calories: z.preprocess(
     preprocessOptionalNumber,
     z.coerce
@@ -747,12 +623,6 @@ export const OnboardingFormSchema = z.object({
       .optional()
       .default(50)
   ),
-
-  // Step 9: Meal Macro Distribution (Optional) - Onboarding (formerly step 10)
-  mealDistributions: z.array(MealMacroDistributionSchema).optional(),
-
-  // Step 10: Typical Meals Input - Onboarding (formerly step 11)
-  typicalMealsDescription: z.string().optional(),
 });
 
 export type OnboardingFormValues = z.infer<typeof OnboardingFormSchema>;
