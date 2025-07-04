@@ -70,12 +70,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  async function logout() {
+  function logout() {
     if (isLoading) return;
 
     setIsLoading(true);
     try {
-      await fSignOut();
+      fSignOut();
+      router.push('/login');
       setIsOnboarded(false);
       setStoredOnboardingStatus(false);
       console.log('User logged out successfully');
