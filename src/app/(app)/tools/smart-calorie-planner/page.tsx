@@ -74,15 +74,13 @@ import {
   RefreshCcw,
   Save,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
 
 export default function SmartCaloriePlannerPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [results, setResults] = useState<GlobalCalculatedTargets | null>(null);
-  const [customPlanResults, setCustomPlanResults] =
-    useState<GlobalCalculatedTargets | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   const smartPlannerForm = useForm<SmartCaloriePlannerFormValues>({
@@ -131,10 +129,9 @@ export default function SmartCaloriePlannerPage() {
 
   const { reset, watch } = smartPlannerForm;
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
     if (user?.uid) {
       setIsLoadingData(true);
-
       const userDocRef = doc(db, 'users', user.uid);
       getDoc(userDocRef)
         .then((docSnap) => {
@@ -222,6 +219,11 @@ export default function SmartCaloriePlannerPage() {
       setIsLoadingData(false);
     }
   }, [user, reset, toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
 
   const onSubmit = async (data: SmartCaloriePlannerFormValues) => {
     const activity = activityLevels.find(
@@ -431,7 +433,6 @@ export default function SmartCaloriePlannerPage() {
       remaining_calories_carb_pct: 50,
     });
     setResults(null);
-    setCustomPlanResults(null);
     if (user?.uid) {
       const userProfileRef = doc(db, 'users', user.uid);
       await setDoc(
@@ -458,7 +459,6 @@ export default function SmartCaloriePlannerPage() {
       custom_protein_per_kg: undefined,
       remaining_calories_carb_pct: 50,
     });
-    setCustomPlanResults(null);
     // No need to save to Firestore on custom reset, as the main form save does that
     toast({
       title: 'Custom Plan Reset',
@@ -466,56 +466,18 @@ export default function SmartCaloriePlannerPage() {
     });
   };
 
-  const handleSaveCustomPlan = async () => {
-    if (!user?.uid || !customPlanResults) {
-      toast({
-        title: 'Cannot Save',
-        description: 'No custom plan results to save or user not logged in.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const currentFormValues = smartPlannerForm.getValues();
-
-    try {
-      const userProfileRef = doc(db, 'users', user.uid);
-      const dataToSave = {
-        smartPlannerData: preprocessDataForFirestore({
-          formValues: currentFormValues,
-          results: customPlanResults, // SAVING THE CUSTOM RESULTS!
-        }),
-      };
-      await setDoc(userProfileRef, dataToSave, { merge: true });
-
-      setResults(customPlanResults); // Update the main results display as well
-      toast({
-        title: 'Custom Plan Saved!',
-        description:
-          'Your custom macros are now the active targets for other tools.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Save Error',
-        description: 'Could not save your custom plan.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const customTotalCalories = watch('custom_total_calories');
   const customProteinPerKg = watch('custom_protein_per_kg');
   const remainingCarbPct = watch('remaining_calories_carb_pct');
   const currentWeightMainForm = watch('current_weight');
 
-  useEffect(() => {
+  const customPlanResults = useMemo<GlobalCalculatedTargets | null>(() => {
     if (
       !results ||
       currentWeightMainForm === undefined ||
       currentWeightMainForm <= 0
     ) {
-      if (customPlanResults !== null) setCustomPlanResults(null);
-      return;
+      return null;
     }
 
     const weightForCalc = currentWeightMainForm;
@@ -570,7 +532,7 @@ export default function SmartCaloriePlannerPage() {
       calculatedCarbCalories +
       calculatedFatCalories;
 
-    const newCustomPlan: GlobalCalculatedTargets = {
+    return {
       finalTargetCalories: Math.round(finalCustomTotalCalories),
       proteinGrams: Math.round(calculatedProteinGrams),
       proteinCalories: Math.round(calculatedProteinCalories),
@@ -604,18 +566,44 @@ export default function SmartCaloriePlannerPage() {
           ? ((results.tdee - finalCustomTotalCalories) * 7) / 7700
           : undefined,
     };
+  }, [results, currentWeightMainForm, customTotalCalories, customProteinPerKg, remainingCarbPct]);
 
-    if (JSON.stringify(customPlanResults) !== JSON.stringify(newCustomPlan)) {
-      setCustomPlanResults(newCustomPlan);
+  const handleSaveCustomPlan = async () => {
+    if (!user?.uid || !customPlanResults) {
+      toast({
+        title: 'Cannot Save',
+        description: 'No custom plan results to save or user not logged in.',
+        variant: 'destructive',
+      });
+      return;
     }
-  }, [
-    customTotalCalories,
-    customProteinPerKg,
-    remainingCarbPct,
-    currentWeightMainForm,
-    results,
-    customPlanResults,
-  ]);
+
+    const currentFormValues = smartPlannerForm.getValues();
+
+    try {
+      const userProfileRef = doc(db, 'users', user.uid);
+      const dataToSave = {
+        smartPlannerData: preprocessDataForFirestore({
+          formValues: currentFormValues,
+          results: customPlanResults, // SAVING THE CUSTOM RESULTS!
+        }),
+      };
+      await setDoc(userProfileRef, dataToSave, { merge: true });
+
+      setResults(customPlanResults); // Update the main results display as well
+      toast({
+        title: 'Custom Plan Saved!',
+        description:
+          'Your custom macros are now the active targets for other tools.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Save Error',
+        description: 'Could not save your custom plan.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (isLoadingData) {
     return (
