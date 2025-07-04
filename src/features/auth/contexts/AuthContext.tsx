@@ -9,17 +9,12 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { getUserProfile, onboardingUpdateUser } from '@/app/api/user/database';
 import { useUser } from '@/hooks/use-user';
 import type { OnboardingFormValues } from '@/lib/schemas';
+import { User } from '@/types/globalTypes';
 import {
   getStoredOnboardingStatus,
   RouteChecker,
   setStoredOnboardingStatus,
 } from '../lib/authUtils';
-
-interface User {
-  uid: string;
-  email: string | null;
-  emailVerified: boolean;
-}
 
 interface AuthContextType {
   user: User | null;
