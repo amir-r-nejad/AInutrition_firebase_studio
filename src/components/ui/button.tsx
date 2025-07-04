@@ -40,15 +40,14 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => { // Removed explicit onClick from destructuring, it's handled by ...props
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
 
     return (
-      // Removed the wrapping div and its onClick handler
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        {...props} // onClick is passed here if provided
+        {...props}
       />
     )
   }

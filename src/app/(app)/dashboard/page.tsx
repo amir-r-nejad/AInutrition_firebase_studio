@@ -1,3 +1,4 @@
+'use client';
 
 import { ArrowRight, Bot, BrainCircuit, ChefHat, NotebookText, SplitSquareHorizontal, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
