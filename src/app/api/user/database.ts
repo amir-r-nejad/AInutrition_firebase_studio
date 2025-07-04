@@ -1,17 +1,17 @@
 'use server';
 
 import { db } from '@/lib/firebase/firebase';
+import { User } from 'firebase/auth';
 import {
-  collection,
   addDoc,
-  updateDoc,
-  query,
-  where,
-  getDocs,
+  collection,
   doc,
   getDoc,
+  getDocs,
+  query,
+  updateDoc,
+  where,
 } from 'firebase/firestore';
-import { User } from 'firebase/auth';
 import {
   CustomCalculatedTargets,
   FullProfileType,
@@ -45,10 +45,14 @@ export async function onboardingUpdateUser(
   onboardingValues: OnboardingFormValues
 ) {
   try {
-    const userDocRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userDocRef);
+    const userRef = collection(db, 'users');
+    const q = query(userRef, where('uid', '==', userId));
+    const userSnapshot = await getDocs(q);
 
-    if (!docSnap.exists()) throw new Error('User not found');
+    if (userSnapshot.empty) throw new Error('User not found');
+
+    const userDoc = userSnapshot.docs[0];
+    const userDocRef = userDoc.ref;
 
     await updateDoc(userDocRef, onboardingValues);
     return true;
@@ -199,16 +203,26 @@ export async function getProfileData(
 export async function getUserProfile(
   userId: string
 ): Promise<FullProfileType | null> {
-  'use server';
-  if (!userId) return null;
+  if (!userId) {
+    console.log('getUserProfile called with no userId.');
+    return null;
+  }
 
   try {
-    const userDocRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userDocRef);
+    const userRef = collection(db, 'users');
+    const q = query(userRef, where('uid', '==', userId));
+    const userSnapshot = await getDocs(q);
 
-    if (docSnap.exists()) return docSnap.data() as FullProfileType;
-    else return null;
+    if (userSnapshot.empty) return null;
+
+    const userDoc = userSnapshot.docs[0];
+    const userData = userDoc.data();
+
+    console.log('Retrieved user data from Firestore:', userData);
+
+    return userData as FullProfileType;
   } catch (error) {
-    throw error;
+    console.error('Error in getUserProfile:', error);
+    throw new Error('Failed to retrieve user profile.');
   }
 }
