@@ -8,7 +8,35 @@ import {
   smartPlannerDietGoals,
 } from './constants';
 
-// Helper for preprocessing optional number fields: empty string, null, or non-numeric becomes undefined
+/**
+ * Recursively processes data to be compatible with Firestore.
+ * - Converts `undefined` values to `null`.
+ * - Converts `NaN` values to `null`.
+ * @param data The data to process.
+ * @returns Firestore-compatible data.
+ */
+export function preprocessDataForFirestore(data: any): any {
+  if (data === undefined || (typeof data === 'number' && isNaN(data))) {
+    return null;
+  }
+  if (data === null || typeof data !== 'object' || data instanceof Date) {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(preprocessDataForFirestore);
+  }
+
+  const processedData: Record<string, any> = {};
+  for (const key in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      processedData[key] = preprocessDataForFirestore(data[key]);
+    }
+  }
+  return processedData;
+}
+
+// Helper for preprocessing optional number fields in Zod schemas
 const preprocessOptionalNumber = (val: unknown) => {
   if (val === '' || val === null || val === undefined) {
     return undefined;
@@ -16,30 +44,6 @@ const preprocessOptionalNumber = (val: unknown) => {
   const num = Number(val);
   return isNaN(num) ? undefined : num;
 };
-
-// Helper to convert undefined to null for Firestore
-export function preprocessDataForFirestore(
-  data: Record<string, any> | null | undefined
-): Record<string, any> | null | any[] {
-  if (data === null || data === undefined) return null;
-
-  if (typeof data !== 'object' || data instanceof Date) {
-    return data === undefined ? null : data;
-  }
-
-  if (Array.isArray(data)) {
-    return data.map((item) => preprocessDataForFirestore(item));
-  }
-
-  const processedData: Record<string, any> = {};
-  for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key)) {
-      const value = data[key];
-      processedData[key] = preprocessDataForFirestore(value);
-    }
-  }
-  return processedData;
-}
 
 export const ProfileFormSchema = z.object({
   name: z.string().min(1, 'Name is required.').optional(),
