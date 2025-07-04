@@ -17,15 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import {
   Tooltip,
@@ -33,6 +25,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import NumberField from '@/features/auth/components/shared/NumberField';
+import { default as SelectField } from '@/features/auth/components/shared/SelectField';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -484,95 +478,6 @@ export default function OnboardingPage() {
     });
   };
 
-  const renderNumberField = (
-    name: FieldPath<OnboardingFormValues>,
-    label: string,
-    placeholder: string,
-    description?: string,
-    step: string = '1'
-  ) => (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          {' '}
-          <FormLabel>{label}</FormLabel>{' '}
-          <FormControl>
-            <div>
-              <Input
-                type='number'
-                placeholder={placeholder}
-                {...field}
-                value={
-                  field.value === undefined ||
-                  field.value === null ||
-                  isNaN(Number(field.value))
-                    ? ''
-                    : String(field.value)
-                }
-                onChange={(e) =>
-                  field.onChange(
-                    e.target.value === ''
-                      ? undefined
-                      : parseFloat(e.target.value)
-                  )
-                }
-                step={step}
-                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
-              />
-            </div>
-          </FormControl>{' '}
-          {description && <FormDescription>{description}</FormDescription>}{' '}
-          <FormMessage />{' '}
-        </FormItem>
-      )}
-    />
-  );
-
-  const renderSelectField = (
-    name: FieldPath<OnboardingFormValues>,
-    label: string,
-    placeholder: string,
-    options: { value: string | number; label: string }[],
-    description?: string
-  ) => (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          {' '}
-          <FormLabel>{label}</FormLabel>{' '}
-          <Select
-            onValueChange={field.onChange}
-            value={String(field.value || '')}
-          >
-            {' '}
-            <FormControl>
-              <div>
-                <SelectTrigger>
-                  {' '}
-                  <SelectValue placeholder={placeholder} />{' '}
-                </SelectTrigger>
-              </div>
-            </FormControl>{' '}
-            <SelectContent>
-              {' '}
-              {options.map((opt) => (
-                <SelectItem key={String(opt.value)} value={String(opt.value)}>
-                  {opt.label}
-                </SelectItem>
-              ))}{' '}
-            </SelectContent>{' '}
-          </Select>{' '}
-          {description && <FormDescription>{description}</FormDescription>}{' '}
-          <FormMessage />{' '}
-        </FormItem>
-      )}
-    />
-  );
-
   if (!activeStepData)
     return (
       <div className='flex justify-center items-center h-screen'>
@@ -632,59 +537,69 @@ export default function OnboardingPage() {
 
               {currentStep === 2 && (
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                  {renderNumberField(
-                    'age',
-                    'Age (Years)',
-                    'e.g., 30',
-                    undefined,
-                    '1'
-                  )}
-                  {renderSelectField(
-                    'gender',
-                    'Biological Sex',
-                    'Select sex',
-                    genders
-                  )}
-                  {renderNumberField(
-                    'height_cm',
-                    'Height (cm)',
-                    'e.g., 175',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderNumberField(
-                    'current_weight',
-                    'Current Weight (kg)',
-                    'e.g., 70',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderNumberField(
-                    'goal_weight_1m',
-                    'Target Weight After 1 Month (kg)',
-                    'e.g., 68',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderNumberField(
-                    'ideal_goal_weight',
-                    'Long-Term Goal Weight (kg, Optional)',
-                    'e.g., 65',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderSelectField(
-                    'activityLevel',
-                    'Physical Activity Level',
-                    'Select activity level',
-                    activityLevels
-                  )}
-                  {renderSelectField(
-                    'dietGoalOnboarding',
-                    'Primary Diet Goal',
-                    'Select your diet goal',
-                    smartPlannerDietGoals
-                  )}
+                  <NumberField<OnboardingFormValues>
+                    name='age'
+                    label='Age (Years)'
+                    placeholder='e.g., 30'
+                    step='1'
+                    control={form.control}
+                  />
+
+                  <SelectField<OnboardingFormValues>
+                    name='gender'
+                    label='Biological Sex'
+                    placeholder='Select sex'
+                    options={genders}
+                    control={form.control}
+                  />
+
+                  <NumberField<OnboardingFormValues>
+                    name='height_cm'
+                    label='Height (cm)'
+                    placeholder='e.g., 175'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <NumberField<OnboardingFormValues>
+                    name='current_weight'
+                    label='Current Weight (kg)'
+                    placeholder='e.g., 70'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <NumberField<OnboardingFormValues>
+                    name='goal_weight_1m'
+                    label='Target Weight After 1 Month (kg)'
+                    placeholder='e.g., 68'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <NumberField<OnboardingFormValues>
+                    name='ideal_goal_weight'
+                    label='Long-Term Goal Weight (kg, Optional)'
+                    placeholder='e.g., 65'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <SelectField<OnboardingFormValues>
+                    name='activityLevel'
+                    label='Physical Activity Level'
+                    placeholder='Select activity level'
+                    options={activityLevels}
+                    control={form.control}
+                  />
+
+                  <SelectField<OnboardingFormValues>
+                    name='dietGoalOnboarding'
+                    label='Primary Diet Goal'
+                    placeholder='Select your diet goal'
+                    options={smartPlannerDietGoals}
+                    control={form.control}
+                  />
                 </div>
               )}
 
@@ -760,20 +675,21 @@ export default function OnboardingPage() {
                   <h3 className='text-lg font-semibold text-primary mb-3'>
                     Customize Your Daily Targets
                   </h3>
-                  {renderNumberField(
-                    'custom_total_calories',
-                    'Custom Total Calories (Optional)',
-                    `e.g., ${
+                  <NumberField<OnboardingFormValues>
+                    name='custom_total_calories'
+                    label='Custom Total Calories (Optional)'
+                    placeholder={`e.g., ${
                       calculatedTargets?.finalTargetCalories?.toFixed(0) ||
                       '2000'
-                    }`,
-                    'Overrides system-calculated total daily calories.',
-                    '1'
-                  )}
-                  {renderNumberField(
-                    'custom_protein_per_kg',
-                    'Custom Protein (g/kg body weight) (Optional)',
-                    `e.g., ${
+                    }`}
+                    description='Overrides system-calculated total daily calories.'
+                    step='1'
+                    control={form.control}
+                  />
+                  <NumberField<OnboardingFormValues>
+                    name='custom_protein_per_kg'
+                    label='Custom Protein (g/kg body weight) (Optional)'
+                    placeholder={`e.g., ${
                       calculatedTargets?.proteinGrams &&
                       calculatedTargets?.current_weight_for_custom_calc
                         ? (
@@ -781,10 +697,11 @@ export default function OnboardingPage() {
                             calculatedTargets.current_weight_for_custom_calc
                           ).toFixed(1)
                         : '1.6'
-                    }`,
-                    'Sets your protein intake in grams per kg of your current body weight.',
-                    '0.1'
-                  )}
+                    }`}
+                    description='Sets your protein intake in grams per kg of your current body weight.'
+                    step='0.1'
+                    control={form.control}
+                  />
                   <FormField
                     control={form.control}
                     name='remaining_calories_carb_pct'
