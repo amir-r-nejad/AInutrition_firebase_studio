@@ -79,7 +79,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (firebaseUser) {
-      addUser(JSON.stringify(firebaseUser));
+      const { uid, email, emailVerified, displayName, photoURL } = firebaseUser;
+      addUser({ uid, email, emailVerified, displayName, photoURL });
     }
   }, [firebaseUser]);
 

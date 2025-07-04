@@ -22,8 +22,13 @@ import {
   SmartCaloriePlannerFormValues,
 } from '../../../lib/schemas';
 
-export async function addUser(u: string) {
-  let user = JSON.parse(u) as User;
+export async function addUser(user: {
+  uid: string;
+  email: string | null;
+  emailVerified: boolean;
+  displayName: string | null;
+  photoURL: string | null;
+}) {
   try {
     const userDocRef = doc(db, 'users', user.uid);
     const docSnap = await getDoc(userDocRef);
