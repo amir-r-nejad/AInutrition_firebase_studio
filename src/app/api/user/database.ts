@@ -22,42 +22,6 @@ import { User } from 'firebase/auth';
 // =================================================================
 
 /**
- * Adds a new user to the database if they don't already exist.
- * Called once upon user creation.
- */
-export async function addUser(user: {
-  uid: string;
-  email: string | null;
-  emailVerified: boolean;
-  displayName: string | null;
-  photoURL: string | null;
-}) {
-  try {
-    const userDocRef = doc(db, 'users', user.uid);
-    const docSnap = await getDoc(userDocRef);
-
-    if (!docSnap.exists()) {
-      const userData = {
-        uid: user.uid,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        onboardingComplete: false,
-      };
-      await setDoc(userDocRef, userData, { merge: true });
-      console.log('addUser: New user added with UID:', user.uid);
-    } else {
-      console.log('addUser: User already exists.');
-    }
-    return user;
-  } catch (e) {
-    console.error('addUser error:', e);
-    throw new Error('Failed to add or check user in database.');
-  }
-}
-
-/**
  * Fetches the complete user profile from Firestore.
  * This is the primary function for reading user data.
  */

@@ -13,10 +13,12 @@ import {
   useState,
 } from 'react';
 
-import { addUser, getUserProfile } from '@/app/api/user/database';
+import { getUserProfile } from '@/app/api/user/database';
 import { useUser } from '@/hooks/use-user';
 import type { FullProfileType } from '@/lib/schemas';
 import { Loader2 } from 'lucide-react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 interface AuthUser {
   uid: string;
@@ -83,16 +85,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (firebaseUser) {
-      const { uid, email, emailVerified, displayName, photoURL } = firebaseUser;
-      addUser({ uid, email, emailVerified, displayName, photoURL });
-    }
-  }, [firebaseUser]);
+      // This logic runs on the client after a user logs in or auth state changes.
+      // It checks if a user profile document exists in Firestore and creates one if not.
+      const addUserProfileOnClient = async () => {
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const docSnap = await getDoc(userDocRef);
 
-  useEffect(() => {
-    if (!isLoadingUser) {
-      fetchUserProfile(false);
+          if (!docSnap.exists()) {
+            const userData = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              emailVerified: firebaseUser.emailVerified,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              onboardingComplete: false,
+            };
+            await setDoc(userDocRef, userData, { merge: true });
+            console.log('AuthContext: New user profile created on client.');
+          }
+        } catch (e) {
+          console.error('AuthContext: Error creating user profile:', e);
+          toast({
+            title: 'Profile Creation Failed',
+            description:
+              'Could not create your user profile in the database. Some features may not work.',
+            variant: 'destructive',
+          });
+        }
+      };
+      
+      addUserProfileOnClient().then(() => {
+        // After ensuring profile exists, fetch it
+        if (!isLoadingUser) {
+            fetchUserProfile(false);
+        }
+      });
+    } else {
+        // If no firebaseUser, ensure profile is cleared and not loading.
+        setProfile(null);
+        setIsProfileLoading(false);
     }
-  }, [user?.uid, isLoadingUser, fetchUserProfile]);
+  }, [firebaseUser, toast, isLoadingUser, fetchUserProfile]);
 
   useEffect(() => {
     if (isLoading) {
