@@ -328,7 +328,7 @@ export default function CurrentMealPlanPage() {
         error.message || 'Unknown error during optimization.';
       toast({
         title: 'Optimization Failed',
-        description: `Could not optimize meal: ${errorMessage}`,
+        description: `Could not optimize meal. Details: ${errorMessage}`,
         variant: 'destructive',
       });
     } finally {

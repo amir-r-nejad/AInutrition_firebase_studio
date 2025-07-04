@@ -30,7 +30,10 @@ export async function saveProfileData(
     });
   } catch (error) {
     console.error('Error saving profile to Firestore:', error);
-    throw new Error('Could not save profile data.');
+    if (error instanceof Error) {
+      throw new Error(`Failed to save profile. Reason: ${error.message}`);
+    }
+    throw new Error('Could not save profile data due to an unknown error.');
   }
 }
 
@@ -50,7 +53,10 @@ export async function saveMealPlanData(
     );
   } catch (error) {
     console.error('Error saving meal plan data to Firestore:', error);
-    throw new Error('Could not save meal plan data.');
+    if (error instanceof Error) {
+      throw new Error(`Failed to save meal plan. Reason: ${error.message}`);
+    }
+    throw new Error('Could not save meal plan data due to an unknown error.');
   }
 }
 
@@ -69,6 +75,13 @@ export async function saveOptimizedMealPlan(
     );
   } catch (error) {
     console.error('Error saving AI meal plan data to Firestore:', error);
-    throw new Error('Could not save AI-generated meal plan.');
+    if (error instanceof Error) {
+      throw new Error(
+        `Failed to save AI-generated meal plan. Reason: ${error.message}`
+      );
+    }
+    throw new Error(
+      'Could not save AI-generated meal plan due to an unknown error.'
+    );
   }
 }

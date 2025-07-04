@@ -2,6 +2,34 @@
 
 import { ai, geminiModel } from '@/ai/genkit';
 import { FullProfileType } from '@/lib/schemas';
+import { z } from 'zod';
+
+// --- Start: Define Zod Schemas for validation ---
+const AIServiceIngredientSchema = z.object({
+  name: z.string(),
+  quantity: z.number(),
+  unit: z.string(),
+  calories: z.number(),
+  protein: z.number(),
+  carbs: z.number(),
+  fat: z.number(),
+});
+
+const AIServiceMealSchema = z.object({
+  name: z.string(),
+  customName: z.string().optional().or(z.literal('')),
+  ingredients: z.array(AIServiceIngredientSchema),
+  totalCalories: z.number(),
+  totalProtein: z.number(),
+  totalCarbs: z.number(),
+  totalFat: z.number(),
+});
+
+const AdjustMealIngredientsOutputSchema = z.object({
+  adjustedMeal: AIServiceMealSchema,
+  explanation: z.string(),
+});
+// --- End: Define Zod Schemas ---
 
 // Types
 export interface AdjustMealIngredientsInput {
@@ -15,30 +43,11 @@ export interface AdjustMealIngredientsInput {
   userProfile: FullProfileType;
 }
 
-export interface AIServiceIngredient {
-  name: string;
-  quantity: number;
-  unit: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-}
-
-export interface AIServiceMeal {
-  name: string;
-  customName?: string;
-  ingredients: AIServiceIngredient[];
-  totalCalories: number;
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
-}
-
-export interface AdjustMealIngredientsOutput {
-  adjustedMeal: AIServiceMeal;
-  explanation: string;
-}
+export type AIServiceIngredient = z.infer<typeof AIServiceIngredientSchema>;
+export type AIServiceMeal = z.infer<typeof AIServiceMealSchema>;
+export type AdjustMealIngredientsOutput = z.infer<
+  typeof AdjustMealIngredientsOutputSchema
+>;
 
 // Genkit Flow
 
@@ -117,6 +126,20 @@ const adjustMealIngredientsFlow = ai.defineFlow(
     if (!output) {
       throw new Error('AI did not return an output for meal adjustment.');
     }
-    return output as AdjustMealIngredientsOutput;
+
+    // Validate the output with Zod for robustness
+    const validationResult =
+      AdjustMealIngredientsOutputSchema.safeParse(output);
+    if (!validationResult.success) {
+      console.error(
+        'AI output validation error:',
+        validationResult.error.flatten()
+      );
+      throw new Error(
+        `AI returned data in an unexpected format. Details: ${validationResult.error.message}`
+      );
+    }
+
+    return validationResult.data;
   }
 );
