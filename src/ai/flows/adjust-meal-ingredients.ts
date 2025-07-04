@@ -58,8 +58,8 @@ export async function adjustMealIngredients(
 const prompt = ai.definePrompt({
   model: geminiModel,
   name: 'adjustMealIngredientsPrompt',
-  inputSchema: AdjustMealIngredientsInputSchema,
-  outputSchema: AdjustMealIngredientsOutputSchema,
+  input: { schema: AdjustMealIngredientsInputSchema },
+  output: { schema: AdjustMealIngredientsOutputSchema },
   prompt: `You are an expert nutritionist and chef. Your task is to adjust a given meal to precisely match target macronutrients, while strictly respecting the user's allergies and preferences.
 
 User Profile:
