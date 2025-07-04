@@ -25,7 +25,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isOnboarded: boolean;
-  logout: () => Promise<void>;
+  logout: () => void;
   completeOnboarding: (profileData: OnboardingFormValues) => Promise<void>;
   refreshOnboardingStatus: () => Promise<void>;
 }
