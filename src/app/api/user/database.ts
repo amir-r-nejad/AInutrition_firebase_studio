@@ -1,16 +1,17 @@
 'use server';
+
 import { db } from '@/lib/firebase/firebase';
+import { User } from 'firebase/auth';
 import {
-  collection,
   addDoc,
-  updateDoc,
-  query,
-  where,
-  getDocs,
+  collection,
   doc,
   getDoc,
+  getDocs,
+  query,
+  updateDoc,
+  where,
 } from 'firebase/firestore';
-import { User } from 'firebase/auth';
 import {
   CustomCalculatedTargets,
   FullProfileType,
@@ -21,7 +22,6 @@ import {
 } from '../../../lib/schemas';
 
 export async function addUser(u: string) {
-  'use server';
   let user = JSON.parse(u) as User;
   try {
     const userRef = collection(db, 'users');
@@ -46,41 +46,27 @@ export async function onboardingUpdateUser(
 ) {
   try {
     const userRef = collection(db, 'users');
-    const q = query(userRef, where('uid', '==', '' + userId));
+    const q = query(userRef, where('uid', '==', userId));
     const userSnapshot = await getDocs(q);
-    console.log(
-      'onboardingUpdateUser: userSnapshot.size=',
-      userSnapshot.size,
-      'userId=',
-      userId,
-      'onboardingValues=',
-      onboardingValues
-    );
 
-    if (userSnapshot.empty) {
-      console.error('onboardingUpdateUser: User not found for UID:', userId);
-      throw new Error('User not found');
-    }
+    if (userSnapshot.empty) throw new Error('User not found');
 
-    // Assuming uid is unique, so only one doc
     const userDoc = userSnapshot.docs[0];
-    await updateDoc(userDoc.ref, onboardingValues);
-    console.log(
-      'onboardingUpdateUser: Successfully updated user doc for UID:',
-      userId
-    );
+    const userDocRef = userDoc.ref;
+
+    await updateDoc(userDocRef, onboardingValues);
     return true;
   } catch (e) {
     console.error('onboardingUpdateUser error:', e);
     throw e;
   }
 }
+
 export async function getSmartPlannerData(userId: string): Promise<{
   formValues: Partial<SmartCaloriePlannerFormValues>;
   results?: GlobalCalculatedTargets | null;
   manualMacroResults?: CustomCalculatedTargets | null;
 }> {
-  'use server';
   if (!userId) return { formValues: {} };
 
   try {
@@ -172,7 +158,7 @@ export async function getSmartPlannerData(userId: string): Promise<{
       };
     }
   } catch (error) {
-    console.error('Error fetching smart planner data from Firestore:', error);
+    throw error;
   }
   return { formValues: {} };
 }
@@ -180,7 +166,6 @@ export async function getSmartPlannerData(userId: string): Promise<{
 export async function getProfileData(
   userId: string
 ): Promise<Partial<ProfileFormValues>> {
-  'use server';
   if (!userId) return {};
 
   try {
@@ -208,7 +193,7 @@ export async function getProfileData(
       console.log('No document found for userId:', userId);
     }
   } catch (error) {
-    console.error('Error fetching profile from Firestore:', error);
+    throw error;
   }
 
   console.log('Returning fallback values');
@@ -218,21 +203,26 @@ export async function getProfileData(
 export async function getUserProfile(
   userId: string
 ): Promise<FullProfileType | null> {
-  'use server';
-  if (!userId) return null;
+  if (!userId) {
+    console.log('getUserProfile called with no userId.');
+    return null;
+  }
 
   try {
-    const userDocRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userDocRef);
+    const userRef = collection(db, 'users');
+    const q = query(userRef, where('uid', '==', userId));
+    const userSnapshot = await getDocs(q);
 
-    if (docSnap.exists()) {
-      return docSnap.data() as FullProfileType;
-    } else {
-      console.log('No user profile found for userId:', userId);
-      return null;
-    }
+    if (userSnapshot.empty) return null;
+
+    const userDoc = userSnapshot.docs[0];
+    const userData = userDoc.data();
+
+    console.log('Retrieved user data from Firestore:', userData);
+
+    return userData as FullProfileType;
   } catch (error) {
-    console.error('Error fetching user profile:', error);
-    throw error;
+    console.error('Error in getUserProfile:', error);
+    throw new Error('Failed to retrieve user profile.');
   }
 }

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'; // Added ScrollBar
 import {
   Table,
@@ -327,19 +328,16 @@ export default function MacroSplitterPage() {
     setCalculatedSplit(result);
 
     try {
-      console.log(user);
       const userProfileRef = doc(db, 'users', user.uid);
       const distributionsToSave = preprocessDataForFirestore(
         data.mealDistributions
       );
 
-      const mamd = await setDoc(
+      await setDoc(
         userProfileRef,
         { mealDistributions: distributionsToSave },
         { merge: true }
       );
-
-      console.log('✅✅✅ SUCCESSFULL', mamd);
 
       toast({
         title: 'Split Calculated & Saved',
@@ -454,14 +452,7 @@ export default function MacroSplitterPage() {
     'fat_pct',
   ];
 
-  if (isLoading) {
-    return (
-      <div className='flex justify-center items-center h-screen'>
-        <Loader2 className='h-12 w-12 animate-spin text-primary' />
-        <p className='ml-4 text-lg'>Loading data...</p>
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingScreen />;
 
   return (
     <div className='container mx-auto py-8 space-y-6'>

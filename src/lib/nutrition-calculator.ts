@@ -83,9 +83,9 @@ export function calculateEstimatedDailyTargets(
 } {
   if (
     !profile.gender ||
-    profile.currentWeight === undefined ||
-    profile.height === undefined ||
-    profile.age === undefined ||
+    !profile.currentWeight ||
+    !profile.height ||
+    !profile.age ||
     !profile.activityLevel ||
     !profile.dietGoal
   ) {
