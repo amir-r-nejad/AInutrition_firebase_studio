@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -5,6 +6,7 @@ import {
   type GeneratePersonalizedMealPlanInput,
   type GeneratePersonalizedMealPlanOutput,
 } from '@/ai/flows/generate-meal-plan';
+import { getUserProfile, saveOptimizedMealPlan } from '@/app/api/user/database';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -32,9 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { daysOfWeek } from '@/lib/constants';
-import { db } from '@/lib/firebase/clientApp';
 import type { FullProfileType } from '@/lib/schemas';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   AlertTriangle,
   BarChart3,
@@ -53,40 +53,6 @@ import {
   YAxis,
 } from 'recharts';
 
-async function getFullProfileData(
-  userId: string
-): Promise<Partial<FullProfileType>> {
-  if (!userId) return {};
-  try {
-    const userProfileRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userProfileRef);
-    if (docSnap.exists()) {
-      return docSnap.data() as Partial<FullProfileType>;
-    }
-  } catch (error) {
-    console.error('Error fetching full profile data from Firestore:', error);
-  }
-  return {};
-}
-
-async function saveOptimizedMealPlan(
-  userId: string,
-  planData: GeneratePersonalizedMealPlanOutput
-) {
-  if (!userId) throw new Error('User ID required to save AI meal plan.');
-  try {
-    const userProfileRef = doc(db, 'users', userId);
-    await setDoc(
-      userProfileRef,
-      { aiGeneratedMealPlan: planData },
-      { merge: true }
-    );
-  } catch (error) {
-    console.error('Error saving AI meal plan data to Firestore:', error);
-    throw error;
-  }
-}
-
 export default function OptimizedMealPlanPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -101,20 +67,21 @@ export default function OptimizedMealPlanPage() {
   useEffect(() => {
     if (user?.uid) {
       setIsLoadingProfile(true);
-      getFullProfileData(user.uid)
+      getUserProfile(user.uid)
         .then((data) => {
           setProfileData(data);
-          if (data.aiGeneratedMealPlan) {
+          if (data?.aiGeneratedMealPlan) {
             setMealPlan(
               data.aiGeneratedMealPlan as GeneratePersonalizedMealPlanOutput
-            ); // Cast if necessary
+            );
           }
         })
         .catch((err) => {
           console.error('Failed to load profile for AI meal plan', err);
+          const errorMessage = err instanceof Error ? err.message : 'Could not load your profile data.';
           toast({
-            title: 'Error',
-            description: 'Could not load your profile data.',
+            title: 'Error Loading Profile',
+            description: errorMessage,
             variant: 'destructive',
           });
         })
@@ -212,7 +179,6 @@ export default function OptimizedMealPlanPage() {
       });
     } catch (err: any) {
       console.error('Error generating meal plan:', err);
-      console.error('Full AI error object:', err); // Log the full error object
       const errorMessage = err.message || 'An unknown error occurred.';
       setError(`Failed to generate meal plan: ${errorMessage}`);
       toast({
@@ -240,8 +206,6 @@ export default function OptimizedMealPlanPage() {
       </div>
     );
   }
-
-  console.log(mealPlan);
 
   return (
     <div className='container mx-auto py-8'>

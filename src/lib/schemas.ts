@@ -16,7 +16,10 @@ import {
  * @returns Firestore-compatible data.
  */
 export function preprocessDataForFirestore(data: any): any {
-  if (data === undefined || (typeof data === 'number' && isNaN(data))) {
+  if (typeof data === 'number' && isNaN(data)) {
+    return null;
+  }
+  if (data === undefined) {
     return null;
   }
   if (data === null || typeof data !== 'object' || data instanceof Date) {
@@ -187,7 +190,9 @@ export interface BaseProfileData extends User {
     formValues?: Partial<SmartCaloriePlannerFormValues> | null; // Storing form inputs
     results?: GlobalCalculatedTargets | null; // Storing calculated results
   } | null;
-  mealDistributions?: MealMacroDistribution[] | null; // Saved from Macro Splitter or Onboarding
+  mealDistributions?: MealMacroDistribution[] | null;
+  currentWeeklyPlan?: WeeklyMealPlan | null;
+  aiGeneratedMealPlan?: any | null; // Using any for now to match AI flow output
 }
 
 export type FullProfileType = BaseProfileData;
@@ -569,7 +574,7 @@ const CustomCalculatedTargetsSchema = z.object({
 // TypeScript type from schema
 type CustomCalculatedTargets = z.infer<typeof CustomCalculatedTargetsSchema>;
 
-// Onboarding Schema - Simplified to match the UI
+// Onboarding Schema - Contains ONLY the fields from the onboarding form.
 export const OnboardingFormSchema = z.object({
   // Step 2: Basic Profile
   age: z.coerce

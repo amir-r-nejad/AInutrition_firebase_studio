@@ -1,10 +1,11 @@
+
 'use client';
 
 import {
   adjustMealIngredients,
   type AdjustMealIngredientsInput,
 } from '@/ai/flows/adjust-meal-ingredients';
-import { saveMealPlanData } from '@/app/api/user/database';
+import { getMealPlanData, getUserProfile, saveMealPlanData } from '@/app/api/user/database';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -33,7 +34,6 @@ import {
   defaultMacroPercentages,
   mealNames,
 } from '@/lib/constants';
-import { db } from '@/lib/firebase/clientApp';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import type {
   FullProfileType,
@@ -41,107 +41,8 @@ import type {
   Meal,
   WeeklyMealPlan,
 } from '@/lib/schemas';
-import { preprocessDataForFirestore } from '@/lib/schemas';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Loader2, Pencil, PlusCircle, Trash2, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-
-async function getMealPlanData(userId: string): Promise<WeeklyMealPlan | null> {
-  if (!userId) return null;
-  try {
-    const userProfileRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userProfileRef);
-    if (docSnap.exists()) {
-      const profileData = docSnap.data() as any;
-      if (profileData.currentWeeklyPlan) {
-        const fullPlan: WeeklyMealPlan = {
-          days: daysOfWeek.map((dayName: string) => {
-            const existingDay = profileData.currentWeeklyPlan?.days?.find(
-              (d: any) => d.dayOfWeek === dayName
-            );
-            if (existingDay) {
-              return {
-                ...existingDay,
-                meals: mealNames.map((mealName: string) => {
-                  const existingMeal = existingDay.meals.find(
-                    (m: any) => m.name === mealName
-                  );
-                  return (
-                    existingMeal || {
-                      name: mealName,
-                      customName: '',
-                      ingredients: [],
-                      totalCalories: null,
-                      totalProtein: null,
-                      totalCarbs: null,
-                      totalFat: null,
-                    }
-                  );
-                }),
-              };
-            }
-            return {
-              dayOfWeek: dayName,
-              meals: mealNames.map((mealName: string) => ({
-                name: mealName,
-                customName: '',
-                ingredients: [],
-                totalCalories: null,
-                totalProtein: null,
-                totalCarbs: null,
-                totalFat: null,
-              })),
-            };
-          }),
-        };
-        return fullPlan;
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching meal plan data from Firestore:', error);
-  }
-  return null;
-}
-
-async function getProfileDataForOptimization(
-  userId: string
-): Promise<Partial<FullProfileType>> {
-  if (!userId) return {};
-  try {
-    const userProfileRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userProfileRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data() as FullProfileType;
-
-      const profile: Partial<FullProfileType> = {
-        age: data.smartPlannerData?.formValues?.age,
-        gender: data.smartPlannerData?.formValues?.gender,
-        current_weight: data.smartPlannerData?.formValues?.current_weight,
-        height_cm: data.smartPlannerData?.formValues?.height_cm,
-        activityLevel: data.smartPlannerData?.formValues?.activity_factor_key,
-        dietGoalOnboarding: data.smartPlannerData?.formValues?.dietGoal,
-        preferredDiet: data.preferredDiet,
-        allergies: data.allergies || [],
-        dispreferredIngredients: data.dispreferredIngredients || [],
-        preferredIngredients: data.preferredIngredients || [],
-      };
-      // Ensure undefined top-level optional fields become null for consistency
-      (Object.keys(profile) as Array<keyof typeof profile>).forEach((key) => {
-        if (profile[key] === undefined) {
-          (profile as any)[key] = null;
-        }
-      });
-      return profile;
-    }
-  } catch (error) {
-    console.error(
-      'Error fetching profile data from Firestore for optimization:',
-      error
-    );
-  }
-  return {};
-}
 
 const generateInitialWeeklyPlan = (): WeeklyMealPlan => ({
   days: daysOfWeek.map((day) => ({
@@ -173,7 +74,7 @@ export default function CurrentMealPlanPage() {
     null
   );
   const [profileData, setProfileData] =
-    useState<Partial<FullProfileType> | null>(null);
+    useState<FullProfileType | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingPlan, setIsLoadingPlan] = useState(true);
 
@@ -188,10 +89,10 @@ export default function CurrentMealPlanPage() {
             setWeeklyPlan(generateInitialWeeklyPlan());
           }
         })
-        .catch(() => {
+        .catch((error) => {
           toast({
-            title: 'Error',
-            description: 'Could not load meal plan.',
+            title: 'Error Loading Meal Plan',
+            description: error instanceof Error ? error.message : 'Could not load your meal plan.',
             variant: 'destructive',
           });
           setWeeklyPlan(generateInitialWeeklyPlan());
@@ -199,12 +100,12 @@ export default function CurrentMealPlanPage() {
         .finally(() => setIsLoadingPlan(false));
 
       setIsLoadingProfile(true);
-      getProfileDataForOptimization(user.uid)
+      getUserProfile(user.uid)
         .then((data) => setProfileData(data))
-        .catch(() =>
+        .catch((error) =>
           toast({
-            title: 'Error',
-            description: 'Could not load profile data for optimization.',
+            title: 'Error Loading Profile',
+            description: error instanceof Error ? error.message : 'Could not load profile data for optimization.',
             variant: 'destructive',
           })
         )
@@ -241,9 +142,10 @@ export default function CurrentMealPlanPage() {
         } has been updated.`,
       });
     } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : 'Could not save meal plan.';
       toast({
         title: 'Save Error',
-        description: 'Could not save meal plan.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -265,15 +167,19 @@ export default function CurrentMealPlanPage() {
       return;
     }
 
-    const requiredFields: (keyof FullProfileType)[] = [
+    const smartPlannerValues = profileData.smartPlannerData?.formValues;
+    const requiredFields: (keyof typeof smartPlannerValues)[] = [
       'age',
       'gender',
       'current_weight',
       'height_cm',
-      'activityLevel',
-      'dietGoalOnboarding',
+      'activity_factor_key',
+      'dietGoal',
     ];
-    const missingFields = requiredFields.filter((field) => !profileData[field]);
+    
+    const missingFields = requiredFields.filter(
+        (field) => !smartPlannerValues?.[field]
+    );
 
     if (missingFields.length > 0) {
       toast({
@@ -290,24 +196,24 @@ export default function CurrentMealPlanPage() {
 
     try {
       const dailyTargets = calculateEstimatedDailyTargets({
-        age: profileData.age!,
-        gender: profileData.gender!,
-        currentWeight: profileData.current_weight!,
-        height: profileData.height_cm!,
-        activityLevel: profileData.activityLevel!,
-        dietGoal: profileData.dietGoalOnboarding!,
+        age: smartPlannerValues.age!,
+        gender: smartPlannerValues.gender!,
+        currentWeight: smartPlannerValues.current_weight!,
+        height: smartPlannerValues.height_cm!,
+        activityLevel: smartPlannerValues.activity_factor_key!,
+        dietGoal: smartPlannerValues.dietGoal!,
       });
-
+      
       if (
-        !dailyTargets.targetCalories ||
-        !dailyTargets.targetProtein ||
-        !dailyTargets.targetCarbs ||
-        !dailyTargets.targetFat
+        !dailyTargets.finalTargetCalories ||
+        !dailyTargets.proteinGrams ||
+        !dailyTargets.carbGrams ||
+        !dailyTargets.fatGrams
       ) {
         toast({
           title: 'Calculation Error',
           description:
-            'Could not calculate daily targets from profile. Ensure profile is complete. This might happen if some values are zero or invalid.',
+            'Could not calculate daily targets from profile. Ensure profile is complete.',
           variant: 'destructive',
         });
         setOptimizingMealKey(null);
@@ -323,16 +229,16 @@ export default function CurrentMealPlanPage() {
 
       const targetMacrosForMeal = {
         calories: Math.round(
-          dailyTargets.targetCalories * (mealDistribution.calories_pct / 100)
+          dailyTargets.finalTargetCalories * (mealDistribution.calories_pct / 100)
         ),
         protein: Math.round(
-          dailyTargets.targetProtein * (mealDistribution.protein_pct / 100)
+          dailyTargets.proteinGrams * (mealDistribution.protein_pct / 100)
         ),
         carbs: Math.round(
-          dailyTargets.targetCarbs * (mealDistribution.carbs_pct / 100)
+          dailyTargets.carbGrams * (mealDistribution.carbs_pct / 100)
         ),
         fat: Math.round(
-          dailyTargets.targetFat * (mealDistribution.fat_pct / 100)
+          dailyTargets.fatGrams * (mealDistribution.fat_pct / 100)
         ),
       };
 
@@ -403,7 +309,6 @@ export default function CurrentMealPlanPage() {
       }
     } catch (error: any) {
       console.error('Error optimizing meal:', error);
-      console.error('Full AI error object:', error);
       const errorMessage =
         error.message || 'Unknown error during optimization.';
       toast({

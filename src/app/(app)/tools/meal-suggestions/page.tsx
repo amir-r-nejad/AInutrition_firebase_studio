@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -5,6 +6,7 @@ import {
   type SuggestMealsForMacrosInput,
   type SuggestMealsForMacrosOutput,
 } from '@/ai/flows/suggest-meals-for-macros';
+import { getUserProfile } from '@/app/api/user/database';
 import {
   Accordion,
   AccordionContent,
@@ -52,7 +54,6 @@ import {
   mealNames,
   preferredDiets,
 } from '@/lib/constants';
-import { db } from '@/lib/firebase/clientApp';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import type { FullProfileType } from '@/lib/schemas';
 import {
@@ -60,7 +61,6 @@ import {
   type MealSuggestionPreferencesValues,
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { doc, getDoc } from 'firebase/firestore';
 import {
   AlertTriangle,
   ChefHat,
@@ -71,25 +71,6 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-
-async function getProfileDataForSuggestions(
-  userId: string
-): Promise<Partial<FullProfileType>> {
-  if (!userId) return {};
-  try {
-    const userDocRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userDocRef);
-    if (docSnap.exists()) {
-      return docSnap.data() as Partial<FullProfileType>;
-    }
-  } catch (error) {
-    console.error(
-      'Error fetching profile data from Firestore for suggestions:',
-      error
-    );
-  }
-  return {};
-}
 
 function MealSuggestionsContent() {
   const searchParams = useSearchParams();
@@ -106,7 +87,7 @@ function MealSuggestionsContent() {
   } | null>(null);
 
   const [fullProfileData, setFullProfileData] =
-    useState<Partial<FullProfileType> | null>(null);
+    useState<FullProfileType | null>(null);
   const [isLoadingAiSuggestions, setIsLoadingAiSuggestions] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
@@ -134,42 +115,33 @@ function MealSuggestionsContent() {
   useEffect(() => {
     if (user?.uid) {
       setIsLoadingProfile(true);
-      getProfileDataForSuggestions(user.uid)
+      getUserProfile(user.uid)
         .then((data) => {
           setFullProfileData(data);
-          preferenceForm.reset({
-            preferredDiet: data.preferredDiet || undefined,
-            preferredCuisines: data.preferredCuisines || [],
-            dispreferredCuisines: data.dispreferredCuisines || [],
-            preferredIngredients: data.preferredIngredients || [],
-            dispreferredIngredients: data.dispreferredIngredients || [],
-            allergies: data.allergies || [],
-            preferredMicronutrients: data.preferredMicronutrients || [],
-            medicalConditions: data.medicalConditions || [],
-            medications: data.medications || [],
-          });
+          if (data) {
+            preferenceForm.reset({
+              preferredDiet: data.preferredDiet ?? undefined,
+              preferredCuisines: data.preferredCuisines ?? [],
+              dispreferredCuisines: data.dispreferredCuisines ?? [],
+              preferredIngredients: data.preferredIngredients ?? [],
+              dispreferredIngredients: data.dispreferredIngredients ?? [],
+              allergies: data.allergies ?? [],
+              preferredMicronutrients: data.preferredMicronutrients ?? [],
+              medicalConditions: data.medicalConditions ?? [],
+              medications: data.medications ?? [],
+            });
+          }
         })
-        .catch(() =>
+        .catch((err) =>
           toast({
-            title: 'Error',
-            description: 'Could not load profile data.',
+            title: 'Error Loading Profile',
+            description: err instanceof Error ? err.message : 'Could not load your profile preferences.',
             variant: 'destructive',
           })
         )
         .finally(() => setIsLoadingProfile(false));
     } else {
       setIsLoadingProfile(false);
-      preferenceForm.reset({
-        preferredDiet: undefined,
-        preferredCuisines: [],
-        dispreferredCuisines: [],
-        preferredIngredients: [],
-        dispreferredIngredients: [],
-        allergies: [],
-        preferredMicronutrients: [],
-        medicalConditions: [],
-        medications: [],
-      });
     }
   }, [user, toast, preferenceForm]);
 
@@ -190,7 +162,7 @@ function MealSuggestionsContent() {
       carbs: 60,
       fat: 20,
     };
-
+    
     const requiredProfileFields: (keyof FullProfileType)[] = [
       'age',
       'gender',
@@ -199,6 +171,7 @@ function MealSuggestionsContent() {
       'activityLevel',
       'dietGoalOnboarding',
     ];
+
     const missingFields = requiredProfileFields.filter(
       (field) => !profileToUse?.[field]
     );
@@ -243,7 +216,7 @@ function MealSuggestionsContent() {
         setIsDemoMode(true);
         toast({
           title: 'Using Example Targets',
-          description: `Could not calculate specific targets for ${selectedMealName} from profile. Ensure profile basics (age, weight, height, gender, activity, goal) are complete.`,
+          description: `Could not calculate specific targets for ${selectedMealName} from profile. Ensure profile basics are complete.`,
           duration: 6000,
           variant: 'default',
         });
@@ -253,7 +226,7 @@ function MealSuggestionsContent() {
       setIsDemoMode(true);
       toast({
         title: 'Profile Incomplete or Demo',
-        description: `Showing example targets for ${selectedMealName}. Please complete your profile via Onboarding or Smart Calorie Planner for personalized calculations.`,
+        description: `Showing example targets for ${selectedMealName}. Please complete your profile for personalized calculations.`,
         duration: 7000,
         variant: 'default',
       });
@@ -380,7 +353,6 @@ function MealSuggestionsContent() {
       }
     } catch (err: any) {
       console.error('Error getting meal suggestions:', err);
-      console.error('Full AI error object (MealSuggestionsPage):', err);
       const errorMessage = err.message || 'An unknown error occurred';
       setError(
         `Failed to fetch meal suggestions: ${errorMessage}. Please try again.`
@@ -416,7 +388,7 @@ function MealSuggestionsContent() {
                 <Textarea
                   placeholder={placeholder}
                   value={displayValue}
-                  onChange={(e) => field.onChange(e.target.value.split(','))}
+                  onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
                   className='h-10 resize-none'
                   onWheel={(e) =>
                     (e.currentTarget as HTMLTextAreaElement).blur()

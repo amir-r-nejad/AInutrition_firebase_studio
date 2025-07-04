@@ -38,19 +38,15 @@ import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
   activityLevels,
-  defaultMacroPercentages,
-  mealNames as defaultMealNames,
   genders,
   onboardingStepsData,
   smartPlannerDietGoals,
 } from '@/lib/constants';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import {
-  FullProfileType,
   type GlobalCalculatedTargets,
   OnboardingFormSchema,
   type OnboardingFormValues,
-  preprocessDataForFirestore,
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle, Leaf, Loader2 } from 'lucide-react';
@@ -78,7 +74,7 @@ export default function OnboardingPage() {
       current_weight: undefined,
       goal_weight_1m: undefined,
       ideal_goal_weight: undefined,
-      activityLevel: undefined,
+      activityLevel: 'moderate',
       dietGoalOnboarding: 'fat_loss',
       custom_total_calories: undefined,
       custom_protein_per_kg: undefined,
@@ -112,7 +108,6 @@ export default function OnboardingPage() {
         goalWeight: data.goal_weight_1m,
       });
 
-      // Use the CORRECT keys from the returned 'estimated' object
       if (
         estimated.finalTargetCalories &&
         estimated.proteinGrams &&
@@ -147,7 +142,6 @@ export default function OnboardingPage() {
               ? Math.round((fatCals / totalCalculatedCals) * 100)
               : undefined,
           current_weight_for_custom_calc: data.current_weight,
-          // Correctly calculate estimated weekly weight change
           estimatedWeeklyWeightChangeKg: estimated.tdee
             ? ((estimated.tdee - estimated.finalTargetCalories) * 7) / 7700
             : undefined,
@@ -161,7 +155,6 @@ export default function OnboardingPage() {
     }
   }, [form]);
 
-  // Update calculated targets when we reach step 3 (after basic info collected)
   useEffect(() => {
     if (currentStep === 3) {
       updateCalculatedTargetsForStep3();
@@ -175,7 +168,6 @@ export default function OnboardingPage() {
     'current_weight',
   ]);
 
-  // Handle custom calculations for step 4 (custom targets step)
   useEffect(() => {
     if (currentStep !== 4 || !calculatedTargets) {
       if (customCalculatedTargets !== null) setCustomCalculatedTargets(null);
@@ -325,19 +317,15 @@ export default function OnboardingPage() {
       }
     }
 
-    // Calculate targets after completing step 2 (basic info)
     if (currentStep === 2) {
       updateCalculatedTargetsForStep3();
     }
 
-    // Set default custom targets when entering step 4
     if (currentStep === 3 && !customCalculatedTargets && calculatedTargets) {
       setCustomCalculatedTargets(calculatedTargets);
     }
-
-    // Move to next step if not at the end
+    
     if (currentStep < 5) {
-      // Changed from onboardingStepsData.length to 5
       setCurrentStep((prev) => prev + 1);
     }
   };
@@ -351,7 +339,7 @@ export default function OnboardingPage() {
   const handleSkip = () => {
     if (
       activeStepData?.isOptional &&
-      currentStep < 5 // Changed from onboardingStepsData.length to 5
+      currentStep < 5
     ) {
       setCurrentStep((prev) => prev + 1);
     }
@@ -367,69 +355,14 @@ export default function OnboardingPage() {
       return;
     }
 
-    let finalResultsToSave: GlobalCalculatedTargets | null = null;
-    if (
-      customCalculatedTargets &&
-      (data.custom_total_calories != null || data.custom_protein_per_kg != null)
-    ) {
-      finalResultsToSave = customCalculatedTargets;
-    } else if (calculatedTargets) {
-      finalResultsToSave = calculatedTargets;
-    }
-
-    const profileDataToSave: Partial<FullProfileType> = {
-      // Basic Info
-      age: data.age,
-      gender: data.gender,
-      height_cm: data.height_cm,
-      current_weight: data.current_weight,
-      goal_weight_1m: data.goal_weight_1m,
-      ideal_goal_weight: data.ideal_goal_weight,
-      activityLevel: data.activityLevel,
-      dietGoalOnboarding: data.dietGoalOnboarding,
-
-      // Nested smartPlannerData with only the fields collected in onboarding
-      smartPlannerData: {
-        formValues: {
-          age: data.age,
-          gender: data.gender,
-          height_cm: data.height_cm,
-          current_weight: data.current_weight,
-          goal_weight_1m: data.goal_weight_1m,
-          ideal_goal_weight: data.ideal_goal_weight,
-          activity_factor_key: data.activityLevel,
-          dietGoal: data.dietGoalOnboarding,
-          custom_total_calories: data.custom_total_calories,
-          custom_protein_per_kg: data.custom_protein_per_kg,
-          remaining_calories_carb_pct: data.remaining_calories_carb_pct,
-        },
-        results: finalResultsToSave,
-      },
-
-      // Set default meal distributions
-      mealDistributions: defaultMealNames.map((name) => ({
-        mealName: name,
-        calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
-        protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
-        carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
-        fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
-      })),
-    };
-
     try {
-      const finalDataToSave = {
-        ...preprocessDataForFirestore(profileDataToSave),
-        onboardingComplete: true,
-      };
-      await onboardingUpdateUser(
-        user.uid,
-        finalDataToSave as Partial<FullProfileType>
-      );
+      await onboardingUpdateUser(user.uid, data);
       await refreshOnboardingStatus();
       toast({
         title: 'Onboarding Complete!',
         description: 'Your profile has been saved. Welcome to NutriPlan!',
       });
+      // The AuthProvider will handle the redirect
     } catch (error) {
       toast({
         title: 'Onboarding Error',
@@ -454,8 +387,7 @@ export default function OnboardingPage() {
       name={name}
       render={({ field }) => (
         <FormItem>
-          {' '}
-          <FormLabel>{label}</FormLabel>{' '}
+          <FormLabel>{label}</FormLabel>
           <FormControl>
             <div>
               <Input
@@ -480,9 +412,9 @@ export default function OnboardingPage() {
                 onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
               />
             </div>
-          </FormControl>{' '}
-          {description && <FormDescription>{description}</FormDescription>}{' '}
-          <FormMessage />{' '}
+          </FormControl>
+          {description && <FormDescription>{description}</FormDescription>}
+          <FormMessage />
         </FormItem>
       )}
     />
@@ -500,32 +432,28 @@ export default function OnboardingPage() {
       name={name}
       render={({ field }) => (
         <FormItem>
-          {' '}
-          <FormLabel>{label}</FormLabel>{' '}
+          <FormLabel>{label}</FormLabel>
           <Select
             onValueChange={field.onChange}
             value={String(field.value || '')}
           >
-            {' '}
             <FormControl>
               <div>
                 <SelectTrigger>
-                  {' '}
-                  <SelectValue placeholder={placeholder} />{' '}
+                  <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
               </div>
-            </FormControl>{' '}
+            </FormControl>
             <SelectContent>
-              {' '}
               {options.map((opt) => (
                 <SelectItem key={String(opt.value)} value={String(opt.value)}>
                   {opt.label}
                 </SelectItem>
-              ))}{' '}
-            </SelectContent>{' '}
-          </Select>{' '}
-          {description && <FormDescription>{description}</FormDescription>}{' '}
-          <FormMessage />{' '}
+              ))}
+            </SelectContent>
+          </Select>
+          {description && <FormDescription>{description}</FormDescription>}
+          <FormMessage />
         </FormItem>
       )}
     />
