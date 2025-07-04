@@ -6,7 +6,6 @@ import {
   type GeneratePersonalizedMealPlanInput,
   type GeneratePersonalizedMealPlanOutput,
 } from '@/ai/flows/generate-meal-plan';
-import { getUserProfile, saveOptimizedMealPlan } from '@/app/api/user/database';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -34,7 +33,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { daysOfWeek } from '@/lib/constants';
+import { db } from '@/lib/firebase/clientApp';
 import type { FullProfileType } from '@/lib/schemas';
+import { preprocessDataForFirestore } from '@/lib/schemas';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   AlertTriangle,
   BarChart3,
@@ -67,13 +69,17 @@ export default function OptimizedMealPlanPage() {
   useEffect(() => {
     if (user?.uid) {
       setIsLoadingProfile(true);
-      getUserProfile(user.uid)
-        .then((data) => {
-          setProfileData(data);
-          if (data?.aiGeneratedMealPlan) {
-            setMealPlan(
-              data.aiGeneratedMealPlan as GeneratePersonalizedMealPlanOutput
-            );
+      const userDocRef = doc(db, 'users', user.uid);
+      getDoc(userDocRef)
+        .then((docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data() as FullProfileType;
+            setProfileData(data);
+            if (data?.aiGeneratedMealPlan) {
+              setMealPlan(
+                data.aiGeneratedMealPlan as GeneratePersonalizedMealPlanOutput
+              );
+            }
           }
         })
         .catch((err) => {
@@ -172,7 +178,15 @@ export default function OptimizedMealPlanPage() {
     try {
       const result = await generatePersonalizedMealPlan(input);
       setMealPlan(result);
-      await saveOptimizedMealPlan(user.uid, result);
+      
+      // Client-side Firestore write
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(
+        userDocRef,
+        { aiGeneratedMealPlan: preprocessDataForFirestore(result) },
+        { merge: true }
+      );
+
       toast({
         title: 'Meal Plan Generated!',
         description: 'Your AI-optimized weekly meal plan is ready.',

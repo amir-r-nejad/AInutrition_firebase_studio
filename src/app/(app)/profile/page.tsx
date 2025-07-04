@@ -39,6 +39,7 @@ import {
   type FullProfileType,
   type ProfileFormValues,
   ProfileFormSchema,
+  preprocessDataForFirestore,
 } from '@/lib/schemas';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -49,7 +50,6 @@ import {
   exerciseIntensities,
 } from '@/lib/constants';
 import { AlertTriangle, RefreshCcw, Loader2 } from 'lucide-react';
-import { saveProfileData } from '@/app/api/user/database';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 
@@ -128,7 +128,10 @@ export default function ProfilePage() {
       return;
     }
     try {
-      await saveProfileData(user.uid, data);
+      // Client-side Firestore write
+      const userProfileRef = doc(db, 'users', user.uid);
+      await setDoc(userProfileRef, preprocessDataForFirestore(data), { merge: true });
+
       toast({
         title: 'Profile Updated',
         description: 'Your profile has been successfully updated.',

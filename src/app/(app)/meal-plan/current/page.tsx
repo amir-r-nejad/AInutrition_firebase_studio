@@ -4,8 +4,8 @@
 import {
   adjustMealIngredients,
   type AdjustMealIngredientsInput,
+  type AdjustMealIngredientsOutput,
 } from '@/ai/flows/adjust-meal-ingredients';
-import { saveMealPlanData } from '@/app/api/user/database';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -34,6 +34,7 @@ import {
   defaultMacroPercentages,
   mealNames,
 } from '@/lib/constants';
+import { db } from '@/lib/firebase/clientApp';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import type {
   FullProfileType,
@@ -41,10 +42,10 @@ import type {
   Meal,
   WeeklyMealPlan,
 } from '@/lib/schemas';
+import { preprocessDataForFirestore } from '@/lib/schemas';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Loader2, Pencil, PlusCircle, Trash2, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
 
 const generateInitialWeeklyPlan = (): WeeklyMealPlan => ({
   days: daysOfWeek.map((day) => ({
@@ -149,7 +150,11 @@ export default function CurrentMealPlanPage() {
     setWeeklyPlan(newWeeklyPlan);
     setEditingMeal(null);
     try {
-      await saveMealPlanData(user.uid, newWeeklyPlan);
+      // Client-side Firestore write
+      const sanitizedPlan = preprocessDataForFirestore(newWeeklyPlan);
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, { currentWeeklyPlan: sanitizedPlan }, { merge: true });
+
       toast({
         title: 'Meal Saved',
         description: `${
@@ -312,7 +317,12 @@ export default function CurrentMealPlanPage() {
         };
         newWeeklyPlan.days[dayIndex].meals[mealIndex] = updatedMealData;
         setWeeklyPlan(newWeeklyPlan);
-        await saveMealPlanData(user.uid, newWeeklyPlan);
+        
+        // Client-side Firestore write
+        const sanitizedPlan = preprocessDataForFirestore(newWeeklyPlan);
+        const userDocRef = doc(db, 'users', user.uid);
+        await setDoc(userDocRef, { currentWeeklyPlan: sanitizedPlan }, { merge: true });
+
         toast({
           title: `Meal Optimized: ${mealToOptimize.name}`,
           description: result.explanation || 'AI has adjusted the ingredients.',
