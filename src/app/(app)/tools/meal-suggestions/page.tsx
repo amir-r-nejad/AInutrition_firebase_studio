@@ -60,7 +60,7 @@ import {
   type MealSuggestionPreferencesValues,
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import {
   AlertTriangle,
   ChefHat,
@@ -77,11 +77,10 @@ async function getProfileDataForSuggestions(
 ): Promise<Partial<FullProfileType>> {
   if (!userId) return {};
   try {
-    const userCollection = collection(db, 'users');
-    const q = query(userCollection, where('uid', '==', userId));
-    const userSnapshot = await getDocs(q);
-    if (!userSnapshot.empty) {
-      return userSnapshot.docs[0].data() as any;
+    const userDocRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(userDocRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as Partial<FullProfileType>;
     }
   } catch (error) {
     console.error(
