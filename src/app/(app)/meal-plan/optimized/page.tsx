@@ -116,6 +116,22 @@ export default function OptimizedMealPlanPage() {
       return;
     }
 
+    const requiredFields: (keyof GeneratePersonalizedMealPlanInput)[] = [
+        'age', 'gender', 'height_cm', 'current_weight', 'goal_weight_1m', 'activityLevel', 'dietGoalOnboarding'
+    ];
+
+    const missingFields = requiredFields.filter(field => profileData[field] === null || profileData[field] === undefined);
+
+    if (missingFields.length > 0) {
+        toast({
+            title: 'Profile Incomplete',
+            description: `Please complete your profile to generate a plan. Missing fields: ${missingFields.join(', ')}. You can update this in your Profile or Smart Calorie Planner.`,
+            variant: 'destructive',
+            duration: 7000,
+        });
+        return;
+    }
+
     // Map FullProfileType to GeneratePersonalizedMealPlanInput
     const input: GeneratePersonalizedMealPlanInput = {
       age: profileData.age!,
