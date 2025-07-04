@@ -215,6 +215,17 @@ export default function CurrentMealPlanPage() {
       return;
     }
 
+    if (!smartPlannerValues) {
+      toast({
+        title: 'Profile Data Missing',
+        description: 'Could not find Smart Calorie Planner data in your profile. Please complete it first.',
+        variant: 'destructive',
+        duration: 7000,
+      });
+      setOptimizingMealKey(null);
+      return;
+    }
+
     try {
       const dailyTargets = calculateEstimatedDailyTargets({
         age: smartPlannerValues.age!,
