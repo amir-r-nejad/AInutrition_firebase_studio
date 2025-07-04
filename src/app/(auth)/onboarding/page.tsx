@@ -41,7 +41,7 @@ import {
   genders,
   onboardingStepsData,
   smartPlannerDietGoals,
-  defaultMealNames,
+  mealNames,
   defaultMacroPercentages,
 } from '@/lib/constants';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
@@ -387,7 +387,7 @@ export default function OnboardingPage() {
         },
         results: finalResults,
       },
-      mealDistributions: defaultMealNames.map((name) => ({
+      mealDistributions: mealNames.map((name) => ({
         mealName: name,
         calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
         protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
