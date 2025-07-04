@@ -59,9 +59,11 @@ import { FieldPath, useForm } from 'react-hook-form';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 import { getAuth } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 export default function OnboardingPage() {
-  const { user, refreshOnboardingStatus } = useAuth();
+  const { user } = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -407,12 +409,12 @@ export default function OnboardingPage() {
         merge: true,
       });
 
-      await refreshOnboardingStatus();
       toast({
         title: 'Onboarding Complete!',
-        description: 'Your profile has been saved. Welcome to NutriPlan!',
+        description: 'Your profile is saved. Redirecting to your dashboard...',
       });
-      // The AuthProvider will handle the redirect
+
+      router.push('/dashboard');
     } catch (error: any) {
       console.error("Onboarding save error:", error.code, error.message, error);
       toast({
