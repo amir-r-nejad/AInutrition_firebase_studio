@@ -1,11 +1,7 @@
 
 'use client';
 
-import {
-  suggestMealsForMacros,
-  type SuggestMealsForMacrosInput,
-  type SuggestMealsForMacrosOutput,
-} from '@/ai/flows/suggest-meals-for-macros';
+import { suggestMealsForMacros } from '@/ai/flows/suggest-meals-for-macros';
 import {
   Accordion,
   AccordionContent,
@@ -53,13 +49,17 @@ import {
   mealNames,
   preferredDiets,
 } from '@/lib/constants';
+import { db } from '@/lib/firebase/clientApp';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
-import type { FullProfileType } from '@/lib/schemas';
-import {
-  MealSuggestionPreferencesSchema,
-  type MealSuggestionPreferencesValues,
+import type {
+  FullProfileType,
+  SuggestMealsForMacrosInput,
+  SuggestMealsForMacrosOutput,
+  MealSuggestionPreferencesValues,
 } from '@/lib/schemas';
+import { MealSuggestionPreferencesSchema } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { doc, getDoc } from 'firebase/firestore';
 import {
   AlertTriangle,
   ChefHat,
@@ -70,8 +70,6 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
 
 function MealSuggestionsContent() {
   const searchParams = useSearchParams();

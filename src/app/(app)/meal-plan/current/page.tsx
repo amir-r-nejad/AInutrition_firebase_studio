@@ -1,11 +1,7 @@
 
 'use client';
 
-import {
-  adjustMealIngredients,
-  type AdjustMealIngredientsInput,
-  type AdjustMealIngredientsOutput,
-} from '@/ai/flows/adjust-meal-ingredients';
+import { adjustMealIngredients } from '@/ai/flows/adjust-meal-ingredients';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -42,6 +38,7 @@ import type {
   Meal,
   SmartCaloriePlannerFormValues,
   WeeklyMealPlan,
+  AdjustMealIngredientsInput,
 } from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -198,6 +195,17 @@ export default function CurrentMealPlanPage() {
       'dietGoal',
     ];
     
+    if (!smartPlannerValues) {
+      toast({
+        title: 'Profile Data Missing',
+        description: 'Could not find Smart Calorie Planner data in your profile. Please complete it first.',
+        variant: 'destructive',
+        duration: 7000,
+      });
+      setOptimizingMealKey(null);
+      return;
+    }
+
     const missingFields = requiredFields.filter(
         (field) => !smartPlannerValues?.[field]
     );
@@ -208,17 +216,6 @@ export default function CurrentMealPlanPage() {
         description: `Please ensure the following profile details are complete in the Smart Calorie Planner: ${missingFields.join(
           ', '
         )}.`,
-        variant: 'destructive',
-        duration: 7000,
-      });
-      setOptimizingMealKey(null);
-      return;
-    }
-
-    if (!smartPlannerValues) {
-      toast({
-        title: 'Profile Data Missing',
-        description: 'Could not find Smart Calorie Planner data in your profile. Please complete it first.',
         variant: 'destructive',
         duration: 7000,
       });

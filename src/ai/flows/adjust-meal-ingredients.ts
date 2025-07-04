@@ -1,56 +1,13 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
-import { FullProfileType } from '@/lib/schemas';
-import { z } from 'zod';
-
-// --- Start: Define Zod Schemas for validation ---
-const AIServiceIngredientSchema = z.object({
-  name: z.string(),
-  quantity: z.number(),
-  unit: z.string(),
-  calories: z.number(),
-  protein: z.number(),
-  carbs: z.number(),
-  fat: z.number(),
-});
-
-const AIServiceMealSchema = z.object({
-  name: z.string(),
-  customName: z.string().optional().or(z.literal('')),
-  ingredients: z.array(AIServiceIngredientSchema),
-  totalCalories: z.number(),
-  totalProtein: z.number(),
-  totalCarbs: z.number(),
-  totalFat: z.number(),
-});
-
-const AdjustMealIngredientsInputSchema = z.object({
-  originalMeal: AIServiceMealSchema,
-  targetMacros: z.object({
-    calories: z.number(),
-    protein: z.number(),
-    carbs: z.number(),
-    fat: z.number(),
-  }),
-  userProfile: z.custom<FullProfileType>(),
-});
-
-const AdjustMealIngredientsOutputSchema = z.object({
-  adjustedMeal: AIServiceMealSchema,
-  explanation: z.string(),
-});
-// --- End: Define Zod Schemas ---
-
-// Types
-export type AIServiceIngredient = z.infer<typeof AIServiceIngredientSchema>;
-export type AIServiceMeal = z.infer<typeof AIServiceMealSchema>;
-export type AdjustMealIngredientsInput = z.infer<
-  typeof AdjustMealIngredientsInputSchema
->;
-export type AdjustMealIngredientsOutput = z.infer<
-  typeof AdjustMealIngredientsOutputSchema
->;
+import {
+  AdjustMealIngredientsInputSchema,
+  AdjustMealIngredientsOutputSchema,
+  type AdjustMealIngredientsInput,
+  type AdjustMealIngredientsOutput,
+} from '@/lib/schemas';
 
 // Genkit Flow
 export async function adjustMealIngredients(

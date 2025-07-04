@@ -1,97 +1,13 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
-
-// Zod Schemas
-export const GeneratePersonalizedMealPlanInputSchema = z.object({
-  age: z.number(),
-  gender: z.string(),
-  height_cm: z.number(),
-  current_weight: z.number(),
-  goal_weight_1m: z.number(),
-  activityLevel: z.string(),
-  dietGoalOnboarding: z.string(),
-  ideal_goal_weight: z.number().optional(),
-  bf_current: z.number().optional(),
-  bf_target: z.number().optional(),
-  bf_ideal: z.number().optional(),
-  mm_current: z.number().optional(),
-  mm_target: z.number().optional(),
-  mm_ideal: z.number().optional(),
-  bw_current: z.number().optional(),
-  bw_target: z.number().optional(),
-  bw_ideal: z.number().optional(),
-  waist_current: z.number().optional(),
-  waist_goal_1m: z.number().optional(),
-  waist_ideal: z.number().optional(),
-  hips_current: z.number().optional(),
-  hips_goal_1m: z.number().optional(),
-  hips_ideal: z.number().optional(),
-  right_leg_current: z.number().optional(),
-  right_leg_goal_1m: z.number().optional(),
-  right_leg_ideal: z.number().optional(),
-  left_leg_current: z.number().optional(),
-  left_leg_goal_1m: z.number().optional(),
-  left_leg_ideal: z.number().optional(),
-  right_arm_current: z.number().optional(),
-  right_arm_goal_1m: z.number().optional(),
-  right_arm_ideal: z.number().optional(),
-  left_arm_current: z.number().optional(),
-  left_arm_goal_1m: z.number().optional(),
-  left_arm_ideal: z.number().optional(),
-  preferredDiet: z.string().optional(),
-  allergies: z.array(z.string()).optional(),
-  preferredCuisines: z.array(z.string()).optional(),
-  dispreferredCuisines: z.array(z.string()).optional(),
-  preferredIngredients: z.array(z.string()).optional(),
-  dispreferredIngredients: z.array(z.string()).optional(),
-  preferredMicronutrients: z.array(z.string()).optional(),
-  medicalConditions: z.array(z.string()).optional(),
-  medications: z.array(z.string()).optional(),
-  typicalMealsDescription: z.string().optional(),
-});
-export type GeneratePersonalizedMealPlanInput = z.infer<
-  typeof GeneratePersonalizedMealPlanInputSchema
->;
-
-const MealSchema = z.object({
-  meal_name: z.string(),
-  ingredients: z.array(
-    z.object({
-      ingredient_name: z.string(),
-      quantity_g: z.number(),
-      macros_per_100g: z.object({
-        calories: z.number(),
-        protein_g: z.number(),
-        fat_g: z.number(),
-      }),
-    })
-  ),
-  total_calories: z.number(),
-  total_protein_g: z.number(),
-  total_fat_g: z.number(),
-});
-export type Meal = z.infer<typeof MealSchema>;
-
-const DayPlanSchema = z.object({
-  day: z.string(),
-  meals: z.array(MealSchema),
-});
-export type DayPlan = z.infer<typeof DayPlanSchema>;
-
-export const GeneratePersonalizedMealPlanOutputSchema = z.object({
-  weeklyMealPlan: z.array(DayPlanSchema),
-  weeklySummary: z.object({
-    totalCalories: z.number(),
-    totalProtein: z.number(),
-    totalCarbs: z.number(),
-    totalFat: z.number(),
-  }),
-});
-export type GeneratePersonalizedMealPlanOutput = z.infer<
-  typeof GeneratePersonalizedMealPlanOutputSchema
->;
+import {
+  GeneratePersonalizedMealPlanInputSchema,
+  GeneratePersonalizedMealPlanOutputSchema,
+  type GeneratePersonalizedMealPlanInput,
+  type GeneratePersonalizedMealPlanOutput,
+} from '@/lib/schemas';
 
 // Main entry function
 export async function generatePersonalizedMealPlan(

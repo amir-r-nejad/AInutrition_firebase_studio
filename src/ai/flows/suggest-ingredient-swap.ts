@@ -1,43 +1,13 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
-
-// Zod Schemas
-export const SuggestIngredientSwapInputSchema = z.object({
-  mealName: z.string(),
-  ingredients: z.array(
-    z.object({
-      name: z.string(),
-      quantity: z.number(), // grams
-      caloriesPer100g: z.number(),
-      proteinPer100g: z.number(),
-      fatPer100g: z.number(),
-    })
-  ),
-  dietaryPreferences: z.string(),
-  dislikedIngredients: z.array(z.string()),
-  allergies: z.array(z.string()),
-  nutrientTargets: z.object({
-    calories: z.number(),
-    protein: z.number(),
-    carbohydrates: z.number(),
-    fat: z.number(),
-  }),
-});
-export type SuggestIngredientSwapInput = z.infer<
-  typeof SuggestIngredientSwapInputSchema
->;
-
-export const SuggestIngredientSwapOutputSchema = z.array(
-  z.object({
-    ingredientName: z.string(),
-    reason: z.string(),
-  })
-);
-export type SuggestIngredientSwapOutput = z.infer<
-  typeof SuggestIngredientSwapOutputSchema
->;
+import {
+  SuggestIngredientSwapInputSchema,
+  SuggestIngredientSwapOutputSchema,
+  type SuggestIngredientSwapInput,
+  type SuggestIngredientSwapOutput,
+} from '@/lib/schemas';
 
 // Main entry function
 export async function suggestIngredientSwap(

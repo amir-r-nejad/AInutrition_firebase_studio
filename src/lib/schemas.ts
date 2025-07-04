@@ -637,3 +637,242 @@ export const OnboardingFormSchema = z.object({
 export type OnboardingFormValues = z.infer<typeof OnboardingFormSchema>;
 
 export type { CustomCalculatedTargets };
+
+// AI Flow Schemas
+
+// adjust-meal-ingredients
+export const AIServiceIngredientSchema = z.object({
+  name: z.string(),
+  quantity: z.number(),
+  unit: z.string(),
+  calories: z.number(),
+  protein: z.number(),
+  carbs: z.number(),
+  fat: z.number(),
+});
+export type AIServiceIngredient = z.infer<typeof AIServiceIngredientSchema>;
+
+export const AIServiceMealSchema = z.object({
+  name: z.string(),
+  customName: z.string().optional().or(z.literal('')),
+  ingredients: z.array(AIServiceIngredientSchema),
+  totalCalories: z.number(),
+  totalProtein: z.number(),
+  totalCarbs: z.number(),
+  totalFat: z.number(),
+});
+export type AIServiceMeal = z.infer<typeof AIServiceMealSchema>;
+
+export const AdjustMealIngredientsInputSchema = z.object({
+  originalMeal: AIServiceMealSchema,
+  targetMacros: z.object({
+    calories: z.number(),
+    protein: z.number(),
+    carbs: z.number(),
+    fat: z.number(),
+  }),
+  userProfile: z.custom<FullProfileType>(),
+});
+export type AdjustMealIngredientsInput = z.infer<
+  typeof AdjustMealIngredientsInputSchema
+>;
+
+export const AdjustMealIngredientsOutputSchema = z.object({
+  adjustedMeal: AIServiceMealSchema,
+  explanation: z.string(),
+});
+export type AdjustMealIngredientsOutput = z.infer<
+  typeof AdjustMealIngredientsOutputSchema
+>;
+
+// generate-meal-plan
+export const GeneratePersonalizedMealPlanInputSchema = z.object({
+  age: z.number(),
+  gender: z.string(),
+  height_cm: z.number(),
+  current_weight: z.number(),
+  goal_weight_1m: z.number(),
+  activityLevel: z.string(),
+  dietGoalOnboarding: z.string(),
+  ideal_goal_weight: z.number().optional(),
+  bf_current: z.number().optional(),
+  bf_target: z.number().optional(),
+  bf_ideal: z.number().optional(),
+  mm_current: z.number().optional(),
+  mm_target: z.number().optional(),
+  mm_ideal: z.number().optional(),
+  bw_current: z.number().optional(),
+  bw_target: z.number().optional(),
+  bw_ideal: z.number().optional(),
+  waist_current: z.number().optional(),
+  waist_goal_1m: z.number().optional(),
+  waist_ideal: z.number().optional(),
+  hips_current: z.number().optional(),
+  hips_goal_1m: z.number().optional(),
+  hips_ideal: z.number().optional(),
+  right_leg_current: z.number().optional(),
+  right_leg_goal_1m: z.number().optional(),
+  right_leg_ideal: z.number().optional(),
+  left_leg_current: z.number().optional(),
+  left_leg_goal_1m: z.number().optional(),
+  left_leg_ideal: z.number().optional(),
+  right_arm_current: z.number().optional(),
+  right_arm_goal_1m: z.number().optional(),
+  right_arm_ideal: z.number().optional(),
+  left_arm_current: z.number().optional(),
+  left_arm_goal_1m: z.number().optional(),
+  left_arm_ideal: z.number().optional(),
+  preferredDiet: z.string().optional(),
+  allergies: z.array(z.string()).optional(),
+  preferredCuisines: z.array(z.string()).optional(),
+  dispreferredCuisines: z.array(z.string()).optional(),
+  preferredIngredients: z.array(z.string()).optional(),
+  dispreferredIngredients: z.array(z.string()).optional(),
+  preferredMicronutrients: z.array(z.string()).optional(),
+  medicalConditions: z.array(z.string()).optional(),
+  medications: z.array(z.string()).optional(),
+  typicalMealsDescription: z.string().optional(),
+});
+export type GeneratePersonalizedMealPlanInput = z.infer<
+  typeof GeneratePersonalizedMealPlanInputSchema
+>;
+
+export const AIGeneratedMealSchema = z.object({
+  meal_name: z.string(),
+  ingredients: z.array(
+    z.object({
+      ingredient_name: z.string(),
+      quantity_g: z.number(),
+      macros_per_100g: z.object({
+        calories: z.number(),
+        protein_g: z.number(),
+        fat_g: z.number(),
+      }),
+    })
+  ),
+  total_calories: z.number(),
+  total_protein_g: z.number(),
+  total_fat_g: z.number(),
+});
+export type AIGeneratedMeal = z.infer<typeof AIGeneratedMealSchema>;
+
+export const DayPlanSchema = z.object({
+  day: z.string(),
+  meals: z.array(AIGeneratedMealSchema),
+});
+export type DayPlan = z.infer<typeof DayPlanSchema>;
+
+export const GeneratePersonalizedMealPlanOutputSchema = z.object({
+  weeklyMealPlan: z.array(DayPlanSchema),
+  weeklySummary: z.object({
+    totalCalories: z.number(),
+    totalProtein: z.number(),
+    totalCarbs: z.number(),
+    totalFat: z.number(),
+  }),
+});
+export type GeneratePersonalizedMealPlanOutput = z.infer<
+  typeof GeneratePersonalizedMealPlanOutputSchema
+>;
+
+// suggest-ingredient-swap
+export const SuggestIngredientSwapInputSchema = z.object({
+  mealName: z.string(),
+  ingredients: z.array(
+    z.object({
+      name: z.string(),
+      quantity: z.number(), // grams
+      caloriesPer100g: z.number(),
+      proteinPer100g: z.number(),
+      fatPer100g: z.number(),
+    })
+  ),
+  dietaryPreferences: z.string(),
+  dislikedIngredients: z.array(z.string()),
+  allergies: z.array(z.string()),
+  nutrientTargets: z.object({
+    calories: z.number(),
+    protein: z.number(),
+    carbohydrates: z.number(),
+    fat: z.number(),
+  }),
+});
+export type SuggestIngredientSwapInput = z.infer<
+  typeof SuggestIngredientSwapInputSchema
+>;
+
+export const SuggestIngredientSwapOutputSchema = z.array(
+  z.object({
+    ingredientName: z.string(),
+    reason: z.string(),
+  })
+);
+export type SuggestIngredientSwapOutput = z.infer<
+  typeof SuggestIngredientSwapOutputSchema
+>;
+
+// suggest-meals-for-macros
+export const SuggestMealsForMacrosInputSchema = z.object({
+  mealName: z.string(),
+  targetCalories: z.number(),
+  targetProteinGrams: z.number(),
+  targetCarbsGrams: z.number(),
+  targetFatGrams: z.number(),
+  age: z.number().optional(),
+  gender: z.string().optional(),
+  activityLevel: z.string().optional(),
+  dietGoal: z.string().optional(),
+  preferredDiet: z.string().optional(),
+  preferredCuisines: z.array(z.string()).optional(),
+  dispreferredCuisines: z.array(z.string()).optional(),
+  preferredIngredients: z.array(z.string()).optional(),
+  dispreferredIngredients: z.array(z.string()).optional(),
+  allergies: z.array(z.string()).optional(),
+  medicalConditions: z.array(z.string()).optional(),
+  medications: z.array(z.string()).optional(),
+});
+export type SuggestMealsForMacrosInput = z.infer<
+  typeof SuggestMealsForMacrosInputSchema
+>;
+
+export const IngredientDetailSchema = z.object({
+  name: z.string(),
+  amount: z.string(),
+  unit: z.string(),
+  calories: z.number(),
+  protein: z.number(),
+  carbs: z.number(),
+  fat: z.number(),
+  macrosString: z.string(),
+});
+export type IngredientDetail = z.infer<typeof IngredientDetailSchema>;
+
+export const MealSuggestionSchema = z.object({
+  mealTitle: z.string(),
+  description: z.string(),
+  ingredients: z.array(IngredientDetailSchema),
+  totalCalories: z.number(),
+  totalProtein: z.number(),
+  totalCarbs: z.number(),
+  totalFat: z.number(),
+  instructions: z.string().optional(),
+});
+export type MealSuggestion = z.infer<typeof MealSuggestionSchema>;
+
+export const SuggestMealsForMacrosOutputSchema = z.object({
+  suggestions: z.array(MealSuggestionSchema),
+});
+export type SuggestMealsForMacrosOutput = z.infer<
+  typeof SuggestMealsForMacrosOutputSchema
+>;
+
+// support-chatbot-flow
+export const SupportChatbotInputSchema = z.object({
+  userQuery: z.string(),
+});
+export type SupportChatbotInput = z.infer<typeof SupportChatbotInputSchema>;
+
+export const SupportChatbotOutputSchema = z.object({
+  botResponse: z.string(),
+});
+export type SupportChatbotOutput = z.infer<typeof SupportChatbotOutputSchema>;

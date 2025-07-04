@@ -1,18 +1,13 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
-
-// Zod Schemas
-export const SupportChatbotInputSchema = z.object({
-  userQuery: z.string(),
-});
-export type SupportChatbotInput = z.infer<typeof SupportChatbotInputSchema>;
-
-export const SupportChatbotOutputSchema = z.object({
-  botResponse: z.string(),
-});
-export type SupportChatbotOutput = z.infer<typeof SupportChatbotOutputSchema>;
+import {
+  SupportChatbotInputSchema,
+  SupportChatbotOutputSchema,
+  type SupportChatbotInput,
+  type SupportChatbotOutput,
+} from '@/lib/schemas';
 
 // Main entry function
 export async function handleSupportQuery(

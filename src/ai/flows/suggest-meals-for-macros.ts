@@ -1,62 +1,13 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
-
-// Zod Schemas
-export const SuggestMealsForMacrosInputSchema = z.object({
-  mealName: z.string(),
-  targetCalories: z.number(),
-  targetProteinGrams: z.number(),
-  targetCarbsGrams: z.number(),
-  targetFatGrams: z.number(),
-  age: z.number().optional(),
-  gender: z.string().optional(),
-  activityLevel: z.string().optional(),
-  dietGoal: z.string().optional(),
-  preferredDiet: z.string().optional(),
-  preferredCuisines: z.array(z.string()).optional(),
-  dispreferredCuisines: z.array(z.string()).optional(),
-  preferredIngredients: z.array(z.string()).optional(),
-  dispreferredIngredients: z.array(z.string()).optional(),
-  allergies: z.array(z.string()).optional(),
-  medicalConditions: z.array(z.string()).optional(),
-  medications: z.array(z.string()).optional(),
-});
-export type SuggestMealsForMacrosInput = z.infer<
-  typeof SuggestMealsForMacrosInputSchema
->;
-
-const IngredientDetailSchema = z.object({
-  name: z.string(),
-  amount: z.string(),
-  unit: z.string(),
-  calories: z.number(),
-  protein: z.number(),
-  carbs: z.number(),
-  fat: z.number(),
-  macrosString: z.string(),
-});
-export type IngredientDetail = z.infer<typeof IngredientDetailSchema>;
-
-const MealSuggestionSchema = z.object({
-  mealTitle: z.string(),
-  description: z.string(),
-  ingredients: z.array(IngredientDetailSchema),
-  totalCalories: z.number(),
-  totalProtein: z.number(),
-  totalCarbs: z.number(),
-  totalFat: z.number(),
-  instructions: z.string().optional(),
-});
-export type MealSuggestion = z.infer<typeof MealSuggestionSchema>;
-
-export const SuggestMealsForMacrosOutputSchema = z.object({
-  suggestions: z.array(MealSuggestionSchema),
-});
-export type SuggestMealsForMacrosOutput = z.infer<
-  typeof SuggestMealsForMacrosOutputSchema
->;
+import {
+  SuggestMealsForMacrosInputSchema,
+  SuggestMealsForMacrosOutputSchema,
+  type SuggestMealsForMacrosInput,
+  type SuggestMealsForMacrosOutput,
+} from '@/lib/schemas';
 
 // Main entry function
 export async function suggestMealsForMacros(

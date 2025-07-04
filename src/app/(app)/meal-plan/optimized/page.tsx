@@ -1,11 +1,7 @@
 
 'use client';
 
-import {
-  generatePersonalizedMealPlan,
-  type GeneratePersonalizedMealPlanInput,
-  type GeneratePersonalizedMealPlanOutput,
-} from '@/ai/flows/generate-meal-plan';
+import { generatePersonalizedMealPlan } from '@/ai/flows/generate-meal-plan';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -34,7 +30,11 @@ import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { daysOfWeek } from '@/lib/constants';
 import { db } from '@/lib/firebase/clientApp';
-import type { FullProfileType } from '@/lib/schemas';
+import type {
+  FullProfileType,
+  GeneratePersonalizedMealPlanInput,
+  GeneratePersonalizedMealPlanOutput,
+} from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
