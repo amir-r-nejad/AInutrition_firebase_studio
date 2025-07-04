@@ -413,12 +413,11 @@ export default function OnboardingPage() {
         description: 'Your profile has been saved. Welcome to NutriPlan!',
       });
       // The AuthProvider will handle the redirect
-    } catch (error) {
-      console.error("Onboarding save error:", error);
+    } catch (error: any) {
+      console.error("Onboarding save error:", error.code, error.message, error);
       toast({
         title: 'Onboarding Error',
-        description:
-          'Failed to save onboarding data. Please try again.',
+        description: `Failed to save onboarding data: ${error.message || 'Please check your connection and try again.'}`,
         variant: 'destructive',
       });
     }

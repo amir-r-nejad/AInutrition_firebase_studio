@@ -115,12 +115,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           await setDoc(userDocRef, userData, { merge: true });
           console.log('AuthContext: New user profile created on client.');
         }
-      } catch (e) {
-        console.error('AuthContext: Error creating user profile:', e);
+      } catch (e: any) {
+        console.error('AuthContext: Error creating user profile:', e.code, e.message, e);
         toast({
           title: 'Profile Creation Failed',
-          description:
-            'Could not create your user profile in the database. Some features may not work.',
+          description: `Could not create your user profile in the database: ${e.message || 'Some features may not work.'}`,
           variant: 'destructive',
         });
       }
