@@ -1,4 +1,5 @@
-import type { ProfileFormValues } from './schemas';
+
+import type { FullProfileType, ProfileFormValues } from './schemas';
 import { activityLevels } from './constants';
 
 /**
@@ -60,32 +61,48 @@ export function calculateRecommendedProtein(
  * @returns Adjusted TDEE (target calories).
  */
 function adjustTDEEForDietGoal(tdee: number, dietGoal: string): number {
-  if (dietGoal === 'lose_weight') {
+  // FIX: Using correct diet goal values from constants
+  if (dietGoal === 'fat_loss') {
     return tdee - 500; // Typical 500 kcal deficit for weight loss
-  } else if (dietGoal === 'gain_weight') {
+  } else if (dietGoal === 'muscle_gain') {
     return tdee + 300; // Typical 300-500 kcal surplus for muscle gain
   }
+  // 'recomp' and 'maintain_weight' will fall through to return tdee
   return tdee; // Maintain weight
 }
 
 /**
  * Calculates estimated daily targets based on profile.
+ * FIX: This function now returns keys that match what the rest of the app expects.
  */
-export function calculateEstimatedDailyTargets(
-  profile: Partial<ProfileFormValues>
-): {
-  targetCalories?: number;
-  targetProtein?: number;
-  targetCarbs?: number;
-  targetFat?: number;
+export function calculateEstimatedDailyTargets(profile: {
+  gender?: string | null;
+  currentWeight?: number | null;
+  height?: number | null;
+  age?: number | null;
+  activityLevel?: string | null;
+  dietGoal?: string | null;
+  goalWeight?: number | null;
+  bf_current?: number | null;
+  bf_target?: number | null;
+  waist_current?: number | null;
+  waist_goal_1m?: number | null;
+}): {
+  finalTargetCalories?: number;
+  proteinGrams?: number;
+  carbGrams?: number;
+  fatGrams?: number;
   bmr?: number;
   tdee?: number;
 } {
   if (
     !profile.gender ||
     profile.currentWeight === undefined ||
+    profile.currentWeight === null ||
     profile.height === undefined ||
+    profile.height === null ||
     profile.age === undefined ||
+    profile.age === null ||
     !profile.activityLevel ||
     !profile.dietGoal
   ) {
@@ -115,11 +132,12 @@ export function calculateEstimatedDailyTargets(
     (targetCalories - proteinCalories - fatCalories) / 4
   );
 
+  // FIX: Return object with keys that match what the application expects
   return {
-    targetCalories: targetCalories,
-    targetProtein: protein,
-    targetFat: fatGrams, // Ensure non-negative
-    targetCarbs: carbGrams, // Ensure non-negative
+    finalTargetCalories: targetCalories,
+    proteinGrams: protein,
+    fatGrams: fatGrams, // Ensure non-negative
+    carbGrams: carbGrams, // Ensure non-negative
     bmr: bmr,
     tdee: tdee,
   };
