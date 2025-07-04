@@ -87,6 +87,13 @@ const suggestIngredientSwapFlow = ai.defineFlow(
     if (!output) {
       throw new Error('AI did not return output.');
     }
-    return output;
+
+    const validationResult = SuggestIngredientSwapOutputSchema.safeParse(output);
+    if (!validationResult.success) {
+        console.error('AI output validation error:', validationResult.error.flatten());
+        throw new Error(`AI returned data in an unexpected format. Details: ${validationResult.error.message}`);
+    }
+
+    return validationResult.data;
   }
 );

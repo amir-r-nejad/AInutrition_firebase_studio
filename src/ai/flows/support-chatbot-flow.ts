@@ -71,6 +71,16 @@ const supportChatbotFlow = ai.defineFlow(
           "I'm sorry, I couldn't process your request at the moment. Please try again.",
       };
     }
-    return output;
+
+    const validationResult = SupportChatbotOutputSchema.safeParse(output);
+    if (!validationResult.success) {
+      console.error('AI output validation error:', validationResult.error.flatten());
+      // Return a user-friendly error, but still in the expected format
+      return {
+        botResponse: "I'm sorry, there was an issue with the response format. Please try rephrasing your question.",
+      };
+    }
+
+    return validationResult.data;
   }
 );
