@@ -2,9 +2,6 @@
 'use client';
 
 import {
-  getUserProfile,
-} from '@/app/api/user/database';
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -58,6 +55,7 @@ import {
   smartPlannerDietGoals,
 } from '@/lib/constants';
 import { db } from '@/lib/firebase/clientApp';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { calculateBMR, calculateTDEE } from '@/lib/nutrition-calculator';
 import {
   type GlobalCalculatedTargets,
@@ -67,7 +65,6 @@ import {
 } from '@/lib/schemas';
 import { formatNumber } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { doc, setDoc } from 'firebase/firestore';
 import {
   BrainCircuit,
   Calculator,
@@ -136,75 +133,78 @@ export default function SmartCaloriePlannerPage() {
     if (user?.uid) {
       setIsLoadingData(true);
 
-      getUserProfile(user.uid)
-        .then((profile) => {
-          if (profile) {
-            const formSource =
-              profile.smartPlannerData?.formValues ?? (profile as any);
+      const userDocRef = doc(db, 'users', user.uid);
+      getDoc(userDocRef)
+        .then((docSnap) => {
+          if (docSnap.exists()) {
+            const profile = docSnap.data();
+            if (profile) {
+              const formSource =
+                profile.smartPlannerData?.formValues ?? (profile as any);
 
-            const formValues: Partial<SmartCaloriePlannerFormValues> = {
-              age: formSource.age ?? undefined,
-              gender: formSource.gender ?? undefined,
-              height_cm: formSource.height_cm ?? undefined,
-              current_weight: formSource.current_weight ?? undefined,
-              goal_weight_1m: formSource.goal_weight_1m ?? undefined,
-              ideal_goal_weight: formSource.ideal_goal_weight ?? undefined,
-              activity_factor_key:
-                formSource.activity_factor_key ??
-                formSource.activityLevel ??
-                'moderate',
-              dietGoal:
-                formSource.dietGoal ??
-                formSource.dietGoalOnboarding ??
-                'fat_loss',
-              bf_current: formSource.bf_current ?? undefined,
-              bf_target: formSource.bf_target ?? undefined,
-              bf_ideal: formSource.bf_ideal ?? undefined,
-              mm_current: formSource.mm_current ?? undefined,
-              mm_target: formSource.mm_target ?? undefined,
-              mm_ideal: formSource.mm_ideal ?? undefined,
-              bw_current: formSource.bw_current ?? undefined,
-              bw_target: formSource.bw_target ?? undefined,
-              bw_ideal: formSource.bw_ideal ?? undefined,
-              waist_current: formSource.waist_current ?? undefined,
-              waist_goal_1m: formSource.waist_goal_1m ?? undefined,
-              waist_ideal: formSource.waist_ideal ?? undefined,
-              hips_current: formSource.hips_current ?? undefined,
-              hips_goal_1m: formSource.hips_goal_1m ?? undefined,
-              hips_ideal: formSource.hips_ideal ?? undefined,
-              right_leg_current: formSource.right_leg_current ?? undefined,
-              right_leg_goal_1m: formSource.right_leg_goal_1m ?? undefined,
-              right_leg_ideal: formSource.right_leg_ideal ?? undefined,
-              left_leg_current: formSource.left_leg_current ?? undefined,
-              left_leg_goal_1m: formSource.left_leg_goal_1m ?? undefined,
-              left_leg_ideal: formSource.left_leg_ideal ?? undefined,
-              right_arm_current: formSource.right_arm_current ?? undefined,
-              right_arm_goal_1m: formSource.right_arm_goal_1m ?? undefined,
-              right_arm_ideal: formSource.right_arm_ideal ?? undefined,
-              left_arm_current: formSource.left_arm_current ?? undefined,
-              left_arm_goal_1m: formSource.left_arm_goal_1m ?? undefined,
-              left_arm_ideal: formSource.left_arm_ideal ?? undefined,
-              custom_total_calories:
-                formSource.custom_total_calories ?? undefined,
-              custom_protein_per_kg:
-                formSource.custom_protein_per_kg ?? undefined,
-              remaining_calories_carb_pct:
-                formSource.remaining_calories_carb_pct ?? 50,
-            };
+              const formValues: Partial<SmartCaloriePlannerFormValues> = {
+                age: formSource.age ?? undefined,
+                gender: formSource.gender ?? undefined,
+                height_cm: formSource.height_cm ?? undefined,
+                current_weight: formSource.current_weight ?? undefined,
+                goal_weight_1m: formSource.goal_weight_1m ?? undefined,
+                ideal_goal_weight: formSource.ideal_goal_weight ?? undefined,
+                activity_factor_key:
+                  formSource.activity_factor_key ??
+                  formSource.activityLevel ??
+                  'moderate',
+                dietGoal:
+                  formSource.dietGoal ??
+                  formSource.dietGoalOnboarding ??
+                  'fat_loss',
+                bf_current: formSource.bf_current ?? undefined,
+                bf_target: formSource.bf_target ?? undefined,
+                bf_ideal: formSource.bf_ideal ?? undefined,
+                mm_current: formSource.mm_current ?? undefined,
+                mm_target: formSource.mm_target ?? undefined,
+                mm_ideal: formSource.mm_ideal ?? undefined,
+                bw_current: formSource.bw_current ?? undefined,
+                bw_target: formSource.bw_target ?? undefined,
+                bw_ideal: formSource.bw_ideal ?? undefined,
+                waist_current: formSource.waist_current ?? undefined,
+                waist_goal_1m: formSource.waist_goal_1m ?? undefined,
+                waist_ideal: formSource.waist_ideal ?? undefined,
+                hips_current: formSource.hips_current ?? undefined,
+                hips_goal_1m: formSource.hips_goal_1m ?? undefined,
+                hips_ideal: formSource.hips_ideal ?? undefined,
+                right_leg_current: formSource.right_leg_current ?? undefined,
+                right_leg_goal_1m: formSource.right_leg_goal_1m ?? undefined,
+                right_leg_ideal: formSource.right_leg_ideal ?? undefined,
+                left_leg_current: formSource.left_leg_current ?? undefined,
+                left_leg_goal_1m: formSource.left_leg_goal_1m ?? undefined,
+                left_leg_ideal: formSource.left_leg_ideal ?? undefined,
+                right_arm_current: formSource.right_arm_current ?? undefined,
+                right_arm_goal_1m: formSource.right_arm_goal_1m ?? undefined,
+                right_arm_ideal: formSource.right_arm_ideal ?? undefined,
+                left_arm_current: formSource.left_arm_current ?? undefined,
+                left_arm_goal_1m: formSource.left_arm_goal_1m ?? undefined,
+                left_arm_ideal: formSource.left_arm_ideal ?? undefined,
+                custom_total_calories:
+                  formSource.custom_total_calories ?? undefined,
+                custom_protein_per_kg:
+                  formSource.custom_protein_per_kg ?? undefined,
+                remaining_calories_carb_pct:
+                  formSource.remaining_calories_carb_pct ?? 50,
+              };
 
-            smartPlannerForm.reset(formValues);
+              smartPlannerForm.reset(formValues);
 
-            if (
-              profile.smartPlannerData?.results &&
-              typeof profile.smartPlannerData.results.tdee === 'number' &&
-              typeof profile.smartPlannerData.results.bmr === 'number'
-            ) {
-              setResults(profile.smartPlannerData.results);
-            } else {
-              setResults(null);
+              if (
+                profile.smartPlannerData?.results &&
+                typeof profile.smartPlannerData.results.tdee === 'number' &&
+                typeof profile.smartPlannerData.results.bmr === 'number'
+              ) {
+                setResults(profile.smartPlannerData.results);
+              } else {
+                setResults(null);
+              }
             }
           }
-          setIsLoadingData(false);
         })
         .catch((err) => {
           toast({
@@ -212,6 +212,8 @@ export default function SmartCaloriePlannerPage() {
             description: 'Could not load saved planner data.',
             variant: 'destructive',
           });
+        })
+        .finally(() => {
           setIsLoadingData(false);
         });
     } else {
