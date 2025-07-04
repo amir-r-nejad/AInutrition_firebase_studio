@@ -20,6 +20,7 @@ import { Loader2 } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 import { getAuth } from 'firebase/auth';
+import { preprocessDataForFirestore } from '@/lib/schemas';
 
 interface AuthUser {
   uid: string;
@@ -112,7 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             photoURL: authedUser.photoURL,
             onboardingComplete: false,
           };
-          await setDoc(userDocRef, userData, { merge: true });
+          await setDoc(userDocRef, preprocessDataForFirestore(userData), { merge: true });
           console.log('AuthContext: New user profile created on client.');
         }
       } catch (e: any) {
