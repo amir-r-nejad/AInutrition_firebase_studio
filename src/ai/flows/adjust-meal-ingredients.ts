@@ -25,6 +25,17 @@ const AIServiceMealSchema = z.object({
   totalFat: z.number(),
 });
 
+const AdjustMealIngredientsInputSchema = z.object({
+  originalMeal: AIServiceMealSchema,
+  targetMacros: z.object({
+    calories: z.number(),
+    protein: z.number(),
+    carbs: z.number(),
+    fat: z.number(),
+  }),
+  userProfile: z.custom<FullProfileType>(),
+});
+
 const AdjustMealIngredientsOutputSchema = z.object({
   adjustedMeal: AIServiceMealSchema,
   explanation: z.string(),
@@ -32,25 +43,12 @@ const AdjustMealIngredientsOutputSchema = z.object({
 // --- End: Define Zod Schemas ---
 
 // Types
-export interface AdjustMealIngredientsInput {
-  originalMeal: AIServiceMeal;
-  targetMacros: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  userProfile: FullProfileType;
-}
-
 export type AIServiceIngredient = z.infer<typeof AIServiceIngredientSchema>;
 export type AIServiceMeal = z.infer<typeof AIServiceMealSchema>;
-export type AdjustMealIngredientsOutput = z.infer<
-  typeof AdjustMealIngredientsOutputSchema
->;
+export type AdjustMealIngredientsInput = z.infer<typeof AdjustMealIngredientsInputSchema>;
+export type AdjustMealIngredientsOutput = z.infer<typeof AdjustMealIngredientsOutputSchema>;
 
 // Genkit Flow
-
 export async function adjustMealIngredients(
   input: AdjustMealIngredientsInput
 ): Promise<AdjustMealIngredientsOutput> {
@@ -60,8 +58,8 @@ export async function adjustMealIngredients(
 const prompt = ai.definePrompt({
   model: geminiModel,
   name: 'adjustMealIngredientsPrompt',
-  input: { type: 'json' },
-  output: { type: 'json' },
+  inputSchema: AdjustMealIngredientsInputSchema,
+  outputSchema: AdjustMealIngredientsOutputSchema,
   prompt: `You are an expert nutritionist and chef. Your task is to adjust a given meal to precisely match target macronutrients, while strictly respecting the user's allergies and preferences.
 
 User Profile:
@@ -116,8 +114,8 @@ Respond ONLY with the pure JSON object that strictly matches the following TypeS
 const adjustMealIngredientsFlow = ai.defineFlow(
   {
     name: 'adjustMealIngredientsFlow',
-    inputSchema: undefined,
-    outputSchema: undefined,
+    inputSchema: AdjustMealIngredientsInputSchema,
+    outputSchema: AdjustMealIngredientsOutputSchema,
   },
   async (
     input: AdjustMealIngredientsInput
