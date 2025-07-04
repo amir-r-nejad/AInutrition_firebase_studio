@@ -3,7 +3,7 @@ import {
   onIdTokenChanged as _onIdTokenChanged,
   confirmPasswordReset,
   createUserWithEmailAndPassword as firebaseCreateUserWithEmailAndPassword,
-  sendPasswordResetEmail as firebaseSendPasswordResetEmail,
+  sendPasswordResetEmail,
   GoogleAuthProvider,
   NextOrObserver,
   sendEmailVerification as sendEmailVerificationAPI,
@@ -15,7 +15,6 @@ import {
 import { auth } from './firebase';
 
 export function onAuthStateChanged(cb: NextOrObserver<User>) {
-  console.log('onAuthStateChanged called', cb);
   return _onAuthStateChanged(auth, cb);
 }
 
@@ -48,31 +47,28 @@ export async function login(email: string, password: string) {
       password
     );
 
-    return userCredential; //to do  add cred to database
+    return userCredential;
   } catch (error: any) {
     const errorCode = error.code;
-    const errorMessage = error.message; // TODO probebly log them
+    const errorMessage = error.message;
     throw error;
   }
 }
 
-export async function sendPasswordResetEmail(email: string) {
+export async function sendForgetPassword(email: string) {
   try {
-    await firebaseSendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(auth, email);
   } catch (error) {
     console.error('Error sending password reset email', error);
-    throw error; // Propagate error to be handled in the UI
+    throw error;
   }
 }
 
-export async function sendForgetPassword(email: string) {
-  sendPasswordResetEmail(email);
-}
 export async function verifyOob(code: string) {
   try {
     return await verifyPasswordResetCode(auth, code);
   } catch (error) {
-    console.error('Error signing in with Email', error);
+    console.error('Error verifying oob code', error);
     throw error;
   }
 }
@@ -80,7 +76,7 @@ export async function confirmPassword(oob: string, reset: string) {
   try {
     return await confirmPasswordReset(auth, oob, reset);
   } catch (error) {
-    console.error('Error signing in with Email', error);
+    console.error('Error confirming password', error);
     throw error;
   }
 }
