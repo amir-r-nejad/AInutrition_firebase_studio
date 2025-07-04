@@ -40,6 +40,7 @@ import type {
   FullProfileType,
   Ingredient,
   Meal,
+  SmartCaloriePlannerFormValues,
   WeeklyMealPlan,
 } from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
@@ -188,7 +189,7 @@ export default function CurrentMealPlanPage() {
     }
 
     const smartPlannerValues = profileData.smartPlannerData?.formValues;
-    const requiredFields: (keyof typeof smartPlannerValues)[] = [
+    const requiredFields: (keyof SmartCaloriePlannerFormValues)[] = [
       'age',
       'gender',
       'current_weight',
