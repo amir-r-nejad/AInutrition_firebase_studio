@@ -1,54 +1,62 @@
-
 'use server';
 
-import { ai, geminiModel } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
-// Types
-export interface SuggestMealsForMacrosInput {
-  mealName: string;
-  targetCalories: number;
-  targetProteinGrams: number;
-  targetCarbsGrams: number;
-  targetFatGrams: number;
-  age?: number;
-  gender?: string;
-  activityLevel?: string;
-  dietGoal?: string;
-  preferredDiet?: string;
-  preferredCuisines?: string[];
-  dispreferredCuisines?: string[];
-  preferredIngredients?: string[];
-  dispreferredIngredients?: string[];
-  allergies?: string[];
-  medicalConditions?: string[];
-  medications?: string[];
-}
+// Zod Schemas
+export const SuggestMealsForMacrosInputSchema = z.object({
+  mealName: z.string(),
+  targetCalories: z.number(),
+  targetProteinGrams: z.number(),
+  targetCarbsGrams: z.number(),
+  targetFatGrams: z.number(),
+  age: z.number().optional(),
+  gender: z.string().optional(),
+  activityLevel: z.string().optional(),
+  dietGoal: z.string().optional(),
+  preferredDiet: z.string().optional(),
+  preferredCuisines: z.array(z.string()).optional(),
+  dispreferredCuisines: z.array(z.string()).optional(),
+  preferredIngredients: z.array(z.string()).optional(),
+  dispreferredIngredients: z.array(z.string()).optional(),
+  allergies: z.array(z.string()).optional(),
+  medicalConditions: z.array(z.string()).optional(),
+  medications: z.array(z.string()).optional(),
+});
+export type SuggestMealsForMacrosInput = z.infer<
+  typeof SuggestMealsForMacrosInputSchema
+>;
 
-export interface IngredientDetail {
-  name: string;
-  amount: string;
-  unit: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  macrosString: string;
-}
+const IngredientDetailSchema = z.object({
+  name: z.string(),
+  amount: z.string(),
+  unit: z.string(),
+  calories: z.number(),
+  protein: z.number(),
+  carbs: z.number(),
+  fat: z.number(),
+  macrosString: z.string(),
+});
+export type IngredientDetail = z.infer<typeof IngredientDetailSchema>;
 
-export interface MealSuggestion {
-  mealTitle: string;
-  description: string;
-  ingredients: IngredientDetail[];
-  totalCalories: number;
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
-  instructions?: string;
-}
+const MealSuggestionSchema = z.object({
+  mealTitle: z.string(),
+  description: z.string(),
+  ingredients: z.array(IngredientDetailSchema),
+  totalCalories: z.number(),
+  totalProtein: z.number(),
+  totalCarbs: z.number(),
+  totalFat: z.number(),
+  instructions: z.string().optional(),
+});
+export type MealSuggestion = z.infer<typeof MealSuggestionSchema>;
 
-export interface SuggestMealsForMacrosOutput {
-  suggestions: MealSuggestion[];
-}
+export const SuggestMealsForMacrosOutputSchema = z.object({
+  suggestions: z.array(MealSuggestionSchema),
+});
+export type SuggestMealsForMacrosOutput = z.infer<
+  typeof SuggestMealsForMacrosOutputSchema
+>;
 
 // Main entry function
 export async function suggestMealsForMacros(
@@ -58,12 +66,10 @@ export async function suggestMealsForMacros(
 }
 
 // AI Prompt
-
 const prompt = ai.definePrompt({
-  model: geminiModel,
   name: 'suggestMealsForMacrosPrompt',
-  input: { type: 'json' },
-  output: { type: 'json' },
+  input: { schema: SuggestMealsForMacrosInputSchema },
+  output: { schema: SuggestMealsForMacrosOutputSchema },
   prompt: `You are an expert AI nutritionist and personal chef. Your primary role is to act as a dietary consultant, analyzing a comprehensive user profile and specific macronutrient targets for a single meal. Based on this data, you will provide 1 to 3 creative, delicious, and precisely tailored meal suggestions. Your suggestions must be holistic, considering not just the numbers, but the user's entire lifestyle, preferences, and health status.
 
 **User's Comprehensive Profile:**
@@ -125,12 +131,11 @@ Respond ONLY with the pure JSON object that strictly matches the following TypeS
 });
 
 // Genkit Flow
-
 const suggestMealsForMacrosFlow = ai.defineFlow(
   {
     name: 'suggestMealsForMacrosFlow',
-    inputSchema: undefined,
-    outputSchema: undefined,
+    inputSchema: SuggestMealsForMacrosInputSchema,
+    outputSchema: SuggestMealsForMacrosOutputSchema,
   },
   async (
     input: SuggestMealsForMacrosInput
@@ -139,8 +144,6 @@ const suggestMealsForMacrosFlow = ai.defineFlow(
     if (!output) {
       throw new Error('AI did not return output.');
     }
-    return output as SuggestMealsForMacrosOutput;
+    return output;
   }
 );
-
-    

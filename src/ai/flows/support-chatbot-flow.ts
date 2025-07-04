@@ -1,34 +1,34 @@
 'use server';
 
-import { ai, geminiModel } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
-// Types
-export interface SupportChatbotInput {
-  userQuery: string;
-}
+// Zod Schemas
+export const SupportChatbotInputSchema = z.object({
+  userQuery: z.string(),
+});
+export type SupportChatbotInput = z.infer<typeof SupportChatbotInputSchema>;
 
-export interface SupportChatbotOutput {
-  botResponse: string;
-}
+export const SupportChatbotOutputSchema = z.object({
+  botResponse: z.string(),
+});
+export type SupportChatbotOutput = z.infer<typeof SupportChatbotOutputSchema>;
 
 // Main entry function
-
 export async function handleSupportQuery(
   input: SupportChatbotInput
 ): Promise<SupportChatbotOutput> {
-  return supportChatbotFlow(input.userQuery);
+  return supportChatbotFlow(input);
 }
 
 // AI Prompt
-
 const prompt = ai.definePrompt({
-  model: geminiModel,
   name: 'supportChatbotPrompt',
-  input: { type: 'json' },
-  output: { type: 'json' },
+  input: { schema: SupportChatbotInputSchema },
+  output: { schema: SupportChatbotOutputSchema },
   prompt: `You are a friendly and helpful support chatbot for "NutriPlan", a web application for personalized nutrition and meal planning.
 
-User Query: {{{input}}}
+User Query: {{{userQuery}}}
 
 Your primary goal is to provide direct, helpful answers about NutriPlan's features ONLY.
 
@@ -57,14 +57,13 @@ Respond ONLY with the pure JSON object that strictly matches the following TypeS
 });
 
 // Genkit Flow
-
 const supportChatbotFlow = ai.defineFlow(
   {
     name: 'supportChatbotFlow',
-    inputSchema: undefined,
-    outputSchema: undefined,
+    inputSchema: SupportChatbotInputSchema,
+    outputSchema: SupportChatbotOutputSchema,
   },
-  async (input: SupportChatbotInput): Promise<SupportChatbotOutput> => {
+  async (input) => {
     const { output } = await prompt(input);
     if (!output) {
       return {
@@ -72,6 +71,6 @@ const supportChatbotFlow = ai.defineFlow(
           "I'm sorry, I couldn't process your request at the moment. Please try again.",
       };
     }
-    return output as SupportChatbotOutput;
+    return output;
   }
 );

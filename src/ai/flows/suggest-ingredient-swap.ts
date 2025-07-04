@@ -1,35 +1,45 @@
 'use server';
 
-import { ai, geminiModel } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
-// Types
-export interface SuggestIngredientSwapInput {
-  mealName: string;
-  ingredients: Array<{
-    name: string;
-    quantity: number; // grams
-    caloriesPer100g: number;
-    proteinPer100g: number;
-    fatPer100g: number;
-  }>;
-  dietaryPreferences: string;
-  dislikedIngredients: string[];
-  allergies: string[];
-  nutrientTargets: {
-    calories: number;
-    protein: number;
-    carbohydrates: number;
-    fat: number;
-  };
-}
+// Zod Schemas
+export const SuggestIngredientSwapInputSchema = z.object({
+  mealName: z.string(),
+  ingredients: z.array(
+    z.object({
+      name: z.string(),
+      quantity: z.number(), // grams
+      caloriesPer100g: z.number(),
+      proteinPer100g: z.number(),
+      fatPer100g: z.number(),
+    })
+  ),
+  dietaryPreferences: z.string(),
+  dislikedIngredients: z.array(z.string()),
+  allergies: z.array(z.string()),
+  nutrientTargets: z.object({
+    calories: z.number(),
+    protein: z.number(),
+    carbohydrates: z.number(),
+    fat: z.number(),
+  }),
+});
+export type SuggestIngredientSwapInput = z.infer<
+  typeof SuggestIngredientSwapInputSchema
+>;
 
-export type SuggestIngredientSwapOutput = Array<{
-  ingredientName: string;
-  reason: string;
-}>;
+export const SuggestIngredientSwapOutputSchema = z.array(
+  z.object({
+    ingredientName: z.string(),
+    reason: z.string(),
+  })
+);
+export type SuggestIngredientSwapOutput = z.infer<
+  typeof SuggestIngredientSwapOutputSchema
+>;
 
 // Main entry function
-
 export async function suggestIngredientSwap(
   input: SuggestIngredientSwapInput
 ): Promise<SuggestIngredientSwapOutput> {
@@ -37,12 +47,10 @@ export async function suggestIngredientSwap(
 }
 
 // AI Prompt
-
 const prompt = ai.definePrompt({
-  model: geminiModel,
   name: 'suggestIngredientSwapPrompt',
-  input: { type: 'json' },
-  output: { type: 'json' },
+  input: { schema: SuggestIngredientSwapInputSchema },
+  output: { schema: SuggestIngredientSwapOutputSchema },
   prompt: `You are a nutritional expert. Your task is to suggest ingredient swaps for a given meal, while strictly preserving its nutritional balance and respecting user preferences.
 
 {{{input}}}
@@ -66,12 +74,11 @@ Array<{ ingredientName: string; reason: string; }>
 });
 
 // Genkit Flow
-
 const suggestIngredientSwapFlow = ai.defineFlow(
   {
     name: 'suggestIngredientSwapFlow',
-    inputSchema: undefined,
-    outputSchema: undefined,
+    inputSchema: SuggestIngredientSwapInputSchema,
+    outputSchema: SuggestIngredientSwapOutputSchema,
   },
   async (
     input: SuggestIngredientSwapInput
@@ -80,6 +87,6 @@ const suggestIngredientSwapFlow = ai.defineFlow(
     if (!output) {
       throw new Error('AI did not return output.');
     }
-    return output as SuggestIngredientSwapOutput;
+    return output;
   }
 );

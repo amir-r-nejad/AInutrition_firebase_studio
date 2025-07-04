@@ -1,89 +1,99 @@
 'use server';
 
-import { ai, geminiModel } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
-// Types
-export interface GeneratePersonalizedMealPlanInput {
-  age: number;
-  gender: string;
-  height_cm: number;
-  current_weight: number;
-  goal_weight_1m: number;
-  activityLevel: string;
-  dietGoalOnboarding: string;
-  ideal_goal_weight?: number;
-  bf_current?: number;
-  bf_target?: number;
-  bf_ideal?: number;
-  mm_current?: number;
-  mm_target?: number;
-  mm_ideal?: number;
-  bw_current?: number;
-  bw_target?: number;
-  bw_ideal?: number;
-  waist_current?: number;
-  waist_goal_1m?: number;
-  waist_ideal?: number;
-  hips_current?: number;
-  hips_goal_1m?: number;
-  hips_ideal?: number;
-  right_leg_current?: number;
-  right_leg_goal_1m?: number;
-  right_leg_ideal?: number;
-  left_leg_current?: number;
-  left_leg_goal_1m?: number;
-  left_leg_ideal?: number;
-  right_arm_current?: number;
-  right_arm_goal_1m?: number;
-  right_arm_ideal?: number;
-  left_arm_current?: number;
-  left_arm_goal_1m?: number;
-  left_arm_ideal?: number;
-  preferredDiet?: string;
-  allergies?: string[];
-  preferredCuisines?: string[];
-  dispreferredCuisines?: string[];
-  preferredIngredients?: string[];
-  dispreferredIngredients?: string[];
-  preferredMicronutrients?: string[];
-  medicalConditions?: string[];
-  medications?: string[];
-  typicalMealsDescription?: string;
-}
+// Zod Schemas
+export const GeneratePersonalizedMealPlanInputSchema = z.object({
+  age: z.number(),
+  gender: z.string(),
+  height_cm: z.number(),
+  current_weight: z.number(),
+  goal_weight_1m: z.number(),
+  activityLevel: z.string(),
+  dietGoalOnboarding: z.string(),
+  ideal_goal_weight: z.number().optional(),
+  bf_current: z.number().optional(),
+  bf_target: z.number().optional(),
+  bf_ideal: z.number().optional(),
+  mm_current: z.number().optional(),
+  mm_target: z.number().optional(),
+  mm_ideal: z.number().optional(),
+  bw_current: z.number().optional(),
+  bw_target: z.number().optional(),
+  bw_ideal: z.number().optional(),
+  waist_current: z.number().optional(),
+  waist_goal_1m: z.number().optional(),
+  waist_ideal: z.number().optional(),
+  hips_current: z.number().optional(),
+  hips_goal_1m: z.number().optional(),
+  hips_ideal: z.number().optional(),
+  right_leg_current: z.number().optional(),
+  right_leg_goal_1m: z.number().optional(),
+  right_leg_ideal: z.number().optional(),
+  left_leg_current: z.number().optional(),
+  left_leg_goal_1m: z.number().optional(),
+  left_leg_ideal: z.number().optional(),
+  right_arm_current: z.number().optional(),
+  right_arm_goal_1m: z.number().optional(),
+  right_arm_ideal: z.number().optional(),
+  left_arm_current: z.number().optional(),
+  left_arm_goal_1m: z.number().optional(),
+  left_arm_ideal: z.number().optional(),
+  preferredDiet: z.string().optional(),
+  allergies: z.array(z.string()).optional(),
+  preferredCuisines: z.array(z.string()).optional(),
+  dispreferredCuisines: z.array(z.string()).optional(),
+  preferredIngredients: z.array(z.string()).optional(),
+  dispreferredIngredients: z.array(z.string()).optional(),
+  preferredMicronutrients: z.array(z.string()).optional(),
+  medicalConditions: z.array(z.string()).optional(),
+  medications: z.array(z.string()).optional(),
+  typicalMealsDescription: z.string().optional(),
+});
+export type GeneratePersonalizedMealPlanInput = z.infer<
+  typeof GeneratePersonalizedMealPlanInputSchema
+>;
 
-export interface Meal {
-  meal_name: string;
-  ingredients: {
-    ingredient_name: string;
-    quantity_g: number;
-    macros_per_100g: {
-      calories: number;
-      protein_g: number;
-      fat_g: number;
-    };
-  }[];
-  total_calories: number;
-  total_protein_g: number;
-  total_fat_g: number;
-}
+const MealSchema = z.object({
+  meal_name: z.string(),
+  ingredients: z.array(
+    z.object({
+      ingredient_name: z.string(),
+      quantity_g: z.number(),
+      macros_per_100g: z.object({
+        calories: z.number(),
+        protein_g: z.number(),
+        fat_g: z.number(),
+      }),
+    })
+  ),
+  total_calories: z.number(),
+  total_protein_g: z.number(),
+  total_fat_g: z.number(),
+});
+export type Meal = z.infer<typeof MealSchema>;
 
-export interface DayPlan {
-  day: string;
-  meals: Meal[];
-}
+const DayPlanSchema = z.object({
+  day: z.string(),
+  meals: z.array(MealSchema),
+});
+export type DayPlan = z.infer<typeof DayPlanSchema>;
 
-export interface GeneratePersonalizedMealPlanOutput {
-  weeklyMealPlan: DayPlan[];
-  weeklySummary: {
-    totalCalories: number;
-    totalProtein: number;
-    totalCarbs: number;
-    totalFat: number;
-  };
-}
+export const GeneratePersonalizedMealPlanOutputSchema = z.object({
+  weeklyMealPlan: z.array(DayPlanSchema),
+  weeklySummary: z.object({
+    totalCalories: z.number(),
+    totalProtein: z.number(),
+    totalCarbs: z.number(),
+    totalFat: z.number(),
+  }),
+});
+export type GeneratePersonalizedMealPlanOutput = z.infer<
+  typeof GeneratePersonalizedMealPlanOutputSchema
+>;
 
 // Main entry function
-
 export async function generatePersonalizedMealPlan(
   input: GeneratePersonalizedMealPlanInput
 ): Promise<GeneratePersonalizedMealPlanOutput> {
@@ -91,12 +101,10 @@ export async function generatePersonalizedMealPlan(
 }
 
 // AI Prompt
-
 const prompt = ai.definePrompt({
-  model: geminiModel,
   name: 'generatePersonalizedMealPlanPrompt',
-  input: { type: 'json' },
-  output: { type: 'json' },
+  input: { schema: GeneratePersonalizedMealPlanInputSchema },
+  output: { schema: GeneratePersonalizedMealPlanOutputSchema },
   prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile.
 
 {{{input}}}
@@ -145,12 +153,11 @@ Respond only with pure JSON that matches this structure.`,
 });
 
 // Genkit Flow
-
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
-    inputSchema: undefined,
-    outputSchema: undefined,
+    inputSchema: GeneratePersonalizedMealPlanInputSchema,
+    outputSchema: GeneratePersonalizedMealPlanOutputSchema,
   },
   async (
     input: GeneratePersonalizedMealPlanInput
@@ -159,6 +166,6 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     if (!output) {
       throw new Error('AI did not return output.');
     }
-    return output as GeneratePersonalizedMealPlanOutput;
+    return output;
   }
 );

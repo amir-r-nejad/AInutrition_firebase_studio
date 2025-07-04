@@ -1,6 +1,6 @@
 'use server';
 
-import { ai, geminiModel } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { FullProfileType } from '@/lib/schemas';
 import { z } from 'zod';
 
@@ -45,8 +45,12 @@ const AdjustMealIngredientsOutputSchema = z.object({
 // Types
 export type AIServiceIngredient = z.infer<typeof AIServiceIngredientSchema>;
 export type AIServiceMeal = z.infer<typeof AIServiceMealSchema>;
-export type AdjustMealIngredientsInput = z.infer<typeof AdjustMealIngredientsInputSchema>;
-export type AdjustMealIngredientsOutput = z.infer<typeof AdjustMealIngredientsOutputSchema>;
+export type AdjustMealIngredientsInput = z.infer<
+  typeof AdjustMealIngredientsInputSchema
+>;
+export type AdjustMealIngredientsOutput = z.infer<
+  typeof AdjustMealIngredientsOutputSchema
+>;
 
 // Genkit Flow
 export async function adjustMealIngredients(
@@ -56,7 +60,6 @@ export async function adjustMealIngredients(
 }
 
 const prompt = ai.definePrompt({
-  model: geminiModel,
   name: 'adjustMealIngredientsPrompt',
   input: { schema: AdjustMealIngredientsInputSchema },
   output: { schema: AdjustMealIngredientsOutputSchema },
