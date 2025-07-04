@@ -339,6 +339,8 @@ function MealSuggestionsContent() {
       preferredIngredients: currentPreferences.preferredIngredients,
       dispreferredIngredients: currentPreferences.dispreferredIngredients,
       allergies: currentPreferences.allergies,
+      medicalConditions: currentPreferences.medicalConditions,
+      medications: currentPreferences.medications,
     };
 
     Object.keys(aiInput).forEach(

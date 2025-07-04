@@ -19,6 +19,8 @@ export interface SuggestMealsForMacrosInput {
   preferredIngredients?: string[];
   dispreferredIngredients?: string[];
   allergies?: string[];
+  medicalConditions?: string[];
+  medications?: string[];
 }
 
 export interface IngredientDetail {
@@ -61,15 +63,36 @@ const prompt = ai.definePrompt({
   name: 'suggestMealsForMacrosPrompt',
   input: { type: 'json' },
   output: { type: 'json' },
-  prompt: `You are a creative nutritionist and recipe developer. Your task is to suggest 1-3 detailed meal ideas for a specific mealtime that precisely meet the user's macronutrient targets and strictly adhere to their preferences.
+  prompt: `You are an expert AI nutritionist. Your goal is to act as a helpful and knowledgeable guide, providing meal suggestions that are not only delicious but also perfectly aligned with the user's health goals and restrictions.
 
-{{{input}}}
+User Profile & Preferences:
+{{#if age}}Age: {{age}}{{/if}}
+{{#if gender}}Gender: {{gender}}{{/if}}
+{{#if activityLevel}}Activity Level: {{activityLevel}}{{/if}}
+{{#if dietGoal}}Diet Goal: {{dietGoal}}{{/if}}
+{{#if preferredDiet}}Preferred Diet: {{preferredDiet}}{{/if}}
+{{#if allergies.length}}Allergies: {{allergies}}{{/if}}
+{{#if dispreferredIngredients.length}}Dislikes: {{dispreferredIngredients}}{{/if}}
+{{#if preferredIngredients.length}}Preferred Ingredients: {{preferredIngredients}}{{/if}}
+{{#if preferredCuisines.length}}Preferred Cuisines: {{preferredCuisines}}{{/if}}
+{{#if dispreferredCuisines.length}}Dispreferred Cuisines: {{dispreferredCuisines}}{{/if}}
+{{#if medicalConditions.length}}Medical Conditions: {{medicalConditions}}{{/if}}
+{{#if medications.length}}Medications: {{medications}}{{/if}}
+
+Target Macros for {{mealName}}:
+- Calories: {{targetCalories}}
+- Protein: {{targetProteinGrams}}g
+- Carbs: {{targetCarbsGrams}}g
+- Fat: {{targetFatGrams}}g
+
+Your Task:
+Suggest 1-3 detailed meal ideas that precisely meet the user's macronutrient targets and strictly adhere to all their preferences, allergies, and medical conditions. The 'description' for each meal should briefly explain *why* it's a good choice for the user, considering their profile.
 
 Strict Instructions for Output:
 - Your response MUST be a JSON object with ONLY one exact top-level property: "suggestions".
     - "suggestions": This MUST be an array containing 1 to 3 meal suggestion objects. Each meal suggestion object MUST contain ONLY these exact properties:
         - "mealTitle": string — A concise and appealing title for the meal (e.g., "Mediterranean Chicken Salad").
-        - "description": string — A brief, engaging description of the meal.
+        - "description": string — A brief, engaging description of the meal that also explains *why* it fits the user's goals (e.g., "High in protein to support muscle gain and uses ingredients that align with your Mediterranean diet preference.").
         - "ingredients": An array of objects, where each object represents a single ingredient. Each ingredient object MUST contain ONLY these exact properties:
             - "name": string — The name of the ingredient (e.g., "Chicken Breast").
             - "amount": string — The quantity of the ingredient as a string (e.g., "150", "1/2").
@@ -87,7 +110,7 @@ Strict Instructions for Output:
 
 ⚠️ Important Rules:
 - Ensure all meal suggestions are realistic, diverse, and nutritionally valid.
-- Strictly respect all specified allergies, preferences, and dislikes.
+- Strictly respect all specified allergies, preferences, and medical conditions.
 - Double-check all macro sums: "totalCalories", "totalProtein", "totalCarbs", and "totalFat" MUST be accurately calculated and match the sum of their respective values from the "ingredients" list for each meal.
 - Use actual numerical values for all number fields. Do NOT use string representations for numbers.
 - DO NOT return empty "ingredients" lists for any meal suggestion.
