@@ -304,7 +304,7 @@ export default function OptimizedMealPlanPage() {
                           Total Calories
                         </p>
                         <p className='text-xl font-bold'>
-                          {mealPlan.weeklySummary.totalCalories.toFixed(0)} kcal
+                          {(mealPlan.weeklySummary?.totalCalories ?? 0).toFixed(0)} kcal
                         </p>
                       </div>
                       <div>
@@ -312,7 +312,7 @@ export default function OptimizedMealPlanPage() {
                           Total Protein
                         </p>
                         <p className='text-xl font-bold'>
-                          {mealPlan.weeklySummary.totalProtein.toFixed(1)} g
+                          {(mealPlan.weeklySummary?.totalProtein ?? 0).toFixed(1)} g
                         </p>
                       </div>
                       <div>
@@ -320,7 +320,7 @@ export default function OptimizedMealPlanPage() {
                           Total Carbs
                         </p>
                         <p className='text-xl font-bold'>
-                          {mealPlan.weeklySummary.totalCarbs.toFixed(1)} g
+                          {(mealPlan.weeklySummary?.totalCarbs ?? 0).toFixed(1)} g
                         </p>
                       </div>
                       <div>
@@ -328,7 +328,7 @@ export default function OptimizedMealPlanPage() {
                           Total Fat
                         </p>
                         <p className='text-xl font-bold'>
-                          {mealPlan.weeklySummary.totalFat.toFixed(1)} g
+                          {(mealPlan.weeklySummary?.totalFat ?? 0).toFixed(1)} g
                         </p>
                       </div>
                     </div>
@@ -341,17 +341,17 @@ export default function OptimizedMealPlanPage() {
                         data={[
                           {
                             name: 'Protein',
-                            value: mealPlan.weeklySummary.totalProtein,
+                            value: mealPlan.weeklySummary?.totalProtein ?? 0,
                             fill: 'var(--color-protein)',
                           },
                           {
                             name: 'Carbs',
-                            value: mealPlan.weeklySummary.totalCarbs,
+                            value: mealPlan.weeklySummary?.totalCarbs ?? 0,
                             fill: 'var(--color-carbs)',
                           },
                           {
                             name: 'Fat',
-                            value: mealPlan.weeklySummary.totalFat,
+                            value: mealPlan.weeklySummary?.totalFat ?? 0,
                             fill: 'var(--color-fat)',
                           },
                         ]}
@@ -489,10 +489,10 @@ export default function OptimizedMealPlanPage() {
                               <ScrollBar orientation='horizontal' />
                             </ScrollArea>
                             <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
-                              Total: {meal.total_calories.toFixed(0)} kcal |
-                              Protein: {meal.total_protein_g.toFixed(1)}g |
-                              Carbs: {meal.total_carbs_g.toFixed(1)}g | Fat:{' '}
-                              {meal.total_fat_g.toFixed(1)}g
+                              Total: {(meal.total_calories ?? 0).toFixed(0)} kcal |
+                              Protein: {(meal.total_protein_g ?? 0).toFixed(1)}g |
+                              Carbs: {(meal.total_carbs_g ?? 0).toFixed(1)}g | Fat:{' '}
+                              {(meal.total_fat_g ?? 0).toFixed(1)}g
                             </div>
                           </CardContent>
                         </Card>
