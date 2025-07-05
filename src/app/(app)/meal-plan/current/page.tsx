@@ -249,12 +249,17 @@ export default function CurrentMealPlanPage() {
         return;
       }
 
-      const mealDistribution = defaultMacroPercentages[mealToOptimize.name] || {
-        calories_pct: 0,
-        protein_pct: 0,
-        carbs_pct: 0,
-        fat_pct: 0,
-      };
+      const customDistributions = profileData.mealDistributions;
+      const mealDistribution =
+        (customDistributions &&
+          Array.isArray(customDistributions) &&
+          customDistributions.find((d) => d.mealName === mealToOptimize.name)) ||
+        defaultMacroPercentages[mealToOptimize.name] || {
+          calories_pct: 0,
+          protein_pct: 0,
+          carbs_pct: 0,
+          fat_pct: 0,
+        };
 
       const targetMacrosForMeal = {
         calories: Math.round(
