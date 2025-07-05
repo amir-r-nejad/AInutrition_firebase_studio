@@ -10,6 +10,24 @@ import {
   type GeneratePersonalizedMealPlanInput,
   type GeneratePersonalizedMealPlanOutput,
 } from '@/lib/schemas';
+import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
+import { defaultMacroPercentages, mealNames } from '@/lib/constants';
+import { z } from 'zod';
+
+// Define a new schema for the prompt's specific input needs
+const MealTargetSchema = z.object({
+  mealName: z.string(),
+  calories: z.number(),
+  protein: z.number(),
+  carbs: z.number(),
+  fat: z.number(),
+});
+
+const PromptInputSchema = GeneratePersonalizedMealPlanInputSchema.extend({
+  mealTargets: z.array(MealTargetSchema),
+});
+type PromptInput = z.infer<typeof PromptInputSchema>;
+
 
 // Main entry function
 export async function generatePersonalizedMealPlan(
@@ -18,14 +36,12 @@ export async function generatePersonalizedMealPlan(
   return generatePersonalizedMealPlanFlow(input);
 }
 
-// AI Prompt - Now only responsible for generating the plan structure, not the totals.
+// AI Prompt - Now receives explicit macro targets for each meal.
 const prompt = ai.definePrompt({
   name: 'generatePersonalizedMealPlanPrompt',
-  input: { schema: GeneratePersonalizedMealPlanInputSchema },
-  output: { schema: AIGeneratedWeeklyMealPlanSchema }, // AI outputs a schema without required totals
-  prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile and goals.
-
-Your response MUST be a JSON object that strictly adheres to the structure and rules outlined below.
+  input: { schema: PromptInputSchema }, // Use the new, more detailed schema
+  output: { schema: AIGeneratedWeeklyMealPlanSchema }, // AI still outputs the basic plan
+  prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile and EXACT meal-by-meal macro targets provided below.
 
 **--- USER PROFILE ---**
 - Age: {{age}}
@@ -40,21 +56,13 @@ Your response MUST be a JSON object that strictly adheres to the structure and r
 {{#if dispreferredIngredients.length}}- Disliked Ingredients: {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if preferredCuisines.length}}- Preferred Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
-**--- MEAL STRUCTURE INSTRUCTIONS ---**
-{{#if mealDistributions}}
-You MUST generate meals according to this custom macro distribution. The "meal_name" for each meal object you generate MUST exactly match one of these names:
-{{#each mealDistributions}}
-- **{{this.mealName}}**: Calories: {{this.calories_pct}}%, Protein: {{this.protein_pct}}%, Carbs: {{this.carbs_pct}}%, Fat: {{this.fat_pct}}%
+**--- MEAL STRUCTURE & EXACT TARGETS ---**
+You MUST generate a complete 7-day plan. For each day, you must generate a meal for EACH of the following targets. The "meal_name" you use in your JSON output MUST exactly match the "mealName" provided in the target list below. The meal you create should be as close as possible to the specified macros.
+
+{{#each mealTargets}}
+- **{{this.mealName}}**: Target ~{{this.calories}} kcal, ~{{this.protein}}g Protein, ~{{this.carbs}}g Carbs, ~{{this.fat}}g Fat
 {{/each}}
-{{else}}
-You MUST generate a plan for **ALL** of the following meals every day. The "meal_name" property for each meal object you generate MUST exactly match one of these names:
-- Breakfast
-- Morning Snack
-- Lunch
-- Afternoon Snack
-- Dinner
-- Evening Snack
-{{/if}}
+
 
 **--- VERY STRICT JSON OUTPUT SCHEMA ---**
 Your entire response must be a single JSON object with ONLY ONE top-level key: "weeklyMealPlan".
@@ -67,7 +75,7 @@ This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day
     "meals": [
       // This is an array of meal objects.
       {
-        "meal_name": "Breakfast", // The name of the meal type. MUST match a name from the MEAL STRUCTURE INSTRUCTIONS.
+        "meal_name": "Breakfast", // The name of the meal type. MUST match a name from the MEAL STRUCTURE & EXACT TARGETS section.
         "meal_title": "Oatmeal with Berries and Nuts", // A specific, appealing title for the meal. This MUST be generated.
         "ingredients": [
           {
@@ -91,7 +99,7 @@ This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day
 `,
 });
 
-// Genkit Flow
+// Genkit Flow - Now acts as an orchestrator
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
@@ -101,12 +109,65 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
   async (
     input: GeneratePersonalizedMealPlanInput
   ): Promise<GeneratePersonalizedMealPlanOutput> => {
-    const { output } = await prompt(input);
+    // 1. Calculate total daily targets from user profile
+    const dailyTargets = calculateEstimatedDailyTargets({
+      age: input.age,
+      gender: input.gender,
+      currentWeight: input.current_weight,
+      height: input.height_cm,
+      activityLevel: input.activityLevel,
+      dietGoal: input.dietGoalOnboarding,
+    });
+
+    if (
+      !dailyTargets.finalTargetCalories ||
+      !dailyTargets.proteinGrams ||
+      !dailyTargets.carbGrams ||
+      !dailyTargets.fatGrams
+    ) {
+      throw new Error(
+        'Could not calculate daily nutritional targets from the provided profile data.'
+      );
+    }
+    
+    // 2. Determine meal distributions (user's custom or default)
+    const distributions =
+      input.mealDistributions && input.mealDistributions.length > 0
+        ? input.mealDistributions
+        : mealNames.map((name) => ({
+            mealName: name,
+            calories_pct: defaultMacroPercentages[name].calories_pct,
+            protein_pct: defaultMacroPercentages[name].protein_pct,
+            carbs_pct: defaultMacroPercentages[name].carbs_pct,
+            fat_pct: defaultMacroPercentages[name].fat_pct,
+          }));
+
+    // 3. Calculate absolute macro targets for each meal
+    const mealTargets = distributions.map((dist) => ({
+      mealName: dist.mealName,
+      calories: Math.round(
+        dailyTargets.finalTargetCalories! * (dist.calories_pct / 100)
+      ),
+      protein: Math.round(
+        dailyTargets.proteinGrams! * (dist.protein_pct / 100)
+      ),
+      carbs: Math.round(dailyTargets.carbGrams! * (dist.carbs_pct / 100)),
+      fat: Math.round(dailyTargets.fatGrams! * (dist.fat_pct / 100)),
+    }));
+
+    // 4. Create the detailed input object for the prompt
+    const promptInput: PromptInput = {
+      ...input,
+      mealTargets: mealTargets,
+    };
+
+    // 5. Call the prompt with explicit targets
+    const { output } = await prompt(promptInput);
+    
     if (!output) {
       throw new Error('AI did not return a meal plan.');
     }
 
-    // Validate the AI's direct output (just the weekly plan)
     const validationResult =
       AIGeneratedWeeklyMealPlanSchema.safeParse(output);
     if (!validationResult.success) {
@@ -121,7 +182,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
 
     const { weeklyMealPlan } = validationResult.data;
 
-    // Calculate meal-level and weekly summary here in the code, which is more reliable.
+    // 6. Calculate meal-level and weekly summary in reliable application code
     const weeklySummary = {
       totalCalories: 0,
       totalProtein: 0,
@@ -158,7 +219,6 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       });
     });
 
-    // Construct the final output object that the application expects
     const finalOutput: GeneratePersonalizedMealPlanOutput = {
       weeklyMealPlan,
       weeklySummary,
