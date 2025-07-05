@@ -58,6 +58,7 @@ import type {
   MealSuggestionPreferencesValues,
 } from '@/lib/schemas';
 import { MealSuggestionPreferencesSchema } from '@/lib/schemas';
+import { getAIApiErrorMessage } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { doc, getDoc } from 'firebase/firestore';
 import {
@@ -360,16 +361,13 @@ function MealSuggestionsContent() {
         });
       }
     } catch (err: any) {
-      console.error('Error getting meal suggestions:', err);
-      const errorMessage = err.message || 'An unknown error occurred';
-      setError(
-        `Failed to fetch meal suggestions: ${errorMessage}. Please try again.`
-      );
+      const errorMessage = getAIApiErrorMessage(err);
+      setError(errorMessage);
       toast({
         title: 'AI Error',
-        description: `Could not get meal suggestions from AI: ${errorMessage}`,
+        description: errorMessage,
         variant: 'destructive',
-        duration: 7000,
+        duration: 8000,
       });
     } finally {
       setIsLoadingAiSuggestions(false);

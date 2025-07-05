@@ -14,3 +14,38 @@ export function formatNumber(
     ...options,
   }).format(value);
 }
+
+/**
+ * Parses a generic error from an AI API call and returns a user-friendly message.
+ * @param error The error object caught from the API call.
+ * @returns A user-friendly error string.
+ */
+export function getAIApiErrorMessage(error: any): string {
+  const genericMessage =
+    'An unexpected error occurred with the AI service. Please try again later.';
+  if (!error || !error.message || typeof error.message !== 'string') {
+    return genericMessage;
+  }
+
+  const message = error.message as string;
+
+  if (
+    message.includes('403 Forbidden') ||
+    message.includes('API_KEY_SERVICE_BLOCKED')
+  ) {
+    return 'AI API Error: Access is forbidden. Please check if your Google AI API key is correct and that the "Generative Language API" is enabled in your Google Cloud project.';
+  }
+
+  if (message.includes('400 Bad Request')) {
+    return 'AI API Error: The request was malformed, which might be due to a temporary issue or invalid input. Please check your inputs and try again.';
+  }
+
+  if (message.includes('500 Internal Server Error')) {
+    return 'AI API Error: The AI service is currently experiencing issues. Please try again later.';
+  }
+
+  // Return a snippet of the original error for context without being too verbose.
+  return `AI Error: ${message.substring(0, 150)}${
+    message.length > 150 ? '...' : ''
+  }`;
+}

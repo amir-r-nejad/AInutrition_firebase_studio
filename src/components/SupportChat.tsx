@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bot, Loader2, Send, UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { handleSupportQuery } from '@/ai/flows/support-chatbot-flow';
+import { getAIApiErrorMessage } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -61,11 +62,11 @@ export function SupportChat() {
       setMessages((prev) => [...prev, botMessage]);
     } catch (error: any) {
       console.error("Error fetching bot response:", error);
-      console.error("Full AI error object (SupportChat):", error); // Log the full error object
+      const friendlyErrorMessage = getAIApiErrorMessage(error);
       const errorMessage: Message = {
         id: Date.now().toString() + '-error',
         sender: 'bot',
-        text: `Sorry, I encountered an error: ${error.message || "Please try again later."}`,
+        text: `Sorry, I encountered an error: ${friendlyErrorMessage}`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);

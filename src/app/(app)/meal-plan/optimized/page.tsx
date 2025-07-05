@@ -36,6 +36,7 @@ import type {
   GeneratePersonalizedMealPlanOutput,
 } from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
+import { getAIApiErrorMessage } from '@/lib/utils';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   AlertTriangle,
@@ -208,13 +209,13 @@ export default function OptimizedMealPlanPage() {
         description: 'Your AI-optimized weekly meal plan is ready.',
       });
     } catch (err: any) {
-      console.error('Error generating meal plan:', err);
-      const errorMessage = err.message || 'An unknown error occurred.';
-      setError(`Failed to generate meal plan: ${errorMessage}`);
+      const errorMessage = getAIApiErrorMessage(err);
+      setError(errorMessage);
       toast({
         title: 'Generation Failed',
         description: errorMessage,
         variant: 'destructive',
+        duration: 8000,
       });
     } finally {
       setIsLoading(false);

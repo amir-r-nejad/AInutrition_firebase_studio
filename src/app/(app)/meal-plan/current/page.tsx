@@ -37,10 +37,10 @@ import type {
   Ingredient,
   Meal,
   SmartCaloriePlannerFormValues,
-  WeeklyMealPlan,
   AdjustMealIngredientsInput,
 } from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
+import { getAIApiErrorMessage } from '@/lib/utils';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Loader2, Pencil, PlusCircle, Trash2, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -207,7 +207,7 @@ export default function CurrentMealPlanPage() {
     }
 
     const missingFields = requiredFields.filter(
-        (field) => !smartPlannerValues?.[field]
+        (field) => smartPlannerValues[field] === undefined || smartPlannerValues[field] === null
     );
 
     if (missingFields.length > 0) {
@@ -284,7 +284,7 @@ export default function CurrentMealPlanPage() {
       const aiInput: AdjustMealIngredientsInput = {
         originalMeal: {
           name: mealToOptimize.name,
-          customName: mealToOptimize.customName || '',
+          customName: mealToOptimize.customName,
           ingredients: preparedIngredients,
           totalCalories: Number(mealToOptimize.totalCalories) || 0,
           totalProtein: Number(mealToOptimize.totalProtein) || 0,
@@ -343,12 +343,12 @@ export default function CurrentMealPlanPage() {
       }
     } catch (error: any) {
       console.error('Error optimizing meal:', error);
-      const errorMessage =
-        error.message || 'Unknown error during optimization.';
+      const errorMessage = getAIApiErrorMessage(error);
       toast({
         title: 'Optimization Failed',
-        description: `Could not optimize meal. Details: ${errorMessage}`,
+        description: errorMessage,
         variant: 'destructive',
+        duration: 8000,
       });
     } finally {
       setOptimizingMealKey(null);
