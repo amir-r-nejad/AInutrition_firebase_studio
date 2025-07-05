@@ -84,12 +84,12 @@ This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day
   }
 ]
 
-**--- FINAL RULES ---**
+**--- FINAL RULES & CRITICAL CHECK ---**
 1.  **You MUST generate a complete 7-day plan from Monday to Sunday.**
-2.  Every single meal object inside the "meals" array MUST contain both "meal_name" (the meal type like 'Breakfast') and "meal_title" (the specific food name like 'Greek Yogurt Parfait'). This is not optional.
-3.  Use the exact field names and spelling as shown in the schema above.
-4.  DO NOT add any extra fields, properties, or keys at any level.
-5.  All numerical values must be realistic, positive, and correctly calculated.
+2.  Use the exact field names and spelling as shown in the schema above.
+3.  DO NOT add any extra fields, properties, or keys at any level.
+4.  All numerical values must be realistic, positive, and correctly calculated.
+5.  Before you finalize your response, perform this critical check on every single meal object inside the "meals" array: It MUST contain all of the following properties: "meal_name", "meal_title", "ingredients", "total_calories", "total_protein_g", "total_carbs_g", and "total_fat_g". This is not optional.
 6.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
 `,
 });
