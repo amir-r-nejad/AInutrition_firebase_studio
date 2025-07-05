@@ -162,6 +162,68 @@ function MealSuggestionsContent() {
     setSuggestions([]);
 
     const profileToUse = fullProfileData;
+
+    let dailyTotals: { calories: number; protein: number; carbs: number; fat: number } | null = null;
+
+    // Priority 1: Use saved, precise results from the Smart Calorie Planner
+    if (profileToUse?.smartPlannerData?.results?.finalTargetCalories) {
+        const smartResults = profileToUse.smartPlannerData.results;
+        dailyTotals = {
+            calories: smartResults.finalTargetCalories || 0,
+            protein: smartResults.proteinGrams || 0,
+            carbs: smartResults.carbGrams || 0,
+            fat: smartResults.fatGrams || 0,
+        };
+    } 
+    // Priority 2: Fallback to estimating from basic profile data
+    else if (
+        profileToUse?.age &&
+        profileToUse?.gender &&
+        profileToUse?.current_weight &&
+        profileToUse?.height_cm &&
+        profileToUse?.activityLevel &&
+        profileToUse?.dietGoalOnboarding
+    ) {
+        const estimatedTargets = calculateEstimatedDailyTargets({
+            age: profileToUse.age,
+            gender: profileToUse.gender,
+            currentWeight: profileToUse.current_weight,
+            height: profileToUse.height_cm,
+            activityLevel: profileToUse.activityLevel,
+            dietGoal: profileToUse.dietGoalOnboarding,
+        });
+
+        if (estimatedTargets.finalTargetCalories) {
+            dailyTotals = {
+                calories: estimatedTargets.finalTargetCalories,
+                protein: estimatedTargets.proteinGrams || 0,
+                carbs: estimatedTargets.carbGrams || 0,
+                fat: estimatedTargets.fatGrams || 0,
+            };
+        }
+    }
+
+    // If we have daily totals, calculate the macros for the selected meal
+    if (dailyTotals && selectedMealName) {
+      const customDistributions = profileToUse?.mealDistributions;
+      const mealDistribution = 
+        customDistributions?.find((d) => d.mealName === selectedMealName) || 
+        defaultMacroPercentages[selectedMealName];
+
+      if (mealDistribution) {
+        setTargetMacros({
+          mealName: selectedMealName,
+          calories: Math.round(dailyTotals.calories * ((mealDistribution.calories_pct || 0) / 100)),
+          protein: Math.round(dailyTotals.protein * ((mealDistribution.protein_pct || 0) / 100)),
+          carbs: Math.round(dailyTotals.carbs * ((mealDistribution.carbs_pct || 0) / 100)),
+          fat: Math.round(dailyTotals.fat * ((mealDistribution.fat_pct || 0) / 100)),
+        });
+        setIsDemoMode(false);
+        return; // Success, exit function
+      }
+    }
+    
+    // Fallback to demo mode if no daily totals could be determined
     const exampleTargets = {
       mealName: selectedMealName,
       calories: 500,
@@ -169,84 +231,14 @@ function MealSuggestionsContent() {
       carbs: 60,
       fat: 20,
     };
-    
-    const requiredProfileFields: (keyof FullProfileType)[] = [
-      'age',
-      'gender',
-      'current_weight',
-      'height_cm',
-      'activityLevel',
-      'dietGoalOnboarding',
-    ];
-
-    const missingFields = requiredProfileFields.filter(
-      (field) => !profileToUse?.[field]
-    );
-
-    if (missingFields.length === 0 && profileToUse) {
-      const dailyTotals = calculateEstimatedDailyTargets({
-        age: profileToUse.age!,
-        gender: profileToUse.gender!,
-        currentWeight: profileToUse.current_weight!,
-        height: profileToUse.height_cm!,
-        activityLevel: profileToUse.activityLevel!,
-        dietGoal: profileToUse.dietGoalOnboarding!,
-      });
-
-      const customDistributions = profileToUse.mealDistributions;
-      let mealDistribution = customDistributions?.find(
-        (d) => d.mealName === selectedMealName
-      );
-
-      if (!mealDistribution) {
-        mealDistribution = defaultMacroPercentages[selectedMealName];
-      }
-
-      if (
-        dailyTotals.finalTargetCalories &&
-        dailyTotals.proteinGrams &&
-        dailyTotals.carbGrams &&
-        dailyTotals.fatGrams &&
-        mealDistribution
-      ) {
-        setTargetMacros({
-          mealName: selectedMealName,
-          calories: Math.round(
-            dailyTotals.finalTargetCalories *
-              ((mealDistribution.calories_pct || 0) / 100)
-          ),
-          protein: Math.round(
-            dailyTotals.proteinGrams *
-              ((mealDistribution.protein_pct || 0) / 100)
-          ),
-          carbs: Math.round(
-            dailyTotals.carbGrams * ((mealDistribution.carbs_pct || 0) / 100)
-          ),
-          fat: Math.round(
-            dailyTotals.fatGrams * ((mealDistribution.fat_pct || 0) / 100)
-          ),
-        });
-        setIsDemoMode(false);
-      } else {
-        setTargetMacros(exampleTargets);
-        setIsDemoMode(true);
-        toast({
-          title: 'Using Example Targets',
-          description: `Could not calculate specific targets for ${selectedMealName} from profile. Ensure profile basics are complete.`,
-          duration: 6000,
-          variant: 'default',
-        });
-      }
-    } else {
-      setTargetMacros(exampleTargets);
-      setIsDemoMode(true);
-      toast({
-        title: 'Profile Incomplete or Demo',
-        description: `Showing example targets for ${selectedMealName}. Please complete your profile for personalized calculations.`,
-        duration: 7000,
-        variant: 'default',
-      });
-    }
+    setTargetMacros(exampleTargets);
+    setIsDemoMode(true);
+    toast({
+      title: 'Profile Incomplete or Demo',
+      description: `Showing example targets for ${selectedMealName}. Please complete your profile for personalized calculations.`,
+      duration: 7000,
+      variant: 'default',
+    });
   }, [selectedMealName, fullProfileData, toast]);
 
   useEffect(() => {
