@@ -7,7 +7,7 @@ export const geminiModel = 'googleai/gemini-2.0-flash';
 
 // Genkit AI initialization
 export const ai = genkit({
-  plugins: [googleAI({ apiKey: "AIzaSyAK-OoHH9BEmqNN1vtZf7f8O4uNbAvewD0" })],
+  plugins: [googleAI({ apiKey: process.env.GOOGLE_AI_API_KEY })],
   // The 'model' property in the main config sets the default model for all operations.
   // It expects a string identifier.
   model: geminiModel,

@@ -13,27 +13,14 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Check if all required environment variables are set
-export const isConfigured = Object.values(firebaseConfig).every(Boolean);
-
-let app, auth, db, storage;
-
-if (isConfigured) {
-  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-} else {
-  console.error(
-    "Firebase is not configured. Please set all required NEXT_PUBLIC_FIREBASE_* environment variables in your hosting environment."
-  );
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
 export { app, auth, db, storage };
 
 export const applyActionCodeForVerification = (oobCode: string) => {
-  if (!auth) {
-    throw new Error("Firebase is not initialized. Cannot verify action code.");
-  }
   return applyActionCode(auth, oobCode);
 };
