@@ -38,10 +38,10 @@ const prompt = ai.definePrompt({
 {{#if dispreferredIngredients.length}}**Dislikes:** {{dispreferredIngredients}}{{/if}}
 
 **Target Macronutrients for this specific meal: "{{mealName}}":**
-- **Calories:** ~{{targetCalories}} kcal
-- **Protein:** ~{{targetProteinGrams}}g
-- **Carbohydrates:** ~{{targetCarbsGrams}}g
-- **Fat:** ~{{targetFatGrams}}g
+- **Calories:** {{targetCalories}} kcal
+- **Protein:** {{targetProteinGrams}}g
+- **Carbohydrates:** {{targetCarbsGrams}}g
+- **Fat:** {{targetFatGrams}}g
 
 **Your Task & Expert Explanation Requirement:**
 Generate 1 to 3 detailed meal suggestions that meet the user's macronutrient targets. For each suggestion, you MUST provide an insightful 'description' that explains *why* this meal is an excellent choice for the user, as a real nutritionist would. This explanation should connect the meal to the user's profile. For example: "This meal is high in fiber and lean protein, which will keep you feeling full longer, supporting your **fat loss goal**. We've used Greek yogurt as a base to boost the protein content while respecting your preference for **Mediterranean cuisine**."
@@ -67,6 +67,7 @@ Generate 1 to 3 detailed meal suggestions that meet the user's macronutrient tar
         - "instructions"?: string — (Optional) Step-by-step cooking instructions for the meal. If not applicable or not requested, omit this field.
 
 **⚠️ Important Rules:**
+- Ensure the 'totalCalories', 'totalProtein', 'totalCarbs', and 'totalFat' for each suggested meal are within a 5% margin of error of the target values provided.
 - Ensure all meal suggestions are realistic, diverse, and nutritionally valid.
 - Strictly respect all specified allergies, preferences, and medical conditions.
 - Double-check all macro sums: "totalCalories", "totalProtein", "totalCarbs", and "totalFat" MUST be accurately calculated and match the sum of their respective values from the "ingredients" list for each meal.
