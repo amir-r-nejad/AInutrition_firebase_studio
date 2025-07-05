@@ -22,9 +22,11 @@ const prompt = ai.definePrompt({
   name: 'generatePersonalizedMealPlanPrompt',
   input: { schema: GeneratePersonalizedMealPlanInputSchema },
   output: { schema: AIGeneratedWeeklyMealPlanSchema }, // AI now outputs a simpler schema
-  prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile, goals, and specific meal macro distribution preferences if provided.
+  prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile and goals.
 
-**User Profile & Goals:**
+Your response MUST be a JSON object that strictly adheres to the structure and rules outlined below.
+
+**--- USER PROFILE ---**
 - Age: {{age}}
 - Gender: {{gender}}
 - Height: {{height_cm}} cm
@@ -32,28 +34,19 @@ const prompt = ai.definePrompt({
 - 1-Month Goal Weight: {{goal_weight_1m}} kg
 - Activity Level: {{activityLevel}}
 - Primary Diet Goal: {{dietGoalOnboarding}}
-{{#if preferredDiet}}
-- Dietary Preference: {{preferredDiet}}
-{{/if}}
-{{#if allergies.length}}
-- Allergies to Avoid: {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
-{{/if}}
-{{#if dispreferredIngredients.length}}
-- Disliked Ingredients: {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
-{{/if}}
-{{#if preferredCuisines.length}}
-- Preferred Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
-{{/if}}
+{{#if preferredDiet}}- Dietary Preference: {{preferredDiet}}{{/if}}
+{{#if allergies.length}}- Allergies to Avoid: {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredIngredients.length}}- Disliked Ingredients: {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredCuisines.length}}- Preferred Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
+**--- MEAL STRUCTURE INSTRUCTIONS ---**
 {{#if mealDistributions}}
-**--- CRITICAL INSTRUCTION: CUSTOM MEAL MACRO DISTRIBUTION ---**
-You MUST follow this specific percentage breakdown for daily macros across meals. The total macros for each meal you generate MUST reflect these percentages applied to the user's total daily needs. The "meal_name" property for each meal MUST exactly match one of the meal names provided here.
+You MUST generate meals according to this custom macro distribution. The "meal_name" for each meal object you generate MUST exactly match one of these names:
 {{#each mealDistributions}}
 - **{{this.mealName}}**: Calories: {{this.calories_pct}}%, Protein: {{this.protein_pct}}%, Carbs: {{this.carbs_pct}}%, Fat: {{this.fat_pct}}%
 {{/each}}
 {{else}}
-**--- CRITICAL INSTRUCTION: STANDARD MEAL DISTRIBUTION ---**
-If no custom distribution is provided, you MUST generate a plan for each of the following meals every day. The "meal_name" property in your output for each meal MUST exactly match one of these names:
+You MUST generate a plan for **ALL** of the following meals every day. The "meal_name" property for each meal object you generate MUST exactly match one of these names:
 - Breakfast
 - Morning Snack
 - Lunch
@@ -62,40 +55,40 @@ If no custom distribution is provided, you MUST generate a plan for each of the 
 - Evening Snack
 {{/if}}
 
+**--- VERY STRICT JSON OUTPUT SCHEMA ---**
+Your entire response must be a single JSON object with ONLY ONE top-level key: "weeklyMealPlan".
 
-**--- VERY STRICT JSON OUTPUT INSTRUCTIONS ---**
-- You must return a JSON object with **ONLY ONE** top-level property: "weeklyMealPlan".
+"weeklyMealPlan": [
+  // This is an array of 7 day objects (Monday to Sunday).
+  {
+    "day": "Monday", // The full name of the day.
+    "meals": [
+      // This is an array of meal objects.
+      {
+        // === CRITICAL: 'meal_name' IS REQUIRED FOR EVERY MEAL ===
+        "meal_name": "Breakfast", // The name of the meal. MUST match a name from the MEAL STRUCTURE INSTRUCTIONS.
+        "ingredients": [
+          {
+            "ingredient_name": "Oats",
+            "quantity_g": 50,
+            "macros_per_100g": { "calories": 389, "protein_g": 16.9, "carbs_g": 66.3, "fat_g": 6.9 }
+          }
+        ],
+        "total_calories": 450,
+        "total_protein_g": 25,
+        "total_carbs_g": 50,
+        "total_fat_g": 15
+      }
+    ]
+  }
+]
 
-**Detailed structure:**
-
-"weeklyMealPlan":
-- This is an array with 7 items.
-- Each item represents one day (Monday to Sunday) and has these exact properties:
-    - "day": string — the full name of the day (e.g., "Monday", "Tuesday").
-    - "meals": an array of meal objects.
-    - Each meal or snack object must contain these exact properties:
-        - "meal_name": string — the name of the meal or snack (e.g., "Breakfast", "Lunch"). This MUST match one of the meal names specified in the instructions (either from the custom distribution or the standard list).
-        - "ingredients": an array where each item is an object representing an ingredient. Each ingredient object must include these exact properties:
-            - "ingredient_name": string — the name of the ingredient (e.g., "Chicken Breast", "Broccoli").
-            - "quantity_g": number — the amount of that ingredient in grams.
-            - "macros_per_100g": an object with these exact properties:
-                - "calories": number — calories per 100 grams of this ingredient.
-                - "protein_g": number — protein in grams per 100 grams of this ingredient.
-                - "carbs_g": number — carbohydrates in grams per 100 grams of this ingredient.
-                - "fat_g": number — fat in grams per 100 grams of this ingredient.
-        - "total_calories": number — the total calories for the entire meal, calculated from all ingredients.
-        - "total_protein_g": number — the total protein in grams for the entire meal, calculated from all ingredients.
-        - "total_carbs_g": number — the total carbohydrates in grams for the entire meal, calculated from all ingredients.
-        - "total_fat_g": number — the total fat in grams for the entire meal, calculated from all ingredients.
-
-⚠️ Important Rules:
-- Use the exact field names and spelling provided in this prompt.
-- **DO NOT add any extra fields, properties, or keys at any level of the JSON structure.**
-- DO NOT rename any fields.
-- All numerical values must be realistic, positive, and correctly calculated.
-- Only output valid JSON. Do not include any markdown formatting (like json), code blocks, or any other commentary before, during, or after the JSON.
-
-Respond only with pure JSON that strictly matches the required structure. The final JSON object must ONLY have the "weeklyMealPlan" key.
+**--- FINAL RULES ---**
+1.  **Every single meal object inside the "meals" array MUST contain the "meal_name" property.** This is not optional.
+2.  Use the exact field names and spelling as shown in the schema above.
+3.  DO NOT add any extra fields, properties, or keys at any level.
+4.  All numerical values must be realistic, positive, and correctly calculated.
+5.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
 `,
 });
 
