@@ -6,6 +6,7 @@ import {
   AIGeneratedWeeklyMealPlanSchema,
   GeneratePersonalizedMealPlanInputSchema,
   GeneratePersonalizedMealPlanOutputSchema,
+  AIUnvalidatedWeeklyMealPlanSchema,
   type AIGeneratedMeal,
   type GeneratePersonalizedMealPlanInput,
   type GeneratePersonalizedMealPlanOutput,
@@ -40,7 +41,7 @@ export async function generatePersonalizedMealPlan(
 const prompt = ai.definePrompt({
   name: 'generatePersonalizedMealPlanPrompt',
   input: { schema: PromptInputSchema }, // Use the new, more detailed schema
-  output: { schema: AIGeneratedWeeklyMealPlanSchema }, // AI still outputs the basic plan
+  output: { schema: AIUnvalidatedWeeklyMealPlanSchema }, // AI still outputs the basic plan
   prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile and EXACT meal-by-meal macro targets provided below.
 
 **--- USER PROFILE ---**
@@ -169,7 +170,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     }
 
     const validationResult =
-      AIGeneratedWeeklyMealPlanSchema.safeParse(output);
+      AIUnvalidatedWeeklyMealPlanSchema.safeParse(output);
     if (!validationResult.success) {
       console.error(
         'AI output validation error:',
@@ -191,7 +192,16 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     };
 
     weeklyMealPlan.forEach((day) => {
-      day.meals.forEach((meal: AIGeneratedMeal) => {
+      day.meals.forEach((meal, index) => {
+        // Forcefully correct or add the meal_name based on its order.
+        // This makes the app resilient to the AI forgetting this field.
+        if (mealTargets[index]) {
+          (meal as any).meal_name = mealTargets[index].mealName;
+        } else {
+          // Fallback in case of an unexpected mismatch
+          (meal as any).meal_name = 'Unknown Meal';
+        }
+
         let mealCalories = 0;
         let mealProtein = 0;
         let mealCarbs = 0;
@@ -206,21 +216,21 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         });
 
         // Mutate the meal object to add calculated totals
-        meal.total_calories = mealCalories;
-        meal.total_protein_g = mealProtein;
-        meal.total_carbs_g = mealCarbs;
-        meal.total_fat_g = mealFat;
+        (meal as any).total_calories = mealCalories;
+        (meal as any).total_protein_g = mealProtein;
+        (meal as any).total_carbs_g = mealCarbs;
+        (meal as any).total_fat_g = mealFat;
 
         // Add meal totals to the weekly summary
-        weeklySummary.totalCalories += meal.total_calories;
-        weeklySummary.totalProtein += meal.total_protein_g;
-        weeklySummary.totalCarbs += meal.total_carbs_g;
-        weeklySummary.totalFat += meal.total_fat_g;
+        weeklySummary.totalCalories += (meal as any).total_calories;
+        weeklySummary.totalProtein += (meal as any).total_protein_g;
+        weeklySummary.totalCarbs += (meal as any).total_carbs_g;
+        weeklySummary.totalFat += (meal as any).total_fat_g;
       });
     });
 
     const finalOutput: GeneratePersonalizedMealPlanOutput = {
-      weeklyMealPlan,
+      weeklyMealPlan: weeklyMealPlan as any, // Cast is safe as we've corrected it
       weeklySummary,
     };
 
