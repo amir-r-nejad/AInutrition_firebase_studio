@@ -2,6 +2,7 @@
 'use server';
 
 import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 import {
   AdjustMealIngredientsInputSchema,
   AdjustMealIngredientsOutputSchema,
@@ -16,9 +17,16 @@ export async function adjustMealIngredients(
   return adjustMealIngredientsFlow(input);
 }
 
+// Define a schema for what the prompt actually needs.
+const PromptInputSchema = z.object({
+  userProfile: AdjustMealIngredientsInputSchema.shape.userProfile,
+  originalMealString: z.string(),
+  targetMacrosString: z.string(),
+});
+
 const prompt = ai.definePrompt({
   name: 'adjustMealIngredientsPrompt',
-  input: { schema: AdjustMealIngredientsInputSchema },
+  input: { schema: PromptInputSchema },
   output: { schema: AdjustMealIngredientsOutputSchema },
   prompt: `You are an expert nutritionist. Your task is to adjust the quantities of the **existing ingredients** for a given meal to precisely match target macronutrients.
 
@@ -36,15 +44,15 @@ User Profile:
 {{#if userProfile.activityLevel}}Activity Level: {{userProfile.activityLevel}}{{/if}}
 {{#if userProfile.dietGoal}}Diet Goal: {{userProfile.dietGoal}}{{/if}}
 {{#if userProfile.preferredDiet}}Preferred Diet: {{userProfile.preferredDiet}}{{/if}}
-{{#if userProfile.allergies.length}}Allergies: {{userProfile.allergies}}{{/if}}
-{{#if userProfile.dispreferredIngredients.length}}Dislikes: {{userProfile.dispreferredIngredients}}{{/if}}
-{{#if userProfile.preferredIngredients.length}}Preferred Ingredients: {{userProfile.preferredIngredients}}{{/if}}
+{{#if userProfile.allergies.length}}Allergies: {{#each userProfile.allergies}}{{{this}}}{{/each}}{{/if}}
+{{#if userProfile.dispreferredIngredients.length}}Dislikes: {{#each userProfile.dispreferredIngredients}}{{{this}}}{{/each}}{{/if}}
+{{#if userProfile.preferredIngredients.length}}Preferred Ingredients: {{#each userProfile.preferredIngredients}}{{{this}}}{{/each}}{{/if}}
 
 Original Meal:
-{{{JSON.stringify originalMeal}}}
+{{{originalMealString}}}
 
 Target Macros:
-{{{JSON.stringify targetMacros}}}
+{{{targetMacrosString}}}
 
 Strict Instructions for Output:
 - Your response MUST be a JSON object with ONLY these exact two top-level properties: "adjustedMeal" and "explanation".
@@ -65,7 +73,13 @@ const adjustMealIngredientsFlow = ai.defineFlow(
   async (
     input: AdjustMealIngredientsInput
   ): Promise<AdjustMealIngredientsOutput> => {
-    const { output } = await prompt(input);
+    const promptInput = {
+      userProfile: input.userProfile,
+      originalMealString: JSON.stringify(input.originalMeal),
+      targetMacrosString: JSON.stringify(input.targetMacros),
+    };
+
+    const { output } = await prompt(promptInput);
     if (!output) {
       throw new Error('AI did not return an output for meal adjustment.');
     }
