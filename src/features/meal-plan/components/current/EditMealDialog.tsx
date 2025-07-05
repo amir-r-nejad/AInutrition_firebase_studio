@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import type { Ingredient, Meal } from '@/lib/schemas';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { EditMealDialogProps } from '../types';
+import { EditMealDialogProps } from '../../types';
 
 function EditMealDialog({
   meal: initialMeal,
@@ -31,6 +31,8 @@ function EditMealDialog({
     field: keyof Ingredient,
     value: string | number
   ) => {
+    console.log(index, field, value);
+
     const newIngredients = [...meal.ingredients];
     const targetIngredient = { ...newIngredients[index] };
 
@@ -189,8 +191,7 @@ function EditMealDialog({
                   onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                 />
                 <div className='col-span-2 md:col-span-1 text-xs text-muted-foreground pt-2'>
-                  {' '}
-                  (Total for this quantity){' '}
+                  (Total for this quantity)
                 </div>
               </div>
               <div className='grid grid-cols-2 md:grid-cols-4 gap-2'>
@@ -234,8 +235,7 @@ function EditMealDialog({
             </Card>
           ))}
           <Button variant='outline' onClick={addIngredient} className='w-full'>
-            {' '}
-            <PlusCircle className='mr-2 h-4 w-4' /> Add Ingredient{' '}
+            <PlusCircle className='mr-2 h-4 w-4' /> Add Ingredient
           </Button>
           <div className='mt-4 p-3 border rounded-md bg-muted/50'>
             <h4 className='font-semibold mb-1'>Calculated Totals:</h4>

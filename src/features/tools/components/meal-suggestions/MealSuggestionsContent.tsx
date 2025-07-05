@@ -73,7 +73,7 @@ import PreferenceTextarea from './PreferenceTextarea';
 import {
   getProfileDataForSuggestions,
   updateMealSuggestion,
-} from '../lib/data-service';
+} from '../../lib/data-service';
 
 function MealSuggestionsContent() {
   const searchParams = useSearchParams();
