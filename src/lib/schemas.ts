@@ -700,18 +700,20 @@ export type AdjustMealIngredientsOutput = z.infer<
 // miss a field without causing a hard validation failure. The application code
 // will then correct this data before using it.
 export const AIUnvalidatedMealSchema = z.object({
-  meal_name: z.string().optional(), // Main difference: this is optional
+  meal_name: z.string().optional(),
   meal_title: z.string().optional(),
   ingredients: z.array(
     z.object({
-      ingredient_name: z.string(),
-      quantity_g: z.number(),
-      macros_per_100g: z.object({
-        calories: z.number(),
-        protein_g: z.number(),
-        carbs_g: z.number(),
-        fat_g: z.number(),
-      }),
+      ingredient_name: z.string().optional(),
+      quantity_g: z.number().optional(),
+      macros_per_100g: z
+        .object({
+          calories: z.number().optional(),
+          protein_g: z.number().optional(),
+          carbs_g: z.number().optional(),
+          fat_g: z.number().optional(),
+        })
+        .optional(),
     })
   ),
   total_calories: z.number().optional(),

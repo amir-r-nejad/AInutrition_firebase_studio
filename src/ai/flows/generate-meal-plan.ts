@@ -214,11 +214,21 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         let mealFat = 0;
 
         meal.ingredients.forEach((ing) => {
-          const quantityFactor = ing.quantity_g / 100.0;
-          mealCalories += (ing.macros_per_100g.calories || 0) * quantityFactor;
-          mealProtein += (ing.macros_per_100g.protein_g || 0) * quantityFactor;
-          mealCarbs += (ing.macros_per_100g.carbs_g || 0) * quantityFactor;
-          mealFat += (ing.macros_per_100g.fat_g || 0) * quantityFactor;
+          // --- SAFETY NET for missing ingredient properties ---
+          const safeQuantity = ing.quantity_g ?? 0;
+          const safeMacros = ing.macros_per_100g ?? {
+            calories: 0,
+            protein_g: 0,
+            carbs_g: 0,
+            fat_g: 0,
+          };
+          // --- END SAFETY NET ---
+
+          const quantityFactor = safeQuantity / 100.0;
+          mealCalories += (safeMacros.calories || 0) * quantityFactor;
+          mealProtein += (safeMacros.protein_g || 0) * quantityFactor;
+          mealCarbs += (safeMacros.carbs_g || 0) * quantityFactor;
+          mealFat += (safeMacros.fat_g || 0) * quantityFactor;
         });
 
         // Mutate the meal object to add calculated totals
