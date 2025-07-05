@@ -57,16 +57,20 @@ import type {
   SuggestMealsForMacrosOutput,
   MealSuggestionPreferencesValues,
 } from '@/lib/schemas';
-import { MealSuggestionPreferencesSchema } from '@/lib/schemas';
+import {
+  MealSuggestionPreferencesSchema,
+  preprocessDataForFirestore,
+} from '@/lib/schemas';
 import { getAIApiErrorMessage } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   AlertTriangle,
   ChefHat,
   Loader2,
   Settings,
   Sparkles,
+  Save,
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
@@ -90,6 +94,7 @@ function MealSuggestionsContent() {
     useState<FullProfileType | null>(null);
   const [isLoadingAiSuggestions, setIsLoadingAiSuggestions] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   const [suggestions, setSuggestions] = useState<
     SuggestMealsForMacrosOutput['suggestions']
@@ -111,6 +116,52 @@ function MealSuggestionsContent() {
       medications: [],
     },
   });
+
+  useEffect(() => {
+    // Priority 1: Handle direct navigation with URL params
+    const mealNameParam = searchParams.get('mealName');
+    const caloriesParam = searchParams.get('calories');
+    const proteinParam = searchParams.get('protein');
+    const carbsParam = searchParams.get('carbs');
+    const fatParam = searchParams.get('fat');
+
+    if (
+      mealNameParam &&
+      mealNames.includes(mealNameParam) &&
+      caloriesParam &&
+      proteinParam &&
+      carbsParam &&
+      fatParam
+    ) {
+      const newTargets = {
+        mealName: mealNameParam,
+        calories: parseFloat(caloriesParam),
+        protein: parseFloat(proteinParam),
+        carbs: parseFloat(carbsParam),
+        fat: parseFloat(fatParam),
+      };
+      setSelectedMealName(mealNameParam);
+      setTargetMacros(newTargets);
+      setIsDemoMode(false);
+      setSuggestions([]);
+      setError(null);
+      sessionStorage.removeItem('mealSuggestionsCache'); // Clear cache when navigating via params
+    } else {
+      // Priority 2: Restore from session storage if no URL params
+      try {
+        const cachedData = sessionStorage.getItem('mealSuggestionsCache');
+        if (cachedData) {
+          const { mealName, suggestions: cachedSuggestions, targetMacros: cachedMacros } = JSON.parse(cachedData);
+          setSelectedMealName(mealName);
+          setTargetMacros(cachedMacros);
+          setSuggestions(cachedSuggestions);
+        }
+      } catch (e) {
+        console.error("Could not load suggestions from session storage", e);
+        sessionStorage.removeItem('mealSuggestionsCache');
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (user?.uid) {
@@ -165,7 +216,6 @@ function MealSuggestionsContent() {
 
     let dailyTotals: { calories: number; protein: number; carbs: number; fat: number } | null = null;
 
-    // Priority 1: Use saved, precise results from the Smart Calorie Planner
     if (profileToUse?.smartPlannerData?.results?.finalTargetCalories) {
         const smartResults = profileToUse.smartPlannerData.results;
         dailyTotals = {
@@ -175,7 +225,6 @@ function MealSuggestionsContent() {
             fat: smartResults.fatGrams || 0,
         };
     } 
-    // Priority 2: Fallback to estimating from basic profile data
     else if (
         profileToUse?.age &&
         profileToUse?.gender &&
@@ -203,7 +252,6 @@ function MealSuggestionsContent() {
         }
     }
 
-    // If we have daily totals, calculate the macros for the selected meal
     if (dailyTotals && selectedMealName) {
       const customDistributions = profileToUse?.mealDistributions;
       const mealDistribution = 
@@ -219,11 +267,10 @@ function MealSuggestionsContent() {
           fat: Math.round(dailyTotals.fat * ((mealDistribution.fat_pct || 0) / 100)),
         });
         setIsDemoMode(false);
-        return; // Success, exit function
+        return;
       }
     }
     
-    // Fallback to demo mode if no daily totals could be determined
     const exampleTargets = {
       mealName: selectedMealName,
       calories: 500,
@@ -242,41 +289,6 @@ function MealSuggestionsContent() {
   }, [selectedMealName, fullProfileData, toast]);
 
   useEffect(() => {
-    if (!searchParams) return;
-
-    const mealNameParam = searchParams.get('mealName');
-    const caloriesParam = searchParams.get('calories');
-    const proteinParam = searchParams.get('protein');
-    const carbsParam = searchParams.get('carbs');
-    const fatParam = searchParams.get('fat');
-
-    if (
-      mealNameParam &&
-      mealNames.includes(mealNameParam) &&
-      caloriesParam &&
-      proteinParam &&
-      carbsParam &&
-      fatParam
-    ) {
-      const newTargets = {
-        mealName: mealNameParam,
-        calories: parseFloat(caloriesParam),
-        protein: parseFloat(proteinParam),
-        carbs: parseFloat(carbsParam),
-        fat: parseFloat(fatParam),
-      };
-
-      setSelectedMealName(mealNameParam);
-      setTargetMacros(newTargets);
-      setIsDemoMode(false);
-      setSuggestions([]);
-      setError(null);
-    } else if (mealNameParam && mealNames.includes(mealNameParam)) {
-      setSelectedMealName(mealNameParam);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
     if (selectedMealName && !targetMacros && !isLoadingProfile) {
       calculateTargetsForSelectedMeal();
     }
@@ -293,6 +305,28 @@ function MealSuggestionsContent() {
     setSuggestions([]);
     setError(null);
     setIsDemoMode(false);
+    sessionStorage.removeItem('mealSuggestionsCache');
+  };
+
+  const handleSavePreferences = async () => {
+    if (!user?.uid) {
+        toast({ title: 'Error', description: 'You must be logged in to save preferences.', variant: 'destructive' });
+        return;
+    }
+    setIsSavingPreferences(true);
+    try {
+        const currentPreferences = preferenceForm.getValues();
+        const userProfileRef = doc(db, 'users', user.uid);
+        
+        await setDoc(userProfileRef, preprocessDataForFirestore(currentPreferences), { merge: true });
+
+        toast({ title: 'Success', description: 'Your preferences have been saved.' });
+    } catch (error) {
+        toast({ title: 'Save Failed', description: "Could not save your preferences.", variant: 'destructive' });
+        console.error("Error saving preferences:", error);
+    } finally {
+        setIsSavingPreferences(false);
+    }
   };
 
   const handleGetSuggestions = async () => {
@@ -353,6 +387,15 @@ function MealSuggestionsContent() {
       const result = await suggestMealsForMacros(aiInput);
       if (result && result.suggestions) {
         setSuggestions(result.suggestions);
+        try {
+            sessionStorage.setItem('mealSuggestionsCache', JSON.stringify({
+                mealName: targetMacros.mealName,
+                suggestions: result.suggestions,
+                targetMacros: targetMacros
+            }));
+        } catch (e) {
+            console.error("Could not save suggestions to session storage", e);
+        }
       } else {
         setError('AI did not return valid suggestions.');
         toast({
@@ -525,6 +568,12 @@ function MealSuggestionsContent() {
                     </Card>
                   </form>
                 </Form>
+                 <div className="mt-4 flex justify-end">
+                    <Button onClick={handleSavePreferences} disabled={isSavingPreferences}>
+                        {isSavingPreferences ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Save Preferences
+                    </Button>
+                </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
