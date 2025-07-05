@@ -53,7 +53,7 @@ You MUST follow this specific percentage breakdown for daily macros across meals
 {{/each}}
 {{else}}
 **Standard Meal Macro Distribution:**
-If no custom distribution is provided, use a standard, balanced approach suitable for the user's goal (e.g., for fat loss, slightly higher protein and lower carbs; for muscle gain, higher carbs).
+If no custom distribution is provided, use a standard, balanced approach suitable for the user's goal (e.g., for fat loss, slightly higher protein and lower carbs; for muscle gain, higher carbs). You should generate plans for 'Breakfast', 'Morning Snack', 'Lunch', 'Afternoon Snack', 'Dinner', and 'Evening Snack'.
 {{/if}}
 
 
@@ -66,9 +66,9 @@ If no custom distribution is provided, use a standard, balanced approach suitabl
 - This is an array with 7 items.
 - Each item represents one day (Monday to Sunday) and has these exact properties:
     - "day": string — the full name of the day (e.g., "Monday", "Tuesday").
-    - "meals": an array of exactly 5 items, representing 3 main meals and 2 snacks.
+    - "meals": an array of meal objects.
     - Each meal or snack object must contain these exact properties:
-        - "meal_name": string — the name of the meal or snack (e.g., "Breakfast", "Snack 1", "Lunch", "Snack 2", "Dinner").
+        - "meal_name": string — the name of the meal or snack (e.g., "Breakfast", "Lunch"). This MUST match one of the meal names specified in the instructions (either from the custom distribution or the standard list).
         - "ingredients": an array where each item is an object representing an ingredient. Each ingredient object must include these exact properties:
             - "ingredient_name": string — the name of the ingredient (e.g., "Chicken Breast", "Broccoli").
             - "quantity_g": number — the amount of that ingredient in grams.
