@@ -116,28 +116,47 @@ export function calculateEstimatedDailyTargets(profile: {
     profile.age
   );
   let tdee = calculateTDEE(bmr, profile.activityLevel);
-  const protein = calculateRecommendedProtein(
-    profile.currentWeight,
-    profile.activityLevel
-  );
 
-  const targetCalories = adjustTDEEForDietGoal(tdee, profile.dietGoal);
+  // This logic is now aligned with the Smart Calorie Planner for consistency.
+  let targetCalories = tdee; // Start with maintenance
+  if (profile.dietGoal === 'fat_loss') {
+      targetCalories = tdee - 500;
+  } else if (profile.dietGoal === 'muscle_gain') {
+      targetCalories = tdee + 300;
+  } else if (profile.dietGoal === 'recomp') {
+      targetCalories = tdee - 200; // Slight deficit for recomp
+  }
 
-  const proteinCalories = protein * 4;
-  // Aim for fat to be ~25% of total calories
-  const fatGrams = Math.round((targetCalories * 0.25) / 9);
-  const fatCalories = fatGrams * 9;
-  // Remaining calories for carbs
-  const carbGrams = Math.round(
-    (targetCalories - proteinCalories - fatCalories) / 4
-  );
+  // Define macro splits based on goal
+  let proteinTargetPct = 0.25,
+      carbTargetPct = 0.50,
+      fatTargetPct = 0.25; // Default for maintenance
+
+  if (profile.dietGoal === 'fat_loss') {
+      proteinTargetPct = 0.35;
+      carbTargetPct = 0.35;
+      fatTargetPct = 0.3;
+  } else if (profile.dietGoal === 'muscle_gain') {
+      proteinTargetPct = 0.3;
+      carbTargetPct = 0.5;
+      fatTargetPct = 0.2;
+  } else if (profile.dietGoal === 'recomp') {
+      proteinTargetPct = 0.4;
+      carbTargetPct = 0.35;
+      fatTargetPct = 0.25;
+  }
+
+  const proteinGrams = Math.round((targetCalories * proteinTargetPct) / 4);
+  const carbGrams = Math.round((targetCalories * carbTargetPct) / 4);
+  const fatGrams = Math.round((targetCalories * fatTargetPct) / 9);
+
 
   // FIX: Return object with keys that match what the application expects
   return {
     finalTargetCalories: targetCalories,
-    proteinGrams: protein,
-    fatGrams: fatGrams, // Ensure non-negative
-    carbGrams: carbGrams, // Ensure non-negative
+    proteinGrams: proteinGrams,
+    fatGrams: fatGrams,
+    carbGrams: carbGrams,
     bmr: bmr,
     tdee: tdee,
   };

@@ -224,25 +224,54 @@ export default function CurrentMealPlanPage() {
     }
 
     try {
-      const dailyTargets = calculateEstimatedDailyTargets({
-        age: smartPlannerValues.age!,
-        gender: smartPlannerValues.gender!,
-        currentWeight: smartPlannerValues.current_weight!,
-        height: smartPlannerValues.height_cm!,
-        activityLevel: smartPlannerValues.activity_factor_key!,
-        dietGoal: smartPlannerValues.dietGoal!,
-      });
+      let dailyTargets: {
+        finalTargetCalories?: number | null;
+        proteinGrams?: number | null;
+        carbGrams?: number | null;
+        fatGrams?: number | null;
+      } | null = null;
+      
+      const smartResults = profileData.smartPlannerData?.results;
+
+      if (
+        smartResults &&
+        smartResults.finalTargetCalories !== undefined &&
+        smartResults.finalTargetCalories !== null &&
+        smartResults.proteinGrams !== undefined &&
+        smartResults.proteinGrams !== null &&
+        smartResults.carbGrams !== undefined &&
+        smartResults.carbGrams !== null &&
+        smartResults.fatGrams !== undefined &&
+        smartResults.fatGrams !== null
+      ) {
+          dailyTargets = {
+            finalTargetCalories: smartResults.finalTargetCalories,
+            proteinGrams: smartResults.proteinGrams,
+            carbGrams: smartResults.carbGrams,
+            fatGrams: smartResults.fatGrams,
+          };
+      } else {
+          dailyTargets = calculateEstimatedDailyTargets({
+            age: smartPlannerValues.age!,
+            gender: smartPlannerValues.gender!,
+            currentWeight: smartPlannerValues.current_weight!,
+            height: smartPlannerValues.height_cm!,
+            activityLevel: smartPlannerValues.activity_factor_key!,
+            dietGoal: smartPlannerValues.dietGoal!,
+          });
+      }
       
       if (
-        !dailyTargets.finalTargetCalories ||
-        !dailyTargets.proteinGrams ||
-        !dailyTargets.carbGrams ||
-        !dailyTargets.fatGrams
+        !dailyTargets ||
+        dailyTargets.finalTargetCalories === null || dailyTargets.finalTargetCalories === undefined ||
+        dailyTargets.proteinGrams === null || dailyTargets.proteinGrams === undefined ||
+        dailyTargets.carbGrams === null || dailyTargets.carbGrams === undefined ||
+        dailyTargets.fatGrams === null || dailyTargets.fatGrams === undefined
       ) {
         toast({
           title: 'Calculation Error',
           description:
-            'Could not calculate daily targets from profile. Ensure profile is complete.',
+            'Could not calculate daily targets from profile. Ensure profile is complete or use the Smart Calorie Planner.',
           variant: 'destructive',
         });
         setOptimizingMealKey(null);
