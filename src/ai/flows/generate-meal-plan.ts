@@ -201,6 +201,13 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
           (meal as any).meal_name = 'Unknown Meal';
         }
 
+        // Add a fallback for meal_title if the AI forgets it
+        if (!meal.meal_title) {
+          (meal as any).meal_title = `AI Generated ${
+            mealTargets[index]?.mealName || 'Meal'
+          }`;
+        }
+
         let mealCalories = 0;
         let mealProtein = 0;
         let mealCarbs = 0;

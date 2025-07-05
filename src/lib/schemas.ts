@@ -701,7 +701,7 @@ export type AdjustMealIngredientsOutput = z.infer<
 // will then correct this data before using it.
 export const AIUnvalidatedMealSchema = z.object({
   meal_name: z.string().optional(), // Main difference: this is optional
-  meal_title: z.string(),
+  meal_title: z.string().optional(),
   ingredients: z.array(
     z.object({
       ingredient_name: z.string(),
