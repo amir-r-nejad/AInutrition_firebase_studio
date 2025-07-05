@@ -289,7 +289,6 @@ export default function CurrentMealPlanPage() {
       const aiInput: AdjustMealIngredientsInput = {
         originalMeal: {
           name: mealToOptimize.name,
-          customName: mealToOptimize.customName,
           ingredients: preparedIngredients,
           totalCalories: Number(mealToOptimize.totalCalories) || 0,
           totalProtein: Number(mealToOptimize.totalProtein) || 0,
@@ -312,25 +311,26 @@ export default function CurrentMealPlanPage() {
       const result = await adjustMealIngredients(aiInput);
 
       if (result.adjustedMeal && user?.uid) {
-        const updatedMealData = {
-            ...mealToOptimize,
-            ...result.adjustedMeal,
-            totalCalories: safeConvertToNumber(result.adjustedMeal.totalCalories),
-            totalProtein: safeConvertToNumber(result.adjustedMeal.totalProtein),
-            totalCarbs: safeConvertToNumber(result.adjustedMeal.totalCarbs),
-            totalFat: safeConvertToNumber(result.adjustedMeal.totalFat),
-            ingredients: result.adjustedMeal.ingredients.map((ing) => ({
-                ...ing,
-                quantity: safeConvertToNumber(ing.quantity, 0),
-                calories: safeConvertToNumber(ing.calories),
-                protein: safeConvertToNumber(ing.protein),
-                carbs: safeConvertToNumber(ing.carbs),
-                fat: safeConvertToNumber(ing.fat),
-            })),
+        const { ingredients, totalCalories, totalProtein, totalCarbs, totalFat } = result.adjustedMeal;
+
+        const updatedMealData: Meal = {
+          ...mealToOptimize,
+          ingredients: ingredients.map((ing) => ({
+            ...ing,
+            quantity: safeConvertToNumber(ing.quantity, 0),
+            calories: safeConvertToNumber(ing.calories, 0),
+            protein: safeConvertToNumber(ing.protein, 0),
+            carbs: safeConvertToNumber(ing.carbs, 0),
+            fat: safeConvertToNumber(ing.fat, 0),
+          })),
+          totalCalories: safeConvertToNumber(totalCalories, 0),
+          totalProtein: safeConvertToNumber(totalProtein, 0),
+          totalCarbs: safeConvertToNumber(totalCarbs, 0),
+          totalFat: safeConvertToNumber(totalFat, 0),
         };
         
         const newWeeklyPlan = JSON.parse(JSON.stringify(weeklyPlan));
-        newWeeklyPlan.days[dayIndex].meals[mealIndex] = updatedMealData as Meal;
+        newWeeklyPlan.days[dayIndex].meals[mealIndex] = updatedMealData;
         setWeeklyPlan(newWeeklyPlan);
 
         const sanitizedPlan = preprocessDataForFirestore(newWeeklyPlan);
@@ -338,7 +338,7 @@ export default function CurrentMealPlanPage() {
         await setDoc(userDocRef, { currentWeeklyPlan: sanitizedPlan }, { merge: true });
 
         toast({
-          title: `Meal Optimized: ${mealToOptimize.name}`,
+          title: `Meal Optimized: ${mealToOptimize.customName || mealToOptimize.name}`,
           description: result.explanation || 'AI has adjusted the ingredients.',
         });
       } else {
