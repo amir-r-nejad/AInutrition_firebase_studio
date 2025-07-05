@@ -289,6 +289,7 @@ export default function CurrentMealPlanPage() {
       const aiInput: AdjustMealIngredientsInput = {
         originalMeal: {
           name: mealToOptimize.name,
+          customName: mealToOptimize.customName || undefined,
           ingredients: preparedIngredients,
           totalCalories: Number(mealToOptimize.totalCalories) || 0,
           totalProtein: Number(mealToOptimize.totalProtein) || 0,
@@ -313,8 +314,11 @@ export default function CurrentMealPlanPage() {
       if (result.adjustedMeal && user?.uid) {
         const { ingredients, totalCalories, totalProtein, totalCarbs, totalFat } = result.adjustedMeal;
 
+        // Construct the updated meal safely, preserving original names
         const updatedMealData: Meal = {
-          ...mealToOptimize,
+          name: mealToOptimize.name, // Always keep original name
+          customName: mealToOptimize.customName, // Always keep original custom name
+          id: mealToOptimize.id, // Preserve ID if it exists
           ingredients: ingredients.map((ing) => ({
             ...ing,
             quantity: safeConvertToNumber(ing.quantity, 0),

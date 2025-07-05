@@ -29,7 +29,9 @@ const prompt = ai.definePrompt({
 3.  **YOU MUST NOT CHANGE OR SWAP ANY INGREDIENTS.**
 4.  Your **ONLY** allowed action is to modify the \`quantity\` value for each ingredient provided.
 5.  After adjusting quantities, you MUST accurately recalculate the \`calories\`, \`protein\`, \`carbs\`, and \`fat\` for each ingredient, as well as the \`totalCalories\`, \`totalProtein\`, \`totalCarbs\`, and \`totalFat\` for the entire meal.
-6.  The \`name\` of the meal in the output JSON **MUST** exactly match the meal name provided in the input.
+6.  The \`name\` of the meal in the output JSON **MUST** exactly match the "Original Meal Type" provided in the input.
+7.  The \`customName\` of the meal in the output JSON **MUST** exactly match the "Original Custom Meal Name" provided in the input. If no custom name was provided, this field should be omitted or be an empty string.
+
 
 User Profile:
 {{#if userProfile.age}}Age: {{userProfile.age}}{{/if}}
@@ -41,7 +43,8 @@ User Profile:
 {{#if userProfile.dispreferredIngredients.length}}Dislikes: {{#each userProfile.dispreferredIngredients}}{{{this}}}{{/each}}{{/if}}
 {{#if userProfile.preferredIngredients.length}}Preferred Ingredients: {{#each userProfile.preferredIngredients}}{{{this}}}{{/each}}{{/if}}
 
-Original Meal: {{originalMeal.name}}
+Original Meal Type: {{originalMeal.name}}
+{{#if originalMeal.customName}}Original Custom Meal Name: {{originalMeal.customName}}{{/if}}
 Ingredients:
 {{#each originalMeal.ingredients}}
 - {{this.name}}: {{this.quantity}} {{this.unit}} (Calories: {{this.calories}}, Protein: {{this.protein}}g, Carbs: {{this.carbs}}g, Fat: {{this.fat}}g)
@@ -60,11 +63,11 @@ Target Macros for "{{originalMeal.name}}":
 
 Strict Instructions for Output:
 - Your response MUST be a JSON object with ONLY these exact two top-level properties: "adjustedMeal" and "explanation".
-- The \`adjustedMeal\` object MUST represent the modified meal and contain ONLY these properties: "name", "ingredients", "totalCalories", "totalProtein", "totalCarbs", "totalFat".
+- The \`adjustedMeal\` object MUST represent the modified meal and contain ONLY these properties: "name", "customName", "ingredients", "totalCalories", "totalProtein", "totalCarbs", "totalFat".
 - The \`ingredients\` array objects MUST contain ONLY these properties: "name", "quantity", "unit", "calories", "protein", "carbs", "fat".
 - DO NOT add any extra fields, properties, keys, or markdown formatting (like \`\`\`json) to the response.
 - Respond ONLY with the pure JSON object that strictly matches the following TypeScript type:
-{ adjustedMeal: { name: string; ingredients: { name: string; quantity: number; unit: string; calories: number; protein: number; carbs: number; fat: number; }[]; totalCalories: number; totalProtein: number; totalCarbs: number; totalFat: number; }; explanation: string; }
+{ adjustedMeal: { name: string; customName?: string; ingredients: { name: string; quantity: number; unit: string; calories: number; protein: number; carbs: number; fat: number; }[]; totalCalories: number; totalProtein: number; totalCarbs: number; totalFat: number; }; explanation: string; }
 `,
 });
 
