@@ -344,6 +344,7 @@ export default function CurrentMealPlanPage() {
         const newWeeklyPlan = JSON.parse(JSON.stringify(weeklyPlan));
         const updatedMealData = {
             ...result.adjustedMeal,
+            name: mealToOptimize.name, // FIX: Preserve the original meal name to prevent it from being overwritten.
             id: mealToOptimize.id,
             totalCalories: safeConvertToNumber(result.adjustedMeal.totalCalories),
             totalProtein: safeConvertToNumber(result.adjustedMeal.totalProtein),
@@ -784,3 +785,11 @@ function EditMealDialog({
     </Dialog>
   );
 }
+
+// FIX: Added missing type definition for WeeklyMealPlan used in this component
+type WeeklyMealPlan = {
+  days: {
+    dayOfWeek: string;
+    meals: Meal[];
+  }[];
+};
