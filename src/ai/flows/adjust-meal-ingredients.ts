@@ -20,7 +20,9 @@ const prompt = ai.definePrompt({
   name: 'adjustMealIngredientsPrompt',
   input: { schema: AdjustMealIngredientsInputSchema },
   output: { schema: AdjustMealIngredientsOutputSchema },
-  prompt: `You are an expert nutritionist and chef. Your task is to adjust a given meal to precisely match target macronutrients, while strictly respecting the user's allergies and preferences.
+  prompt: `You are an expert nutritionist and chef. Your task is to adjust the quantities of the **existing ingredients** for a given meal to precisely match target macronutrients.
+
+**Crucially, you MUST NOT add new ingredients, remove existing ingredients, or swap ingredients.** Your only task is to modify the \`quantity\` of each ingredient to get as close as possible to the target macros, and then recalculate the total macros based on your adjustments.
 
 User Profile:
 {{#if userProfile.age}}Age: {{userProfile.age}}{{/if}}
@@ -58,9 +60,10 @@ Strict Instructions for Output:
     - "explanation": string — A clear and concise explanation of the adjustments made, how they meet the target macros, and how user preferences/allergies were respected.
 
 ⚠️ Important Rules:
-- Modify ingredients (quantities, swaps, additions, removals) to match the target macros as closely as possible.
-- Ensure all "total" macro fields ("totalCalories", "totalProtein", "totalCarbs", "totalFat") are accurately calculated and summed based on the "ingredients" list.
-- Avoid all specified allergens and try to respect all dislikes and preferred ingredients.
+- **ONLY modify the 'quantity' for each ingredient provided in the 'Original Meal'. The list of ingredients in your output MUST be identical to the original list, only with different quantities and resulting macros.**
+- Do not add, remove, or swap any ingredients.
+- After adjusting quantities, you MUST accurately recalculate all "total" macro fields ("totalCalories", "totalProtein", "totalCarbs", "totalFat") to reflect the new sum of the adjusted ingredients.
+- Respect all user preferences and allergies if they influence portion sizes (though you cannot remove ingredients).
 - Use the exact field names and spelling provided.
 - DO NOT add any extra fields, properties, or keys at any level of the JSON structure beyond what is explicitly defined above.
 - DO NOT include any introductory text, concluding remarks, markdown formatting (like json), or any other commentary outside of the pure JSON object.

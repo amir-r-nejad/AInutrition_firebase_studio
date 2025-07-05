@@ -85,6 +85,7 @@ export default function CurrentMealPlanPage() {
     useState<FullProfileType | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingPlan, setIsLoadingPlan] = useState(true);
+  const [isOptimizingMeal, setIsOptimizingMeal] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.uid) {
@@ -166,32 +167,37 @@ export default function CurrentMealPlanPage() {
     }
   };
 
-  const handleOptimizeInDialog = async (mealToOptimize: Meal): Promise<Meal | null> => {
-    if (!editingMeal) {
-      toast({ title: 'Error', description: 'No meal is being edited.', variant: 'destructive' });
-      return null;
-    }
+  const handleOptimizeMeal = async (dayIndex: number, mealIndex: number) => {
+    const mealKey = `${weeklyPlan.days[dayIndex].dayOfWeek}-${mealIndex}`;
+    setIsOptimizingMeal(mealKey);
+
+    const mealToOptimize = weeklyPlan.days[dayIndex].meals[mealIndex];
 
     if (isLoadingProfile || !profileData) {
       toast({
         title: 'Profile Data Loading',
-        description:
-          'User profile data is still loading. Please wait a moment and try again.',
+        description: 'User profile data is still loading. Please wait a moment and try again.',
         variant: 'default',
       });
-      return null;
+      setIsOptimizingMeal(null);
+      return;
+    }
+
+    if (mealToOptimize.ingredients.length === 0) {
+        toast({
+            title: 'No Ingredients',
+            description: 'Please add some ingredients to the meal before optimizing.',
+            variant: 'destructive',
+        });
+        setIsOptimizingMeal(null);
+        return;
     }
 
     const smartPlannerValues = profileData.smartPlannerData?.formValues;
     const requiredFields: (keyof SmartCaloriePlannerFormValues)[] = [
-      'age',
-      'gender',
-      'current_weight',
-      'height_cm',
-      'activity_factor_key',
-      'dietGoal',
+      'age', 'gender', 'current_weight', 'height_cm', 'activity_factor_key', 'dietGoal',
     ];
-    
+
     if (!smartPlannerValues) {
       toast({
         title: 'Profile Data Missing',
@@ -199,23 +205,23 @@ export default function CurrentMealPlanPage() {
         variant: 'destructive',
         duration: 7000,
       });
-      return null;
+      setIsOptimizingMeal(null);
+      return;
     }
 
     const missingFields = requiredFields.filter(
-        (field) => smartPlannerValues[field] === undefined || smartPlannerValues[field] === null
+      (field) => smartPlannerValues[field] === undefined || smartPlannerValues[field] === null
     );
 
     if (missingFields.length > 0) {
       toast({
         title: 'Profile Incomplete for Optimization',
-        description: `Please ensure the following profile details are complete in the Smart Calorie Planner: ${missingFields.join(
-          ', '
-        )}.`,
+        description: `Please ensure the following profile details are complete in the Smart Calorie Planner: ${missingFields.join(', ')}.`,
         variant: 'destructive',
         duration: 7000,
       });
-      return null;
+      setIsOptimizingMeal(null);
+      return;
     }
 
     try {
@@ -228,17 +234,7 @@ export default function CurrentMealPlanPage() {
       
       const smartResults = profileData.smartPlannerData?.results;
 
-      if (
-        smartResults &&
-        smartResults.finalTargetCalories !== undefined &&
-        smartResults.finalTargetCalories !== null &&
-        smartResults.proteinGrams !== undefined &&
-        smartResults.proteinGrams !== null &&
-        smartResults.carbGrams !== undefined &&
-        smartResults.carbGrams !== null &&
-        smartResults.fatGrams !== undefined &&
-        smartResults.fatGrams !== null
-      ) {
+      if (smartResults && smartResults.finalTargetCalories) {
           dailyTargets = {
             finalTargetCalories: smartResults.finalTargetCalories,
             proteinGrams: smartResults.proteinGrams,
@@ -256,47 +252,28 @@ export default function CurrentMealPlanPage() {
           });
       }
       
-      if (
-        !dailyTargets ||
-        dailyTargets.finalTargetCalories === null || dailyTargets.finalTargetCalories === undefined ||
-        dailyTargets.proteinGrams === null || dailyTargets.proteinGrams === undefined ||
-        dailyTargets.carbGrams === null || dailyTargets.carbGrams === undefined ||
-        dailyTargets.fatGrams === null || dailyTargets.fatGrams === undefined
-      ) {
+      if (!dailyTargets?.finalTargetCalories || !dailyTargets.proteinGrams || !dailyTargets.carbGrams || !dailyTargets.fatGrams) {
         toast({
           title: 'Calculation Error',
-          description:
-            'Could not calculate daily targets from profile. Ensure profile is complete or use the Smart Calorie Planner.',
+          description: 'Could not calculate daily targets from profile. Ensure profile is complete or use the Smart Calorie Planner.',
           variant: 'destructive',
         });
-        return null;
+        setIsOptimizingMeal(null);
+        return;
       }
 
       const customDistributions = profileData.mealDistributions;
       const mealDistribution =
-        (customDistributions &&
-          Array.isArray(customDistributions) &&
-          customDistributions.find((d) => d.mealName === mealToOptimize.name)) ||
+        (customDistributions && customDistributions.find((d) => d.mealName === mealToOptimize.name)) ||
         defaultMacroPercentages[mealToOptimize.name] || {
-          calories_pct: 0,
-          protein_pct: 0,
-          carbs_pct: 0,
-          fat_pct: 0,
+          calories_pct: 0, protein_pct: 0, carbs_pct: 0, fat_pct: 0,
         };
 
       const targetMacrosForMeal = {
-        calories: Math.round(
-          dailyTargets.finalTargetCalories * (mealDistribution.calories_pct / 100)
-        ),
-        protein: Math.round(
-          dailyTargets.proteinGrams * (mealDistribution.protein_pct / 100)
-        ),
-        carbs: Math.round(
-          dailyTargets.carbGrams * (mealDistribution.carbs_pct / 100)
-        ),
-        fat: Math.round(
-          dailyTargets.fatGrams * (mealDistribution.fat_pct / 100)
-        ),
+        calories: Math.round(dailyTargets.finalTargetCalories * (mealDistribution.calories_pct / 100)),
+        protein: Math.round(dailyTargets.proteinGrams * (mealDistribution.protein_pct / 100)),
+        carbs: Math.round(dailyTargets.carbGrams * (mealDistribution.carbs_pct / 100)),
+        fat: Math.round(dailyTargets.fatGrams * (mealDistribution.fat_pct / 100)),
       };
 
       const preparedIngredients = mealToOptimize.ingredients.map((ing) => ({
@@ -334,11 +311,10 @@ export default function CurrentMealPlanPage() {
 
       const result = await adjustMealIngredients(aiInput);
 
-      if (result.adjustedMeal) {
+      if (result.adjustedMeal && user?.uid) {
         const updatedMealData = {
+            ...mealToOptimize,
             ...result.adjustedMeal,
-            name: mealToOptimize.name, // Preserve the original meal name
-            id: mealToOptimize.id,
             totalCalories: safeConvertToNumber(result.adjustedMeal.totalCalories),
             totalProtein: safeConvertToNumber(result.adjustedMeal.totalProtein),
             totalCarbs: safeConvertToNumber(result.adjustedMeal.totalCarbs),
@@ -352,15 +328,21 @@ export default function CurrentMealPlanPage() {
                 fat: safeConvertToNumber(ing.fat),
             })),
         };
+        
+        const newWeeklyPlan = JSON.parse(JSON.stringify(weeklyPlan));
+        newWeeklyPlan.days[dayIndex].meals[mealIndex] = updatedMealData as Meal;
+        setWeeklyPlan(newWeeklyPlan);
+
+        const sanitizedPlan = preprocessDataForFirestore(newWeeklyPlan);
+        const userDocRef = doc(db, 'users', user.uid);
+        await setDoc(userDocRef, { currentWeeklyPlan: sanitizedPlan }, { merge: true });
+
         toast({
           title: `Meal Optimized: ${mealToOptimize.name}`,
           description: result.explanation || 'AI has adjusted the ingredients.',
         });
-        return updatedMealData as Meal;
       } else {
-        throw new Error(
-          'AI did not return an adjusted meal or an unexpected format was received.'
-        );
+        throw new Error('AI did not return an adjusted meal or an unexpected format was received.');
       }
     } catch (error: any) {
       console.error('Error optimizing meal:', error);
@@ -371,9 +353,11 @@ export default function CurrentMealPlanPage() {
         variant: 'destructive',
         duration: 8000,
       });
-      return null;
+    } finally {
+      setIsOptimizingMeal(null);
     }
   };
+
 
   if (isLoadingPlan || (user && isLoadingProfile)) {
     return (
@@ -420,7 +404,8 @@ export default function CurrentMealPlanPage() {
               >
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
                   {dayPlan.meals.map((meal, mealIndex) => {
-                    const mealKey = `${dayPlan.dayOfWeek}-${meal.name}-${mealIndex}`;
+                    const mealKey = `${dayPlan.dayOfWeek}-${mealIndex}`;
+                    const isOptimizingThis = isOptimizingMeal === mealKey;
                     return (
                       <Card key={mealKey} className='flex flex-col'>
                         <CardHeader>
@@ -466,6 +451,19 @@ export default function CurrentMealPlanPage() {
                           >
                             <Pencil className='mr-2 h-4 w-4' /> Edit Meal
                           </Button>
+                          <Button
+                            variant='secondary'
+                            size='sm'
+                            onClick={() => handleOptimizeMeal(dayIndex, mealIndex)}
+                            disabled={isOptimizingThis}
+                          >
+                             {isOptimizingThis ? (
+                                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                            ) : (
+                                <Wand2 className='mr-2 h-4 w-4' />
+                            )}
+                            {isOptimizingThis ? 'Optimizing...' : 'Optimize Meal'}
+                          </Button>
                         </CardFooter>
                       </Card>
                     );
@@ -482,7 +480,6 @@ export default function CurrentMealPlanPage() {
           meal={editingMeal.meal}
           onSave={handleSaveMeal}
           onClose={() => setEditingMeal(null)}
-          onOptimize={handleOptimizeInDialog}
         />
       )}
     </div>
@@ -493,20 +490,16 @@ interface EditMealDialogProps {
   meal: Meal;
   onSave: (updatedMeal: Meal) => void;
   onClose: () => void;
-  onOptimize: (mealToOptimize: Meal) => Promise<Meal | null>;
 }
 
 function EditMealDialog({
   meal: initialMeal,
   onSave,
   onClose,
-  onOptimize,
 }: EditMealDialogProps) {
   const [meal, setMeal] = useState<Meal>(
     JSON.parse(JSON.stringify(initialMeal))
   );
-  const [isOptimizing, setIsOptimizing] = useState(false);
-
 
   const handleIngredientChange = (
     index: number,
@@ -606,16 +599,6 @@ function EditMealDialog({
     };
     onSave(mealToSave);
   };
-  
-  const handleOptimizeClick = async () => {
-    setIsOptimizing(true);
-    const optimizedResult = await onOptimize(meal);
-    if (optimizedResult) {
-      setMeal(optimizedResult);
-    }
-    setIsOptimizing(false);
-  };
-
 
   return (
     <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -753,21 +736,7 @@ function EditMealDialog({
             </Button>
           </div>
         </div>
-        <DialogFooter className='gap-2 sm:justify-between'>
-            <Button
-              type='button'
-              variant='secondary'
-              onClick={handleOptimizeClick}
-              disabled={isOptimizing}
-              className='sm:mr-auto'
-            >
-              {isOptimizing ? (
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-              ) : (
-                <Wand2 className='mr-2 h-4 w-4' />
-              )}
-              {isOptimizing ? 'Optimizing...' : 'Optimize with AI'}
-            </Button>
+        <DialogFooter className='gap-2 sm:justify-end'>
           <div className='flex gap-2 justify-end'>
             <DialogClose asChild>
               <Button type='button' variant='outline' onClick={onClose}>
