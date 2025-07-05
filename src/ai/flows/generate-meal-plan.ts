@@ -58,7 +58,7 @@ const prompt = ai.definePrompt({
 {{#if preferredCuisines.length}}- Preferred Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
 **--- MEAL STRUCTURE & EXACT TARGETS ---**
-You MUST generate a complete 7-day plan. For each day, you must generate a meal for EACH of the following targets. The "meal_name" you use in your JSON output MUST exactly match the "mealName" provided in the target list below. The meal you create should be as close as possible to the specified macros.
+You MUST generate a complete 7-day plan. For each day, you must generate a meal for EACH of the following targets. The meal you create should be as close as possible to the specified macros.
 
 {{#each mealTargets}}
 - **{{this.mealName}}**: Target ~{{this.calories}} kcal, ~{{this.protein}}g Protein, ~{{this.carbs}}g Carbs, ~{{this.fat}}g Fat
@@ -74,10 +74,9 @@ This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day
   {
     "day": "Monday", // The full name of the day.
     "meals": [
-      // This is an array of meal objects.
+      // This is an array of meal objects. The number of meals per day MUST match the number of targets in the "MEAL STRUCTURE & EXACT TARGETS" section.
       {
-        "meal_name": "Breakfast", // The name of the meal type. MUST match a name from the MEAL STRUCTURE & EXACT TARGETS section.
-        "meal_title": "Oatmeal with Berries and Nuts", // A specific, appealing title for the meal. This MUST be generated.
+        "meal_title": "Oatmeal with Berries and Nuts", // A specific, appealing title for the meal. This field is MANDATORY.
         "ingredients": [
           {
             "ingredient_name": "Oats",
@@ -92,10 +91,10 @@ This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day
 
 **--- FINAL RULES & CRITICAL CHECK ---**
 1.  **You MUST generate a complete 7-day plan from Monday to Sunday.**
-2.  Use the exact field names and spelling as shown in the schema above.
+2.  Use the exact field names and spelling as shown in the schema above. Do NOT include a "meal_name" field in your output.
 3.  DO NOT add any extra fields, properties, or keys at any level.
 4.  All numerical values must be realistic, positive, and correctly calculated.
-5.  Before you finalize your response, perform this critical check on every single meal object inside the "meals" array: It MUST contain all of the following properties: "meal_name", "meal_title", and "ingredients". This is not optional.
+5.  **CRITICAL CHECK**: Before you finalize your response, perform this check on every single meal object inside the "meals" array: It MUST contain the "meal_title" property with a descriptive name like "Grilled Chicken Salad" or "Scrambled Eggs with Spinach". This is not optional.
 6.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
 `,
 });
