@@ -192,7 +192,15 @@ function MealSuggestionsContent() {
         activityLevel: profileToUse.activityLevel!,
         dietGoal: profileToUse.dietGoalOnboarding!,
       });
-      const mealDistribution = defaultMacroPercentages[selectedMealName];
+
+      const customDistributions = profileToUse.mealDistributions;
+      let mealDistribution = customDistributions?.find(
+        (d) => d.mealName === selectedMealName
+      );
+
+      if (!mealDistribution) {
+        mealDistribution = defaultMacroPercentages[selectedMealName];
+      }
 
       if (
         dailyTotals.finalTargetCalories &&
@@ -205,16 +213,17 @@ function MealSuggestionsContent() {
           mealName: selectedMealName,
           calories: Math.round(
             dailyTotals.finalTargetCalories *
-              (mealDistribution.calories_pct / 100)
+              ((mealDistribution.calories_pct || 0) / 100)
           ),
           protein: Math.round(
-            dailyTotals.proteinGrams * (mealDistribution.protein_pct / 100)
+            dailyTotals.proteinGrams *
+              ((mealDistribution.protein_pct || 0) / 100)
           ),
           carbs: Math.round(
-            dailyTotals.carbGrams * (mealDistribution.carbs_pct / 100)
+            dailyTotals.carbGrams * ((mealDistribution.carbs_pct || 0) / 100)
           ),
           fat: Math.round(
-            dailyTotals.fatGrams * (mealDistribution.fat_pct / 100)
+            dailyTotals.fatGrams * ((mealDistribution.fat_pct || 0) / 100)
           ),
         });
         setIsDemoMode(false);
