@@ -6,6 +6,7 @@ import {
   AIGeneratedWeeklyMealPlanSchema,
   GeneratePersonalizedMealPlanInputSchema,
   GeneratePersonalizedMealPlanOutputSchema,
+  type AIGeneratedMeal,
   type GeneratePersonalizedMealPlanInput,
   type GeneratePersonalizedMealPlanOutput,
 } from '@/lib/schemas';
@@ -17,11 +18,11 @@ export async function generatePersonalizedMealPlan(
   return generatePersonalizedMealPlanFlow(input);
 }
 
-// AI Prompt - Now only responsible for generating the plan, not the summary.
+// AI Prompt - Now only responsible for generating the plan structure, not the totals.
 const prompt = ai.definePrompt({
   name: 'generatePersonalizedMealPlanPrompt',
   input: { schema: GeneratePersonalizedMealPlanInputSchema },
-  output: { schema: AIGeneratedWeeklyMealPlanSchema }, // AI now outputs a simpler schema
+  output: { schema: AIGeneratedWeeklyMealPlanSchema }, // AI outputs a schema without required totals
   prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile and goals.
 
 Your response MUST be a JSON object that strictly adheres to the structure and rules outlined below.
@@ -57,7 +58,7 @@ You MUST generate a plan for **ALL** of the following meals every day. The "meal
 
 **--- VERY STRICT JSON OUTPUT SCHEMA ---**
 Your entire response must be a single JSON object with ONLY ONE top-level key: "weeklyMealPlan".
-This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day from "Monday" to "Sunday".
+This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day from "Monday" to "Sunday". Do not calculate totals like "total_calories" yourself.
 
 "weeklyMealPlan": [
   // This is an array of 7 day objects (Monday to Sunday).
@@ -74,11 +75,7 @@ This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day
             "quantity_g": 50,
             "macros_per_100g": { "calories": 389, "protein_g": 16.9, "carbs_g": 66.3, "fat_g": 6.9 }
           }
-        ],
-        "total_calories": 450,
-        "total_protein_g": 25,
-        "total_carbs_g": 50,
-        "total_fat_g": 15
+        ]
       }
     ]
   }
@@ -89,7 +86,7 @@ This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day
 2.  Use the exact field names and spelling as shown in the schema above.
 3.  DO NOT add any extra fields, properties, or keys at any level.
 4.  All numerical values must be realistic, positive, and correctly calculated.
-5.  Before you finalize your response, perform this critical check on every single meal object inside the "meals" array: It MUST contain all of the following properties: "meal_name", "meal_title", "ingredients", "total_calories", "total_protein_g", "total_carbs_g", and "total_fat_g". This is not optional.
+5.  Before you finalize your response, perform this critical check on every single meal object inside the "meals" array: It MUST contain all of the following properties: "meal_name", "meal_title", and "ingredients". This is not optional.
 6.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
 `,
 });
@@ -124,7 +121,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
 
     const { weeklyMealPlan } = validationResult.data;
 
-    // Calculate weekly summary here in the code, which is more reliable than asking the AI.
+    // Calculate meal-level and weekly summary here in the code, which is more reliable.
     const weeklySummary = {
       totalCalories: 0,
       totalProtein: 0,
@@ -133,11 +130,31 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     };
 
     weeklyMealPlan.forEach((day) => {
-      day.meals.forEach((meal) => {
-        weeklySummary.totalCalories += meal.total_calories || 0;
-        weeklySummary.totalProtein += meal.total_protein_g || 0;
-        weeklySummary.totalCarbs += meal.total_carbs_g || 0;
-        weeklySummary.totalFat += meal.total_fat_g || 0;
+      day.meals.forEach((meal: AIGeneratedMeal) => {
+        let mealCalories = 0;
+        let mealProtein = 0;
+        let mealCarbs = 0;
+        let mealFat = 0;
+
+        meal.ingredients.forEach((ing) => {
+          const quantityFactor = ing.quantity_g / 100.0;
+          mealCalories += (ing.macros_per_100g.calories || 0) * quantityFactor;
+          mealProtein += (ing.macros_per_100g.protein_g || 0) * quantityFactor;
+          mealCarbs += (ing.macros_per_100g.carbs_g || 0) * quantityFactor;
+          mealFat += (ing.macros_per_100g.fat_g || 0) * quantityFactor;
+        });
+
+        // Mutate the meal object to add calculated totals
+        meal.total_calories = mealCalories;
+        meal.total_protein_g = mealProtein;
+        meal.total_carbs_g = mealCarbs;
+        meal.total_fat_g = mealFat;
+
+        // Add meal totals to the weekly summary
+        weeklySummary.totalCalories += meal.total_calories;
+        weeklySummary.totalProtein += meal.total_protein_g;
+        weeklySummary.totalCarbs += meal.total_carbs_g;
+        weeklySummary.totalFat += meal.total_fat_g;
       });
     });
 

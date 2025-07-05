@@ -762,10 +762,10 @@ export const AIGeneratedMealSchema = z.object({
       }),
     })
   ),
-  total_calories: z.number(),
-  total_protein_g: z.number(),
-  total_carbs_g: z.number(),
-  total_fat_g: z.number(),
+  total_calories: z.number().optional(),
+  total_protein_g: z.number().optional(),
+  total_carbs_g: z.number().optional(),
+  total_fat_g: z.number().optional(),
 });
 export type AIGeneratedMeal = z.infer<typeof AIGeneratedMealSchema>;
 
