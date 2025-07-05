@@ -419,8 +419,9 @@ export default function OptimizedMealPlanPage() {
                           <CardHeader>
                             <CardTitle className='text-xl font-semibold flex items-center'>
                               <ChefHat className='mr-2 h-5 w-5 text-accent' />
-                              {meal.meal_name}
+                              {meal.meal_title}
                             </CardTitle>
+                            <CardDescription>{meal.meal_name}</CardDescription>
                           </CardHeader>
                           <CardContent>
                             <h4 className='font-medium text-md mb-2 text-primary'>

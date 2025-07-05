@@ -749,6 +749,7 @@ export type GeneratePersonalizedMealPlanInput = z.infer<
 
 export const AIGeneratedMealSchema = z.object({
   meal_name: z.string(),
+  meal_title: z.string(),
   ingredients: z.array(
     z.object({
       ingredient_name: z.string(),

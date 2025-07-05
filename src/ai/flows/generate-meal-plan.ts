@@ -57,6 +57,7 @@ You MUST generate a plan for **ALL** of the following meals every day. The "meal
 
 **--- VERY STRICT JSON OUTPUT SCHEMA ---**
 Your entire response must be a single JSON object with ONLY ONE top-level key: "weeklyMealPlan".
+This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day from "Monday" to "Sunday".
 
 "weeklyMealPlan": [
   // This is an array of 7 day objects (Monday to Sunday).
@@ -65,8 +66,8 @@ Your entire response must be a single JSON object with ONLY ONE top-level key: "
     "meals": [
       // This is an array of meal objects.
       {
-        // === CRITICAL: 'meal_name' IS REQUIRED FOR EVERY MEAL ===
-        "meal_name": "Breakfast", // The name of the meal. MUST match a name from the MEAL STRUCTURE INSTRUCTIONS.
+        "meal_name": "Breakfast", // The name of the meal type. MUST match a name from the MEAL STRUCTURE INSTRUCTIONS.
+        "meal_title": "Oatmeal with Berries and Nuts", // A specific, appealing title for the meal. This MUST be generated.
         "ingredients": [
           {
             "ingredient_name": "Oats",
@@ -84,11 +85,12 @@ Your entire response must be a single JSON object with ONLY ONE top-level key: "
 ]
 
 **--- FINAL RULES ---**
-1.  **Every single meal object inside the "meals" array MUST contain the "meal_name" property.** This is not optional.
-2.  Use the exact field names and spelling as shown in the schema above.
-3.  DO NOT add any extra fields, properties, or keys at any level.
-4.  All numerical values must be realistic, positive, and correctly calculated.
-5.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
+1.  **You MUST generate a complete 7-day plan from Monday to Sunday.**
+2.  Every single meal object inside the "meals" array MUST contain both "meal_name" (the meal type like 'Breakfast') and "meal_title" (the specific food name like 'Greek Yogurt Parfait'). This is not optional.
+3.  Use the exact field names and spelling as shown in the schema above.
+4.  DO NOT add any extra fields, properties, or keys at any level.
+5.  All numerical values must be realistic, positive, and correctly calculated.
+6.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
 `,
 });
 
