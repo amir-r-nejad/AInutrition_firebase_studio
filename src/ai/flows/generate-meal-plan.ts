@@ -21,9 +21,40 @@ const prompt = ai.definePrompt({
   name: 'generatePersonalizedMealPlanPrompt',
   input: { schema: GeneratePersonalizedMealPlanInputSchema },
   output: { schema: GeneratePersonalizedMealPlanOutputSchema },
-  prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile.
+  prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile, goals, and specific meal macro distribution preferences if provided.
 
-{{{input}}}
+**User Profile & Goals:**
+- Age: {{age}}
+- Gender: {{gender}}
+- Height: {{height_cm}} cm
+- Current Weight: {{current_weight}} kg
+- 1-Month Goal Weight: {{goal_weight_1m}} kg
+- Activity Level: {{activityLevel}}
+- Primary Diet Goal: {{dietGoalOnboarding}}
+{{#if preferredDiet}}
+- Dietary Preference: {{preferredDiet}}
+{{/if}}
+{{#if allergies.length}}
+- Allergies to Avoid: {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}
+{{#if dispreferredIngredients.length}}
+- Disliked Ingredients: {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}
+{{#if preferredCuisines.length}}
+- Preferred Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}
+
+{{#if mealDistributions}}
+**--- CRITICAL INSTRUCTION: CUSTOM MEAL MACRO DISTRIBUTION ---**
+You MUST follow this specific percentage breakdown for daily macros across meals. The total macros for each meal you generate MUST reflect these percentages applied to the user's total daily needs.
+{{#each mealDistributions}}
+- **{{this.mealName}}**: Calories: {{this.calories_pct}}%, Protein: {{this.protein_pct}}%, Carbs: {{this.carbs_pct}}%, Fat: {{this.fat_pct}}%
+{{/each}}
+{{else}}
+**Standard Meal Macro Distribution:**
+If no custom distribution is provided, use a standard, balanced approach suitable for the user's goal (e.g., for fat loss, slightly higher protein and lower carbs; for muscle gain, higher carbs).
+{{/if}}
+
 
 Strict Instructions:
 - You must return a JSON object with exactly two top-level properties:

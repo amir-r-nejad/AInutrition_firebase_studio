@@ -741,6 +741,7 @@ export const GeneratePersonalizedMealPlanInputSchema = z.object({
   medicalConditions: z.array(z.string()).optional(),
   medications: z.array(z.string()).optional(),
   typicalMealsDescription: z.string().optional(),
+  mealDistributions: z.array(MealMacroDistributionSchema).optional(),
 });
 export type GeneratePersonalizedMealPlanInput = z.infer<
   typeof GeneratePersonalizedMealPlanInputSchema

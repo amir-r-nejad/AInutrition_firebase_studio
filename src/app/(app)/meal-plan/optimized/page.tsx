@@ -182,12 +182,13 @@ export default function OptimizedMealPlanPage() {
       medicalConditions: profileData.medicalConditions ?? undefined,
       medications: profileData.medications ?? undefined,
       typicalMealsDescription: profileData.typicalMealsDescription ?? undefined,
+      mealDistributions: profileData.mealDistributions ?? undefined,
     };
     // Filter out undefined optional fields to keep AI input clean
     Object.keys(input).forEach(
       (key) =>
-        input[key as keyof GeneratePersonalizedMealPlanInput] === undefined &&
-        delete input[key as keyof GeneratePersonalizedMealPlanInput]
+        (input as any)[key] === undefined &&
+        delete (input as any)[key]
     );
 
     setIsLoading(true);
