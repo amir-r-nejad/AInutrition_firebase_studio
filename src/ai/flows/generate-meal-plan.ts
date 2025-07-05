@@ -56,12 +56,12 @@ If no custom distribution is provided, use a standard, balanced approach suitabl
 {{/if}}
 
 
-Strict Instructions:
+**--- VERY STRICT JSON OUTPUT INSTRUCTIONS ---**
 - You must return a JSON object with exactly two top-level properties:
-  1. "weeklyMealPlan" — an array with 7 objects, each representing a day of the week.
-  2. "weeklySummary" — an object containing nutritional totals for the entire week.
+  1. "weeklyMealPlan"
+  2. "weeklySummary"
 
-Detailed structure:
+**Detailed structure:**
 
 "weeklyMealPlan":
 - This is an array with 7 items.
@@ -76,27 +76,29 @@ Detailed structure:
             - "macros_per_100g": an object with these exact properties:
                 - "calories": number — calories per 100 grams of this ingredient.
                 - "protein_g": number — protein in grams per 100 grams of this ingredient.
+                - "carbs_g": number — carbohydrates in grams per 100 grams of this ingredient.
                 - "fat_g": number — fat in grams per 100 grams of this ingredient.
-        - "total_calories": number — the total calories for the entire meal, calculated based on the quantities of all ingredients.
-        - "total_protein_g": number — the total protein in grams for the entire meal, calculated based on the quantities of all ingredients.
-        - "total_fat_g": number — the total fat in grams for the entire meal, calculated based on the quantities of all ingredients.
+        - "total_calories": number — the total calories for the entire meal, calculated from all ingredients.
+        - "total_protein_g": number — the total protein in grams for the entire meal, calculated from all ingredients.
+        - "total_carbs_g": number — the total carbohydrates in grams for the entire meal, calculated from all ingredients.
+        - "total_fat_g": number — the total fat in grams for the entire meal, calculated from all ingredients.
 
 "weeklySummary":
 - This is an object that **MUST contain ONLY these exact four fields, and no others**:
-    - "totalCalories": number — the total calories consumed during the entire week.
-    - "totalProtein": number — the total protein in grams consumed during the entire week.
-    - "totalCarbs": number — the total carbohydrates in grams consumed during the entire week.
-    - "totalFat": number — the total fat in grams consumed during the entire week.
-- Ensure "totalCarbs" is calculated and included.
+    - "totalCalories": number — the sum of "total_calories" from all meals in the week.
+    - "totalProtein": number — the sum of "total_protein_g" from all meals in the week.
+    - "totalCarbs": number — the sum of "total_carbs_g" from all meals in the week.
+    - "totalFat": number — the sum of "total_fat_g" from all meals in the week.
+- Ensure all four totals are calculated by summing the respective values from every meal generated.
 
 ⚠️ Important Rules:
 - Use the exact field names and spelling provided in this prompt.
-- **DO NOT add any extra fields, properties, or keys at any level of the JSON structure. This includes, but is not limited to, fields like 'calories', 'carbohydrates', 'estimatedTotalCalories', 'estimatedTotalCarbs', 'estimatedTotalFat', 'estimatedTotalProtein', 'fat', or 'protein' within the 'weeklySummary' object.**
+- **DO NOT add any extra fields, properties, or keys at any level of the JSON structure.**
 - DO NOT rename any fields.
-- All numerical values must be realistic, positive, and correctly calculated based on ingredient quantities and nutritional information.
-- Only output valid JSON. Do not include any markdown formatting (like json), code blocks, or any extra commentary before, during, or after the JSON.
+- All numerical values must be realistic, positive, and correctly calculated.
+- Only output valid JSON. Do not include any markdown formatting (like json), code blocks, or any other commentary before, during, or after the JSON.
 
-Respond only with pure JSON that matches this structure.`,
+Respond only with pure JSON that strictly matches the required structure. It is mandatory that the final JSON object includes both "weeklyMealPlan" and "weeklySummary" keys.`,
 });
 
 // Genkit Flow

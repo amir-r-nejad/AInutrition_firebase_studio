@@ -427,28 +427,40 @@ export default function OptimizedMealPlanPage() {
                               Ingredients:
                             </h4>
                             <ScrollArea className='w-full mb-4'>
-                              <Table className='min-w-[500px]'>
+                              <Table className='min-w-[600px]'>
                                 <TableHeader>
                                   <TableRow>
-                                    <TableHead className='w-[40%]'>
+                                    <TableHead className='w-[35%]'>
                                       Ingredient
                                     </TableHead>
-                                    <TableHead className='text-right w-[15%]'>
+                                    <TableHead className='text-right w-[12.5%]'>
                                       Qty (g)
                                     </TableHead>
-                                    <TableHead className='text-right w-[15%]'>
+                                    <TableHead className='text-right w-[12.5%]'>
                                       Calories
                                     </TableHead>
-                                    <TableHead className='text-right w-[15%]'>
+                                    <TableHead className='text-right w-[12.5%]'>
                                       Protein (g)
                                     </TableHead>
-                                    <TableHead className='text-right w-[15%]'>
+                                    <TableHead className='text-right w-[12.5%]'>
+                                      Carbs (g)
+                                    </TableHead>
+                                    <TableHead className='text-right w-[12.5%]'>
                                       Fat (g)
                                     </TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                   {meal.ingredients.map((ing, ingIndex) => {
+                                    const calculateMacro = (macro: number | undefined) => {
+                                      if (macro === undefined || macro === null) return 'N/A';
+                                      return ((macro * ing.quantity_g) / 100).toFixed(1);
+                                    }
+                                    const calculateCalories = (calories: number | undefined) => {
+                                        if (calories === undefined || calories === null) return 'N/A';
+                                        return ((calories * ing.quantity_g) / 100).toFixed(0);
+                                    }
+
                                     return (
                                       <TableRow key={ingIndex}>
                                         <TableCell className='font-medium py-1.5'>
@@ -458,31 +470,16 @@ export default function OptimizedMealPlanPage() {
                                           {ing.quantity_g}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {ing.macros_per_100g.calories
-                                            ? (
-                                                (ing.macros_per_100g.calories *
-                                                  ing.quantity_g) /
-                                                100
-                                              ).toFixed(0)
-                                            : 'N/A'}
+                                          {calculateCalories(ing.macros_per_100g.calories)}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {ing.macros_per_100g.protein_g
-                                            ? (
-                                                (ing.macros_per_100g.protein_g *
-                                                  ing.quantity_g) /
-                                                100
-                                              ).toFixed(1)
-                                            : 'N/A'}
+                                          {calculateMacro(ing.macros_per_100g.protein_g)}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {ing.macros_per_100g.fat_g
-                                            ? (
-                                                (ing.macros_per_100g.fat_g *
-                                                  ing.quantity_g) /
-                                                100
-                                              ).toFixed(1)
-                                            : 'N/A'}
+                                           {calculateMacro(ing.macros_per_100g.carbs_g)}
+                                        </TableCell>
+                                        <TableCell className='text-right py-1.5'>
+                                          {calculateMacro(ing.macros_per_100g.fat_g)}
                                         </TableCell>
                                       </TableRow>
                                     );
@@ -493,7 +490,8 @@ export default function OptimizedMealPlanPage() {
                             </ScrollArea>
                             <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
                               Total: {meal.total_calories.toFixed(0)} kcal |
-                              Protein: {meal.total_protein_g.toFixed(1)}g | Fat:{' '}
+                              Protein: {meal.total_protein_g.toFixed(1)}g |
+                              Carbs: {meal.total_carbs_g.toFixed(1)}g | Fat:{' '}
                               {meal.total_fat_g.toFixed(1)}g
                             </div>
                           </CardContent>

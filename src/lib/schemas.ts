@@ -756,12 +756,14 @@ export const AIGeneratedMealSchema = z.object({
       macros_per_100g: z.object({
         calories: z.number(),
         protein_g: z.number(),
+        carbs_g: z.number(),
         fat_g: z.number(),
       }),
     })
   ),
   total_calories: z.number(),
   total_protein_g: z.number(),
+  total_carbs_g: z.number(),
   total_fat_g: z.number(),
 });
 export type AIGeneratedMeal = z.infer<typeof AIGeneratedMealSchema>;
