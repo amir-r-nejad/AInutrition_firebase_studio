@@ -774,6 +774,10 @@ export const DayPlanSchema = z.object({
 });
 export type DayPlan = z.infer<typeof DayPlanSchema>;
 
+export const AIGeneratedWeeklyMealPlanSchema = z.object({
+  weeklyMealPlan: z.array(DayPlanSchema),
+});
+
 export const GeneratePersonalizedMealPlanOutputSchema = z.object({
   weeklyMealPlan: z.array(DayPlanSchema),
   weeklySummary: z.object({

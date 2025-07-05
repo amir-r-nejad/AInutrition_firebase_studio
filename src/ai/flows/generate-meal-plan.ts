@@ -3,6 +3,7 @@
 
 import { ai } from '@/ai/genkit';
 import {
+  AIGeneratedWeeklyMealPlanSchema,
   GeneratePersonalizedMealPlanInputSchema,
   GeneratePersonalizedMealPlanOutputSchema,
   type GeneratePersonalizedMealPlanInput,
@@ -16,11 +17,11 @@ export async function generatePersonalizedMealPlan(
   return generatePersonalizedMealPlanFlow(input);
 }
 
-// AI Prompt
+// AI Prompt - Now only responsible for generating the plan, not the summary.
 const prompt = ai.definePrompt({
   name: 'generatePersonalizedMealPlanPrompt',
   input: { schema: GeneratePersonalizedMealPlanInputSchema },
-  output: { schema: GeneratePersonalizedMealPlanOutputSchema },
+  output: { schema: AIGeneratedWeeklyMealPlanSchema }, // AI now outputs a simpler schema
   prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile, goals, and specific meal macro distribution preferences if provided.
 
 **User Profile & Goals:**
@@ -57,9 +58,7 @@ If no custom distribution is provided, use a standard, balanced approach suitabl
 
 
 **--- VERY STRICT JSON OUTPUT INSTRUCTIONS ---**
-- You must return a JSON object with exactly two top-level properties:
-  1. "weeklyMealPlan"
-  2. "weeklySummary"
+- You must return a JSON object with **ONLY ONE** top-level property: "weeklyMealPlan".
 
 **Detailed structure:**
 
@@ -83,14 +82,6 @@ If no custom distribution is provided, use a standard, balanced approach suitabl
         - "total_carbs_g": number — the total carbohydrates in grams for the entire meal, calculated from all ingredients.
         - "total_fat_g": number — the total fat in grams for the entire meal, calculated from all ingredients.
 
-"weeklySummary":
-- This is an object that **MUST contain ONLY these exact four fields, and no others**:
-    - "totalCalories": number — the sum of "total_calories" from all meals in the week.
-    - "totalProtein": number — the sum of "total_protein_g" from all meals in the week.
-    - "totalCarbs": number — the sum of "total_carbs_g" from all meals in the week.
-    - "totalFat": number — the sum of "total_fat_g" from all meals in the week.
-- Ensure all four totals are calculated by summing the respective values from every meal generated.
-
 ⚠️ Important Rules:
 - Use the exact field names and spelling provided in this prompt.
 - **DO NOT add any extra fields, properties, or keys at any level of the JSON structure.**
@@ -98,7 +89,8 @@ If no custom distribution is provided, use a standard, balanced approach suitabl
 - All numerical values must be realistic, positive, and correctly calculated.
 - Only output valid JSON. Do not include any markdown formatting (like json), code blocks, or any other commentary before, during, or after the JSON.
 
-Respond only with pure JSON that strictly matches the required structure. It is mandatory that the final JSON object includes both "weeklyMealPlan" and "weeklySummary" keys.`,
+Respond only with pure JSON that strictly matches the required structure. The final JSON object must ONLY have the "weeklyMealPlan" key.
+`,
 });
 
 // Genkit Flow
@@ -113,15 +105,47 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
   ): Promise<GeneratePersonalizedMealPlanOutput> => {
     const { output } = await prompt(input);
     if (!output) {
-      throw new Error('AI did not return output.');
+      throw new Error('AI did not return a meal plan.');
     }
 
-    const validationResult = GeneratePersonalizedMealPlanOutputSchema.safeParse(output);
+    // Validate the AI's direct output (just the weekly plan)
+    const validationResult =
+      AIGeneratedWeeklyMealPlanSchema.safeParse(output);
     if (!validationResult.success) {
-        console.error('AI output validation error:', validationResult.error.flatten());
-        throw new Error(`AI returned data in an unexpected format. Details: ${validationResult.error.message}`);
+      console.error(
+        'AI output validation error:',
+        validationResult.error.flatten()
+      );
+      throw new Error(
+        `AI returned data in an unexpected format. Details: ${validationResult.error.message}`
+      );
     }
 
-    return validationResult.data;
+    const { weeklyMealPlan } = validationResult.data;
+
+    // Calculate weekly summary here in the code, which is more reliable than asking the AI.
+    const weeklySummary = {
+      totalCalories: 0,
+      totalProtein: 0,
+      totalCarbs: 0,
+      totalFat: 0,
+    };
+
+    weeklyMealPlan.forEach((day) => {
+      day.meals.forEach((meal) => {
+        weeklySummary.totalCalories += meal.total_calories || 0;
+        weeklySummary.totalProtein += meal.total_protein_g || 0;
+        weeklySummary.totalCarbs += meal.total_carbs_g || 0;
+        weeklySummary.totalFat += meal.total_fat_g || 0;
+      });
+    });
+
+    // Construct the final output object that the application expects
+    const finalOutput: GeneratePersonalizedMealPlanOutput = {
+      weeklyMealPlan,
+      weeklySummary,
+    };
+
+    return finalOutput;
   }
 );
