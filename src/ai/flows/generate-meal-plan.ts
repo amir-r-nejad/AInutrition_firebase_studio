@@ -47,13 +47,19 @@ const prompt = ai.definePrompt({
 
 {{#if mealDistributions}}
 **--- CRITICAL INSTRUCTION: CUSTOM MEAL MACRO DISTRIBUTION ---**
-You MUST follow this specific percentage breakdown for daily macros across meals. The total macros for each meal you generate MUST reflect these percentages applied to the user's total daily needs.
+You MUST follow this specific percentage breakdown for daily macros across meals. The total macros for each meal you generate MUST reflect these percentages applied to the user's total daily needs. The "meal_name" property for each meal MUST exactly match one of the meal names provided here.
 {{#each mealDistributions}}
 - **{{this.mealName}}**: Calories: {{this.calories_pct}}%, Protein: {{this.protein_pct}}%, Carbs: {{this.carbs_pct}}%, Fat: {{this.fat_pct}}%
 {{/each}}
 {{else}}
-**Standard Meal Macro Distribution:**
-If no custom distribution is provided, use a standard, balanced approach suitable for the user's goal (e.g., for fat loss, slightly higher protein and lower carbs; for muscle gain, higher carbs). You should generate plans for 'Breakfast', 'Morning Snack', 'Lunch', 'Afternoon Snack', 'Dinner', and 'Evening Snack'.
+**--- CRITICAL INSTRUCTION: STANDARD MEAL DISTRIBUTION ---**
+If no custom distribution is provided, you MUST generate a plan for each of the following meals every day. The "meal_name" property in your output for each meal MUST exactly match one of these names:
+- Breakfast
+- Morning Snack
+- Lunch
+- Afternoon Snack
+- Dinner
+- Evening Snack
 {{/if}}
 
 
