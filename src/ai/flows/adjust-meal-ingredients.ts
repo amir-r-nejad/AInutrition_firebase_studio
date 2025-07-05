@@ -17,16 +17,9 @@ export async function adjustMealIngredients(
   return adjustMealIngredientsFlow(input);
 }
 
-// Define a schema for what the prompt actually needs.
-const PromptInputSchema = z.object({
-  userProfile: AdjustMealIngredientsInputSchema.shape.userProfile,
-  originalMealString: z.string(),
-  targetMacrosString: z.string(),
-});
-
 const prompt = ai.definePrompt({
   name: 'adjustMealIngredientsPrompt',
-  input: { schema: PromptInputSchema },
+  input: { schema: AdjustMealIngredientsInputSchema }, // Use the main input schema directly
   output: { schema: AdjustMealIngredientsOutputSchema },
   prompt: `You are an expert nutritionist. Your task is to adjust the quantities of the **existing ingredients** for a given meal to precisely match target macronutrients.
 
@@ -48,11 +41,22 @@ User Profile:
 {{#if userProfile.dispreferredIngredients.length}}Dislikes: {{#each userProfile.dispreferredIngredients}}{{{this}}}{{/each}}{{/if}}
 {{#if userProfile.preferredIngredients.length}}Preferred Ingredients: {{#each userProfile.preferredIngredients}}{{{this}}}{{/each}}{{/if}}
 
-Original Meal:
-{{{originalMealString}}}
+Original Meal: {{originalMeal.name}}
+Ingredients:
+{{#each originalMeal.ingredients}}
+- {{this.name}}: {{this.quantity}} {{this.unit}} (Calories: {{this.calories}}, Protein: {{this.protein}}g, Carbs: {{this.carbs}}g, Fat: {{this.fat}}g)
+{{/each}}
+Current Totals:
+- Calories: {{originalMeal.totalCalories}}
+- Protein: {{originalMeal.totalProtein}}g
+- Carbs: {{originalMeal.totalCarbs}}g
+- Fat: {{originalMeal.totalFat}}g
 
-Target Macros:
-{{{targetMacrosString}}}
+Target Macros for "{{originalMeal.name}}":
+- Calories: {{targetMacros.calories}}
+- Protein: {{targetMacros.protein}}g
+- Carbs: {{targetMacros.carbs}}g
+- Fat: {{targetMacros.fat}}g
 
 Strict Instructions for Output:
 - Your response MUST be a JSON object with ONLY these exact two top-level properties: "adjustedMeal" and "explanation".
@@ -73,13 +77,9 @@ const adjustMealIngredientsFlow = ai.defineFlow(
   async (
     input: AdjustMealIngredientsInput
   ): Promise<AdjustMealIngredientsOutput> => {
-    const promptInput = {
-      userProfile: input.userProfile,
-      originalMealString: JSON.stringify(input.originalMeal),
-      targetMacrosString: JSON.stringify(input.targetMacros),
-    };
-
-    const { output } = await prompt(promptInput);
+    // Pass the input directly to the prompt.
+    const { output } = await prompt(input);
+    
     if (!output) {
       throw new Error('AI did not return an output for meal adjustment.');
     }
