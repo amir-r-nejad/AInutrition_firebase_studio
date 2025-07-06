@@ -68,25 +68,27 @@ This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day
 
 Please follow this structure as closely as possible. The ideal response will have all fields completed.
 
-"weeklyMealPlan": [
-  // This is an array of 7 day objects (Monday to Sunday).
-  {
-    "day": "Monday", // The full name of the day.
-    "meals": [
-      // This is an array of meal objects. The number of meals per day MUST match the number of targets in the "MEAL STRUCTURE & EXACT TARGETS" section.
-      {
-        "meal_title": "Oatmeal with Berries and Nuts", // A specific, appealing title for the meal. This field is MANDATORY.
-        "ingredients": [
-          {
-            "ingredient_name": "Oats",
-            "quantity_g": 50,
-            "macros_per_100g": { "calories": 389, "protein_g": 16.9, "carbs_g": 66.3, "fat_g": 6.9 }
-          }
-        ]
-      }
-    ]
-  }
-]
+{
+  "weeklyMealPlan": [
+    // This is an array of 7 day objects (Monday to Sunday).
+    {
+      "day": "Monday", // The full name of the day.
+      "meals": [
+        // This is an array of meal objects. The number of meals per day MUST match the number of targets in the "MEAL STRUCTURE & EXACT TARGETS" section.
+        {
+          "meal_title": "Oatmeal with Berries and Nuts", // A specific, appealing title for the meal. This field is MANDATORY.
+          "ingredients": [
+            {
+              "ingredient_name": "Oats",
+              "quantity_g": 50,
+              "macros_per_100g": { "calories": 389, "protein_g": 16.9, "carbs_g": 66.3, "fat_g": 6.9 }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
 
 **--- FINAL RULES ---**
 1.  **You MUST generate a complete 7-day plan from Monday to Sunday.**
@@ -99,17 +101,26 @@ Please follow this structure as closely as possible. The ideal response will hav
 
 
 /**
- * Extracts a JSON object from a string that might contain markdown backticks.
+ * Extracts a JSON object from a string that might contain markdown backticks or other text.
  * @param str The string to extract JSON from.
- * @returns The extracted JSON string.
+ * @returns The extracted JSON string, or the original string if no JSON object is found.
  */
 function extractJson(str: string): string {
-  const match = str.match(/```json\s*([\s\S]*?)\s*```|({[\s\S]*})/);
-  if (match) {
-    // If we matched the markdown block, return its content. Otherwise, return the matched object.
-    return match[1] || match[2];
+  // First, try to find the content within ```json ... ```
+  const jsonBlockMatch = str.match(/```json\s*([\s\S]*?)\s*```/);
+  if (jsonBlockMatch && jsonBlockMatch[1]) {
+    return jsonBlockMatch[1];
   }
-  return str; // Fallback to the original string if no JSON is found
+
+  // If no markdown block, find the first '{' and the last '}'
+  const firstBrace = str.indexOf('{');
+  const lastBrace = str.lastIndexOf('}');
+
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    return str.substring(firstBrace, lastBrace + 1);
+  }
+
+  return str; // Fallback to the original string
 }
 
 
