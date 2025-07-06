@@ -56,6 +56,23 @@ import {
   YAxis,
 } from 'recharts';
 
+// Helper to calculate the final macro value for an ingredient based on its quantity.
+function calculateMacro(macroPer100g: number | undefined | null, quantity_g: number | undefined | null): string {
+  if (macroPer100g === undefined || macroPer100g === null || quantity_g === undefined || quantity_g === null) {
+    return 'N/A';
+  }
+  return ((macroPer100g * quantity_g) / 100).toFixed(1);
+}
+
+// Specific version for calories, which shouldn't have decimals.
+function calculateCalories(caloriesPer100g: number | undefined | null, quantity_g: number | undefined | null): string {
+  if (caloriesPer100g === undefined || caloriesPer100g === null || quantity_g === undefined || quantity_g === null) {
+    return 'N/A';
+  }
+  return ((caloriesPer100g * quantity_g) / 100).toFixed(0);
+}
+
+
 export default function OptimizedMealPlanPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -453,23 +470,6 @@ export default function OptimizedMealPlanPage() {
                                 </TableHeader>
                                 <TableBody>
                                   {meal.ingredients.map((ing, ingIndex) => {
-                                    // This helper calculates the final macro value for an ingredient based on its quantity.
-                                    const calculateMacro = (macroPer100g: number | undefined) => {
-                                      // It's not a valid calculation if we don't have the base macro value OR the quantity.
-                                      if (macroPer100g === undefined || macroPer100g === null || ing.quantity_g === undefined || ing.quantity_g === null) {
-                                        return 'N/A';
-                                      }
-                                      return ((macroPer100g * ing.quantity_g) / 100).toFixed(1);
-                                    }
-
-                                    // This is a specific version of calculateMacro for calories, which shouldn't have decimals.
-                                    const calculateCalories = (caloriesPer100g: number | undefined) => {
-                                        if (caloriesPer100g === undefined || caloriesPer100g === null || ing.quantity_g === undefined || ing.quantity_g === null) {
-                                            return 'N/A';
-                                        }
-                                        return ((caloriesPer100g * ing.quantity_g) / 100).toFixed(0);
-                                    }
-
                                     return (
                                       <TableRow key={ingIndex}>
                                         <TableCell className='font-medium py-1.5'>
@@ -479,16 +479,16 @@ export default function OptimizedMealPlanPage() {
                                           {ing.quantity_g ?? 'N/A'}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {calculateCalories(ing.macros_per_100g?.calories)}
+                                          {calculateCalories(ing.macros_per_100g?.calories, ing.quantity_g)}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {calculateMacro(ing.macros_per_100g?.protein_g)}
+                                          {calculateMacro(ing.macros_per_100g?.protein_g, ing.quantity_g)}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                           {calculateMacro(ing.macros_per_100g?.carbs_g)}
+                                           {calculateMacro(ing.macros_per_100g?.carbs_g, ing.quantity_g)}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {calculateMacro(ing.macros_per_100g?.fat_g)}
+                                          {calculateMacro(ing.macros_per_100g?.fat_g, ing.quantity_g)}
                                         </TableCell>
                                       </TableRow>
                                     );
@@ -517,3 +517,5 @@ export default function OptimizedMealPlanPage() {
     </div>
   );
 }
+
+    
