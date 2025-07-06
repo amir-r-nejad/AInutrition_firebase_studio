@@ -3,11 +3,9 @@
 
 import { ai } from '@/ai/genkit';
 import {
-  AIGeneratedWeeklyMealPlanSchema,
   GeneratePersonalizedMealPlanInputSchema,
   GeneratePersonalizedMealPlanOutputSchema,
   AIUnvalidatedWeeklyMealPlanSchema,
-  type AIGeneratedMeal,
   type GeneratePersonalizedMealPlanInput,
   type GeneratePersonalizedMealPlanOutput,
 } from '@/lib/schemas';
@@ -37,11 +35,10 @@ export async function generatePersonalizedMealPlan(
   return generatePersonalizedMealPlanFlow(input);
 }
 
-// AI Prompt - Now receives explicit macro targets for each meal.
+// AI Prompt - Now WITHOUT an output schema to bypass Genkit's strict validation
 const prompt = ai.definePrompt({
   name: 'generatePersonalizedMealPlanPrompt',
-  input: { schema: PromptInputSchema }, // Use the new, more detailed schema
-  output: { schema: AIUnvalidatedWeeklyMealPlanSchema }, // AI still outputs the basic plan
+  input: { schema: PromptInputSchema },
   prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile and EXACT meal-by-meal macro targets provided below.
 
 **--- USER PROFILE ---**
@@ -100,7 +97,23 @@ Please follow this structure as closely as possible. The ideal response will hav
 `,
 });
 
-// Genkit Flow - Now acts as an orchestrator
+
+/**
+ * Extracts a JSON object from a string that might contain markdown backticks.
+ * @param str The string to extract JSON from.
+ * @returns The extracted JSON string.
+ */
+function extractJson(str: string): string {
+  const match = str.match(/```json\s*([\s\S]*?)\s*```|({[\s\S]*})/);
+  if (match) {
+    // If we matched the markdown block, return its content. Otherwise, return the matched object.
+    return match[1] || match[2];
+  }
+  return str; // Fallback to the original string if no JSON is found
+}
+
+
+// Genkit Flow - Now acts as an orchestrator and handles manual JSON parsing
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
@@ -162,18 +175,30 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       mealTargets: mealTargets,
     };
 
-    // 5. Call the prompt with explicit targets
-    const { output } = await prompt(promptInput);
+    // 5. Call the prompt and get the raw text response
+    const result = await prompt(promptInput);
+    const rawText = result.text;
     
-    if (!output) {
+    if (!rawText) {
       throw new Error('AI did not return a meal plan.');
     }
 
+    // Manually extract and parse the JSON from the raw text
+    const jsonString = extractJson(rawText);
+    let output;
+    try {
+        output = JSON.parse(jsonString);
+    } catch (e) {
+        console.error("Failed to parse JSON from AI response:", e);
+        console.error("Raw response from AI:", rawText);
+        throw new Error("AI returned a non-JSON response. Please try again.");
+    }
+    
     const validationResult =
       AIUnvalidatedWeeklyMealPlanSchema.safeParse(output);
     if (!validationResult.success) {
       console.error(
-        'AI output validation error:',
+        'AI output validation error after manual parsing:',
         validationResult.error.flatten()
       );
       throw new Error(
