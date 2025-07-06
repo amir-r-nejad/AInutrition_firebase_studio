@@ -65,9 +65,11 @@ You MUST generate a complete 7-day plan. For each day, you must generate a meal 
 {{/each}}
 
 
-**--- VERY STRICT JSON OUTPUT SCHEMA ---**
+**--- JSON OUTPUT STRUCTURE ---**
 Your entire response must be a single JSON object with ONLY ONE top-level key: "weeklyMealPlan".
 This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day from "Monday" to "Sunday". Do not calculate totals like "total_calories" yourself.
+
+Please follow this structure as closely as possible. The ideal response will have all fields completed.
 
 "weeklyMealPlan": [
   // This is an array of 7 day objects (Monday to Sunday).
@@ -89,18 +91,12 @@ This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day
   }
 ]
 
-**--- FINAL RULES & ABSOLUTELY CRITICAL CHECK ---**
+**--- FINAL RULES ---**
 1.  **You MUST generate a complete 7-day plan from Monday to Sunday.**
-2.  Use the exact field names and spelling as shown in the schema above.
+2.  Use the exact field names and spelling as shown in the schema example above.
 3.  DO NOT add any extra fields, properties, or keys at any level.
-4.  All numerical values must be realistic, positive, and correctly calculated.
-5.  **CRITICAL CHECK**: Before you finalize your response, you MUST perform this check on **EVERY SINGLE INGREDIENT** in the entire 7-day plan:
-    *   Every object in the \`ingredients\` array MUST contain the \`ingredient_name\` property.
-    *   Every object in the \`ingredients\` array MUST contain the \`quantity_g\` property.
-    *   Every object in the \`ingredients\` array MUST contain the \`macros_per_100g\` object.
-    *   Every \`macros_per_100g\` object MUST contain all four properties: \`calories\`, \`protein_g\`, \`carbs_g\`, and \`fat_g\`.
-    *   This is not optional. An incomplete ingredient object is an invalid response.
-6.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
+4.  All numerical values must be realistic and positive.
+5.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
 `,
 });
 
