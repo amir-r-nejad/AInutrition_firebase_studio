@@ -44,12 +44,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import {
-  getProfileDataForSuggestions,
-  updateMealSuggestion,
-} from '@/features/meal-suggestions/lib/data-service';
+
 import { useToast } from '@/hooks/use-toast';
 import {
   defaultMacroPercentages,
@@ -73,6 +69,11 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import PreferenceTextarea from './PreferenceTextarea';
+import {
+  getProfileDataForSuggestions,
+  updateMealSuggestion,
+} from '../../lib/data-service';
 
 function MealSuggestionsContent() {
   const searchParams = useSearchParams();
@@ -455,41 +456,6 @@ function MealSuggestionsContent() {
     }
   };
 
-  const renderPreferenceTextarea = (
-    fieldName: keyof MealSuggestionPreferencesValues,
-    label: string,
-    placeholder: string
-  ) => (
-    <FormField
-      control={preferenceForm.control}
-      name={fieldName}
-      render={({ field }) => {
-        const displayValue = Array.isArray(field.value)
-          ? field.value.join(',')
-          : field.value || '';
-        return (
-          <FormItem>
-            <FormLabel>{label}</FormLabel>
-            <FormControl>
-              <div>
-                <Textarea
-                  placeholder={placeholder}
-                  value={displayValue}
-                  onChange={(e) => field.onChange(e.target.value.split(','))}
-                  className='h-10 resize-none'
-                  onWheel={(e) =>
-                    (e.currentTarget as HTMLTextAreaElement).blur()
-                  }
-                />
-              </div>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        );
-      }}
-    />
-  );
-
   const showContentBelowSelection =
     selectedMealName && targetMacros && !isLoadingProfile;
 
@@ -561,46 +527,62 @@ function MealSuggestionsContent() {
                             </FormItem>
                           )}
                         />
-                        {renderPreferenceTextarea(
-                          'allergies',
-                          'Allergies (comma-separated)',
-                          'e.g., Peanuts, Shellfish'
-                        )}
-                        {renderPreferenceTextarea(
-                          'preferredCuisines',
-                          'Preferred Cuisines',
-                          'e.g., Italian, Mexican'
-                        )}
-                        {renderPreferenceTextarea(
-                          'dispreferredCuisines',
-                          'Dispreferred Cuisines',
-                          'e.g., Thai, French'
-                        )}
-                        {renderPreferenceTextarea(
-                          'preferredIngredients',
-                          'Preferred Ingredients',
-                          'e.g., Chicken, Broccoli'
-                        )}
-                        {renderPreferenceTextarea(
-                          'dispreferredIngredients',
-                          'Dispreferred Ingredients',
-                          'e.g., Tofu, Mushrooms'
-                        )}
-                        {renderPreferenceTextarea(
-                          'preferredMicronutrients',
-                          'Targeted Micronutrients (Optional)',
-                          'e.g., Vitamin D, Iron'
-                        )}
-                        {renderPreferenceTextarea(
-                          'medicalConditions',
-                          'Medical Conditions (Optional)',
-                          'e.g., Diabetes, Hypertension'
-                        )}
-                        {renderPreferenceTextarea(
-                          'medications',
-                          'Medications (Optional)',
-                          'e.g., Metformin, Lisinopril'
-                        )}
+
+                        <PreferenceTextarea
+                          fieldName='allergies'
+                          label='Allergies (comma-separated)'
+                          placeholder='e.g., Peanuts, Shellfish'
+                          control={preferenceForm.control}
+                        />
+
+                        <PreferenceTextarea
+                          fieldName='preferredCuisines'
+                          label='Preferred Cuisines'
+                          placeholder='e.g., Italian, Mexican'
+                          control={preferenceForm.control}
+                        />
+
+                        <PreferenceTextarea
+                          fieldName='dispreferredCuisines'
+                          label='Dispreferred Cuisines'
+                          placeholder='e.g., Thai, French'
+                          control={preferenceForm.control}
+                        />
+
+                        <PreferenceTextarea
+                          fieldName='preferredIngredients'
+                          label='Preferred Ingredients'
+                          placeholder='e.g., Chicken, Broccoli'
+                          control={preferenceForm.control}
+                        />
+
+                        <PreferenceTextarea
+                          fieldName='dispreferredIngredients'
+                          label='Dispreferred Ingredients'
+                          placeholder='e.g., Tofu, Mushrooms'
+                          control={preferenceForm.control}
+                        />
+
+                        <PreferenceTextarea
+                          fieldName='preferredMicronutrients'
+                          label='Targeted Micronutrients (Optional)'
+                          placeholder='e.g., Vitamin D, Iron'
+                          control={preferenceForm.control}
+                        />
+
+                        <PreferenceTextarea
+                          fieldName='medicalConditions'
+                          label='Medical Conditions (Optional)'
+                          placeholder='e.g., Diabetes, Hypertension'
+                          control={preferenceForm.control}
+                        />
+
+                        <PreferenceTextarea
+                          fieldName='medications'
+                          label='Medications (Optional)'
+                          placeholder='e.g., Metformin, Lisinopril'
+                          control={preferenceForm.control}
+                        />
                       </CardContent>
                     </Card>
                   </form>

@@ -12,7 +12,7 @@ import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
 import { forgotPasswordAction } from '../../actions/forgotPasswordAction';
 import { forgotPasswordSchema } from '../../schemas/authSchema';
-import SubmitButton from '../shared/SubmitButton';
+import SubmitButton from '../../../../components/ui/SubmitButton';
 
 function ForgotPasswordForm() {
   const [message, setMessage] = useState<string>('');

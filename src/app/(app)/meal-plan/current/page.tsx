@@ -4,12 +4,10 @@ import {
   adjustMealIngredients,
   type AdjustMealIngredientsInput,
 } from '@/ai/flows/adjust-meal-ingredients';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -17,7 +15,8 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import EditMealDialog from '@/features/meal-plan/components/EditMealDialog';
+import EditMealDialog from '@/features/meal-plan/components/current/EditMealDialog';
+import MealCardItem from '@/features/meal-plan/components/current/MealCardItem';
 import {
   generateInitialWeeklyPlan,
   getMealPlanData,
@@ -28,7 +27,6 @@ import { useToast } from '@/hooks/use-toast';
 import { daysOfWeek, defaultMacroPercentages } from '@/lib/constants';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import type { FullProfileType, Meal, WeeklyMealPlan } from '@/lib/schemas';
-import { Loader2, Pencil, Wand2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function CurrentMealPlanPage() {
@@ -336,74 +334,19 @@ export default function CurrentMealPlanPage() {
                 className='mt-6'
               >
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-                  {dayPlan.meals.map((meal, mealIndex) => {
-                    const mealKey = `${dayPlan.dayOfWeek}-${meal.name}-${mealIndex}`;
-                    const isOptimizing = optimizingMealKey === mealKey;
-                    return (
-                      <Card key={mealKey} className='flex flex-col'>
-                        <CardHeader>
-                          <CardTitle className='text-xl'>{meal.name}</CardTitle>
-                          {meal.customName && (
-                            <CardDescription>{meal.customName}</CardDescription>
-                          )}
-                        </CardHeader>
-                        <CardContent className='flex-grow'>
-                          {meal.ingredients.length > 0 ? (
-                            <ul className='space-y-1 text-sm text-muted-foreground'>
-                              {meal.ingredients.map((ing, ingIndex) => (
-                                <li key={ingIndex}>
-                                  {ing.name} - {ing.quantity}
-                                  {ing.unit}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className='text-sm text-muted-foreground italic'>
-                              No ingredients added yet.
-                            </p>
-                          )}
-                          <div className='mt-2 text-xs space-y-0.5'>
-                            <p>
-                              Calories:{' '}
-                              {meal.totalCalories?.toFixed(0) ?? 'N/A'}
-                            </p>
-                            <p>
-                              Protein: {meal.totalProtein?.toFixed(1) ?? 'N/A'}g
-                            </p>
-                            <p>
-                              Carbs: {meal.totalCarbs?.toFixed(1) ?? 'N/A'}g
-                            </p>
-                            <p>Fat: {meal.totalFat?.toFixed(1) ?? 'N/A'}g</p>
-                          </div>
-                        </CardContent>
-                        <CardFooter className='border-t pt-4 flex-wrap gap-2'>
-                          <Button
-                            variant='outline'
-                            size='sm'
-                            onClick={() => handleEditMeal(dayIndex, mealIndex)}
-                            disabled={isOptimizing}
-                          >
-                            <Pencil className='mr-2 h-4 w-4' /> Edit Meal
-                          </Button>
-                          <Button
-                            variant='default'
-                            size='sm'
-                            onClick={() =>
-                              handleOptimizeMeal(dayIndex, mealIndex)
-                            }
-                            disabled={isOptimizing || isLoadingProfile}
-                          >
-                            {isOptimizing ? (
-                              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                            ) : (
-                              <Wand2 className='mr-2 h-4 w-4' />
-                            )}
-                            {isOptimizing ? 'Optimizing...' : 'Optimize Meal'}
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    );
-                  })}
+                  {dayPlan.meals.map((meal, mealIndex) => (
+                    <MealCardItem
+                      key={mealIndex}
+                      meal={meal}
+                      dayPlan={dayPlan}
+                      mealIndex={mealIndex}
+                      dayIndex={dayIndex}
+                      disabled={isLoadingProfile}
+                      optimizingKey={optimizingMealKey}
+                      onEditMeal={handleEditMeal}
+                      onOptimizeMeal={handleOptimizeMeal}
+                    />
+                  ))}
                 </div>
               </TabsContent>
             ))}

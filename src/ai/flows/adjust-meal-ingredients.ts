@@ -50,58 +50,60 @@ export async function adjustMealIngredients(
 
 const prompt = ai.definePrompt({
   model: geminiModel,
-  name: 'adjustMealIngredientsPrompt',
+  name: 'strictMealAdjustmentPrompt',
   input: { type: 'json' },
   output: { type: 'json' },
-  prompt: `You are an expert nutritionist and chef. Your task is to adjust a given meal to precisely match target macronutrients, while strictly respecting the user's allergies and preferences.
+  prompt: `MEAL ADJUSTMENT TASK
 
-User Profile:
-{{#if userProfile.age}}Age: {{userProfile.age}}{{/if}}
-{{#if userProfile.gender}}Gender: {{userProfile.gender}}{{/if}}
-{{#if userProfile.activityLevel}}Activity Level: {{userProfile.activityLevel}}{{/if}}
-{{#if userProfile.dietGoal}}Diet Goal: {{userProfile.dietGoal}}{{/if}}
-{{#if userProfile.preferredDiet}}Preferred Diet: {{userProfile.preferredDiet}}{{/if}}
-{{#if userProfile.allergies.length}}Allergies: {{userProfile.allergies}}{{/if}}
-{{#if userProfile.dispreferredIngredients.length}}Dislikes: {{userProfile.dispreferredIngredients}}{{/if}}
-{{#if userProfile.preferredIngredients.length}}Preferred Ingredients: {{userProfile.preferredIngredients}}{{/if}}
+You must modify the provided meal to meet nutritional targets. Follow these rules exactly:
 
-Original Meal:
-{{originalMeal}}
+STEP 1: IDENTIFY THE MEAL
+- Meal Name: {{{originalMeal.name}}}
+- Meal Type: {{{originalMeal.customName}}}
+- Original Ingredients: {{{originalMeal.ingredients}}}
 
-Target Macros:
-{{targetMacros}}
+STEP 2: APPLY DIETARY RESTRICTIONS
+- User Diet: {{{userProfile.preferredDiet}}}
+- Allergies to avoid: {{{userProfile.allergies}}}
+- Ingredients to avoid: {{{userProfile.dispreferredIngredients}}}
+- Preferred ingredients: {{{userProfile.preferredIngredients}}}
 
-Strict Instructions for Output:
-- Your response MUST be a JSON object with ONLY these exact two top-level properties: "adjustedMeal" and "explanation".
-    - "adjustedMeal": This object MUST represent the modified meal and contain ONLY these exact properties:
-        - "name": string — The original name of the meal.
-        - "customName"?: string — (Optional) A custom name for the meal if provided by the user or if a significant change warrants a new descriptive name. If not applicable, omit this field.
-        - "ingredients": An array of objects, where each object represents an ingredient. Each ingredient object MUST contain ONLY these exact properties:
-            - "name": string — The name of the ingredient (e.g., "Chicken Breast").
-            - "quantity": number — The numerical amount of the ingredient.
-            - "unit": string — The unit of measurement for the quantity (e.g., "g", "ml", "cup", "unit").
-            - "calories": number — Calories for this specific quantity of the ingredient.
-            - "protein": number — Protein in grams for this specific quantity of the ingredient.
-            - "carbs": number — Carbohydrates in grams for this specific quantity of the ingredient.
-            - "fat": number — Fat in grams for this specific quantity of the ingredient.
-        - "totalCalories": number — The sum of calories from all ingredients in the adjusted meal.
-        - "totalProtein": number — The sum of protein (grams) from all ingredients in the adjusted meal.
-        - "totalCarbs": number — The sum of carbohydrates (grams) from all ingredients in the adjusted meal.
-        - "totalFat": number — The sum of fat (grams) from all ingredients in the adjusted meal.
-    - "explanation": string — A clear and concise explanation of the adjustments made, how they meet the target macros, and how user preferences/allergies were respected.
+STEP 3: ADJUST TO TARGETS
+- Target Calories: {{{targetMacros.calories}}}
+- Target Protein: {{{targetMacros.protein}}}g
+- Target Carbs: {{{targetMacros.carbs}}}g
+- Target Fat: {{{targetMacros.fat}}}g
 
-⚠️ Important Rules:
-- Modify ingredients (quantities, swaps, additions, removals) to match the target macros as closely as possible.
-- Ensure all "total" macro fields ("totalCalories", "totalProtein", "totalCarbs", "totalFat") are accurately calculated and summed based on the "ingredients" list.
-- Avoid all specified allergens and try to respect all dislikes and preferred ingredients.
-- Use the exact field names and spelling provided.
-- DO NOT add any extra fields, properties, or keys at any level of the JSON structure beyond what is explicitly defined above.
-- DO NOT include any introductory text, concluding remarks, markdown formatting (like json), or any other commentary outside of the pure JSON object.
-- All numerical values must be realistic and positive.
+STEP 4: RETURN ADJUSTED MEAL
+The adjusted meal must:
+1. Keep the same name: "{{{originalMeal.name}}}"
+2. Keep the same meal concept: "{{{originalMeal.customName}}}"
+3. Only modify ingredients and quantities to meet targets
+4. Respect all dietary restrictions
 
-Respond ONLY with the pure JSON object that strictly matches the following TypeScript type:
-{ adjustedMeal: { name: string; customName?: string; ingredients: { name: string; quantity: number; unit: string; calories: number; protein: number; carbs: number; fat: number; }[]; totalCalories: number; totalProtein: number; totalCarbs: number; totalFat: number; }; explanation: string; }
-`,
+OUTPUT FORMAT (JSON only):
+{
+  "adjustedMeal": {
+    "name": "{{{originalMeal.name}}}",
+    "customName": "adjusted version of {{{originalMeal.customName}}}",
+    "ingredients": [
+      {
+        "name": "string",
+        "quantity": number,
+        "unit": "string", 
+        "calories": number,
+        "protein": number,
+        "carbs": number,
+        "fat": number
+      }
+    ],
+    "totalCalories": number,
+    "totalProtein": number,
+    "totalCarbs": number,
+    "totalFat": number
+  },
+  "explanation": "What changes were made and why"
+}`,
 });
 
 const adjustMealIngredientsFlow = ai.defineFlow(

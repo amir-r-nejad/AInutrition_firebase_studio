@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { resetPasswordAction } from '../../actions/resetPasswordAction';
 import { newPasswordSchema } from '../../schemas/authSchema';
-import SubmitButton from '../shared/SubmitButton';
+import SubmitButton from '../../../../components/ui/SubmitButton';
 
 function ResetPasswordForn() {
   const router = useRouter();

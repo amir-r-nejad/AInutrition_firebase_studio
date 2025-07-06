@@ -1,6 +1,7 @@
 'use server';
 
 import { ai, geminiModel } from '@/ai/genkit';
+import { z } from 'zod';
 
 // Types
 export interface SupportChatbotInput {
@@ -16,47 +17,45 @@ export interface SupportChatbotOutput {
 export async function handleSupportQuery(
   input: SupportChatbotInput
 ): Promise<SupportChatbotOutput> {
-  return supportChatbotFlow(input.userQuery);
+  return supportChatbotFlow(input);
 }
-
-// AI Prompt
 
 const prompt = ai.definePrompt({
   model: geminiModel,
-  name: 'supportChatbotPrompt',
-  input: { type: 'json' },
-  output: { type: 'json' },
-  prompt: `You are a friendly and helpful support chatbot for "NutriPlan", a web application for personalized nutrition and meal planning.
+  name: 'forceResponsePrompt',
+  input: {
+    schema: z.object({
+      userQuery: z.string(),
+    }),
+  },
+  output: {
+    schema: z.object({
+      botResponse: z.string(),
+    }),
+  },
+  prompt: `You are a helpful support assistant for NutriPlan, a nutrition planning application.
 
-User Query: {{{input}}}
+Your task is to analyze the user's question and provide specific, actionable help about NutriPlan features.
 
-Your primary goal is to provide direct, helpful answers about NutriPlan's features ONLY.
+KNOWLEDGE BASE:
+- Dashboard: Overview of progress, key metrics, and quick access to important sections. Your central hub for tracking nutrition journey.
+- Profile: Manage personal information, medical details, exercise preferences, and physical metrics like weight and height.
+- Smart Calorie Planner: Set personalized daily calorie and macronutrient targets based on your goals.
+- Meal Suggestions: AI-powered meal ideas and recommendations.
+- Current Meal Plan: Manage and view your weekly meal plan.
+- AI Meal Plan: Generate optimized meal plans using AI.
 
-NutriPlan Features and their Descriptions (for your reference):
-- Dashboard: Provides an overview of your progress, key metrics, and quick access to important sections.
-- Profile: Allows you to manage your personal medical information, exercise preferences, and physical metrics.
-- Smart Calorie Planner: Helps you set personalized daily calorie and macronutrient targets based on your goals.
-- Macro Splitter: Enables you to effectively distribute your daily macronutrients across individual meals.
-- Meal Suggestions: Offers AI-powered meal ideas tailored to your preferences and goals.
-- Current Meal Plan: Lets you view, manage, and edit your personalized weekly meal plan.
-- AI Meal Plan: Generates a full, AI-optimized weekly meal plan based on your profile.
+RESPONSE GUIDELINES:
+1. Be direct and specific about the relevant feature
+2. Provide actionable information
+3. Keep responses concise but helpful
+4. Focus on what the user can do with the feature
+5. Do not ask follow-up questions
 
-Output Format Instructions:
-- Your response MUST be a JSON object.
-- This JSON object MUST contain ONLY one exact property: "botResponse".
-    - "botResponse": string — The generated response based on the conditional logic above.
+USER QUESTION: {{userQuery}}
 
-⚠️ Important Rules:
-- Use the exact field name and spelling provided: "botResponse".
-- DO NOT add any extra fields, properties, or keys to the JSON object.
-- DO NOT include any introductory text, concluding remarks, markdown formatting (like json), or any other commentary outside of the pure JSON object.
-- Respond clearly, concisely, and helpfully.
-
-Respond ONLY with the pure JSON object that strictly matches the following TypeScript type:
-{ botResponse: string; }`,
+Provide a helpful response about the relevant NutriPlan feature:`,
 });
-
-// Genkit Flow
 
 const supportChatbotFlow = ai.defineFlow(
   {
@@ -65,13 +64,19 @@ const supportChatbotFlow = ai.defineFlow(
     outputSchema: undefined,
   },
   async (input: SupportChatbotInput): Promise<SupportChatbotOutput> => {
-    const { output } = await prompt(input);
-    if (!output) {
+    console.log(input);
+
+    try {
+      const { output } = await prompt(input);
+
+      return output as SupportChatbotOutput;
+    } catch (error) {
+      console.error(error);
+
       return {
         botResponse:
           "I'm sorry, I couldn't process your request at the moment. Please try again.",
       };
     }
-    return output as SupportChatbotOutput;
   }
 );
