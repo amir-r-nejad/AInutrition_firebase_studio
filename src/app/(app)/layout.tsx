@@ -58,11 +58,6 @@ const navItems = [
   },
   { href: '/meal-plan/optimized', label: 'AI Meal Plan', icon: Bot },
   { section: 'Support' },
-  {
-    href: '/support/chatbot',
-    label: 'Chatbot Support',
-    icon: MessageSquareQuote,
-  },
   { href: '/support/faq', label: 'FAQ & Chatbot', icon: HelpCircle },
 ];
 
