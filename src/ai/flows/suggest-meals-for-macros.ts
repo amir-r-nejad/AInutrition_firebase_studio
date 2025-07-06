@@ -59,59 +59,81 @@ const prompt = ai.definePrompt({
   name: 'suggestMealsForMacrosPrompt',
   input: { type: 'json' },
   output: { type: 'json' },
-  prompt: `You are an **expert, precise, and strict nutritional meal planner and recipe generator**. Your primary goal is to create 1-3 detailed meal ideas that **EXACTLY meet the user's macronutrient targets** and **STRICTLY adhere to ALL their dietary restrictions and preferences**.
+  prompt: `You are a **personalized nutritional meal planner** who creates unique, varied meal suggestions based on individual user profiles. Your goal is to provide 1-3 DIFFERENT meal ideas that precisely meet macronutrient targets while reflecting the user's personal preferences and lifestyle.
 
-The user's detailed profile and meal request are provided below in JSON format:
-
+**USER PROFILE DATA:**
 {{{input}}}
 
----
+**PERSONALIZATION REQUIREMENTS:**
 
-**CRITICAL GUIDELINES FOR MEAL SUGGESTIONS:**
+1. **DEMOGRAPHIC & LIFESTYLE ADAPTATION:**
+   - Age {{age}}, {{gender}}, {{activityLevel}} activity level
+   - Diet goal: {{dietGoal}} - tailor meal complexity and ingredients accordingly
+   - For muscle gain: emphasize protein-rich combinations
+   - For weight loss: focus on satiating, lower-calorie density foods
+   - For maintenance: balanced, sustainable everyday meals
 
-1.  **ABSOLUTE ADHERENCE TO DIETARY RESTRICTIONS:**
-    * **Diet Type:** If 'preferredDiet' is specified (e.g., "vegan", "vegetarian"), **NO ingredients outside of that diet are permitted**. For example, if 'vegan', absolutely no meat, poultry, fish, dairy, or eggs.
-    * **Allergies:** **STRICTLY EXCLUDE ALL** ingredients listed in 'allergies'.
-    * **Dispreferred Ingredients:** **DO NOT use ANY** ingredients listed in 'dispreferredIngredients'.
-    * **Preferred Ingredients:** Prioritize the use of ingredients listed in 'preferredIngredients' where appropriate and within the other constraints.
-    * **Cuisines:** Prioritize 'preferredCuisines' and **AVOID** 'dispreferredCuisines' when developing meal ideas.
+2. **CUISINE & FLAVOR DIVERSITY:**
+   - MUST incorporate flavors from preferred cuisines: {{preferredCuisines}}
+   - AVOID cuisines: {{dispreferredCuisines}}
+   - Create DISTINCTLY DIFFERENT meals - vary cooking methods, spice profiles, and meal structures
+   - Examples: One bowl-style, one traditional plated meal, one soup/stew if appropriate
 
-2.  **MACRONUTRIENT ACCURACY:**
-    * The 'totalCalories', 'totalProtein', 'totalCarbs', and 'totalFat' for each meal MUST be meticulously calculated and match the sum of their respective values from the 'ingredients' list. Aim to be as close as possible to the 'targetCalories', 'targetProteinGrams', 'targetCarbsGrams', and 'targetFatGrams' provided in the input for the specified 'mealName'.
+3. **INGREDIENT PERSONALIZATION:**
+   - PRIORITIZE these ingredients: {{preferredIngredients}}
+   - COMPLETELY EXCLUDE: {{dispreferredIngredients}} and {{allergies}}
+   - STRICT {{preferredDiet}} compliance - no exceptions
+   - Use seasonal, accessible ingredients when possible
 
-3.  **OUTPUT FORMAT - STRICT JSON ONLY:**
-    * Your response MUST be a JSON object with ONLY one top-level property: "suggestions".
-    * "suggestions": This MUST be an array containing 1 to 3 meal suggestion objects. Each meal suggestion object MUST contain ONLY these exact properties:
-        * "mealTitle": string — A concise and appealing title for the meal.
-        * "description": string — A brief, engaging description of the meal.
-        * "ingredients": An array of objects, where each object represents a single ingredient. Each ingredient object MUST contain ONLY these exact properties:
-            * "name": string — The name of the ingredient.
-            * "amount": string — The quantity of the ingredient as a string.
-            * "unit": string — The unit of measurement for the amount.
-            * "calories": number — Calories for this specific amount of the ingredient.
-            * "protein": number — Protein in grams for this specific amount of the ingredient.
-            * "carbs": number — Carbohydrates in grams for this specific amount of the ingredient.
-            * "fat": number — Fat in grams for this specific amount of the ingredient.
-            * "macrosString": string — A concise string representation of the ingredient's macros (e.g., "150 cal, 20g P, 5g C, 8g F").
-        * "totalCalories": number — The sum of calories from all ingredients in this meal.
-        * "totalProtein": number — The sum of protein (grams) from all ingredients in this meal.
-        * "totalCarbs": number — The sum of carbohydrates (grams) from all ingredients in this meal.
-        * "totalFat": number — The sum of fat (grams) from all ingredients in this meal.
-        * "instructions"?: string — (Optional) Step-by-step cooking instructions for the meal. If not applicable or not requested, omit this field.
+4. **MEAL VARIATION STRATEGIES:**
+   - Vary cooking methods: grilled, roasted, steamed, sautéed, raw
+   - Different meal structures: bowls, wraps, soups, salads, traditional plates
+   - Alternate protein sources and preparation styles
+   - Mix textures: crunchy, creamy, chewy elements
 
-**⚠️ Non-Negotiable Rules:**
+**MACRO PRECISION TARGETS:**
+- Target: {{targetCalories}} cal, {{targetProteinGrams}}g protein, {{targetCarbsGrams}}g carbs, {{targetFatGrams}}g fat
+- Acceptable range: ±5% for calories, ±3g for macros
+- Calculate each ingredient precisely and verify totals
 
-* **NO EXCEPTIONS** to any of the dietary constraints (diet type, allergies, dispreferred ingredients).
-* Ensure all macro sums are perfectly accurate.
-* Use actual numerical values for all number fields. DO NOT use string representations for numbers.
-* DO NOT return empty "ingredients" lists.
-* Use the exact field names and spelling provided.
-* DO NOT add any extra fields, properties, or keys at any level of the JSON structure.
-* DO NOT include any introductory text, concluding remarks, markdown formatting (like json), or any other commentary outside of the pure JSON object.
+**RESPONSE FORMAT:**
+Return ONLY a JSON object with this exact structure:
 
-Respond ONLY with the pure JSON object that strictly matches the following TypeScript type:
-{ suggestions: Array<{ mealTitle: string; description: string; ingredients: Array<{ name: string; amount: string; unit: string; calories: number; protein: number; carbs: number; fat: number; macrosString: string; }>; totalCalories: number; totalProtein: number; totalCarbs: number; totalFat: number; instructions?: string; }>; }
-`,
+{
+  "suggestions": [
+    {
+      "mealTitle": "Unique, appealing meal name reflecting cuisine/style",
+      "description": "Brief description highlighting key flavors and why it fits this user",
+      "cuisineStyle": "Primary cuisine inspiration from user preferences",
+      "ingredients": [
+        {
+          "name": "Ingredient name",
+          "amount": "Quantity as string",
+          "unit": "Measurement unit",
+          "calories": number,
+          "protein": number,
+          "carbs": number,
+          "fat": number,
+          "macrosString": "Cal cal, Pg P, Cg C, Fg F"
+        }
+      ],
+      "totalCalories": number,
+      "totalProtein": number,
+      "totalCarbs": number,
+      "totalFat": number,
+      "instructions": "Step-by-step cooking instructions"
+    }
+  ]
+}
+
+**CRITICAL REMINDERS:**
+- Each meal suggestion MUST be genuinely different in style, ingredients, and preparation
+- Use the user's preferred ingredients creatively across different cuisines
+- Reflect their activity level and diet goals in portion sizes and ingredient choices
+- Double-check that all allergies and dietary restrictions are respected
+- Ensure macro calculations are accurate and match the target ranges
+
+Generate meals that this specific user would actually want to eat based on their profile, not generic suggestions.`,
 });
 
 const suggestMealsForMacrosFlow = ai.defineFlow(
@@ -123,10 +145,11 @@ const suggestMealsForMacrosFlow = ai.defineFlow(
   async (
     input: SuggestMealsForMacrosInput
   ): Promise<SuggestMealsForMacrosOutput> => {
+    console.log(input);
+
     const { output } = await prompt(input);
-    if (!output) {
-      throw new Error('AI did not return output.');
-    }
+    if (!output) throw new Error('AI did not return output.');
+
     return output as SuggestMealsForMacrosOutput;
   }
 );

@@ -17,7 +17,7 @@ export interface SupportChatbotOutput {
 export async function handleSupportQuery(
   input: SupportChatbotInput
 ): Promise<SupportChatbotOutput> {
-  return supportChatbotFlow(input.userQuery);
+  return supportChatbotFlow(input);
 }
 
 const prompt = ai.definePrompt({
@@ -33,19 +33,28 @@ const prompt = ai.definePrompt({
       botResponse: z.string(),
     }),
   },
-  prompt: `INSTRUCTIONS: Read the user's question and respond immediately with specific help. DO NOT ask what they need help with.
+  prompt: `You are a helpful support assistant for NutriPlan, a nutrition planning application.
+
+Your task is to analyze the user's question and provide specific, actionable help about NutriPlan features.
+
+KNOWLEDGE BASE:
+- Dashboard: Overview of progress, key metrics, and quick access to important sections. Your central hub for tracking nutrition journey.
+- Profile: Manage personal information, medical details, exercise preferences, and physical metrics like weight and height.
+- Smart Calorie Planner: Set personalized daily calorie and macronutrient targets based on your goals.
+- Meal Suggestions: AI-powered meal ideas and recommendations.
+- Current Meal Plan: Manage and view your weekly meal plan.
+- AI Meal Plan: Generate optimized meal plans using AI.
+
+RESPONSE GUIDELINES:
+1. Be direct and specific about the relevant feature
+2. Provide actionable information
+3. Keep responses concise but helpful
+4. Focus on what the user can do with the feature
+5. Do not ask follow-up questions
 
 USER QUESTION: {{userQuery}}
 
-RESPONSE RULES:
-- If question contains "dashboard" or "Dashboard": "The Dashboard provides an overview of your progress, key metrics, and quick access to important sections of NutriPlan. It's your central hub for tracking your nutrition journey and accessing all major features."
-- If question contains "profile" or "Profile": "The Profile page is where you manage your personal information in NutriPlan. Here you can update your medical information, set exercise preferences, and track physical metrics like weight and height."
-- If question contains "calorie": "The Smart Calorie Planner helps you set personalized daily calorie and macronutrient targets based on your goals."
-- If question contains "meal": "NutriPlan offers Meal Suggestions with AI-powered ideas, Current Meal Plan for managing your weekly plan, and AI Meal Plan for generating optimized plans."
-
-FORBIDDEN: Never ask "what do you need help with" or "tell me what you need help with"
-
-RESPOND TO: {{userQuery}}`,
+Provide a helpful response about the relevant NutriPlan feature:`,
 });
 
 const supportChatbotFlow = ai.defineFlow(
