@@ -697,31 +697,29 @@ export type AdjustMealIngredientsOutput = z.infer<
 // generate-meal-plan
 
 // A more lenient schema for parsing raw, potentially incomplete AI output.
-// Using .partial() makes all fields optional for the initial parse.
-const AIUnvalidatedIngredientSchema = z
-  .object({
-    name: z.string(),
-    quantity: z.union([z.string(), z.number()]),
-    unit: z.string(),
-    calories: z.number(),
-    protein: z.number(),
-    carbs: z.number(),
-    fat: z.number(),
-  })
-  .partial();
+// Use .optional() on each field to allow for partial data from the AI.
+const AIUnvalidatedIngredientSchema = z.object({
+  name: z.string().optional(),
+  quantity: z.union([z.string(), z.number()]).optional(),
+  unit: z.string().optional(),
+  calories: z.number().optional(),
+  protein: z.number().optional(),
+  carbs: z.number().optional(),
+  fat: z.number().optional(),
+});
 
 export const AIUnvalidatedMealSchema = z.object({
   meal_title: z.string().optional(),
-  ingredients: z.array(AIUnvalidatedIngredientSchema),
+  ingredients: z.array(AIUnvalidatedIngredientSchema).optional(),
 });
 
 export const AIUnvalidatedDayPlanSchema = z.object({
-  day: z.string(),
-  meals: z.array(AIUnvalidatedMealSchema),
+  day: z.string().optional(),
+  meals: z.array(AIUnvalidatedMealSchema).optional(),
 });
 
 export const AIUnvalidatedWeeklyMealPlanSchema = z.object({
-  weeklyMealPlan: z.array(AIUnvalidatedDayPlanSchema),
+  weeklyMealPlan: z.array(AIUnvalidatedDayPlanSchema).optional(),
 });
 
 export const GeneratePersonalizedMealPlanInputSchema = z.object({

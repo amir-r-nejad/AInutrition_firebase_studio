@@ -697,6 +697,7 @@ export type AdjustMealIngredientsOutput = z.infer<
 // generate-meal-plan
 
 // A more lenient schema for parsing raw, potentially incomplete AI output.
+// Use .optional() on each field to allow for partial data from the AI.
 const AIUnvalidatedIngredientSchema = z.object({
   name: z.string().optional(),
   quantity: z.union([z.string(), z.number()]).optional(),

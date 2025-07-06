@@ -151,6 +151,24 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
 
     const { weeklyMealPlan } = validationResult.data || { weeklyMealPlan: [] };
 
+    // SANITIZATION STEP: Ensure every ingredient has the required fields, providing defaults if missing.
+    // This makes the data robust for the rest of the application.
+    const sanitizedWeeklyMealPlan = weeklyMealPlan?.map(day => ({
+        ...day,
+        meals: day.meals?.map(meal => ({
+            ...meal,
+            ingredients: meal.ingredients?.map(ing => ({
+                name: ing.name ?? 'Unknown Ingredient',
+                quantity: ing.quantity ?? 0,
+                unit: ing.unit ?? 'unit',
+                calories: ing.calories ?? 0,
+                protein: ing.protein ?? 0,
+                carbs: ing.carbs ?? 0,
+                fat: ing.fat ?? 0,
+            })) ?? [],
+        })) ?? [],
+    })) ?? [];
+
     // 6. Calculate meal-level and weekly summary in reliable application code
     const weeklySummary = {
       totalCalories: 0,
@@ -159,8 +177,9 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       totalFat: 0,
     };
 
-    weeklyMealPlan?.forEach((day) => {
-      day.meals?.forEach((meal, index) => {
+    // Use the SANITIZED plan for all subsequent operations
+    sanitizedWeeklyMealPlan.forEach((day) => {
+      day.meals.forEach((meal, index) => {
         // Forcefully correct or add the meal_name based on its order.
         if (mealTargets[index]) {
           (meal as any).meal_name = mealTargets[index].mealName;
@@ -180,26 +199,13 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         let mealCarbs = 0;
         let mealFat = 0;
 
-        // Iterate over all ingredients, even if some are incomplete, to calculate totals from valid data.
-        // DO NOT FILTER THE INGREDIENTS ARRAY, as it leads to empty tables.
-        meal.ingredients?.forEach((ing) => {
-          // Only add to totals if the ingredient has all necessary data
-          if (
-            ing.name &&
-            ing.calories !== undefined &&
-            ing.calories !== null &&
-            ing.protein !== undefined &&
-            ing.protein !== null &&
-            ing.carbs !== undefined &&
-            ing.carbs !== null &&
-            ing.fat !== undefined &&
-            ing.fat !== null
-          ) {
+        // Iterate over all ingredients to calculate totals.
+        // This is safe now because of the sanitization step above.
+        meal.ingredients.forEach((ing) => {
             mealCalories += ing.calories;
             mealProtein += ing.protein;
             mealCarbs += ing.carbs;
             mealFat += ing.fat;
-          }
         });
 
         // Mutate the meal object to add calculated totals
@@ -217,7 +223,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     });
 
     const finalOutput: GeneratePersonalizedMealPlanOutput = {
-      weeklyMealPlan: (weeklyMealPlan || []) as any, // Cast is safe as we've corrected it
+      weeklyMealPlan: sanitizedWeeklyMealPlan as any, // Cast is safe because we sanitized it
       weeklySummary,
     };
 
