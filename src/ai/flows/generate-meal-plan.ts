@@ -27,7 +27,6 @@ const PromptInputSchema = GeneratePersonalizedMealPlanInputSchema.extend({
 });
 type PromptInput = z.infer<typeof PromptInputSchema>;
 
-
 // Main entry function
 export async function generatePersonalizedMealPlan(
   input: GeneratePersonalizedMealPlanInput
@@ -64,23 +63,21 @@ You MUST generate a complete 7-day plan. For each day, you must generate a meal 
 
 **--- JSON OUTPUT STRUCTURE ---**
 Your entire response must be a single JSON object with ONLY ONE top-level key: "weeklyMealPlan".
-This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day from "Monday" to "Sunday". Do not calculate totals like "total_calories" yourself.
+This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day from "Monday" to "Sunday".
+For each ingredient, provide the total macros FOR THE SPECIFIED QUANTITY, not per 100g.
 
-Please follow this structure as closely as possible. The ideal response will have all fields completed.
-
+Here is an example of the required structure:
 {
   "weeklyMealPlan": [
     {
       "day": "Monday",
       "meals": [
         {
-          "meal_title": "Oatmeal with Berries and Nuts",
+          "meal_title": "Grilled Chicken & Quinoa Bowl",
           "ingredients": [
-            {
-              "ingredient_name": "Oats",
-              "quantity_g": 50,
-              "macros_per_100g": { "calories": 389, "protein_g": 16.9, "carbs_g": 66.3, "fat_g": 6.9 }
-            }
+            { "name": "Chicken Breast", "quantity": 150, "unit": "g", "calories": 248, "protein": 46, "carbs": 0, "fat": 5 },
+            { "name": "Quinoa, cooked", "quantity": 1, "unit": "cup", "calories": 222, "protein": 8, "carbs": 39, "fat": 4 },
+            { "name": "Broccoli", "quantity": 1, "unit": "cup", "calories": 55, "protein": 4, "carbs": 11, "fat": 1 }
           ]
         }
       ]
@@ -88,15 +85,15 @@ Please follow this structure as closely as possible. The ideal response will hav
   ]
 }
 
+
 **--- FINAL RULES ---**
 1.  **You MUST generate a complete 7-day plan from Monday to Sunday.**
-2.  Use the exact field names and spelling as shown in the schema example above.
+2.  Use the exact field names and spelling as shown in the schema example above: "weeklyMealPlan", "day", "meals", "meal_title", "ingredients", "name", "quantity", "unit", "calories", "protein", "carbs", "fat".
 3.  DO NOT add any extra fields, properties, or keys at any level.
-4.  All numerical values must be realistic and positive.
+4.  All numerical values for macros must be realistic and positive numbers.
 5.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
 `,
 });
-
 
 /**
  * Extracts a JSON object from a string that might contain markdown backticks or other text.
@@ -120,7 +117,6 @@ function extractJson(str: string): string {
 
   return str; // Fallback to the original string
 }
-
 
 // Genkit Flow - Now acts as an orchestrator and handles manual JSON parsing
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
@@ -152,7 +148,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         'Could not calculate daily nutritional targets from the provided profile data.'
       );
     }
-    
+
     // 2. Determine meal distributions (user's custom or default)
     const distributions =
       input.mealDistributions && input.mealDistributions.length > 0
@@ -187,7 +183,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     // 5. Call the prompt and get the raw text response
     const result = await prompt(promptInput);
     const rawText = result.text;
-    
+
     if (!rawText) {
       throw new Error('AI did not return a meal plan.');
     }
@@ -196,13 +192,13 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     const jsonString = extractJson(rawText);
     let output;
     try {
-        output = JSON.parse(jsonString);
+      output = JSON.parse(jsonString);
     } catch (e) {
-        console.error("Failed to parse JSON from AI response:", e);
-        console.error("Raw response from AI:", rawText);
-        throw new Error("AI returned a non-JSON response. Please try again.");
+      console.error('Failed to parse JSON from AI response:', e);
+      console.error('Raw response from AI:', rawText);
+      throw new Error('AI returned a non-JSON response. Please try again.');
     }
-    
+
     const validationResult =
       AIUnvalidatedWeeklyMealPlanSchema.safeParse(output);
     if (!validationResult.success) {
@@ -250,18 +246,22 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         meal.ingredients.forEach((ing) => {
           // Only add to totals if the ingredient has all necessary data
           if (
-            ing.quantity_g !== undefined &&
-            ing.quantity_g !== null &&
-            ing.macros_per_100g
+            ing.name &&
+            ing.calories !== undefined &&
+            ing.calories !== null &&
+            ing.protein !== undefined &&
+            ing.protein !== null &&
+            ing.carbs !== undefined &&
+            ing.carbs !== null &&
+            ing.fat !== undefined &&
+            ing.fat !== null
           ) {
-            const quantityFactor = ing.quantity_g / 100.0;
-            mealCalories += (ing.macros_per_100g.calories ?? 0) * quantityFactor;
-            mealProtein += (ing.macros_per_100g.protein_g ?? 0) * quantityFactor;
-            mealCarbs += (ing.macros_per_100g.carbs_g ?? 0) * quantityFactor;
-            mealFat += (ing.macros_per_100g.fat_g ?? 0) * quantityFactor;
+            mealCalories += ing.calories;
+            mealProtein += ing.protein;
+            mealCarbs += ing.carbs;
+            mealFat += ing.fat;
           }
         });
-
 
         // Mutate the meal object to add calculated totals
         (meal as any).total_calories = mealCalories;

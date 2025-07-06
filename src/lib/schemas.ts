@@ -696,25 +696,23 @@ export type AdjustMealIngredientsOutput = z.infer<
 
 // generate-meal-plan
 
-// For raw, potentially incomplete AI output. This allows the AI to occasionally
-// miss a field without causing a hard validation failure. The application code
-// will then correct this data before using it.
+// A more lenient schema for parsing raw, potentially incomplete AI output.
+// Using .partial() makes all fields optional for the initial parse.
+const AIUnvalidatedIngredientSchema = z
+  .object({
+    name: z.string(),
+    quantity: z.union([z.string(), z.number()]),
+    unit: z.string(),
+    calories: z.number(),
+    protein: z.number(),
+    carbs: z.number(),
+    fat: z.number(),
+  })
+  .partial();
+
 export const AIUnvalidatedMealSchema = z.object({
   meal_title: z.string().optional(),
-  ingredients: z.array(
-    z.object({
-      ingredient_name: z.string(),
-      quantity_g: z.number().optional(),
-      macros_per_100g: z
-        .object({
-          calories: z.number(),
-          protein_g: z.number(),
-          carbs_g: z.number(),
-          fat_g: z.number(),
-        })
-        .optional(),
-    })
-  ),
+  ingredients: z.array(AIUnvalidatedIngredientSchema),
 });
 
 export const AIUnvalidatedDayPlanSchema = z.object({
@@ -725,7 +723,6 @@ export const AIUnvalidatedDayPlanSchema = z.object({
 export const AIUnvalidatedWeeklyMealPlanSchema = z.object({
   weeklyMealPlan: z.array(AIUnvalidatedDayPlanSchema),
 });
-
 
 export const GeneratePersonalizedMealPlanInputSchema = z.object({
   age: z.number(),
@@ -779,21 +776,22 @@ export type GeneratePersonalizedMealPlanInput = z.infer<
   typeof GeneratePersonalizedMealPlanInputSchema
 >;
 
+// The final, validated ingredient schema after processing. All fields are required.
+export const AIGeneratedIngredientSchema = z.object({
+  name: z.string(),
+  quantity: z.union([z.string(), z.number()]),
+  unit: z.string(),
+  calories: z.number(),
+  protein: z.number(),
+  carbs: z.number(),
+  fat: z.number(),
+});
+export type AIGeneratedIngredient = z.infer<typeof AIGeneratedIngredientSchema>;
+
 export const AIGeneratedMealSchema = z.object({
   meal_name: z.string(),
   meal_title: z.string(),
-  ingredients: z.array(
-    z.object({
-      ingredient_name: z.string(),
-      quantity_g: z.number(),
-      macros_per_100g: z.object({
-        calories: z.number(),
-        protein_g: z.number(),
-        carbs_g: z.number(),
-        fat_g: z.number(),
-      }),
-    })
-  ),
+  ingredients: z.array(AIGeneratedIngredientSchema),
   total_calories: z.number().optional(),
   total_protein_g: z.number().optional(),
   total_carbs_g: z.number().optional(),
@@ -806,10 +804,6 @@ export const DayPlanSchema = z.object({
   meals: z.array(AIGeneratedMealSchema),
 });
 export type DayPlan = z.infer<typeof DayPlanSchema>;
-
-export const AIGeneratedWeeklyMealPlanSchema = z.object({
-  weeklyMealPlan: z.array(DayPlanSchema),
-});
 
 export const GeneratePersonalizedMealPlanOutputSchema = z.object({
   weeklyMealPlan: z.array(DayPlanSchema),
