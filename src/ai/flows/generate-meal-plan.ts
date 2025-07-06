@@ -216,22 +216,20 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         let mealCarbs = 0;
         let mealFat = 0;
 
-        // Filter out incomplete ingredients and calculate totals
-        const validIngredients = meal.ingredients.filter(ing => 
-            ing.quantity_g !== undefined && ing.quantity_g !== null && 
+        // Iterate over all ingredients, even if some are incomplete, to calculate totals from valid data.
+        meal.ingredients.forEach((ing) => {
+          // Only add to totals if the ingredient has all necessary data
+          if (
+            ing.quantity_g !== undefined &&
+            ing.quantity_g !== null &&
             ing.macros_per_100g
-        );
-        
-        // Replace the original ingredients array with the sanitized one
-        (meal as any).ingredients = validIngredients;
-
-        validIngredients.forEach((ing) => {
-          // At this point, ing.quantity_g and ing.macros_per_100g are guaranteed to exist
-          const quantityFactor = ing.quantity_g! / 100.0;
-          mealCalories += ing.macros_per_100g!.calories * quantityFactor;
-          mealProtein += ing.macros_per_100g!.protein_g * quantityFactor;
-          mealCarbs += ing.macros_per_100g!.carbs_g * quantityFactor;
-          mealFat += ing.macros_per_100g!.fat_g * quantityFactor;
+          ) {
+            const quantityFactor = ing.quantity_g / 100.0;
+            mealCalories += (ing.macros_per_100g.calories ?? 0) * quantityFactor;
+            mealProtein += (ing.macros_per_100g.protein_g ?? 0) * quantityFactor;
+            mealCarbs += (ing.macros_per_100g.carbs_g ?? 0) * quantityFactor;
+            mealFat += (ing.macros_per_100g.fat_g ?? 0) * quantityFactor;
+          }
         });
 
 
