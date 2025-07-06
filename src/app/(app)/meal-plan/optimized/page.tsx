@@ -453,13 +453,21 @@ export default function OptimizedMealPlanPage() {
                                 </TableHeader>
                                 <TableBody>
                                   {meal.ingredients.map((ing, ingIndex) => {
-                                    const calculateMacro = (macro: number | undefined) => {
-                                      if (macro === undefined || macro === null) return 'N/A';
-                                      return ((macro * ing.quantity_g) / 100).toFixed(1);
+                                    // This helper calculates the final macro value for an ingredient based on its quantity.
+                                    const calculateMacro = (macroPer100g: number | undefined) => {
+                                      // It's not a valid calculation if we don't have the base macro value OR the quantity.
+                                      if (macroPer100g === undefined || macroPer100g === null || ing.quantity_g === undefined || ing.quantity_g === null) {
+                                        return 'N/A';
+                                      }
+                                      return ((macroPer100g * ing.quantity_g) / 100).toFixed(1);
                                     }
-                                    const calculateCalories = (calories: number | undefined) => {
-                                        if (calories === undefined || calories === null) return 'N/A';
-                                        return ((calories * ing.quantity_g) / 100).toFixed(0);
+
+                                    // This is a specific version of calculateMacro for calories, which shouldn't have decimals.
+                                    const calculateCalories = (caloriesPer100g: number | undefined) => {
+                                        if (caloriesPer100g === undefined || caloriesPer100g === null || ing.quantity_g === undefined || ing.quantity_g === null) {
+                                            return 'N/A';
+                                        }
+                                        return ((caloriesPer100g * ing.quantity_g) / 100).toFixed(0);
                                     }
 
                                     return (
@@ -468,19 +476,19 @@ export default function OptimizedMealPlanPage() {
                                           {ing.ingredient_name}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {ing.quantity_g}
+                                          {ing.quantity_g ?? 'N/A'}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {calculateCalories(ing.macros_per_100g.calories)}
+                                          {calculateCalories(ing.macros_per_100g?.calories)}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {calculateMacro(ing.macros_per_100g.protein_g)}
+                                          {calculateMacro(ing.macros_per_100g?.protein_g)}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                           {calculateMacro(ing.macros_per_100g.carbs_g)}
+                                           {calculateMacro(ing.macros_per_100g?.carbs_g)}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {calculateMacro(ing.macros_per_100g.fat_g)}
+                                          {calculateMacro(ing.macros_per_100g?.fat_g)}
                                         </TableCell>
                                       </TableRow>
                                     );
