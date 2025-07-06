@@ -89,15 +89,17 @@ This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day
   }
 ]
 
-**--- FINAL RULES & CRITICAL CHECK ---**
+**--- FINAL RULES & ABSOLUTELY CRITICAL CHECK ---**
 1.  **You MUST generate a complete 7-day plan from Monday to Sunday.**
-2.  Use the exact field names and spelling as shown in the schema above. Do NOT include a "meal_name" field in your output.
+2.  Use the exact field names and spelling as shown in the schema above.
 3.  DO NOT add any extra fields, properties, or keys at any level.
 4.  All numerical values must be realistic, positive, and correctly calculated.
-5.  **CRITICAL CHECK**: Before you finalize your response, you MUST perform these checks on every single part of the generated JSON:
-    *   **Meal Check:** Every object in the "meals" array MUST have the "meal_title" property with a descriptive name like "Grilled Chicken Salad".
-    *   **Ingredient Check:** Every object in the "ingredients" array MUST contain these three properties: "ingredient_name", "quantity_g", and "macros_per_100g".
-    *   **Macros Check:** Every "macros_per_100g" object MUST contain these four properties: "calories", "protein_g", "carbs_g", and "fat_g".
+5.  **CRITICAL CHECK**: Before you finalize your response, you MUST perform this check on **EVERY SINGLE INGREDIENT** in the entire 7-day plan:
+    *   Every object in the \`ingredients\` array MUST contain the \`ingredient_name\` property.
+    *   Every object in the \`ingredients\` array MUST contain the \`quantity_g\` property.
+    *   Every object in the \`ingredients\` array MUST contain the \`macros_per_100g\` object.
+    *   Every \`macros_per_100g\` object MUST contain all four properties: \`calories\`, \`protein_g\`, \`carbs_g\`, and \`fat_g\`.
+    *   This is not optional. An incomplete ingredient object is an invalid response.
 6.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
 `,
 });
@@ -196,11 +198,9 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     weeklyMealPlan.forEach((day) => {
       day.meals.forEach((meal, index) => {
         // Forcefully correct or add the meal_name based on its order.
-        // This makes the app resilient to the AI forgetting this field.
         if (mealTargets[index]) {
           (meal as any).meal_name = mealTargets[index].mealName;
         } else {
-          // Fallback in case of an unexpected mismatch
           (meal as any).meal_name = 'Unknown Meal';
         }
 
@@ -216,13 +216,24 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         let mealCarbs = 0;
         let mealFat = 0;
 
-        meal.ingredients.forEach((ing) => {
-          const quantityFactor = ing.quantity_g / 100.0;
-          mealCalories += ing.macros_per_100g.calories * quantityFactor;
-          mealProtein += ing.macros_per_100g.protein_g * quantityFactor;
-          mealCarbs += ing.macros_per_100g.carbs_g * quantityFactor;
-          mealFat += ing.macros_per_100g.fat_g * quantityFactor;
+        // Filter out incomplete ingredients and calculate totals
+        const validIngredients = meal.ingredients.filter(ing => 
+            ing.quantity_g !== undefined && ing.quantity_g !== null && 
+            ing.macros_per_100g
+        );
+        
+        // Replace the original ingredients array with the sanitized one
+        (meal as any).ingredients = validIngredients;
+
+        validIngredients.forEach((ing) => {
+          // At this point, ing.quantity_g and ing.macros_per_100g are guaranteed to exist
+          const quantityFactor = ing.quantity_g! / 100.0;
+          mealCalories += ing.macros_per_100g!.calories * quantityFactor;
+          mealProtein += ing.macros_per_100g!.protein_g * quantityFactor;
+          mealCarbs += ing.macros_per_100g!.carbs_g * quantityFactor;
+          mealFat += ing.macros_per_100g!.fat_g * quantityFactor;
         });
+
 
         // Mutate the meal object to add calculated totals
         (meal as any).total_calories = mealCalories;
