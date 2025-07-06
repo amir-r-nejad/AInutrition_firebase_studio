@@ -12,6 +12,7 @@ import {
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import { defaultMacroPercentages, mealNames } from '@/lib/constants';
 import { z } from 'zod';
+import { getAIApiErrorMessage } from '@/lib/utils';
 
 // Define a new schema for the prompt's specific input needs
 const MealTargetSchema = z.object({
@@ -34,91 +35,37 @@ export async function generatePersonalizedMealPlan(
   return generatePersonalizedMealPlanFlow(input);
 }
 
-// AI Prompt - Now WITHOUT an output schema to bypass Genkit's strict validation
+// AI Prompt - Now WITH an output schema to enforce JSON and a much simpler prompt
 const prompt = ai.definePrompt({
   name: 'generatePersonalizedMealPlanPrompt',
   input: { schema: PromptInputSchema },
-  prompt: `You are a professional AI nutritionist. Your task is to create a personalized weekly meal plan based on the user's profile and EXACT meal-by-meal macro targets provided below.
+  output: { schema: AIUnvalidatedWeeklyMealPlanSchema },
+  prompt: `You are a data conversion service. Your sole purpose is to convert user nutritional requirements into a valid JSON object representing a 7-day meal plan. You must adhere strictly to the provided JSON schema.
 
-**--- USER PROFILE ---**
-- Age: {{age}}
-- Gender: {{gender}}
-- Height: {{height_cm}} cm
-- Current Weight: {{current_weight}} kg
-- 1-Month Goal Weight: {{goal_weight_1m}} kg
-- Activity Level: {{activityLevel}}
-- Primary Diet Goal: {{dietGoalOnboarding}}
-{{#if preferredDiet}}- Dietary Preference: {{preferredDiet}}{{/if}}
-{{#if allergies.length}}- Allergies to Avoid: {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if dispreferredIngredients.length}}- Disliked Ingredients: {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if preferredCuisines.length}}- Preferred Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-
-**--- MEAL STRUCTURE & EXACT TARGETS ---**
-You MUST generate a complete 7-day plan. For each day, you must generate a meal for EACH of the following targets. The meal you create should be as close as possible to the specified macros.
-
+**USER DATA:**
+- **Profile:**
+  - **Dietary Goal:** {{dietGoalOnboarding}}
+  {{#if preferredDiet}}- **Dietary Preference:** {{preferredDiet}}{{/if}}
+  {{#if allergies.length}}- **Allergies to Avoid:** {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+  {{#if dispreferredIngredients.length}}- **Disliked Ingredients:** {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+  {{#if preferredCuisines.length}}- **Preferred Cuisines:** {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+- **Daily Meal Targets:**
 {{#each mealTargets}}
-- **{{this.mealName}}**: Target ~{{this.calories}} kcal, ~{{this.protein}}g Protein, ~{{this.carbs}}g Carbs, ~{{this.fat}}g Fat
+  - **{{this.mealName}}**: Target ~{{this.calories}} kcal, ~{{this.protein}}g Protein, ~{{this.carbs}}g Carbs, ~{{this.fat}}g Fat
 {{/each}}
 
-
-**--- JSON OUTPUT STRUCTURE ---**
-Your entire response must be a single JSON object with ONLY ONE top-level key: "weeklyMealPlan".
-This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day from "Monday" to "Sunday".
-For each ingredient, provide the total macros FOR THE SPECIFIED QUANTITY, not per 100g.
-
-Here is an example of the required structure:
-{
-  "weeklyMealPlan": [
-    {
-      "day": "Monday",
-      "meals": [
-        {
-          "meal_title": "Grilled Chicken & Quinoa Bowl",
-          "ingredients": [
-            { "name": "Chicken Breast", "quantity": 150, "unit": "g", "calories": 248, "protein": 46, "carbs": 0, "fat": 5 },
-            { "name": "Quinoa, cooked", "quantity": 1, "unit": "cup", "calories": 222, "protein": 8, "carbs": 39, "fat": 4 },
-            { "name": "Broccoli", "quantity": 1, "unit": "cup", "calories": 55, "protein": 4, "carbs": 11, "fat": 1 }
-          ]
-        }
-      ]
-    }
-  ]
-}
-
-
-**--- FINAL RULES ---**
-1.  **You MUST generate a complete 7-day plan from Monday to Sunday.**
-2.  Use the exact field names and spelling as shown in the schema example above: "weeklyMealPlan", "day", "meals", "meal_title", "ingredients", "name", "quantity", "unit", "calories", "protein", "carbs", "fat".
-3.  DO NOT add any extra fields, properties, or keys at any level.
-4.  All numerical values for macros must be realistic and positive numbers.
-5.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
+**CRITICAL INSTRUCTIONS FOR JSON OUTPUT:**
+1.  Your entire response MUST be a single, valid JSON object. Do not include any text, explanations, or markdown (like \`\`\`json) before or after the JSON object.
+2.  The root object MUST have one key: "weeklyMealPlan".
+3.  "weeklyMealPlan" MUST be an array of 7 objects, for "Monday" through "Sunday".
+4.  Each day object MUST have a "day" (string) and a "meals" (array).
+5.  Each meal object MUST have a "meal_title" (string) and an "ingredients" (array).
+6.  Each ingredient object MUST have "name" (string), "quantity" (number or string), "unit" (string), "calories" (number), "protein" (number), "carbs" (number), and "fat" (number).
+7.  Ensure all macronutrient values are realistic positive numbers for the specified quantity.
 `,
 });
 
-/**
- * Extracts a JSON object from a string that might contain markdown backticks or other text.
- * @param str The string to extract JSON from.
- * @returns The extracted JSON string, or the original string if no JSON object is found.
- */
-function extractJson(str: string): string {
-  // First, try to find the content within ```json ... ```
-  const jsonBlockMatch = str.match(/```json\s*([\s\S]*?)\s*```/);
-  if (jsonBlockMatch && jsonBlockMatch[1]) {
-    return jsonBlockMatch[1];
-  }
-
-  // If no markdown block, find the first '{' and the last '}'
-  const firstBrace = str.indexOf('{');
-  const lastBrace = str.lastIndexOf('}');
-
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    return str.substring(firstBrace, lastBrace + 1);
-  }
-
-  return str; // Fallback to the original string
-}
-
-// Genkit Flow - Now acts as an orchestrator and handles manual JSON parsing
+// Genkit Flow - Orchestrator and validator
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
@@ -180,30 +127,21 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       mealTargets: mealTargets,
     };
 
-    // 5. Call the prompt and get the raw text response
-    const result = await prompt(promptInput);
-    const rawText = result.text;
+    // 5. Call the prompt and get the structured output
+    const { output } = await prompt(promptInput);
 
-    if (!rawText) {
-      throw new Error('AI did not return a meal plan.');
+    if (!output) {
+      throw new Error(
+        getAIApiErrorMessage({ message: 'AI did not return a meal plan.' })
+      );
     }
 
-    // Manually extract and parse the JSON from the raw text
-    const jsonString = extractJson(rawText);
-    let output;
-    try {
-      output = JSON.parse(jsonString);
-    } catch (e) {
-      console.error('Failed to parse JSON from AI response:', e);
-      console.error('Raw response from AI:', rawText);
-      throw new Error('AI returned a non-JSON response. Please try again.');
-    }
-
+    // The initial parsing is now handled by Genkit. We just need to validate.
     const validationResult =
       AIUnvalidatedWeeklyMealPlanSchema.safeParse(output);
     if (!validationResult.success) {
       console.error(
-        'AI output validation error after manual parsing:',
+        'AI output validation error after Genkit parsing:',
         validationResult.error.flatten()
       );
       throw new Error(
@@ -243,6 +181,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         let mealFat = 0;
 
         // Iterate over all ingredients, even if some are incomplete, to calculate totals from valid data.
+        // DO NOT FILTER THE INGREDIENTS ARRAY, as it leads to empty tables.
         meal.ingredients.forEach((ing) => {
           // Only add to totals if the ingredient has all necessary data
           if (
