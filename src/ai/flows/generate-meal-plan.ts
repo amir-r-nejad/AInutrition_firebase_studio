@@ -70,13 +70,11 @@ Please follow this structure as closely as possible. The ideal response will hav
 
 {
   "weeklyMealPlan": [
-    // This is an array of 7 day objects (Monday to Sunday).
     {
-      "day": "Monday", // The full name of the day.
+      "day": "Monday",
       "meals": [
-        // This is an array of meal objects. The number of meals per day MUST match the number of targets in the "MEAL STRUCTURE & EXACT TARGETS" section.
         {
-          "meal_title": "Oatmeal with Berries and Nuts", // A specific, appealing title for the meal. This field is MANDATORY.
+          "meal_title": "Oatmeal with Berries and Nuts",
           "ingredients": [
             {
               "ingredient_name": "Oats",
