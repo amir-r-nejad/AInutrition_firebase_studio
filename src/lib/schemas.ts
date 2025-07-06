@@ -704,16 +704,14 @@ export const AIUnvalidatedMealSchema = z.object({
   meal_title: z.string().optional(),
   ingredients: z.array(
     z.object({
-      ingredient_name: z.string().optional(),
-      quantity_g: z.number().optional(),
-      macros_per_100g: z
-        .object({
-          calories: z.number().optional(),
-          protein_g: z.number().optional(),
-          carbs_g: z.number().optional(),
-          fat_g: z.number().optional(),
-        })
-        .optional(),
+      ingredient_name: z.string(),
+      quantity_g: z.number(),
+      macros_per_100g: z.object({
+        calories: z.number(),
+        protein_g: z.number(),
+        carbs_g: z.number(),
+        fat_g: z.number(),
+      }),
     })
   ),
   total_calories: z.number().optional(),

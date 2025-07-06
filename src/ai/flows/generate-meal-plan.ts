@@ -94,7 +94,10 @@ This "weeklyMealPlan" array MUST contain exactly 7 day objects, one for each day
 2.  Use the exact field names and spelling as shown in the schema above. Do NOT include a "meal_name" field in your output.
 3.  DO NOT add any extra fields, properties, or keys at any level.
 4.  All numerical values must be realistic, positive, and correctly calculated.
-5.  **CRITICAL CHECK**: Before you finalize your response, perform this check on every single meal object inside the "meals" array: It MUST contain the "meal_title" property with a descriptive name like "Grilled Chicken Salad" or "Scrambled Eggs with Spinach". This is not optional.
+5.  **CRITICAL CHECK**: Before you finalize your response, you MUST perform these checks on every single part of the generated JSON:
+    *   **Meal Check:** Every object in the "meals" array MUST have the "meal_title" property with a descriptive name like "Grilled Chicken Salad".
+    *   **Ingredient Check:** Every object in the "ingredients" array MUST contain these three properties: "ingredient_name", "quantity_g", and "macros_per_100g".
+    *   **Macros Check:** Every "macros_per_100g" object MUST contain these four properties: "calories", "protein_g", "carbs_g", and "fat_g".
 6.  Your entire response MUST be only the pure JSON object. Do not include any markdown formatting (like \`\`\`json), code blocks, or any other text before or after the JSON.
 `,
 });
@@ -214,21 +217,11 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         let mealFat = 0;
 
         meal.ingredients.forEach((ing) => {
-          // --- SAFETY NET for missing ingredient properties ---
-          const safeQuantity = ing.quantity_g ?? 0;
-          const safeMacros = ing.macros_per_100g ?? {
-            calories: 0,
-            protein_g: 0,
-            carbs_g: 0,
-            fat_g: 0,
-          };
-          // --- END SAFETY NET ---
-
-          const quantityFactor = safeQuantity / 100.0;
-          mealCalories += (safeMacros.calories || 0) * quantityFactor;
-          mealProtein += (safeMacros.protein_g || 0) * quantityFactor;
-          mealCarbs += (safeMacros.carbs_g || 0) * quantityFactor;
-          mealFat += (safeMacros.fat_g || 0) * quantityFactor;
+          const quantityFactor = ing.quantity_g / 100.0;
+          mealCalories += ing.macros_per_100g.calories * quantityFactor;
+          mealProtein += ing.macros_per_100g.protein_g * quantityFactor;
+          mealCarbs += ing.macros_per_100g.carbs_g * quantityFactor;
+          mealFat += ing.macros_per_100g.fat_g * quantityFactor;
         });
 
         // Mutate the meal object to add calculated totals
