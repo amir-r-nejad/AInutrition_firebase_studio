@@ -415,75 +415,79 @@ export default function OptimizedMealPlanPage() {
                     className='mt-6'
                   >
                     <div className='space-y-6'>
-                      {dayPlan.meals.map((meal, mealIndex) => (
-                        <Card key={mealIndex} className='shadow-md'>
-                          <CardHeader>
-                            <CardTitle className='text-xl font-semibold flex items-center'>
-                              <ChefHat className='mr-2 h-5 w-5 text-accent' />
-                              {meal.meal_title}
-                            </CardTitle>
-                            <CardDescription>{meal.meal_name}</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <h4 className='font-medium text-md mb-2 text-primary'>
-                              Ingredients:
-                            </h4>
-                            <ScrollArea className='w-full mb-4'>
-                              <Table className='min-w-[600px]'>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead className='w-[40%]'>
-                                      Ingredient
-                                    </TableHead>
-                                    <TableHead className='text-right w-[15%]'>
-                                      Calories
-                                    </TableHead>
-                                    <TableHead className='text-right w-[15%]'>
-                                      Protein (g)
-                                    </TableHead>
-                                    <TableHead className='text-right w-[15%]'>
-                                      Carbs (g)
-                                    </TableHead>
-                                    <TableHead className='text-right w-[15%]'>
-                                      Fat (g)
-                                    </TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {meal.ingredients.map((ing: AIGeneratedIngredient, ingIndex) => {
-                                    return (
-                                      <TableRow key={ingIndex}>
-                                        <TableCell className='font-medium py-1.5'>
-                                          {ing.name}
-                                        </TableCell>
-                                        <TableCell className='text-right py-1.5'>
-                                          {ing.calories?.toFixed(0) ?? 'N/A'}
-                                        </TableCell>
-                                        <TableCell className='text-right py-1.5'>
-                                           {ing.protein?.toFixed(1) ?? 'N/A'}
-                                        </TableCell>
-                                        <TableCell className='text-right py-1.5'>
-                                           {ing.carbs?.toFixed(1) ?? 'N/A'}
-                                        </TableCell>
-                                        <TableCell className='text-right py-1.5'>
-                                           {ing.fat?.toFixed(1) ?? 'N/A'}
-                                        </TableCell>
+                      {dayPlan.meals.map((meal, mealIndex) => {
+                          // Safeguard against rendering empty/invalid meal objects
+                          if (!meal.ingredients || meal.ingredients.length === 0) {
+                              return null;
+                          }
+                          return (
+                            <Card key={mealIndex} className='shadow-md'>
+                              <CardHeader>
+                                <CardTitle className='text-xl font-semibold flex items-center'>
+                                  <ChefHat className='mr-2 h-5 w-5 text-accent' />
+                                  {meal.meal_title}
+                                </CardTitle>
+                                <CardDescription>{meal.meal_name}</CardDescription>
+                              </CardHeader>
+                              <CardContent>
+                                <h4 className='font-medium text-md mb-2 text-primary'>
+                                  Ingredients:
+                                </h4>
+                                <ScrollArea className='w-full mb-4'>
+                                  <Table className='min-w-[500px]'>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className='w-[40%]'>
+                                          Ingredient
+                                        </TableHead>
+                                        <TableHead className='text-right'>
+                                          Calories
+                                        </TableHead>
+                                        <TableHead className='text-right'>
+                                          Protein (g)
+                                        </TableHead>
+                                        <TableHead className='text-right'>
+                                          Carbs (g)
+                                        </TableHead>
+                                        <TableHead className='text-right'>
+                                          Fat (g)
+                                        </TableHead>
                                       </TableRow>
-                                    );
-                                  })}
-                                </TableBody>
-                              </Table>
-                              <ScrollBar orientation='horizontal' />
-                            </ScrollArea>
-                            <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
-                              Total: {(meal.total_calories ?? 0).toFixed(0)} kcal |
-                              Protein: {(meal.total_protein_g ?? 0).toFixed(1)}g |
-                              Carbs: {(meal.total_carbs_g ?? 0).toFixed(1)}g | Fat:{' '}
-                              {(meal.total_fat_g ?? 0).toFixed(1)}g
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                                    </TableHeader>
+                                    <TableBody>
+                                      {meal.ingredients.map((ing: AIGeneratedIngredient, ingIndex) => (
+                                          <TableRow key={ingIndex}>
+                                            <TableCell className='font-medium py-1.5'>
+                                              {ing.name}
+                                            </TableCell>
+                                            <TableCell className='text-right py-1.5'>
+                                              {ing.calories?.toFixed(0) ?? 'N/A'}
+                                            </TableCell>
+                                            <TableCell className='text-right py-1.5'>
+                                              {ing.protein?.toFixed(1) ?? 'N/A'}
+                                            </TableCell>
+                                            <TableCell className='text-right py-1.5'>
+                                              {ing.carbs?.toFixed(1) ?? 'N/A'}
+                                            </TableCell>
+                                            <TableCell className='text-right py-1.5'>
+                                              {ing.fat?.toFixed(1) ?? 'N/A'}
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                    </TableBody>
+                                  </Table>
+                                  <ScrollBar orientation='horizontal' />
+                                </ScrollArea>
+                                <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
+                                  Total: {(meal.total_calories ?? 0).toFixed(0)} kcal |
+                                  Protein: {(meal.total_protein_g ?? 0).toFixed(1)}g |
+                                  Carbs: {(meal.total_carbs_g ?? 0).toFixed(1)}g | Fat:{' '}
+                                  {(meal.total_fat_g ?? 0).toFixed(1)}g
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
                     </div>
                   </TabsContent>
                 ))}
@@ -495,5 +499,3 @@ export default function OptimizedMealPlanPage() {
     </div>
   );
 }
-
-    
