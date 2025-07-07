@@ -197,13 +197,10 @@ export default function OptimizedMealPlanPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Construct the new, simpler input for the AI flow
+      // Construct the new, simpler input for the AI flow.
+      // This only includes targets and direct food preferences, no general profile info.
       const input: GeneratePersonalizedMealPlanInput = {
-        mealTargets, // Pass the pre-calculated targets
-        // Pass the context
-        age: profileData.age ?? undefined,
-        gender: profileData.gender ?? undefined,
-        dietGoalOnboarding: profileData.dietGoalOnboarding ?? undefined,
+        mealTargets,
         preferredDiet: profileData.preferredDiet ?? undefined,
         allergies: profileData.allergies ?? undefined,
         dispreferredCuisines: profileData.dispreferredCuisines ?? undefined,
@@ -211,8 +208,6 @@ export default function OptimizedMealPlanPage() {
         dispreferredIngredients:
           profileData.dispreferredIngredients ?? undefined,
         preferredIngredients: profileData.preferredIngredients ?? undefined,
-        medicalConditions: profileData.medicalConditions ?? undefined,
-        medications: profileData.medications ?? undefined,
       };
       
       const result = await generatePersonalizedMealPlan(input);
