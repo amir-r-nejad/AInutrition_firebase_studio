@@ -40,27 +40,47 @@ const prompt = ai.definePrompt({
   name: 'generatePersonalizedMealPlanPrompt',
   input: { schema: PromptInputSchema },
   output: { schema: AIUnvalidatedWeeklyMealPlanSchema },
-  prompt: `You are a data conversion service. Your sole purpose is to convert user nutritional requirements into a valid JSON object representing a 7-day meal plan. You must adhere strictly to the provided JSON schema.
+  prompt: `You are a highly precise nutritional data generation service. Your ONLY task is to create a list of meals for a single day, {{dayOfWeek}}, that strictly matches the provided macronutrient targets for each meal.
 
-**USER DATA:**
-- **Dietary Goal:** {{dietGoalOnboarding}}
-{{#if preferredDiet}}- **Dietary Preference:** {{preferredDiet}}{{/if}}
-{{#if allergies.length}}- **Allergies to Avoid:** {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if dispreferredIngredients.length}}- **Disliked Ingredients:** {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if preferredCuisines.length}}- **Preferred Cuisines:** {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-- **Daily Meal Targets:**
+**USER PROFILE (FOR CONTEXT ONLY - DO NOT REPEAT IN OUTPUT):**
+- Age: {{age}}
+- Gender: {{gender}}
+- Dietary Goal: {{dietGoalOnboarding}}
+{{#if preferredDiet}}- Dietary Preference: {{preferredDiet}}{{/if}}
+{{#if allergies.length}}- Allergies to Avoid: {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredIngredients.length}}- Disliked Ingredients: {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredIngredients.length}}- Favorite Ingredients: {{#each preferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredCuisines.length}}- Favorite Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredCuisines.length}}- Cuisines to Avoid: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if medicalConditions.length}}- Medical Conditions: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if medications.length}}- Medications: {{#each medications}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+
+**ABSOLUTE REQUIREMENTS FOR MEAL GENERATION:**
+
+For each meal listed below, you MUST generate a corresponding meal object. The total macros for the ingredients you list for each meal MUST fall within a 5% tolerance of the targets.
+
+**EXAMPLE CALCULATION:**
+- If Target Calories = 500, a 5% tolerance means the sum of your ingredient calories must be between 475 and 525.
+- If Target Protein = 30g, a 5% tolerance means the sum of your ingredient protein must be between 28.5g and 31.5g.
+- **YOU MUST PERFORM THIS CHECK FOR EVERY MEAL AND EVERY MACRONUTRIENT (CALORIES, PROTEIN, CARBS, FAT).**
+
+**MEAL TARGETS FOR {{dayOfWeek}} (FROM USER'S MACRO SPLITTER):**
+You are being provided with specific macronutrient targets for each meal. These targets were set by the user in the "Macro Splitter" tool. It is absolutely critical that you respect these targets.
+
 {{#each mealTargets}}
-  - **{{this.mealName}}**: Target ~{{this.calories}} kcal, ~{{this.protein}}g Protein, ~{{this.carbs}}g Carbs, ~{{this.fat}}g Fat
+- **Meal: {{this.mealName}}**
+  - **TARGET Calories:** {{this.calories}} kcal
+  - **TARGET Protein:** {{this.protein}}g
+  - **TARGET Carbohydrates:** {{this.carbs}}g
+  - **TARGET Fat:** {{this.fat}}g
 {{/each}}
 
-**CRITICAL INSTRUCTIONS FOR JSON OUTPUT:**
-1.  Your entire response MUST be a single, valid JSON object. Do not include any text, explanations, or markdown (like \`\`\`json) before or after the JSON object.
-2.  The root object MUST have one key: "weeklyMealPlan".
-3.  "weeklyMealPlan" MUST be an array of 7 objects, for "Monday" through "Sunday".
-4.  Each day object MUST have a "day" (string) and a "meals" (array).
-5.  Each meal object MUST have a "meal_title" (string) and an "ingredients" (array).
-6.  Each ingredient object MUST have "name" (string, include quantity like "Chicken Breast (150g)"), "calories" (number), "protein" (number), "carbs" (number), and "fat" (number).
-7.  Ensure all macronutrient values are realistic positive numbers for the specified quantity.
+**CRITICAL OUTPUT INSTRUCTIONS:**
+1.  Respond with ONLY a valid JSON object matching the provided schema. Do NOT include any text, notes, greetings, or markdown like \`\`\`json outside the JSON object.
+2.  For each meal in the targets, create a corresponding meal object in the "meals" array.
+3.  Each meal object MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array.
+4.  For each ingredient object MUST have a "name", and the precise "calories", "protein", "carbs", and "fat" values for the portion used in the meal. All values must be numbers.
+5.  **Before finalizing your output, you MUST double-check your math.** Sum the macros for each ingredient list to ensure the totals for each meal are within the 5% tolerance of the targets provided above. If they are not, you must adjust the ingredients and recalculate until they are. ONLY output the final, correct version.
 `,
 });
 
@@ -127,7 +147,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     };
 
     // 5. Call the prompt and get the structured output
-    const { output } = await prompt(promptInput);
+    const { output } = await prompt(promptInput as any);
 
     if (!output) {
       throw new Error(
@@ -154,7 +174,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     // This makes the data robust for the rest of the application.
     const sanitizedWeeklyMealPlan = weeklyMealPlan?.map(day => ({
         ...day,
-        meals: day.meals?.map(meal => ({
+        meals: day.meals?.filter(meal => meal && meal.ingredients && meal.ingredients.length > 0).map(meal => ({
             ...meal,
             ingredients: meal.ingredients?.map(ing => ({
                 name: ing.name ?? 'Unknown Ingredient',
@@ -227,3 +247,5 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     return finalOutput;
   }
 );
+
+    
