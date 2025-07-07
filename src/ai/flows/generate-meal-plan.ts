@@ -64,8 +64,14 @@ const dailyPrompt = ai.definePrompt({
 
 
 **MEAL TARGETS FOR TODAY ({{dayOfWeek}}):**
+You MUST create meals that adhere to the following targets. The total calories, protein, carbs, and fat for each meal suggestion MUST be within a 5% margin of error of the target values provided.
+
 {{#each mealTargets}}
-- **{{this.mealName}}**: Target ~{{this.calories}} kcal, ~{{this.protein}}g Protein, ~{{this.carbs}}g Carbs, ~{{this.fat}}g Fat
+- **{{this.mealName}}**:
+  - Target Calories: {{this.calories}} kcal
+  - Target Protein: {{this.protein}}g
+  - Target Carbohydrates: {{this.carbs}}g
+  - Target Fat: {{this.fat}}g
 {{/each}}
 
 **CRITICAL OUTPUT INSTRUCTIONS:**
@@ -74,6 +80,7 @@ const dailyPrompt = ai.definePrompt({
 3.  For each meal in the targets, create a corresponding meal object in the "meals" array.
 4.  Each meal object MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array.
 5.  Each ingredient object MUST have a "name", "calories", "protein", "carbs", and "fat". All values must be numbers.
+6.  You MUST calculate the total macros for each meal based on its ingredients and ensure they are within a 5% margin of the targets specified above.
 `,
 });
 
@@ -228,5 +235,3 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     return finalOutput;
   }
 );
-
-    
