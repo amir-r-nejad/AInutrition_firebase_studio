@@ -35,14 +35,14 @@ export async function generatePersonalizedMealPlan(
   return generatePersonalizedMealPlanFlow(input);
 }
 
-// AI Prompt - Simplified to be a pure data conversion task with a clear example.
+// AI Prompt - Now WITH an output schema to enforce JSON and a much simpler prompt
 const prompt = ai.definePrompt({
   name: 'generatePersonalizedMealPlanPrompt',
   input: { schema: PromptInputSchema },
-  // REMOVED output schema to handle parsing manually for robustness.
-  prompt: `You are a JSON generation service. Your only job is to create a valid JSON object representing a 7-day meal plan based on user data.
+  output: { schema: AIUnvalidatedWeeklyMealPlanSchema },
+  prompt: `You are a data conversion service. Your sole purpose is to convert user nutritional requirements into a valid JSON object representing a 7-day meal plan. You must adhere strictly to the provided JSON schema.
 
-**USER DATA & TARGETS:**
+**USER DATA:**
 - **Dietary Goal:** {{dietGoalOnboarding}}
 {{#if preferredDiet}}- **Dietary Preference:** {{preferredDiet}}{{/if}}
 {{#if allergies.length}}- **Allergies to Avoid:** {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
@@ -53,84 +53,18 @@ const prompt = ai.definePrompt({
   - **{{this.mealName}}**: Target ~{{this.calories}} kcal, ~{{this.protein}}g Protein, ~{{this.carbs}}g Carbs, ~{{this.fat}}g Fat
 {{/each}}
 
-**OUTPUT FORMAT INSTRUCTIONS:**
-Your response MUST be ONLY a single, valid JSON object. Do not add any extra text, explanations, or markdown. The JSON structure MUST follow this example:
-
-\`\`\`json
-{
-  "weeklyMealPlan": [
-    {
-      "day": "Monday",
-      "meals": [
-        {
-          "meal_title": "Example Breakfast: Scrambled Eggs",
-          "ingredients": [
-            {
-              "name": "Large Eggs",
-              "calories": 140,
-              "protein": 12,
-              "carbs": 1,
-              "fat": 10
-            },
-            {
-              "name": "Whole Wheat Toast",
-              "calories": 80,
-              "protein": 4,
-              "carbs": 15,
-              "fat": 1
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-\`\`\`
-
-Now, generate the full 7-day meal plan based on the user data provided above, strictly following this JSON format.
+**CRITICAL INSTRUCTIONS FOR JSON OUTPUT:**
+1.  Your entire response MUST be a single, valid JSON object. Do not include any text, explanations, or markdown (like \`\`\`json) before or after the JSON object.
+2.  The root object MUST have one key: "weeklyMealPlan".
+3.  "weeklyMealPlan" MUST be an array of 7 objects, for "Monday" through "Sunday".
+4.  Each day object MUST have a "day" (string) and a "meals" (array).
+5.  Each meal object MUST have a "meal_title" (string) and an "ingredients" (array).
+6.  Each ingredient object MUST have "name" (string), "quantity" (string or number), "unit" (string), "calories" (number), "protein" (number), "carbs" (number), and "fat" (number).
+7.  Ensure all macronutrient values are realistic positive numbers for the specified quantity.
 `,
 });
 
-/**
- * Extracts a JSON object from a string that might contain markdown backticks or other text.
- * @param text The string to parse.
- * @returns The parsed JSON object or null if not found.
- */
-function extractJson(text: string) {
-  // First, try to find JSON within ```json ... ```
-  const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
-  const match = text.match(jsonRegex);
-
-  if (match && match[1]) {
-    try {
-      return JSON.parse(match[1]);
-    } catch (e) {
-      console.error('Failed to parse JSON from markdown block', e);
-      // Fall through to try parsing the whole string
-    }
-  }
-
-  // If no markdown block, find the first '{' and last '}'
-  const firstBrace = text.indexOf('{');
-  const lastBrace = text.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    const jsonString = text.substring(firstBrace, lastBrace + 1);
-    try {
-      return JSON.parse(jsonString);
-    } catch (e) {
-      console.error('Failed to parse JSON from substring', e);
-    }
-  }
-  
-  // As a last resort, try parsing the whole string
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    return null;
-  }
-}
-
-// Genkit Flow - Now with manual JSON parsing for robustness
+// Genkit Flow - Orchestrator and validator
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
@@ -192,31 +126,21 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       mealTargets: mealTargets,
     };
 
-    // 5. Call the prompt and get the raw text output
-    const response = await prompt(promptInput);
-    const rawText = response.text;
-    
-    if (!rawText) {
-       throw new Error(
-        getAIApiErrorMessage({ message: 'AI did not return any text response.' })
-      );
-    }
+    // 5. Call the prompt and get the structured output
+    const { output } = await prompt(promptInput);
 
-    // 6. Extract JSON from the raw text
-    const parsedOutput = extractJson(rawText);
-
-    if (!parsedOutput) {
+    if (!output) {
       throw new Error(
-        getAIApiErrorMessage({ message: 'AI returned a non-JSON response. Please try again.' })
+        getAIApiErrorMessage({ message: 'AI did not return a meal plan.' })
       );
     }
 
-    // 7. Validate the parsed output with our lenient schema
+    // The initial parsing is now handled by Genkit. We just need to validate.
     const validationResult =
-      AIUnvalidatedWeeklyMealPlanSchema.safeParse(parsedOutput);
+      AIUnvalidatedWeeklyMealPlanSchema.safeParse(output);
     if (!validationResult.success) {
       console.error(
-        'AI output validation error after manual parsing:',
+        'AI output validation error after Genkit parsing:',
         validationResult.error.flatten()
       );
       throw new Error(
@@ -226,13 +150,16 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
 
     const { weeklyMealPlan } = validationResult.data || { weeklyMealPlan: [] };
 
-    // 8. SANITIZATION & CALCULATION STEP
+    // SANITIZATION STEP: Ensure every ingredient has the required fields, providing defaults if missing.
+    // This makes the data robust for the rest of the application.
     const sanitizedWeeklyMealPlan = weeklyMealPlan?.map(day => ({
         ...day,
         meals: day.meals?.map(meal => ({
             ...meal,
             ingredients: meal.ingredients?.map(ing => ({
                 name: ing.name ?? 'Unknown Ingredient',
+                quantity: ing.quantity ?? 'N/A',
+                unit: ing.unit ?? '',
                 calories: ing.calories ?? 0,
                 protein: ing.protein ?? 0,
                 carbs: ing.carbs ?? 0,
@@ -241,6 +168,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         })) ?? [],
     })) ?? [];
 
+    // 6. Calculate meal-level and weekly summary in reliable application code
     const weeklySummary = {
       totalCalories: 0,
       totalProtein: 0,
@@ -248,14 +176,17 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       totalFat: 0,
     };
 
+    // Use the SANITIZED plan for all subsequent operations
     sanitizedWeeklyMealPlan.forEach((day) => {
       day.meals.forEach((meal, index) => {
+        // Forcefully correct or add the meal_name based on its order.
         if (mealTargets[index]) {
           (meal as any).meal_name = mealTargets[index].mealName;
         } else {
           (meal as any).meal_name = 'Unknown Meal';
         }
 
+        // Add a fallback for meal_title if the AI forgets it
         if (!meal.meal_title) {
           (meal as any).meal_title = `AI Generated ${
             mealTargets[index]?.mealName || 'Meal'
@@ -267,6 +198,8 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         let mealCarbs = 0;
         let mealFat = 0;
 
+        // Iterate over all ingredients to calculate totals.
+        // This is safe now because of the sanitization step above.
         meal.ingredients.forEach((ing) => {
             mealCalories += ing.calories;
             mealProtein += ing.protein;
@@ -274,11 +207,13 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
             mealFat += ing.fat;
         });
 
+        // Mutate the meal object to add calculated totals
         (meal as any).total_calories = mealCalories;
         (meal as any).total_protein_g = mealProtein;
         (meal as any).total_carbs_g = mealCarbs;
         (meal as any).total_fat_g = mealFat;
 
+        // Add meal totals to the weekly summary
         weeklySummary.totalCalories += (meal as any).total_calories;
         weeklySummary.totalProtein += (meal as any).total_protein_g;
         weeklySummary.totalCarbs += (meal as any).total_carbs_g;
@@ -287,7 +222,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     });
 
     const finalOutput: GeneratePersonalizedMealPlanOutput = {
-      weeklyMealPlan: sanitizedWeeklyMealPlan as any,
+      weeklyMealPlan: sanitizedWeeklyMealPlan as any, // Cast is safe because we sanitized it
       weeklySummary,
     };
 
