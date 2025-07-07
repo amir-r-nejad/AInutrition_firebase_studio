@@ -11,12 +11,7 @@ import {
   type AIGeneratedMeal,
   type GeneratePersonalizedMealPlanInput,
 } from '@/lib/schemas';
-import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
-import {
-  defaultMacroPercentages,
-  mealNames,
-  daysOfWeek,
-} from '@/lib/constants';
+import { daysOfWeek } from '@/lib/constants';
 import { z } from 'zod';
 import { getAIApiErrorMessage } from '@/lib/utils';
 
@@ -101,7 +96,7 @@ You are being provided with specific macronutrient targets for each meal. These 
 `,
 });
 
-// The flow takes the full user profile, calculates targets, and then iterates to generate a plan.
+// The flow takes the pre-calculated targets and user context and iterates to generate a plan.
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
@@ -111,53 +106,6 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
   async (
     input: GeneratePersonalizedMealPlanInput
   ): Promise<GeneratePersonalizedMealPlanOutput> => {
-    // 1. Calculate total daily targets from the provided input object
-    const dailyTargets = calculateEstimatedDailyTargets({
-      age: input.age,
-      gender: input.gender,
-      currentWeight: input.current_weight,
-      height: input.height_cm,
-      activityLevel: input.activityLevel,
-      dietGoal: input.dietGoalOnboarding,
-    });
-
-    if (
-      !dailyTargets.finalTargetCalories ||
-      !dailyTargets.proteinGrams ||
-      !dailyTargets.carbGrams ||
-      !dailyTargets.fatGrams
-    ) {
-      throw new Error(
-        'Could not calculate daily nutritional targets from the provided profile data.'
-      );
-    }
-
-    // 2. Determine meal distributions (user's custom or default)
-    const distributions =
-      input.mealDistributions && input.mealDistributions.length > 0
-        ? input.mealDistributions
-        : mealNames.map((name) => ({
-            mealName: name,
-            calories_pct: defaultMacroPercentages[name].calories_pct,
-            protein_pct: defaultMacroPercentages[name].protein_pct,
-            carbs_pct: defaultMacroPercentages[name].carbs_pct,
-            fat_pct: defaultMacroPercentages[name].fat_pct,
-          }));
-
-    // 3. Calculate absolute macro targets for each meal
-    const mealTargets = distributions.map((dist) => ({
-      mealName: dist.mealName,
-      calories: Math.round(
-        dailyTargets.finalTargetCalories! * (dist.calories_pct / 100)
-      ),
-      protein: Math.round(
-        dailyTargets.proteinGrams! * (dist.protein_pct / 100)
-      ),
-      carbs: Math.round(dailyTargets.carbGrams! * (dist.carbs_pct / 100)),
-      fat: Math.round(dailyTargets.fatGrams! * (dist.fat_pct / 100)),
-    }));
-
-    // 4. Loop through each day of the week and generate a plan
     const processedWeeklyPlan: DayPlan[] = [];
     let weeklySummary = {
       totalCalories: 0,
@@ -170,18 +118,18 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       try {
         const dailyPromptInput: DailyPromptInput = {
           dayOfWeek,
-          mealTargets,
-          age: input.age ?? undefined,
-          gender: input.gender ?? undefined,
-          dietGoalOnboarding: input.dietGoalOnboarding ?? undefined,
-          preferredDiet: input.preferredDiet ?? undefined,
-          allergies: input.allergies ?? [],
-          dispreferredIngredients: input.dispreferredIngredients ?? [],
-          preferredIngredients: input.preferredIngredients ?? [],
-          preferredCuisines: input.preferredCuisines ?? [],
-          dispreferredCuisines: input.dispreferredCuisines ?? [],
-          medicalConditions: input.medicalConditions ?? [],
-          medications: input.medications ?? [],
+          mealTargets: input.mealTargets, // Use pre-calculated targets from client
+          age: input.age,
+          gender: input.gender,
+          dietGoalOnboarding: input.dietGoalOnboarding,
+          preferredDiet: input.preferredDiet,
+          allergies: input.allergies,
+          dispreferredIngredients: input.dispreferredIngredients,
+          preferredIngredients: input.preferredIngredients,
+          preferredCuisines: input.preferredCuisines,
+          dispreferredCuisines: input.dispreferredCuisines,
+          medicalConditions: input.medicalConditions,
+          medications: input.medications,
         };
 
         const { output: dailyOutput } = await dailyPrompt(dailyPromptInput);
@@ -226,10 +174,10 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
             weeklySummary.totalFat += mealTotals.fat;
 
             return {
-              meal_name: mealTargets[index]?.mealName || `Meal ${index + 1}`,
+              meal_name: input.mealTargets[index]?.mealName || `Meal ${index + 1}`,
               meal_title:
                 meal.meal_title ||
-                `AI Generated ${mealTargets[index]?.mealName || 'Meal'}`,
+                `AI Generated ${input.mealTargets[index]?.mealName || 'Meal'}`,
               ingredients: sanitizedIngredients,
               total_calories: mealTotals.calories,
               total_protein_g: mealTotals.protein,
