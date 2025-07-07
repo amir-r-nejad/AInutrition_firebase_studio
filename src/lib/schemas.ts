@@ -318,12 +318,11 @@ export const MacroSplitterFormSchema = z
         (acc, meal) => acc + (Number(meal[macroKey]) || 0),
         0
       );
-      if (Math.abs(sum - 100) > 0.01) {
-        // Allow for tiny floating point discrepancies
+      if (Math.abs(sum - 100) > 0.1) { // Increased tolerance for decimals
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `Total ${macroName} percentages must sum to 100%. Current sum: ${sum.toFixed(
-            0
+            1
           )}%`,
           path: ['mealDistributions'],
         });
@@ -907,5 +906,3 @@ export const SupportChatbotOutputSchema = z.object({
   botResponse: z.string(),
 });
 export type SupportChatbotOutput = z.infer<typeof SupportChatbotOutputSchema>;
-
-    

@@ -411,7 +411,7 @@ export default function MacroSplitterPage() {
           </CardTitle>
           <CardDescription>
             Distribute your total daily macros across your meals by percentage.
-            Percentages must be whole numbers (e.g., 20, not 20.5).
+            Percentages can include decimals (e.g., 21.7).
           </CardDescription>
         </CardHeader>
         {dailyTargets ? (
@@ -473,9 +473,7 @@ export default function MacroSplitterPage() {
                 Meal Macro Percentage & Value Distribution
               </CardTitle>
               <CardDescription>
-                Enter percentages. Each percentage column must sum to 100%.
-                Calculated values update live. Percentages must be whole numbers
-                (e.g., 20, not 20.5).
+                Enter percentages for each meal. Each percentage column should sum to 100%. Calculated macro values will update live based on your inputs.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -526,7 +524,7 @@ export default function MacroSplitterPage() {
                                       <div>
                                         <Input
                                           type='number'
-                                          step='1'
+                                          step='0.1'
                                           {...itemField}
                                           value={itemField.value ?? ''}
                                           onChange={(e) => {
@@ -534,7 +532,7 @@ export default function MacroSplitterPage() {
                                             if (val === '') {
                                               itemField.onChange(undefined);
                                             } else {
-                                              const numVal = parseInt(val, 10);
+                                              const numVal = parseFloat(val);
                                               itemField.onChange(
                                                 isNaN(numVal)
                                                   ? undefined
@@ -594,11 +592,10 @@ export default function MacroSplitterPage() {
                               key === 'fat_pct' ? 'border-r' : ''
                             )}
                           >
-                            {formatNumber(sum / 100, {
-                              style: 'percent',
+                            {formatNumber(sum, {
                               minimumFractionDigits: 0,
                               maximumFractionDigits: 2,
-                            })}
+                            })}%
                             {isSum100 ? (
                               <CheckCircle2 className='ml-1 h-3 w-3 inline-block' />
                             ) : (
