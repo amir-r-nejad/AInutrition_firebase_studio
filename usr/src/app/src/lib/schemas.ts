@@ -719,6 +719,7 @@ export const AIUnvalidatedWeeklyMealPlanSchema = z.object({
   weeklyMealPlan: z.array(AIUnvalidatedDayPlanSchema).optional(),
 });
 
+
 export const GeneratePersonalizedMealPlanInputSchema = z.object({
   age: z.number(),
   gender: z.string(),
@@ -912,5 +913,3 @@ export const SupportChatbotOutputSchema = z.object({
   botResponse: z.string(),
 });
 export type SupportChatbotOutput = z.infer<typeof SupportChatbotOutputSchema>;
-
-    
