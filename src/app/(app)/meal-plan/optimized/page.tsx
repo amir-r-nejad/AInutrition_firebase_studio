@@ -34,6 +34,7 @@ import type {
   FullProfileType,
   GeneratePersonalizedMealPlanInput,
   GeneratePersonalizedMealPlanOutput,
+  AIGeneratedIngredient,
 } from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
 import { getAIApiErrorMessage } from '@/lib/utils';
@@ -55,23 +56,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-
-// Helper to calculate the final macro value for an ingredient based on its quantity.
-function calculateMacro(macroPer100g: number | undefined | null, quantity_g: number | undefined | null): string {
-  if (macroPer100g === undefined || macroPer100g === null || quantity_g === undefined || quantity_g === null) {
-    return 'N/A';
-  }
-  return ((macroPer100g * quantity_g) / 100).toFixed(1);
-}
-
-// Specific version for calories, which shouldn't have decimals.
-function calculateCalories(caloriesPer100g: number | undefined | null, quantity_g: number | undefined | null): string {
-  if (caloriesPer100g === undefined || caloriesPer100g === null || quantity_g === undefined || quantity_g === null) {
-    return 'N/A';
-  }
-  return ((caloriesPer100g * quantity_g) / 100).toFixed(0);
-}
-
 
 export default function OptimizedMealPlanPage() {
   const { user } = useAuth();
@@ -448,47 +432,41 @@ export default function OptimizedMealPlanPage() {
                               <Table className='min-w-[600px]'>
                                 <TableHeader>
                                   <TableRow>
-                                    <TableHead className='w-[35%]'>
+                                    <TableHead className='w-[40%]'>
                                       Ingredient
                                     </TableHead>
-                                    <TableHead className='text-right w-[12.5%]'>
-                                      Qty (g)
-                                    </TableHead>
-                                    <TableHead className='text-right w-[12.5%]'>
+                                    <TableHead className='text-right w-[15%]'>
                                       Calories
                                     </TableHead>
-                                    <TableHead className='text-right w-[12.5%]'>
+                                    <TableHead className='text-right w-[15%]'>
                                       Protein (g)
                                     </TableHead>
-                                    <TableHead className='text-right w-[12.5%]'>
+                                    <TableHead className='text-right w-[15%]'>
                                       Carbs (g)
                                     </TableHead>
-                                    <TableHead className='text-right w-[12.5%]'>
+                                    <TableHead className='text-right w-[15%]'>
                                       Fat (g)
                                     </TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                  {meal.ingredients.map((ing, ingIndex) => {
+                                  {meal.ingredients.map((ing: AIGeneratedIngredient, ingIndex) => {
                                     return (
                                       <TableRow key={ingIndex}>
                                         <TableCell className='font-medium py-1.5'>
-                                          {ing.ingredient_name}
+                                          {ing.name}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {ing.quantity_g ?? 'N/A'}
+                                          {ing.calories?.toFixed(0) ?? 'N/A'}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {calculateCalories(ing.macros_per_100g?.calories, ing.quantity_g)}
+                                           {ing.protein?.toFixed(1) ?? 'N/A'}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                          {calculateMacro(ing.macros_per_100g?.protein_g, ing.quantity_g)}
+                                           {ing.carbs?.toFixed(1) ?? 'N/A'}
                                         </TableCell>
                                         <TableCell className='text-right py-1.5'>
-                                           {calculateMacro(ing.macros_per_100g?.carbs_g, ing.quantity_g)}
-                                        </TableCell>
-                                        <TableCell className='text-right py-1.5'>
-                                          {calculateMacro(ing.macros_per_100g?.fat_g, ing.quantity_g)}
+                                           {ing.fat?.toFixed(1) ?? 'N/A'}
                                         </TableCell>
                                       </TableRow>
                                     );
@@ -517,5 +495,3 @@ export default function OptimizedMealPlanPage() {
     </div>
   );
 }
-
-    
