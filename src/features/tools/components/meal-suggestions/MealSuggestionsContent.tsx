@@ -74,8 +74,12 @@ import {
   getProfileDataForSuggestions,
   updateMealSuggestion,
 } from '../../lib/data-service';
+import { useMealUrlParams } from '../../hooks/useMealUrlParams';
 
 function MealSuggestionsContent() {
+  const { updateUrlWithMeal, getQueryParams, getCurrentMealParams } =
+    useMealUrlParams();
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -92,35 +96,18 @@ function MealSuggestionsContent() {
     SuggestMealsForMacrosOutput['suggestions']
   >([]);
   const [error, setError] = useState<string | null>(null);
-  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // Derive values from URL query parameters
   const selectedMealName = useMemo(() => {
-    const mealNameParam = searchParams?.get('mealName');
+    const mealNameParam = getQueryParams('mealName');
     return mealNameParam && mealNames.includes(mealNameParam)
       ? mealNameParam
       : null;
-  }, [searchParams]);
+  }, [getQueryParams]);
 
   const targetMacros = useMemo(() => {
-    if (!searchParams || !selectedMealName) return null;
-
-    const caloriesParam = searchParams.get('calories');
-    const proteinParam = searchParams.get('protein');
-    const carbsParam = searchParams.get('carbs');
-    const fatParam = searchParams.get('fat');
-
-    if (caloriesParam && proteinParam && carbsParam && fatParam) {
-      return {
-        mealName: selectedMealName,
-        calories: parseFloat(caloriesParam),
-        protein: parseFloat(proteinParam),
-        carbs: parseFloat(carbsParam),
-        fat: parseFloat(fatParam),
-      };
-    }
-    return null;
-  }, [searchParams, selectedMealName]);
+    return getCurrentMealParams(selectedMealName);
+  }, [getCurrentMealParams, selectedMealName]);
 
   // Check if we're in demo mode from URL
   const isDemoModeFromUrl = useMemo(() => {
@@ -191,7 +178,7 @@ function MealSuggestionsContent() {
         });
       }
     }
-  }, [user, toast]);
+  }, [user, toast, preferenceForm]);
 
   const calculateTargetsForSelectedMeal = useCallback(() => {
     if (!selectedMealName) {
@@ -253,12 +240,10 @@ function MealSuggestionsContent() {
 
         // Update URL with calculated targets
         updateUrlWithTargets(newTargets, false);
-        setIsDemoMode(false);
       } else {
         // Set demo mode and use example targets
         const exampleTargets = getExampleTargetsForMeal(selectedMealName);
         updateUrlWithTargets(exampleTargets, true);
-        setIsDemoMode(true);
         toast({
           title: 'Using Example Targets',
           description: `Could not calculate specific targets for ${selectedMealName} from profile. Ensure profile basics (age, weight, height, gender, activity, goal) are complete.`,
@@ -270,7 +255,6 @@ function MealSuggestionsContent() {
       // Set demo mode and use example targets
       const exampleTargets = getExampleTargetsForMeal(selectedMealName);
       updateUrlWithTargets(exampleTargets, true);
-      setIsDemoMode(true);
       toast({
         title: 'Profile Incomplete or Demo',
         description: `Showing example targets for ${selectedMealName}. Please complete your profile via Onboarding or Smart Calorie Planner for personalized calculations.`,
@@ -320,27 +304,6 @@ function MealSuggestionsContent() {
     isLoadingProfile,
     calculateTargetsForSelectedMeal,
   ]);
-
-  // Sync isDemoMode state with URL
-  useEffect(() => {
-    setIsDemoMode(isDemoModeFromUrl);
-  }, [isDemoModeFromUrl]);
-
-  // Function to update URL with meal selection only
-  const updateUrlWithMeal = (mealName: string) => {
-    const urlSearchParams = new URLSearchParams(searchParams);
-
-    urlSearchParams.set('mealName', mealName);
-    urlSearchParams.delete('calories');
-    urlSearchParams.delete('protein');
-    urlSearchParams.delete('carbs');
-    urlSearchParams.delete('fat');
-    urlSearchParams.delete('demo');
-
-    router.push(`${pathname}?${urlSearchParams.toString()}`, {
-      scroll: false,
-    });
-  };
 
   // Function to update URL with all target macros
   const updateUrlWithTargets = (
@@ -426,7 +389,8 @@ function MealSuggestionsContent() {
     );
 
     try {
-      await updateMealSuggestion(user?.uid!, currentPreferences);
+      if (!user?.uid) return;
+      await updateMealSuggestion(user?.uid, currentPreferences);
       const result = await suggestMealsForMacros(aiInput);
       if (result && result.suggestions) {
         setSuggestions(result.suggestions);

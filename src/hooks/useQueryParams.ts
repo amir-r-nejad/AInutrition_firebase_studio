@@ -6,15 +6,22 @@ export function useQueryParams() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const removeQueryParams = useCallback(
+  const removeQueryFromURL = useCallback(
     (name: string) => {
       const urlSearchParams = new URLSearchParams(searchParams);
       urlSearchParams.delete(name);
 
-      router.push(`${pathname}?${urlSearchParams.toString()}`);
+      router.push(`${pathname}?${urlSearchParams.toString()}`, {
+        scroll: false,
+      });
     },
     [pathname, router, searchParams]
   );
+
+  function removeQueryParams(name: string) {
+    const urlSearchParams = new URLSearchParams(searchParams);
+    urlSearchParams.delete(name);
+  }
 
   function updateQueryParams(name: string, value: string) {
     const urlSearchParams = new URLSearchParams(searchParams);
@@ -22,7 +29,9 @@ export function useQueryParams() {
     urlSearchParams.set(name, value);
     if (!urlSearchParams.get(name)) urlSearchParams.delete(name);
 
-    router.push(`${pathname}?${urlSearchParams.toString()}`);
+    router.push(`${pathname}?${urlSearchParams.toString()}`, {
+      scroll: false,
+    });
   }
 
   function getQueryParams(name: string) {
@@ -37,11 +46,16 @@ export function useQueryParams() {
         .map((param) => param.split('=')[0]);
 
       queryNames.forEach((name) => {
-        if (!searchParams.get(name)) removeQueryParams(name);
+        if (!searchParams.get(name)) removeQueryFromURL(name);
       });
     },
-    [pathname, removeQueryParams, searchParams]
+    [pathname, removeQueryFromURL, searchParams]
   );
 
-  return { updateQueryParams, getQueryParams, removeQueryParams };
+  return {
+    updateQueryParams,
+    getQueryParams,
+    removeQueryParams,
+    removeQueryFromURL,
+  };
 }
