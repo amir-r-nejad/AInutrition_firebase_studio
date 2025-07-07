@@ -19,7 +19,7 @@ import {
 import { z } from 'zod';
 import { getAIApiErrorMessage } from '@/lib/utils';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
+import { db } from '@/lib/firebase/firebase';
 
 // This is the input for the public-facing function, just the user ID.
 export async function generatePersonalizedMealPlan(
@@ -263,5 +263,3 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     return finalOutput;
   }
 );
-
-    
