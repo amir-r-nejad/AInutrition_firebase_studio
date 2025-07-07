@@ -1,6 +1,4 @@
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-
-//FIX => IT SHOULD BE MORE FLEXIABLE AND MORE USEABLE
+import { useQueryParams } from '@/hooks/useQueryParams';
 
 type TargetMacros = {
   mealName: string;
@@ -10,24 +8,25 @@ type TargetMacros = {
   fat: number;
 };
 
+const PARAMS_NAME = [
+  'mealName',
+  'calories',
+  'protein',
+  'carbs',
+  'fat',
+  'demo',
+] as const;
+
 export function useMealUrlParams() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const { getQueryParams, updateQueryParams, removeQueryParams } =
+    useQueryParams();
 
   function updateUrlWithMeal(mealName: string) {
-    const urlSearchParams = new URLSearchParams(searchParams);
+    updateQueryParams('mealName', mealName);
 
-    urlSearchParams.set('mealName', mealName);
-    urlSearchParams.delete('calories');
-    urlSearchParams.delete('protein');
-    urlSearchParams.delete('carbs');
-    urlSearchParams.delete('fat');
-    urlSearchParams.delete('demo');
-
-    router.push(`${pathname}?${urlSearchParams.toString()}`, {
-      scroll: false,
-    });
+    PARAMS_NAME.forEach(
+      (name) => name !== 'mealName' && removeQueryParams(name)
+    );
   }
 
   function updateUrlWithTargets(
@@ -36,50 +35,32 @@ export function useMealUrlParams() {
   ) {
     if (!targets) return;
 
-    const urlSearchParams = new URLSearchParams(searchParams);
-    urlSearchParams.set('mealName', targets.mealName);
-    urlSearchParams.set('calories', targets.calories.toString());
-    urlSearchParams.set('protein', targets.protein.toString());
-    urlSearchParams.set('carbs', targets.carbs.toString());
-    urlSearchParams.set('fat', targets.fat.toString());
+    PARAMS_NAME.forEach((name) => {
+      if (name !== 'demo') updateQueryParams(name, targets[name].toString());
 
-    if (isDemo) urlSearchParams.set('demo', 'true');
-    else urlSearchParams.delete('demo');
-
-    router.push(`${pathname}?${urlSearchParams.toString()}`, {
-      scroll: false,
+      if (name === 'demo') {
+        isDemo ? updateQueryParams('demo', 'true') : removeQueryParams('demo');
+      }
     });
   }
 
   function getCurrentMealParams() {
     return {
-      mealName: searchParams.get('mealName') || '',
-      calories: searchParams.get('calories')
-        ? Number(searchParams.get('calories'))
+      mealName: getQueryParams('mealName') || '',
+      calories: getQueryParams('calories')
+        ? Number(getQueryParams('calories'))
         : null,
-      protein: searchParams.get('protein')
-        ? Number(searchParams.get('protein'))
+      protein: getQueryParams('protein')
+        ? Number(getQueryParams('protein'))
         : null,
-      carbs: searchParams.get('carbs')
-        ? Number(searchParams.get('carbs'))
-        : null,
-      fat: searchParams.get('fat') ? Number(searchParams.get('fat')) : null,
-      isDemo: searchParams.get('demo') === 'true',
+      carbs: getQueryParams('carbs') ? Number(getQueryParams('carbs')) : null,
+      fat: getQueryParams('fat') ? Number(getQueryParams('fat')) : null,
+      isDemo: getQueryParams('demo') === 'true',
     };
   }
 
   function clearMealParams() {
-    const urlSearchParams = new URLSearchParams(searchParams);
-    urlSearchParams.delete('mealName');
-    urlSearchParams.delete('calories');
-    urlSearchParams.delete('protein');
-    urlSearchParams.delete('carbs');
-    urlSearchParams.delete('fat');
-    urlSearchParams.delete('demo');
-
-    router.push(`${pathname}?${urlSearchParams.toString()}`, {
-      scroll: false,
-    });
+    PARAMS_NAME.forEach((name) => removeQueryParams(name));
   }
 
   return {

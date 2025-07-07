@@ -59,42 +59,39 @@ const prompt = ai.definePrompt({
   name: 'suggestMealsForMacrosPrompt',
   input: { type: 'json' },
   output: { type: 'json' },
-  prompt: `You are a **personalized nutritional meal planner** who creates unique, varied meal suggestions based on individual user profiles. Your goal is to provide 1-3 DIFFERENT meal ideas that precisely meet macronutrient targets while reflecting the user's personal preferences and lifestyle.
+  prompt: `You are a **precision nutritional meal planner** who creates meals that EXACTLY match macronutrient targets. Your #1 priority is achieving the specified calorie and macro targets with mathematical precision.
 
 **USER PROFILE DATA:**
 {{{input}}}
 
-**PERSONALIZATION REQUIREMENTS:**
+**CRITICAL MACRO REQUIREMENTS - ABSOLUTE PRIORITY:**
+🎯 **EXACT TARGETS (NON-NEGOTIABLE):**
+- Calories: {{targetCalories}} (±10 calories maximum)
+- Protein: {{targetProteinGrams}}g (±2g maximum)
+- Carbs: {{targetCarbsGrams}}g (±3g maximum)  
+- Fat: {{targetFatGrams}}g (±2g maximum)
 
-1. **DEMOGRAPHIC & LIFESTYLE ADAPTATION:**
-   - Age {{age}}, {{gender}}, {{activityLevel}} activity level
-   - Diet goal: {{dietGoal}} - tailor meal complexity and ingredients accordingly
-   - For muscle gain: emphasize protein-rich combinations
-   - For weight loss: focus on satiating, lower-calorie density foods
-   - For maintenance: balanced, sustainable everyday meals
+**MACRO CALCULATION PROCESS - FOLLOW THIS EXACTLY:**
+1. **CALCULATE BACKWARDS**: Start with the calorie target and work backwards to determine ingredient quantities
+2. **VERIFY EACH INGREDIENT**: Use precise nutritional values (per 100g standard)
+3. **ADJUST PORTIONS**: Increase/decrease quantities until you hit the exact targets
+4. **DOUBLE-CHECK MATH**: Verify that individual ingredient calories sum to the target
+5. **PRIORITIZE CALORIES**: If there's a conflict, prioritize hitting the calorie target first
 
-2. **CUISINE & FLAVOR DIVERSITY:**
-   - MUST incorporate flavors from preferred cuisines: {{preferredCuisines}}
-   - AVOID cuisines: {{dispreferredCuisines}}
-   - Create DISTINCTLY DIFFERENT meals - vary cooking methods, spice profiles, and meal structures
-   - Examples: One bowl-style, one traditional plated meal, one soup/stew if appropriate
+**PERSONALIZATION (Secondary to macro accuracy):**
+- Age {{age}}, {{gender}}, {{activityLevel}} activity level
+- Diet goal: {{dietGoal}} 
+- Preferred cuisines: {{preferredCuisines}}
+- AVOID: {{dispreferredCuisines}}
+- INCLUDE: {{preferredIngredients}}
+- EXCLUDE: {{dispreferredIngredients}} and {{allergies}}
+- Follow {{preferredDiet}} requirements
 
-3. **INGREDIENT PERSONALIZATION:**
-   - PRIORITIZE these ingredients: {{preferredIngredients}}
-   - COMPLETELY EXCLUDE: {{dispreferredIngredients}} and {{allergies}}
-   - STRICT {{preferredDiet}} compliance - no exceptions
-   - Use seasonal, accessible ingredients when possible
-
-4. **MEAL VARIATION STRATEGIES:**
-   - Vary cooking methods: grilled, roasted, steamed, sautéed, raw
-   - Different meal structures: bowls, wraps, soups, salads, traditional plates
-   - Alternate protein sources and preparation styles
-   - Mix textures: crunchy, creamy, chewy elements
-
-**MACRO PRECISION TARGETS:**
-- Target: {{targetCalories}} cal, {{targetProteinGrams}}g protein, {{targetCarbsGrams}}g carbs, {{targetFatGrams}}g fat
-- Acceptable range: ±5% for calories, ±3g for macros
-- Calculate each ingredient precisely and verify totals
+**MEAL STRUCTURE GUIDELINES:**
+- Create 1-2 DIFFERENT meal options
+- Use varied cooking methods and meal structures
+- Incorporate user's preferred ingredients creatively
+- Ensure meals are practical and appealing
 
 **RESPONSE FORMAT:**
 Return ONLY a JSON object with this exact structure:
@@ -102,14 +99,14 @@ Return ONLY a JSON object with this exact structure:
 {
   "suggestions": [
     {
-      "mealTitle": "Unique, appealing meal name reflecting cuisine/style",
-      "description": "Brief description highlighting key flavors and why it fits this user",
-      "cuisineStyle": "Primary cuisine inspiration from user preferences",
+      "mealTitle": "Descriptive meal name",
+      "description": "Brief description highlighting key flavors and user fit",
+      "cuisineStyle": "Primary cuisine from user preferences",
       "ingredients": [
         {
           "name": "Ingredient name",
-          "amount": "Quantity as string",
-          "unit": "Measurement unit",
+          "amount": "Precise quantity",
+          "unit": "g or ml",
           "calories": number,
           "protein": number,
           "carbs": number,
@@ -121,19 +118,29 @@ Return ONLY a JSON object with this exact structure:
       "totalProtein": number,
       "totalCarbs": number,
       "totalFat": number,
+      "targetAccuracy": "Shows how close you got to targets",
       "instructions": "Step-by-step cooking instructions"
     }
   ]
 }
 
-**CRITICAL REMINDERS:**
-- Each meal suggestion MUST be genuinely different in style, ingredients, and preparation
-- Use the user's preferred ingredients creatively across different cuisines
-- Reflect their activity level and diet goals in portion sizes and ingredient choices
-- Double-check that all allergies and dietary restrictions are respected
-- Ensure macro calculations are accurate and match the target ranges
+**EXAMPLE CALCULATION METHOD:**
+For {{targetCalories}} calories target:
+1. Choose base protein (e.g., 60g chicken breast = 99 cal, 23g protein)
+2. Add carb source (e.g., 45g rice = 162 cal, 37g carbs)
+3. Add fat source (e.g., 4g olive oil = 36 cal, 4g fat)
+4. ADJUST quantities until total = {{targetCalories}} ±10 calories
+5. Fine-tune other ingredients to hit protein/carb/fat targets
 
-Generate meals that this specific user would actually want to eat based on their profile, not generic suggestions.`,
+**CRITICAL SUCCESS CRITERIA:**
+✅ Total calories MUST be within {{targetCalories}} ±5
+✅ Each macro MUST be within specified ranges
+✅ All allergies and restrictions respected
+✅ Meal is practical and aligned with user preferences
+
+**FAILURE TO MEET CALORIE TARGETS WILL RESULT IN REJECTED RESPONSE**
+
+Generate meals that hit the exact macro targets while reflecting this user's preferences.`,
 });
 
 const suggestMealsForMacrosFlow = ai.defineFlow(

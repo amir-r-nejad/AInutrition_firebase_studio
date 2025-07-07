@@ -64,8 +64,6 @@ const supportChatbotFlow = ai.defineFlow(
     outputSchema: undefined,
   },
   async (input: SupportChatbotInput): Promise<SupportChatbotOutput> => {
-    console.log(input);
-
     try {
       const { output } = await prompt(input);
 
