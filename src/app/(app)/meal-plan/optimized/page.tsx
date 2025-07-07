@@ -114,18 +114,41 @@ export default function OptimizedMealPlanPage() {
   // useEffect to calculate targets when profile data is ready
   useEffect(() => {
     if (profileData && Object.keys(profileData).length > 0) {
-      // 1. Calculate total daily targets from the profile
-      const dailyTargets = calculateEstimatedDailyTargets({
-        age: profileData.age,
-        gender: profileData.gender,
-        currentWeight: profileData.current_weight,
-        height: profileData.height_cm,
-        activityLevel: profileData.activityLevel,
-        dietGoal: profileData.dietGoalOnboarding,
-      });
+      let dailyTargets: {
+        finalTargetCalories?: number | null;
+        proteinGrams?: number | null;
+        carbGrams?: number | null;
+        fatGrams?: number | null;
+      } | null = null;
+
+      // FIX: Use the same logic as MacroSplitter for consistency.
+      // Priority 1: Use results from Smart Planner if they exist.
+      if (
+        profileData.smartPlannerData?.results?.finalTargetCalories !== undefined &&
+        profileData.smartPlannerData?.results?.finalTargetCalories !== null
+      ) {
+        const smartResults = profileData.smartPlannerData.results;
+        dailyTargets = {
+          finalTargetCalories: smartResults.finalTargetCalories,
+          proteinGrams: smartResults.proteinGrams,
+          carbGrams: smartResults.carbGrams,
+          fatGrams: smartResults.fatGrams,
+        };
+      } else {
+        // Priority 2: Fallback to estimating from basic profile data if Smart Planner results are missing.
+        dailyTargets = calculateEstimatedDailyTargets({
+          age: profileData.age,
+          gender: profileData.gender,
+          currentWeight: profileData.current_weight,
+          height: profileData.height_cm,
+          activityLevel: profileData.activityLevel,
+          dietGoal: profileData.dietGoalOnboarding,
+        });
+      }
+
 
       if (
-        !dailyTargets.finalTargetCalories ||
+        !dailyTargets?.finalTargetCalories ||
         !dailyTargets.proteinGrams ||
         !dailyTargets.carbGrams ||
         !dailyTargets.fatGrams
@@ -150,13 +173,13 @@ export default function OptimizedMealPlanPage() {
       const calculatedTargets = distributions.map((dist) => ({
         mealName: dist.mealName,
         calories: Math.round(
-          dailyTargets.finalTargetCalories! * (dist.calories_pct / 100)
+          dailyTargets!.finalTargetCalories! * (dist.calories_pct / 100)
         ),
         protein: Math.round(
-          dailyTargets.proteinGrams! * (dist.protein_pct / 100)
+          dailyTargets!.proteinGrams! * (dist.protein_pct / 100)
         ),
-        carbs: Math.round(dailyTargets.carbGrams! * (dist.carbs_pct / 100)),
-        fat: Math.round(dailyTargets.fatGrams! * (dist.fat_pct / 100)),
+        carbs: Math.round(dailyTargets!.carbGrams! * (dist.carbs_pct / 100)),
+        fat: Math.round(dailyTargets!.fatGrams! * (dist.fat_pct / 100)),
       }));
 
       setMealTargets(calculatedTargets);
