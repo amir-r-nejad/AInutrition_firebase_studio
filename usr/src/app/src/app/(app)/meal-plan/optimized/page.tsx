@@ -429,7 +429,7 @@ export default function OptimizedMealPlanPage() {
                               Ingredients:
                             </h4>
                             <ScrollArea className='w-full mb-4'>
-                              <Table className='min-w-[600px]'>
+                              <Table className='min-w-[500px]'>
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead className='w-[40%]'>

@@ -59,7 +59,7 @@ const prompt = ai.definePrompt({
 3.  "weeklyMealPlan" MUST be an array of 7 objects, for "Monday" through "Sunday".
 4.  Each day object MUST have a "day" (string) and a "meals" (array).
 5.  Each meal object MUST have a "meal_title" (string) and an "ingredients" (array).
-6.  Each ingredient object MUST have "name" (string), "quantity" (string or number), "unit" (string), "calories" (number), "protein" (number), "carbs" (number), and "fat" (number).
+6.  Each ingredient object MUST have "name" (string, include quantity like "Chicken Breast (150g)"), "calories" (number), "protein" (number), "carbs" (number), and "fat" (number).
 7.  Ensure all macronutrient values are realistic positive numbers for the specified quantity.
 `,
 });
@@ -158,8 +158,6 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
             ...meal,
             ingredients: meal.ingredients?.map(ing => ({
                 name: ing.name ?? 'Unknown Ingredient',
-                quantity: ing.quantity ?? 'N/A',
-                unit: ing.unit ?? '',
                 calories: ing.calories ?? 0,
                 protein: ing.protein ?? 0,
                 carbs: ing.carbs ?? 0,
