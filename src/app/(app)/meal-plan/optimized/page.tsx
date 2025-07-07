@@ -137,9 +137,61 @@ export default function OptimizedMealPlanPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Pass the entire profile data object. The flow will use what it needs.
-      // This is safe because the Zod schema in the flow will only accept known fields.
-      const result = await generatePersonalizedMealPlan(profileData);
+      // Map FullProfileType to a clean, serializable GeneratePersonalizedMealPlanInput object.
+      // This prevents passing non-serializable Firebase User objects and handles null values
+      // for optional fields, which would otherwise cause Zod validation errors.
+      const input: GeneratePersonalizedMealPlanInput = {
+        age: profileData.age!,
+        gender: profileData.gender!,
+        height_cm: profileData.height_cm!,
+        current_weight: profileData.current_weight!,
+        goal_weight_1m: profileData.goal_weight_1m!,
+        activityLevel: profileData.activityLevel!,
+        dietGoalOnboarding: profileData.dietGoalOnboarding!,
+        
+        // Optional fields are converted from null to undefined
+        ideal_goal_weight: profileData.ideal_goal_weight ?? undefined,
+        bf_current: profileData.bf_current ?? undefined,
+        bf_target: profileData.bf_target ?? undefined,
+        bf_ideal: profileData.bf_ideal ?? undefined,
+        mm_current: profileData.mm_current ?? undefined,
+        mm_target: profileData.mm_target ?? undefined,
+        mm_ideal: profileData.mm_ideal ?? undefined,
+        bw_current: profileData.bw_current ?? undefined,
+        bw_target: profileData.bw_target ?? undefined,
+        bw_ideal: profileData.bw_ideal ?? undefined,
+        waist_current: profileData.waist_current ?? undefined,
+        waist_goal_1m: profileData.waist_goal_1m ?? undefined,
+        waist_ideal: profileData.waist_ideal ?? undefined,
+        hips_current: profileData.hips_current ?? undefined,
+        hips_goal_1m: profileData.hips_goal_1m ?? undefined,
+        hips_ideal: profileData.hips_ideal ?? undefined,
+        right_leg_current: profileData.right_leg_current ?? undefined,
+        right_leg_goal_1m: profileData.right_leg_goal_1m ?? undefined,
+        right_leg_ideal: profileData.right_leg_ideal ?? undefined,
+        left_leg_current: profileData.left_leg_current ?? undefined,
+        left_leg_goal_1m: profileData.left_leg_goal_1m ?? undefined,
+        left_leg_ideal: profileData.left_leg_ideal ?? undefined,
+        right_arm_current: profileData.right_arm_current ?? undefined,
+        right_arm_goal_1m: profileData.right_arm_goal_1m ?? undefined,
+        right_arm_ideal: profileData.right_arm_ideal ?? undefined,
+        left_arm_current: profileData.left_arm_current ?? undefined,
+        left_arm_goal_1m: profileData.left_arm_goal_1m ?? undefined,
+        left_arm_ideal: profileData.left_arm_ideal ?? undefined,
+        preferredDiet: profileData.preferredDiet ?? undefined,
+        allergies: profileData.allergies ?? undefined,
+        preferredCuisines: profileData.preferredCuisines ?? undefined,
+        dispreferredCuisines: profileData.dispreferredCuisines ?? undefined,
+        preferredIngredients: profileData.preferredIngredients ?? undefined,
+        dispreferredIngredients: profileData.dispreferredIngredients ?? undefined,
+        preferredMicronutrients: profileData.preferredMicronutrients ?? undefined,
+        medicalConditions: profileData.medicalConditions ?? undefined,
+        medications: profileData.medications ?? undefined,
+        typicalMealsDescription: profileData.typicalMealsDescription ?? undefined,
+        mealDistributions: profileData.mealDistributions ?? undefined,
+      };
+      
+      const result = await generatePersonalizedMealPlan(input);
       
       setMealPlan(result);
       
