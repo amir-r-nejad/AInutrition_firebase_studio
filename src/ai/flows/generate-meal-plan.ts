@@ -22,6 +22,7 @@ export async function generatePersonalizedMealPlan(
 }
 
 // This schema is for the internal daily prompt, containing only necessary info.
+// REMOVED general profile data to force focus on targets and preferences.
 const DailyPromptInputSchema = z.object({
   dayOfWeek: z.string(),
   mealTargets: z.array(
@@ -33,9 +34,6 @@ const DailyPromptInputSchema = z.object({
       fat: z.number(),
     })
   ),
-  age: z.number().optional(),
-  gender: z.string().optional(),
-  dietGoalOnboarding: z.string().optional(),
   preferredDiet: z.string().optional(),
   allergies: z.array(z.string()).optional(),
   dispreferredIngredients: z.array(z.string()).optional(),
@@ -48,16 +46,14 @@ const DailyPromptInputSchema = z.object({
 type DailyPromptInput = z.infer<typeof DailyPromptInputSchema>;
 
 // A prompt specifically for generating a SINGLE DAY's meal plan.
+// REMOVED the user profile section to make the prompt more focused.
 const dailyPrompt = ai.definePrompt({
   name: 'generateDailyMealPlanPrompt',
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `You are a highly precise nutritional data generation service. Your ONLY task is to create a list of meals for a single day, {{dayOfWeek}}, that strictly matches the provided macronutrient targets for each meal.
+  prompt: `You are a highly precise nutritional data generation service. Your ONLY task is to create a list of meals for a single day, {{dayOfWeek}}, that strictly matches the provided macronutrient targets for each meal, while adhering to the user's dietary preferences.
 
-**USER PROFILE (FOR CONTEXT ONLY - DO NOT REPEAT IN OUTPUT):**
-- Age: {{age}}
-- Gender: {{gender}}
-- Dietary Goal: {{dietGoalOnboarding}}
+**USER DIETARY PREFERENCES & RESTRICTIONS (FOR CONTEXT ONLY):**
 {{#if preferredDiet}}- Dietary Preference: {{preferredDiet}}{{/if}}
 {{#if allergies.length}}- Allergies to Avoid: {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if dispreferredIngredients.length}}- Disliked Ingredients: {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
@@ -66,6 +62,7 @@ const dailyPrompt = ai.definePrompt({
 {{#if dispreferredCuisines.length}}- Cuisines to Avoid: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if medicalConditions.length}}- Medical Conditions: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if medications.length}}- Medications: {{#each medications}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+
 
 **ABSOLUTE REQUIREMENTS FOR MEAL GENERATION:**
 
@@ -116,12 +113,10 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
 
     for (const dayOfWeek of daysOfWeek) {
       try {
+        // Construct the simpler input for the daily prompt
         const dailyPromptInput: DailyPromptInput = {
           dayOfWeek,
-          mealTargets: input.mealTargets, // Use pre-calculated targets from client
-          age: input.age,
-          gender: input.gender,
-          dietGoalOnboarding: input.dietGoalOnboarding,
+          mealTargets: input.mealTargets,
           preferredDiet: input.preferredDiet,
           allergies: input.allergies,
           dispreferredIngredients: input.dispreferredIngredients,

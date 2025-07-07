@@ -712,11 +712,10 @@ export const AIDailyPlanOutputSchema = z.object({
 });
 export type AIDailyPlanOutput = z.infer<typeof AIDailyPlanOutputSchema>;
 
+
+// NEW, SIMPLIFIED INPUT SCHEMA
 export const GeneratePersonalizedMealPlanInputSchema = z.object({
-  // Contextual user profile data
-  age: z.number().optional(),
-  gender: z.string().optional(),
-  dietGoalOnboarding: z.string().optional(),
+  // Only direct food preferences and targets, no general profile info.
   preferredDiet: z.string().optional(),
   allergies: z.array(z.string()).optional(),
   dispreferredCuisines: z.array(z.string()).optional(),
@@ -726,7 +725,7 @@ export const GeneratePersonalizedMealPlanInputSchema = z.object({
   medicalConditions: z.array(z.string()).optional(),
   medications: z.array(z.string()).optional(),
 
-  // The pre-calculated targets
+  // The pre-calculated targets are the most important part
   mealTargets: z.array(
     z.object({
       mealName: z.string(),
