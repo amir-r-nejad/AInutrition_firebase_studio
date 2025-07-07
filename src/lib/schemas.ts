@@ -712,54 +712,30 @@ export const AIDailyPlanOutputSchema = z.object({
 });
 export type AIDailyPlanOutput = z.infer<typeof AIDailyPlanOutputSchema>;
 
-
 export const GeneratePersonalizedMealPlanInputSchema = z.object({
-  age: z.number(),
-  gender: z.string(),
-  height_cm: z.number(),
-  current_weight: z.number(),
-  goal_weight_1m: z.number(),
-  activityLevel: z.string(),
-  dietGoalOnboarding: z.string(),
-  ideal_goal_weight: z.number().optional(),
-  bf_current: z.number().optional(),
-  bf_target: z.number().optional(),
-  bf_ideal: z.number().optional(),
-  mm_current: z.number().optional(),
-  mm_target: z.number().optional(),
-  mm_ideal: z.number().optional(),
-  bw_current: z.number().optional(),
-  bw_target: z.number().optional(),
-  bw_ideal: z.number().optional(),
-  waist_current: z.number().optional(),
-  waist_goal_1m: z.number().optional(),
-  waist_ideal: z.number().optional(),
-  hips_current: z.number().optional(),
-  hips_goal_1m: z.number().optional(),
-  hips_ideal: z.number().optional(),
-  right_leg_current: z.number().optional(),
-  right_leg_goal_1m: z.number().optional(),
-  right_leg_ideal: z.number().optional(),
-  left_leg_current: z.number().optional(),
-  left_leg_goal_1m: z.number().optional(),
-  left_leg_ideal: z.number().optional(),
-  right_arm_current: z.number().optional(),
-  right_arm_goal_1m: z.number().optional(),
-  right_arm_ideal: z.number().optional(),
-  left_arm_current: z.number().optional(),
-  left_arm_goal_1m: z.number().optional(),
-  left_arm_ideal: z.number().optional(),
+  // Contextual user profile data
+  age: z.number().optional(),
+  gender: z.string().optional(),
+  dietGoalOnboarding: z.string().optional(),
   preferredDiet: z.string().optional(),
   allergies: z.array(z.string()).optional(),
-  preferredCuisines: z.array(z.string()).optional(),
   dispreferredCuisines: z.array(z.string()).optional(),
-  preferredIngredients: z.array(z.string()).optional(),
+  preferredCuisines: z.array(z.string()).optional(),
   dispreferredIngredients: z.array(z.string()).optional(),
-  preferredMicronutrients: z.array(z.string()).optional(),
+  preferredIngredients: z.array(z.string()).optional(),
   medicalConditions: z.array(z.string()).optional(),
   medications: z.array(z.string()).optional(),
-  typicalMealsDescription: z.string().optional(),
-  mealDistributions: z.array(MealMacroDistributionSchema).optional(),
+
+  // The pre-calculated targets
+  mealTargets: z.array(
+    z.object({
+      mealName: z.string(),
+      calories: z.number(),
+      protein: z.number(),
+      carbs: z.number(),
+      fat: z.number(),
+    })
+  ),
 });
 export type GeneratePersonalizedMealPlanInput = z.infer<
   typeof GeneratePersonalizedMealPlanInputSchema
