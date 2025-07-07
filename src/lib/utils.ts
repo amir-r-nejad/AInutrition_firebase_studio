@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -28,6 +29,10 @@ export function getAIApiErrorMessage(error: any): string {
   }
 
   const message = error.message as string;
+
+  if (message.includes('503') || message.includes('overloaded')) {
+    return 'The AI model is currently busy or unavailable. Please try again in a few moments.';
+  }
 
   if (
     message.includes('403 Forbidden') ||

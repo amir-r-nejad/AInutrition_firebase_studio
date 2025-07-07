@@ -80,26 +80,33 @@ const adjustMealIngredientsFlow = ai.defineFlow(
   async (
     input: AdjustMealIngredientsInput
   ): Promise<AdjustMealIngredientsOutput> => {
-    // Pass the input directly to the prompt.
-    const { output } = await prompt(input);
-    
-    if (!output) {
-      throw new Error('AI did not return an output for meal adjustment.');
-    }
+    try {
+      const { output } = await prompt(input);
+      
+      if (!output) {
+        throw new Error('AI did not return an output for meal adjustment.');
+      }
 
-    // Validate the output with Zod for robustness
-    const validationResult =
-      AdjustMealIngredientsOutputSchema.safeParse(output);
-    if (!validationResult.success) {
-      console.error(
-        'AI output validation error:',
-        validationResult.error.flatten()
-      );
-      throw new Error(
-        `AI returned data in an unexpected format. Details: ${validationResult.error.message}`
-      );
-    }
+      const validationResult =
+        AdjustMealIngredientsOutputSchema.safeParse(output);
+      if (!validationResult.success) {
+        console.error(
+          'AI output validation error:',
+          validationResult.error.flatten()
+        );
+        throw new Error(
+          `AI returned data in an unexpected format. Details: ${validationResult.error.message}`
+        );
+      }
 
-    return validationResult.data;
+      return validationResult.data;
+    } catch (error: any) {
+        console.error("Error in adjustMealIngredientsFlow:", error);
+        const errorMessage = error.message || '';
+        if (errorMessage.includes('503') || errorMessage.includes('overloaded')) {
+            throw new Error('The AI model is currently overloaded. Please try again in a few moments.');
+        }
+        throw error; // Re-throw other errors
+    }
   }
 );
