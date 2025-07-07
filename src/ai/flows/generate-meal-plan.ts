@@ -10,6 +10,7 @@ import {
   type DayPlan,
   type AIGeneratedMeal,
   type GeneratePersonalizedMealPlanInput,
+  AIDailyMealSchema,
 } from '@/lib/schemas';
 import { daysOfWeek } from '@/lib/constants';
 import { z } from 'zod';
@@ -127,11 +128,11 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         }
 
         const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
-          .map((meal, index) => {
+          .map((meal, index): AIGeneratedMeal | null => {
             if (!meal || !meal.ingredients || meal.ingredients.length === 0) {
               return null;
             }
-
+            
             const sanitizedIngredients = meal.ingredients.map((ing) => ({
               name: ing.name ?? 'Unknown Ingredient',
               calories: ing.calories ?? 0,
@@ -139,7 +140,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
               carbs: ing.carbs ?? 0,
               fat: ing.fat ?? 0,
             }));
-
+            
             const mealTotals = sanitizedIngredients.reduce(
               (totals, ing) => {
                 totals.calories += ing.calories;
@@ -152,11 +153,8 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
             );
 
             return {
-              meal_name:
-                input.mealTargets[index]?.mealName || `Meal ${index + 1}`,
-              meal_title:
-                meal.meal_title ||
-                `AI Generated ${input.mealTargets[index]?.mealName || 'Meal'}`,
+              meal_name: input.mealTargets[index]?.mealName || meal.meal_title,
+              meal_title: meal.meal_title,
               ingredients: sanitizedIngredients,
               total_calories: mealTotals.calories,
               total_protein_g: mealTotals.protein,
@@ -165,6 +163,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
             };
           })
           .filter((meal): meal is AIGeneratedMeal => meal !== null);
+
 
         if (processedMeals.length > 0) {
           processedWeeklyPlan.push({ day: dayOfWeek, meals: processedMeals });
