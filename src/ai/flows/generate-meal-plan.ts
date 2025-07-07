@@ -99,12 +99,6 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     input: GeneratePersonalizedMealPlanInput
   ): Promise<GeneratePersonalizedMealPlanOutput> => {
     const processedWeeklyPlan: DayPlan[] = [];
-    let weeklySummary = {
-      totalCalories: 0,
-      totalProtein: 0,
-      totalCarbs: 0,
-      totalFat: 0,
-    };
 
     for (const dayOfWeek of daysOfWeek) {
       try {
@@ -157,11 +151,6 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
               { calories: 0, protein: 0, carbs: 0, fat: 0 }
             );
 
-            weeklySummary.totalCalories += mealTotals.calories;
-            weeklySummary.totalProtein += mealTotals.protein;
-            weeklySummary.totalCarbs += mealTotals.carbs;
-            weeklySummary.totalFat += mealTotals.fat;
-
             return {
               meal_name:
                 input.mealTargets[index]?.mealName || `Meal ${index + 1}`,
@@ -193,6 +182,16 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         })
       );
     }
+    
+    const weeklySummary = processedWeeklyPlan.reduce((summary, day) => {
+        day.meals.forEach(meal => {
+            summary.totalCalories += meal.total_calories || 0;
+            summary.totalProtein += meal.total_protein_g || 0;
+            summary.totalCarbs += meal.total_carbs_g || 0;
+            summary.totalFat += meal.total_fat_g || 0;
+        });
+        return summary;
+    }, { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 });
 
     const finalOutput: GeneratePersonalizedMealPlanOutput = {
       weeklyMealPlan: processedWeeklyPlan,
