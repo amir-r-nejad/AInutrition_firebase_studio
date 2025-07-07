@@ -3,12 +3,13 @@
 
 import { ai } from '@/ai/genkit';
 import {
+  GeneratePersonalizedMealPlanInputSchema,
   GeneratePersonalizedMealPlanOutputSchema,
   AIDailyPlanOutputSchema,
   type GeneratePersonalizedMealPlanOutput,
   type DayPlan,
   type AIGeneratedMeal,
-  type FullProfileType,
+  type GeneratePersonalizedMealPlanInput,
 } from '@/lib/schemas';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import {
@@ -18,17 +19,11 @@ import {
 } from '@/lib/constants';
 import { z } from 'zod';
 import { getAIApiErrorMessage } from '@/lib/utils';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/firebase';
 
-// This is the input for the public-facing function, just the user ID.
 export async function generatePersonalizedMealPlan(
-  userId: string
+  input: GeneratePersonalizedMealPlanInput
 ): Promise<GeneratePersonalizedMealPlanOutput> {
-  if (!userId) {
-    throw new Error('User ID is required to generate a meal plan.');
-  }
-  return generatePersonalizedMealPlanFlow(userId);
+  return generatePersonalizedMealPlanFlow(input);
 }
 
 // This schema is for the internal daily prompt, containing only necessary info.
@@ -106,23 +101,17 @@ You are being provided with specific macronutrient targets for each meal. These 
 `,
 });
 
-// REWRITTEN FLOW: Now takes a userId, fetches data, then iterates through each day.
+// The flow takes the full user profile, calculates targets, and then iterates to generate a plan.
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
-    inputSchema: z.string(), // Expects userId
+    inputSchema: GeneratePersonalizedMealPlanInputSchema,
     outputSchema: GeneratePersonalizedMealPlanOutputSchema,
   },
-  async (userId: string): Promise<GeneratePersonalizedMealPlanOutput> => {
-    // 1. Fetch the user's latest profile directly from Firestore.
-    const userDocRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userDocRef);
-    if (!docSnap.exists()) {
-      throw new Error('Could not find a profile for the provided user.');
-    }
-    const input = docSnap.data() as FullProfileType;
-
-    // 2. Calculate total daily targets
+  async (
+    input: GeneratePersonalizedMealPlanInput
+  ): Promise<GeneratePersonalizedMealPlanOutput> => {
+    // 1. Calculate total daily targets from the provided input object
     const dailyTargets = calculateEstimatedDailyTargets({
       age: input.age,
       gender: input.gender,
@@ -143,7 +132,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       );
     }
 
-    // 3. Determine meal distributions (user's custom or default)
+    // 2. Determine meal distributions (user's custom or default)
     const distributions =
       input.mealDistributions && input.mealDistributions.length > 0
         ? input.mealDistributions
@@ -155,7 +144,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
             fat_pct: defaultMacroPercentages[name].fat_pct,
           }));
 
-    // 4. Calculate absolute macro targets for each meal
+    // 3. Calculate absolute macro targets for each meal
     const mealTargets = distributions.map((dist) => ({
       mealName: dist.mealName,
       calories: Math.round(
@@ -168,7 +157,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       fat: Math.round(dailyTargets.fatGrams! * (dist.fat_pct / 100)),
     }));
 
-    // 5. Loop through each day of the week and generate a plan
+    // 4. Loop through each day of the week and generate a plan
     const processedWeeklyPlan: DayPlan[] = [];
     let weeklySummary = {
       totalCalories: 0,
@@ -197,12 +186,17 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
 
         const { output: dailyOutput } = await dailyPrompt(dailyPromptInput);
 
-        if (!dailyOutput || !dailyOutput.meals || dailyOutput.meals.length === 0) {
+        if (
+          !dailyOutput ||
+          !dailyOutput.meals ||
+          dailyOutput.meals.length === 0
+        ) {
           console.warn(`AI returned no meals for ${dayOfWeek}. Skipping.`);
           continue;
         }
-        
-        const processedMeals: AIGeneratedMeal[] = dailyOutput.meals.map((meal, index) => {
+
+        const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
+          .map((meal, index) => {
             if (!meal.ingredients || meal.ingredients.length === 0) {
               return null;
             }
@@ -233,28 +227,35 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
 
             return {
               meal_name: mealTargets[index]?.mealName || `Meal ${index + 1}`,
-              meal_title: meal.meal_title || `AI Generated ${mealTargets[index]?.mealName || 'Meal'}`,
+              meal_title:
+                meal.meal_title ||
+                `AI Generated ${mealTargets[index]?.mealName || 'Meal'}`,
               ingredients: sanitizedIngredients,
               total_calories: mealTotals.calories,
               total_protein_g: mealTotals.protein,
               total_carbs_g: mealTotals.carbs,
               total_fat_g: mealTotals.fat,
             };
-        }).filter((meal): meal is AIGeneratedMeal => meal !== null);
+          })
+          .filter((meal): meal is AIGeneratedMeal => meal !== null);
 
         if (processedMeals.length > 0) {
-            processedWeeklyPlan.push({ day: dayOfWeek, meals: processedMeals });
+          processedWeeklyPlan.push({ day: dayOfWeek, meals: processedMeals });
         }
-
       } catch (e) {
         console.error(`Failed to generate meal plan for ${dayOfWeek}:`, e);
       }
     }
 
     if (processedWeeklyPlan.length === 0) {
-      throw new Error(getAIApiErrorMessage({ message: 'The AI failed to generate a valid meal plan for any day of the week. Please try again.' }));
+      throw new Error(
+        getAIApiErrorMessage({
+          message:
+            'The AI failed to generate a valid meal plan for any day of the week. Please try again.',
+        })
+      );
     }
-    
+
     const finalOutput: GeneratePersonalizedMealPlanOutput = {
       weeklyMealPlan: processedWeeklyPlan,
       weeklySummary,

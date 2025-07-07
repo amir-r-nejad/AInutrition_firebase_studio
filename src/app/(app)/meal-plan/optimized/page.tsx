@@ -34,6 +34,7 @@ import type {
   FullProfileType,
   GeneratePersonalizedMealPlanOutput,
   AIGeneratedIngredient,
+  GeneratePersonalizedMealPlanInput,
 } from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
 import { getAIApiErrorMessage } from '@/lib/utils';
@@ -63,7 +64,7 @@ export default function OptimizedMealPlanPage() {
   const [mealPlan, setMealPlan] =
     useState<GeneratePersonalizedMealPlanOutput | null>(null);
   const [profileData, setProfileData] =
-    useState<Partial<FullProfileType> | null>(null);
+    useState<FullProfileType | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
@@ -136,8 +137,10 @@ export default function OptimizedMealPlanPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // The flow now only needs the user ID and will fetch the latest profile data itself.
-      const result = await generatePersonalizedMealPlan(user.uid);
+      // Pass the entire profile data object. The flow will use what it needs.
+      // This is safe because the Zod schema in the flow will only accept known fields.
+      const result = await generatePersonalizedMealPlan(profileData);
+      
       setMealPlan(result);
       
       const userDocRef = doc(db, 'users', user.uid);
@@ -440,5 +443,3 @@ export default function OptimizedMealPlanPage() {
     </div>
   );
 }
-
-    
