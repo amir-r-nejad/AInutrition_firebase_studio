@@ -1,27 +1,9 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
-import {
-  GeneratePersonalizedMealPlanInputSchema,
-  GeneratePersonalizedMealPlanOutputSchema,
-  AIDailyPlanOutputSchema,
-  type GeneratePersonalizedMealPlanOutput,
-  type DayPlan,
-  type AIGeneratedMeal,
-  type GeneratePersonalizedMealPlanInput,
-  AIDailyMealSchema,
-} from '@/lib/schemas';
-import { daysOfWeek } from '@/lib/constants';
 import { z } from 'zod';
-import { getAIApiErrorMessage } from '@/lib/utils';
 
-export async function generatePersonalizedMealPlan(
-  input: GeneratePersonalizedMealPlanInput
-): Promise<GeneratePersonalizedMealPlanOutput> {
-  return generatePersonalizedMealPlanFlow(input);
-}
 
-const DailyPromptInputSchema = z.object({
+export const DailyPromptInputSchema = z.object({
   dayOfWeek: z.string(),
   mealTargets: z.array(
     z.object({
@@ -43,7 +25,7 @@ const DailyPromptInputSchema = z.object({
 });
 type DailyPromptInput = z.infer<typeof DailyPromptInputSchema>;
 
-const dailyPrompt = ai.definePrompt({
+export const dailyPrompt = ai.definePrompt({
   name: 'generateDailyMealPlanPrompt',
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
@@ -88,7 +70,7 @@ You are being provided with specific macronutrient targets for each meal. These 
 `,
 });
 
-const generatePersonalizedMealPlanFlow = ai.defineFlow(
+export const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
     inputSchema: GeneratePersonalizedMealPlanInputSchema,

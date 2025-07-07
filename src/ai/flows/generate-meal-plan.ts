@@ -1,3 +1,4 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -82,8 +83,8 @@ You are being provided with specific macronutrient targets for each meal. These 
 **CRITICAL OUTPUT INSTRUCTIONS:**
 1. Respond with ONLY a valid JSON object matching the provided schema. Do NOT include any text, notes, greetings, or markdown like \`\`\`json outside the JSON object.
 2. For each meal in the targets, create a corresponding meal object in the "meals" array.
-3. Each meal object MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array.
-4. For each ingredient object MUST have a "name", and the precise "calories", "protein", "carbs", and "fat" values for the portion used in the meal. All values must be numbers.
+3. Each meal object MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array with at least one ingredient, each with valid "name", "calories", "protein", "carbs", and "fat" values.
+4. For each ingredient object, all fields ("name", "calories", "protein", "carbs", "fat") must be provided and must be numbers (no null or undefined values).
 5. **Before finalizing your output, you MUST double-check your math.** Sum the macros for each ingredient list to ensure the totals for each meal are within the 5% tolerance of the targets provided above. If they are not, you must adjust the ingredients and recalculate until they are. ONLY output the final, correct version.
 `,
 });
@@ -125,9 +126,21 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
           continue;
         }
 
-        const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
+        // Log API response for debugging
+        console.log(`API response for ${dayOfWeek}:`, JSON.stringify(dailyOutput.meals, null, 2));
+
+        // Validate API output against schema
+        const parsedOutput = AIDailyPlanOutputSchema.safeParse(dailyOutput);
+        if (!parsedOutput.success) {
+          console.error(`Invalid AI output for ${dayOfWeek}:`, parsedOutput.error);
+          continue;
+        }
+        const validDailyOutput = parsedOutput.data;
+
+        const processedMeals: AIGeneratedMeal[] = validDailyOutput.meals
           .map((meal, index): AIGeneratedMeal | null => {
             if (!meal.ingredients || meal.ingredients.length === 0) {
+              console.warn(`Skipping meal ${index + 1} for ${dayOfWeek}: invalid ingredients`);
               return null;
             }
 
