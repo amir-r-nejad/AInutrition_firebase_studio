@@ -1,7 +1,7 @@
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 
 import type { BaseProfileData, FullProfileType } from '@/lib/schemas';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export function useFetchProfile() {
   const { user } = useAuth();
@@ -10,24 +10,27 @@ export function useFetchProfile() {
     useState<Partial<FullProfileType> | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-  function fetchUserData(
-    fetchFn: (userId: string) => Promise<Partial<BaseProfileData>>,
-    onError: () => void,
-    onSuccess?: (data: Partial<BaseProfileData>) => void
-  ) {
-    if (user?.uid) {
-      setIsLoadingProfile(true);
-      fetchFn(user.uid)
-        .then((data) => {
-          setProfileData(data);
-          onSuccess && onSuccess(data);
-        })
-        .catch(() => onError())
-        .finally(() => setIsLoadingProfile(false));
-    } else {
-      setIsLoadingProfile(false);
-    }
-  }
+  const fetchUserData = useCallback(
+    (
+      fetchFn: (userId: string) => Promise<Partial<BaseProfileData>>,
+      onError: () => void,
+      onSuccess?: (data: Partial<BaseProfileData>) => void
+    ) => {
+      if (user?.uid) {
+        setIsLoadingProfile(true);
+        fetchFn(user.uid)
+          .then((data) => {
+            setProfileData(data);
+            if (onSuccess) onSuccess(data);
+          })
+          .catch(() => onError())
+          .finally(() => setIsLoadingProfile(false));
+      } else {
+        setIsLoadingProfile(false);
+      }
+    },
+    [user?.uid]
+  );
 
   return { isLoadingProfile, profileData, fetchUserData, user };
 }

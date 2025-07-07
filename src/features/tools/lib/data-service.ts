@@ -1,7 +1,7 @@
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDocFromServer, setDoc } from 'firebase/firestore';
-import { MealInputTypes } from '../../types/toolsGlobalTypes';
 import { FullProfileType, preprocessDataForFirestore } from '@/lib/schemas';
+import { MealInputTypes } from '../types/toolsGlobalTypes';
 
 export async function updateMealSuggestion(
   userId: string,

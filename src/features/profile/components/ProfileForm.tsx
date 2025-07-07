@@ -77,7 +77,7 @@ const ProfileForm = forwardRef<ProfileFormHandle, FormProps>(
           title: 'Profile Updated',
           description: 'Your profile has been successfully updated.',
         });
-      } catch (error) {
+      } catch {
         toast({
           title: 'Update Failed',
           description: 'Could not update profile. Please try again.',
@@ -323,5 +323,6 @@ const ProfileForm = forwardRef<ProfileFormHandle, FormProps>(
     );
   }
 );
+ProfileForm.displayName = 'ProfileForm';
 
 export default ProfileForm;
