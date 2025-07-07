@@ -50,10 +50,18 @@ const dailyPrompt = ai.definePrompt({
   prompt: `You are a nutritional data assistant. Your task is to generate a meal plan for a single day, which is {{dayOfWeek}}, based on specific macro targets for each meal.
 
 **USER PROFILE FOR CONTEXT:**
+- Age: {{age}}
+- Gender: {{gender}}
 - Dietary Goal: {{dietGoalOnboarding}}
 {{#if preferredDiet}}- Dietary Preference: {{preferredDiet}}{{/if}}
 {{#if allergies.length}}- Allergies to Avoid: {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if dispreferredIngredients.length}}- Disliked Ingredients: {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredIngredients.length}}- Favorite Ingredients: {{#each preferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredCuisines.length}}- Favorite Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredCuisines.length}}- Cuisines to Avoid: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if medicalConditions.length}}- Medical Conditions: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if medications.length}}- Medications: {{#each medications}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+
 
 **MEAL TARGETS FOR TODAY ({{dayOfWeek}}):**
 {{#each mealTargets}}
