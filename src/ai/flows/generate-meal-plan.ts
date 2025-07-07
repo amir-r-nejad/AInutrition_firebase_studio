@@ -86,13 +86,15 @@ For each meal listed below, you MUST generate a corresponding meal object. The t
 - If Target Protein = 30g, a 5% tolerance means the sum of your ingredient protein must be between 28.5g and 31.5g.
 - **YOU MUST PERFORM THIS CHECK FOR EVERY MEAL AND EVERY MACRONUTRIENT (CALORIES, PROTEIN, CARBS, FAT).**
 
-**MEAL TARGETS FOR {{dayOfWeek}}:**
+**MEAL TARGETS FOR {{dayOfWeek}} (FROM USER'S MACRO SPLITTER):**
+You are being provided with specific macronutrient targets for each meal. These targets were set by the user in the "Macro Splitter" tool. It is absolutely critical that you respect these targets.
+
 {{#each mealTargets}}
-- **{{this.mealName}}**:
-  - Target Calories: {{this.calories}} kcal
-  - Target Protein: {{this.protein}}g
-  - Target Carbohydrates: {{this.carbs}}g
-  - Target Fat: {{this.fat}}g
+- **Meal: {{this.mealName}}**
+  - **TARGET Calories:** {{this.calories}} kcal
+  - **TARGET Protein:** {{this.protein}}g
+  - **TARGET Carbohydrates:** {{this.carbs}}g
+  - **TARGET Fat:** {{this.fat}}g
 {{/each}}
 
 **CRITICAL OUTPUT INSTRUCTIONS:**
