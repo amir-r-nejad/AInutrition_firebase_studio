@@ -698,7 +698,7 @@ export type AdjustMealIngredientsOutput = z.infer<
 
 // A more lenient schema for parsing raw, potentially incomplete AI output.
 // Use .optional() on each field to allow for partial data from the AI.
-const AIUnvalidatedIngredientSchema = z.object({
+export const AIUnvalidatedIngredientSchema = z.object({
   name: z.string().optional(),
   calories: z.number().optional(),
   protein: z.number().optional(),
@@ -913,3 +913,5 @@ export const SupportChatbotOutputSchema = z.object({
   botResponse: z.string(),
 });
 export type SupportChatbotOutput = z.infer<typeof SupportChatbotOutputSchema>;
+
+    
