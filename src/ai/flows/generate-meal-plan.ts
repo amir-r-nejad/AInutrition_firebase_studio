@@ -43,12 +43,11 @@ const prompt = ai.definePrompt({
   prompt: `You are a data conversion service. Your sole purpose is to convert user nutritional requirements into a valid JSON object representing a 7-day meal plan. You must adhere strictly to the provided JSON schema.
 
 **USER DATA:**
-- **Profile:**
-  - **Dietary Goal:** {{dietGoalOnboarding}}
-  {{#if preferredDiet}}- **Dietary Preference:** {{preferredDiet}}{{/if}}
-  {{#if allergies.length}}- **Allergies to Avoid:** {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-  {{#if dispreferredIngredients.length}}- **Disliked Ingredients:** {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-  {{#if preferredCuisines.length}}- **Preferred Cuisines:** {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+- **Dietary Goal:** {{dietGoalOnboarding}}
+{{#if preferredDiet}}- **Dietary Preference:** {{preferredDiet}}{{/if}}
+{{#if allergies.length}}- **Allergies to Avoid:** {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredIngredients.length}}- **Disliked Ingredients:** {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredCuisines.length}}- **Preferred Cuisines:** {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 - **Daily Meal Targets:**
 {{#each mealTargets}}
   - **{{this.mealName}}**: Target ~{{this.calories}} kcal, ~{{this.protein}}g Protein, ~{{this.carbs}}g Carbs, ~{{this.fat}}g Fat
@@ -60,7 +59,7 @@ const prompt = ai.definePrompt({
 3.  "weeklyMealPlan" MUST be an array of 7 objects, for "Monday" through "Sunday".
 4.  Each day object MUST have a "day" (string) and a "meals" (array).
 5.  Each meal object MUST have a "meal_title" (string) and an "ingredients" (array).
-6.  Each ingredient object MUST have "name" (string), "quantity" (number or string), "unit" (string), "calories" (number), "protein" (number), "carbs" (number), and "fat" (number).
+6.  Each ingredient object MUST have "name" (string), "calories" (number), "protein" (number), "carbs" (number), and "fat" (number).
 7.  Ensure all macronutrient values are realistic positive numbers for the specified quantity.
 `,
 });
@@ -159,8 +158,6 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
             ...meal,
             ingredients: meal.ingredients?.map(ing => ({
                 name: ing.name ?? 'Unknown Ingredient',
-                quantity: ing.quantity ?? 0,
-                unit: ing.unit ?? 'unit',
                 calories: ing.calories ?? 0,
                 protein: ing.protein ?? 0,
                 carbs: ing.carbs ?? 0,
