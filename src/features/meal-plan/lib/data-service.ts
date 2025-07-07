@@ -1,3 +1,4 @@
+import { GeneratePersonalizedMealPlanOutput } from '@/ai/flows/generate-meal-plan';
 import { daysOfWeek, mealNames } from '@/lib/constants';
 import { db } from '@/lib/firebase/clientApp';
 import type { FullProfileType, WeeklyMealPlan } from '@/lib/schemas';
@@ -125,6 +126,40 @@ export async function getProfileDataForOptimization(
     );
   }
   return {};
+}
+
+export async function getFullProfileData(
+  userId: string
+): Promise<Partial<FullProfileType>> {
+  if (!userId) return {};
+  try {
+    const userProfileRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(userProfileRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as Partial<FullProfileType>;
+    }
+  } catch (error) {
+    console.error('Error fetching full profile data from Firestore:', error);
+  }
+  return {};
+}
+
+export async function saveOptimizedMealPlan(
+  userId: string,
+  planData: GeneratePersonalizedMealPlanOutput
+) {
+  if (!userId) throw new Error('User ID required to save AI meal plan.');
+  try {
+    const userProfileRef = doc(db, 'users', userId);
+    await setDoc(
+      userProfileRef,
+      { aiGeneratedMealPlan: planData },
+      { merge: true }
+    );
+  } catch (error) {
+    console.error('Error saving AI meal plan data to Firestore:', error);
+    throw error;
+  }
 }
 
 export function generateInitialWeeklyPlan(): WeeklyMealPlan {
