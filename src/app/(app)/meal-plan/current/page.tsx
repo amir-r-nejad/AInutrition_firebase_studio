@@ -14,27 +14,36 @@ import {
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
 import EditMealDialog from '@/features/meal-plan/components/current/EditMealDialog';
 import MealCardItem from '@/features/meal-plan/components/current/MealCardItem';
+import { useUserMealPlanData } from '@/features/meal-plan/hooks/useUserMealPlanData';
 import {
-  generateInitialWeeklyPlan,
-  getMealPlanData,
   getProfileDataForOptimization,
   saveMealPlanData,
 } from '@/features/meal-plan/lib/data-service';
+import { getMissingProfileFields } from '@/features/meal-plan/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryParams } from '@/hooks/useQueryParams';
 import { daysOfWeek, defaultMacroPercentages } from '@/lib/constants';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
-import type { FullProfileType, Meal, WeeklyMealPlan } from '@/lib/schemas';
+import type { Meal } from '@/lib/schemas';
 import { useEffect, useState } from 'react';
 
 export default function CurrentMealPlanPage() {
-  const { user } = useAuth();
+  const { getQueryParams, updateQueryParams } = useQueryParams();
   const { toast } = useToast();
-  const [weeklyPlan, setWeeklyPlan] = useState<WeeklyMealPlan>(
-    generateInitialWeeklyPlan()
-  );
+
+  const {
+    user,
+    weeklyPlan,
+    setWeeklyPlan,
+    isLoadingPlan,
+    profileData,
+    isLoadingProfile,
+    fetchMealPlan,
+    fetchUserData,
+  } = useUserMealPlanData();
+
   const [editingMeal, setEditingMeal] = useState<{
     dayIndex: number;
     mealIndex: number;
@@ -43,45 +52,29 @@ export default function CurrentMealPlanPage() {
   const [optimizingMealKey, setOptimizingMealKey] = useState<string | null>(
     null
   );
-  const [profileData, setProfileData] =
-    useState<Partial<FullProfileType> | null>(null);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [isLoadingPlan, setIsLoadingPlan] = useState(true);
 
   useEffect(() => {
-    if (user?.uid) {
-      setIsLoadingPlan(true);
-      getMealPlanData(user.uid)
-        .then((plan) => {
-          if (plan) setWeeklyPlan(plan);
-          else setWeeklyPlan(generateInitialWeeklyPlan());
-        })
-        .catch(() => {
-          toast({
-            title: 'Error',
-            description: 'Could not load meal plan.',
-            variant: 'destructive',
-          });
-          setWeeklyPlan(generateInitialWeeklyPlan());
-        })
-        .finally(() => setIsLoadingPlan(false));
-
-      setIsLoadingProfile(true);
-      getProfileDataForOptimization(user.uid)
-        .then((data) => setProfileData(data))
-        .catch(() =>
-          toast({
-            title: 'Error',
-            description: 'Could not load profile data for optimization.',
-            variant: 'destructive',
-          })
-        )
-        .finally(() => setIsLoadingProfile(false));
-    } else {
-      setIsLoadingPlan(false);
-      setIsLoadingProfile(false);
-      setWeeklyPlan(generateInitialWeeklyPlan());
+    function handleError() {
+      toast({
+        title: 'Error',
+        description: 'Could not load profile data for optimization.',
+        variant: 'destructive',
+      });
     }
+
+    fetchUserData(getProfileDataForOptimization, handleError);
+  }, [toast]);
+
+  useEffect(() => {
+    function handleError() {
+      toast({
+        title: 'Error',
+        description: 'Could not load meal plan.',
+        variant: 'destructive',
+      });
+    }
+
+    fetchMealPlan(handleError);
   }, [toast]);
 
   const handleEditMeal = (dayIndex: number, mealIndex: number) => {
@@ -133,15 +126,7 @@ export default function CurrentMealPlanPage() {
       return;
     }
 
-    const requiredFields: (keyof FullProfileType)[] = [
-      'age',
-      'gender',
-      'current_weight',
-      'height_cm',
-      'activityLevel',
-      'dietGoalOnboarding',
-    ];
-    const missingFields = requiredFields.filter((field) => !profileData[field]);
+    const missingFields = getMissingProfileFields(profileData);
 
     if (missingFields.length > 0) {
       toast({
@@ -311,11 +296,15 @@ export default function CurrentMealPlanPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue={daysOfWeek[0]} className='w-full'>
+          <Tabs
+            defaultValue={getQueryParams('selected_day') ?? daysOfWeek[0]}
+            className='w-full'
+          >
             <ScrollArea className='w-full whitespace-nowrap rounded-md'>
               <TabsList className='inline-flex h-auto'>
                 {daysOfWeek.map((day) => (
                   <TabsTrigger
+                    onClick={() => updateQueryParams('selected_day', day)}
                     key={day}
                     value={day}
                     className='px-4 py-2 text-base'
