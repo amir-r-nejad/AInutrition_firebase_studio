@@ -1,4 +1,3 @@
-
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -60,7 +59,6 @@ const dailyPrompt = ai.definePrompt({
 {{#if medicalConditions.length}}- Medical Conditions: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if medications.length}}- Medications: {{#each medications}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
-
 **ABSOLUTE REQUIREMENTS FOR MEAL GENERATION:**
 
 For each meal listed below, you MUST generate a corresponding meal object. The total macros for the ingredients you list for each meal MUST fall within a 5% tolerance of the targets.
@@ -82,11 +80,11 @@ You are being provided with specific macronutrient targets for each meal. These 
 {{/each}}
 
 **CRITICAL OUTPUT INSTRUCTIONS:**
-1.  Respond with ONLY a valid JSON object matching the provided schema. Do NOT include any text, notes, greetings, or markdown like \`\`\`json outside the JSON object.
-2.  For each meal in the targets, create a corresponding meal object in the "meals" array.
-3.  Each meal object MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array.
-4.  For each ingredient object MUST have a "name", and the precise "calories", "protein", "carbs", and "fat" values for the portion used in the meal. All values must be numbers.
-5.  **Before finalizing your output, you MUST double-check your math.** Sum the macros for each ingredient list to ensure the totals for each meal are within the 5% tolerance of the targets provided above. If they are not, you must adjust the ingredients and recalculate until they are. ONLY output the final, correct version.
+1. Respond with ONLY a valid JSON object matching the provided schema. Do NOT include any text, notes, greetings, or markdown like \`\`\`json outside the JSON object.
+2. For each meal in the targets, create a corresponding meal object in the "meals" array.
+3. Each meal object MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array.
+4. For each ingredient object MUST have a "name", and the precise "calories", "protein", "carbs", and "fat" values for the portion used in the meal. All values must be numbers.
+5. **Before finalizing your output, you MUST double-check your math.** Sum the macros for each ingredient list to ensure the totals for each meal are within the 5% tolerance of the targets provided above. If they are not, you must adjust the ingredients and recalculate until they are. ONLY output the final, correct version.
 `,
 });
 
@@ -129,10 +127,10 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
 
         const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
           .map((meal, index): AIGeneratedMeal | null => {
-            if (!meal || !meal.ingredients || meal.ingredients.length === 0) {
+            if (!meal.ingredients || meal.ingredients.length === 0) {
               return null;
             }
-            
+
             const sanitizedIngredients = meal.ingredients.map((ing) => ({
               name: ing.name ?? 'Unknown Ingredient',
               calories: ing.calories ?? 0,
@@ -140,7 +138,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
               carbs: ing.carbs ?? 0,
               fat: ing.fat ?? 0,
             }));
-            
+
             const mealTotals = sanitizedIngredients.reduce(
               (totals, ing) => {
                 totals.calories += ing.calories;
@@ -153,17 +151,16 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
             );
 
             return {
-              meal_name: input.mealTargets[index]?.mealName || meal.meal_title,
-              meal_title: meal.meal_title,
+              meal_name: input.mealTargets[index]?.mealName || meal.meal_title || `Meal ${index + 1}`,
+              meal_title: meal.meal_title || `AI Generated ${input.mealTargets[index]?.mealName || 'Meal'}`,
               ingredients: sanitizedIngredients,
-              total_calories: mealTotals.calories,
-              total_protein_g: mealTotals.protein,
-              total_carbs_g: mealTotals.carbs,
-              total_fat_g: mealTotals.fat,
+              total_calories: mealTotals.calories || undefined,
+              total_protein_g: mealTotals.protein || undefined,
+              total_carbs_g: mealTotals.carbs || undefined,
+              total_fat_g: mealTotals.fat || undefined,
             };
           })
           .filter((meal): meal is AIGeneratedMeal => meal !== null);
-
 
         if (processedMeals.length > 0) {
           processedWeeklyPlan.push({ day: dayOfWeek, meals: processedMeals });
@@ -181,15 +178,15 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         })
       );
     }
-    
+
     const weeklySummary = processedWeeklyPlan.reduce((summary, day) => {
-        day.meals.forEach(meal => {
-            summary.totalCalories += meal.total_calories || 0;
-            summary.totalProtein += meal.total_protein_g || 0;
-            summary.totalCarbs += meal.total_carbs_g || 0;
-            summary.totalFat += meal.total_fat_g || 0;
-        });
-        return summary;
+      day.meals.forEach(meal => {
+        summary.totalCalories += meal.total_calories || 0;
+        summary.totalProtein += meal.total_protein_g || 0;
+        summary.totalCarbs += meal.total_carbs_g || 0;
+        summary.totalFat += meal.total_fat_g || 0;
+      });
+      return summary;
     }, { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 });
 
     const finalOutput: GeneratePersonalizedMealPlanOutput = {
