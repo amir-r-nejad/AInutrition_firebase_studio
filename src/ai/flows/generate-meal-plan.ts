@@ -21,8 +21,6 @@ export async function generatePersonalizedMealPlan(
   return generatePersonalizedMealPlanFlow(input);
 }
 
-// This schema is for the internal daily prompt, containing only necessary info.
-// REMOVED general profile data to force focus on targets and preferences.
 const DailyPromptInputSchema = z.object({
   dayOfWeek: z.string(),
   mealTargets: z.array(
@@ -45,8 +43,6 @@ const DailyPromptInputSchema = z.object({
 });
 type DailyPromptInput = z.infer<typeof DailyPromptInputSchema>;
 
-// A prompt specifically for generating a SINGLE DAY's meal plan.
-// REMOVED the user profile section to make the prompt more focused.
 const dailyPrompt = ai.definePrompt({
   name: 'generateDailyMealPlanPrompt',
   input: { schema: DailyPromptInputSchema },
@@ -93,7 +89,6 @@ You are being provided with specific macronutrient targets for each meal. These 
 `,
 });
 
-// The flow takes the pre-calculated targets and user context and iterates to generate a plan.
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
@@ -113,7 +108,6 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
 
     for (const dayOfWeek of daysOfWeek) {
       try {
-        // Construct the simpler input for the daily prompt
         const dailyPromptInput: DailyPromptInput = {
           dayOfWeek,
           mealTargets: input.mealTargets,
@@ -140,11 +134,11 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
 
         const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
           .map((meal, index) => {
-            if (!meal.ingredients || meal.ingredients.length === 0) {
+            if (!meal || !meal.ingredients || meal.ingredients.length === 0) {
               return null;
             }
 
-            const sanitizedIngredients = meal.ingredients!.map((ing) => ({
+            const sanitizedIngredients = meal.ingredients.map((ing) => ({
               name: ing.name ?? 'Unknown Ingredient',
               calories: ing.calories ?? 0,
               protein: ing.protein ?? 0,
