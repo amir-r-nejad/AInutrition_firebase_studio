@@ -32,7 +32,6 @@ import { daysOfWeek } from '@/lib/constants';
 import { db } from '@/lib/firebase/clientApp';
 import type {
   FullProfileType,
-  GeneratePersonalizedMealPlanInput,
   GeneratePersonalizedMealPlanOutput,
   AIGeneratedIngredient,
 } from '@/lib/schemas';
@@ -118,11 +117,11 @@ export default function OptimizedMealPlanPage() {
       return;
     }
 
-    const requiredFields: (keyof GeneratePersonalizedMealPlanInput)[] = [
+    const requiredFields: (keyof FullProfileType)[] = [
         'age', 'gender', 'height_cm', 'current_weight', 'goal_weight_1m', 'activityLevel', 'dietGoalOnboarding'
     ];
-
-    const missingFields = requiredFields.filter(field => profileData[field] === null || profileData[field] === undefined);
+    
+    const missingFields = requiredFields.filter(field => !profileData || profileData[field] === null || profileData[field] === undefined);
 
     if (missingFields.length > 0) {
         toast({
@@ -134,71 +133,13 @@ export default function OptimizedMealPlanPage() {
         return;
     }
 
-    // Map FullProfileType to GeneratePersonalizedMealPlanInput
-    const input: GeneratePersonalizedMealPlanInput = {
-      age: profileData.age!,
-      gender: profileData.gender!,
-      height_cm: profileData.height_cm!,
-      current_weight: profileData.current_weight!,
-      goal_weight_1m: profileData.goal_weight_1m!,
-      activityLevel: profileData.activityLevel!,
-      dietGoalOnboarding: profileData.dietGoalOnboarding!,
-
-      // Optional fields - ensure nulls are converted to undefined
-      ideal_goal_weight: profileData.ideal_goal_weight ?? undefined,
-      bf_current: profileData.bf_current ?? undefined,
-      bf_target: profileData.bf_target ?? undefined,
-      bf_ideal: profileData.bf_ideal ?? undefined,
-      mm_current: profileData.mm_current ?? undefined,
-      mm_target: profileData.mm_target ?? undefined,
-      mm_ideal: profileData.mm_ideal ?? undefined,
-      bw_current: profileData.bw_current ?? undefined,
-      bw_target: profileData.bw_target ?? undefined,
-      bw_ideal: profileData.bw_ideal ?? undefined,
-      waist_current: profileData.waist_current ?? undefined,
-      waist_goal_1m: profileData.waist_goal_1m ?? undefined,
-      waist_ideal: profileData.waist_ideal ?? undefined,
-      hips_current: profileData.hips_current ?? undefined,
-      hips_goal_1m: profileData.hips_goal_1m ?? undefined,
-      hips_ideal: profileData.hips_ideal ?? undefined,
-      right_leg_current: profileData.right_leg_current ?? undefined,
-      right_leg_goal_1m: profileData.right_leg_goal_1m ?? undefined,
-      right_leg_ideal: profileData.right_leg_ideal ?? undefined,
-      left_leg_current: profileData.left_leg_current ?? undefined,
-      left_leg_goal_1m: profileData.left_leg_goal_1m ?? undefined,
-      left_leg_ideal: profileData.left_leg_ideal ?? undefined,
-      right_arm_current: profileData.right_arm_current ?? undefined,
-      right_arm_goal_1m: profileData.right_arm_goal_1m ?? undefined,
-      right_arm_ideal: profileData.right_arm_ideal ?? undefined,
-      left_arm_current: profileData.left_arm_current ?? undefined,
-      left_arm_goal_1m: profileData.left_arm_goal_1m ?? undefined,
-      left_arm_ideal: profileData.left_arm_ideal ?? undefined,
-      preferredDiet: profileData.preferredDiet ?? undefined,
-      allergies: profileData.allergies ?? undefined,
-      preferredCuisines: profileData.preferredCuisines ?? undefined,
-      dispreferredCuisines: profileData.dispreferredCuisines ?? undefined,
-      preferredIngredients: profileData.preferredIngredients ?? undefined,
-      dispreferredIngredients: profileData.dispreferredIngredients ?? undefined,
-      preferredMicronutrients: profileData.preferredMicronutrients ?? undefined,
-      medicalConditions: profileData.medicalConditions ?? undefined,
-      medications: profileData.medications ?? undefined,
-      typicalMealsDescription: profileData.typicalMealsDescription ?? undefined,
-      mealDistributions: profileData.mealDistributions ?? undefined,
-    };
-    // Filter out undefined optional fields to keep AI input clean
-    Object.keys(input).forEach(
-      (key) =>
-        (input as any)[key] === undefined &&
-        delete (input as any)[key]
-    );
-
     setIsLoading(true);
     setError(null);
     try {
-      const result = await generatePersonalizedMealPlan(input);
+      // The flow now only needs the user ID and will fetch the latest profile data itself.
+      const result = await generatePersonalizedMealPlan(user.uid);
       setMealPlan(result);
       
-      // Client-side Firestore write
       const userDocRef = doc(db, 'users', user.uid);
       await setDoc(
         userDocRef,

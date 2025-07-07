@@ -3,46 +3,61 @@
 
 import { ai } from '@/ai/genkit';
 import {
-  GeneratePersonalizedMealPlanInputSchema,
   GeneratePersonalizedMealPlanOutputSchema,
   AIDailyPlanOutputSchema,
-  type GeneratePersonalizedMealPlanInput,
   type GeneratePersonalizedMealPlanOutput,
   type DayPlan,
   type AIGeneratedMeal,
+  type FullProfileType,
 } from '@/lib/schemas';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
-import { defaultMacroPercentages, mealNames, daysOfWeek } from '@/lib/constants';
+import {
+  defaultMacroPercentages,
+  mealNames,
+  daysOfWeek,
+} from '@/lib/constants';
 import { z } from 'zod';
 import { getAIApiErrorMessage } from '@/lib/utils';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
-// Define a new schema for the prompt's specific input needs
-const DailyPromptInputSchema =
-  GeneratePersonalizedMealPlanInputSchema.extend({
-    dayOfWeek: z.string(),
-    mealTargets: z.array(
-      z.object({
-        mealName: z.string(),
-        calories: z.number(),
-        protein: z.number(),
-        carbs: z.number(),
-        fat: z.number(),
-      })
-    ),
-  });
-type DailyPromptInput = z.infer<typeof DailyPromptInputSchema>;
-
-
-// Main entry function remains the same
+// This is the input for the public-facing function, just the user ID.
 export async function generatePersonalizedMealPlan(
-  input: GeneratePersonalizedMealPlanInput
+  userId: string
 ): Promise<GeneratePersonalizedMealPlanOutput> {
-  return generatePersonalizedMealPlanFlow(input);
+  if (!userId) {
+    throw new Error('User ID is required to generate a meal plan.');
+  }
+  return generatePersonalizedMealPlanFlow(userId);
 }
 
+// This schema is for the internal daily prompt, containing only necessary info.
+const DailyPromptInputSchema = z.object({
+  dayOfWeek: z.string(),
+  mealTargets: z.array(
+    z.object({
+      mealName: z.string(),
+      calories: z.number(),
+      protein: z.number(),
+      carbs: z.number(),
+      fat: z.number(),
+    })
+  ),
+  age: z.number().optional(),
+  gender: z.string().optional(),
+  dietGoalOnboarding: z.string().optional(),
+  preferredDiet: z.string().optional(),
+  allergies: z.array(z.string()).optional(),
+  dispreferredIngredients: z.array(z.string()).optional(),
+  preferredIngredients: z.array(z.string()).optional(),
+  preferredCuisines: z.array(z.string()).optional(),
+  dispreferredCuisines: z.array(z.string()).optional(),
+  medicalConditions: z.array(z.string()).optional(),
+  medications: z.array(z.string()).optional(),
+});
+type DailyPromptInput = z.infer<typeof DailyPromptInputSchema>;
 
-// NEW: A prompt specifically for generating a SINGLE DAY's meal plan.
-// This is much simpler and more reliable for the AI to handle.
+// A prompt specifically for generating a SINGLE DAY's meal plan.
 const dailyPrompt = ai.definePrompt({
   name: 'generateDailyMealPlanPrompt',
   input: { schema: DailyPromptInputSchema },
@@ -89,18 +104,23 @@ For each meal listed below, you MUST generate a corresponding meal object. The t
 `,
 });
 
-
-// REWRITTEN FLOW: Now iterates through each day, making smaller, more reliable AI calls.
+// REWRITTEN FLOW: Now takes a userId, fetches data, then iterates through each day.
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
-    inputSchema: GeneratePersonalizedMealPlanInputSchema,
+    inputSchema: z.string(), // Expects userId
     outputSchema: GeneratePersonalizedMealPlanOutputSchema,
   },
-  async (
-    input: GeneratePersonalizedMealPlanInput
-  ): Promise<GeneratePersonalizedMealPlanOutput> => {
-    // 1. Calculate total daily targets
+  async (userId: string): Promise<GeneratePersonalizedMealPlanOutput> => {
+    // 1. Fetch the user's latest profile directly from Firestore.
+    const userDocRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(userDocRef);
+    if (!docSnap.exists()) {
+      throw new Error('Could not find a profile for the provided user.');
+    }
+    const input = docSnap.data() as FullProfileType;
+
+    // 2. Calculate total daily targets
     const dailyTargets = calculateEstimatedDailyTargets({
       age: input.age,
       gender: input.gender,
@@ -121,7 +141,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       );
     }
 
-    // 2. Determine meal distributions
+    // 3. Determine meal distributions (user's custom or default)
     const distributions =
       input.mealDistributions && input.mealDistributions.length > 0
         ? input.mealDistributions
@@ -133,7 +153,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
             fat_pct: defaultMacroPercentages[name].fat_pct,
           }));
 
-    // 3. Calculate absolute macro targets for each meal
+    // 4. Calculate absolute macro targets for each meal
     const mealTargets = distributions.map((dist) => ({
       mealName: dist.mealName,
       calories: Math.round(
@@ -146,7 +166,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       fat: Math.round(dailyTargets.fatGrams! * (dist.fat_pct / 100)),
     }));
 
-    // 4. Loop through each day of the week and generate a plan
+    // 5. Loop through each day of the week and generate a plan
     const processedWeeklyPlan: DayPlan[] = [];
     let weeklySummary = {
       totalCalories: 0,
@@ -158,28 +178,33 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     for (const dayOfWeek of daysOfWeek) {
       try {
         const dailyPromptInput: DailyPromptInput = {
-          ...input,
           dayOfWeek,
           mealTargets,
+          age: input.age ?? undefined,
+          gender: input.gender ?? undefined,
+          dietGoalOnboarding: input.dietGoalOnboarding ?? undefined,
+          preferredDiet: input.preferredDiet ?? undefined,
+          allergies: input.allergies ?? [],
+          dispreferredIngredients: input.dispreferredIngredients ?? [],
+          preferredIngredients: input.preferredIngredients ?? [],
+          preferredCuisines: input.preferredCuisines ?? [],
+          dispreferredCuisines: input.dispreferredCuisines ?? [],
+          medicalConditions: input.medicalConditions ?? [],
+          medications: input.medications ?? [],
         };
 
-        // 5. Call the new, simpler daily prompt
         const { output: dailyOutput } = await dailyPrompt(dailyPromptInput);
-        
-        if (!dailyOutput || !dailyOutput.meals || dailyOutput.meals.length === 0) {
-            console.warn(`AI returned no meals for ${dayOfWeek}. Skipping.`);
-            continue; // Skip this day if AI fails
-        }
 
-        // 6. Process the valid daily output
-        const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
-          .map((meal, index) => {
-            // Filter out any meals AI might have hallucinated without ingredients
+        if (!dailyOutput || !dailyOutput.meals || dailyOutput.meals.length === 0) {
+          console.warn(`AI returned no meals for ${dayOfWeek}. Skipping.`);
+          continue;
+        }
+        
+        const processedMeals: AIGeneratedMeal[] = dailyOutput.meals.map((meal, index) => {
             if (!meal.ingredients || meal.ingredients.length === 0) {
               return null;
             }
 
-            // Sanitize ingredients and calculate totals
             const sanitizedIngredients = meal.ingredients!.map((ing) => ({
               name: ing.name ?? 'Unknown Ingredient',
               calories: ing.calories ?? 0,
@@ -199,7 +224,6 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
               { calories: 0, protein: 0, carbs: 0, fat: 0 }
             );
 
-            // Add to weekly summary
             weeklySummary.totalCalories += mealTotals.calories;
             weeklySummary.totalProtein += mealTotals.protein;
             weeklySummary.totalCarbs += mealTotals.carbs;
@@ -214,24 +238,21 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
               total_carbs_g: mealTotals.carbs,
               total_fat_g: mealTotals.fat,
             };
-        }).filter((meal): meal is AIGeneratedMeal => meal !== null); // Remove nulls from the array
+        }).filter((meal): meal is AIGeneratedMeal => meal !== null);
 
-        // Only add the day if it has valid meals
-        if(processedMeals.length > 0) {
+        if (processedMeals.length > 0) {
             processedWeeklyPlan.push({ day: dayOfWeek, meals: processedMeals });
         }
 
       } catch (e) {
         console.error(`Failed to generate meal plan for ${dayOfWeek}:`, e);
-        // Continue to the next day even if one day fails
       }
     }
 
     if (processedWeeklyPlan.length === 0) {
-        throw new Error(getAIApiErrorMessage({ message: 'The AI failed to generate a valid meal plan for any day of the week. Please try again.' }));
+      throw new Error(getAIApiErrorMessage({ message: 'The AI failed to generate a valid meal plan for any day of the week. Please try again.' }));
     }
-
-    // 7. Assemble final output
+    
     const finalOutput: GeneratePersonalizedMealPlanOutput = {
       weeklyMealPlan: processedWeeklyPlan,
       weeklySummary,
@@ -240,3 +261,5 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     return finalOutput;
   }
 );
+
+    
