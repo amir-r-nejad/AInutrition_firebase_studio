@@ -40,6 +40,8 @@ const DailyPromptInputSchema = z.object({
   preferredIngredients: z.array(z.string()).optional(),
   preferredCuisines: z.array(z.string()).optional(),
   dispreferredCuisines: z.array(z.string()).optional(),
+  medicalConditions: z.array(z.string()).optional(),
+  medications: z.array(z.string()).optional(),
 });
 type DailyPromptInput = z.infer<typeof DailyPromptInputSchema>;
 
@@ -58,6 +60,8 @@ const dailyPrompt = ai.definePrompt({
 {{#if preferredIngredients.length}}- Favorite Ingredients: {{#each preferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if preferredCuisines.length}}- Favorite Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if dispreferredCuisines.length}}- Cuisines to Avoid: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if medicalConditions.length}}- Medical Conditions: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if medications.length}}- Medications: {{#each medications}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
 
 **ABSOLUTE REQUIREMENTS FOR MEAL GENERATION:**
@@ -119,6 +123,8 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
           preferredIngredients: input.preferredIngredients,
           preferredCuisines: input.preferredCuisines,
           dispreferredCuisines: input.dispreferredCuisines,
+          medicalConditions: input.medicalConditions,
+          medications: input.medications,
         };
 
         const { output: dailyOutput } = await dailyPrompt(dailyPromptInput);

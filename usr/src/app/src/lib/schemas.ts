@@ -722,6 +722,8 @@ export const GeneratePersonalizedMealPlanInputSchema = z.object({
   preferredCuisines: z.array(z.string()).optional(),
   dispreferredIngredients: z.array(z.string()).optional(),
   preferredIngredients: z.array(z.string()).optional(),
+  medicalConditions: z.array(z.string()).optional(),
+  medications: z.array(z.string()).optional(),
 
   // The pre-calculated targets are the most important part
   mealTargets: z.array(

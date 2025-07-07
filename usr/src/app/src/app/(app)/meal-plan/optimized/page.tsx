@@ -197,10 +197,10 @@ export default function OptimizedMealPlanPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Construct the new, simpler input for the AI flow.
-      // This only includes targets and direct food preferences, no general profile info.
+      // THIS IS THE FIX: Construct a clean input object that matches the new schema.
+      // It only sends preferences and the pre-calculated targets.
       const input: GeneratePersonalizedMealPlanInput = {
-        mealTargets,
+        mealTargets, // Pass the calculated targets
         preferredDiet: profileData.preferredDiet ?? undefined,
         allergies: profileData.allergies ?? undefined,
         dispreferredCuisines: profileData.dispreferredCuisines ?? undefined,
@@ -208,12 +208,14 @@ export default function OptimizedMealPlanPage() {
         dispreferredIngredients:
           profileData.dispreferredIngredients ?? undefined,
         preferredIngredients: profileData.preferredIngredients ?? undefined,
+        medicalConditions: profileData.medicalConditions ?? undefined,
+        medications: profileData.medications ?? undefined,
       };
-      
+
       const result = await generatePersonalizedMealPlan(input);
-      
+
       setMealPlan(result);
-      
+
       const userDocRef = doc(db, 'users', user.uid);
       await setDoc(
         userDocRef,
