@@ -5,43 +5,59 @@ import { ai } from '@/ai/genkit';
 import {
   GeneratePersonalizedMealPlanInputSchema,
   GeneratePersonalizedMealPlanOutputSchema,
-  AIUnvalidatedWeeklyMealPlanSchema,
-  type GeneratePersonalizedMealPlanInput,
+  AIDailyPlanOutputSchema,
   type GeneratePersonalizedMealPlanOutput,
+  type DayPlan,
+  type AIGeneratedMeal,
+  type GeneratePersonalizedMealPlanInput,
 } from '@/lib/schemas';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
-import { defaultMacroPercentages, mealNames, daysOfWeek } from '@/lib/constants';
+import {
+  defaultMacroPercentages,
+  mealNames,
+  daysOfWeek,
+} from '@/lib/constants';
 import { z } from 'zod';
 import { getAIApiErrorMessage } from '@/lib/utils';
 
-// Define a new schema for the prompt's specific input needs
-const MealTargetSchema = z.object({
-  mealName: z.string(),
-  calories: z.number(),
-  protein: z.number(),
-  carbs: z.number(),
-  fat: z.number(),
-});
-
-const PromptInputSchema = GeneratePersonalizedMealPlanInputSchema.extend({
-  mealTargets: z.array(MealTargetSchema),
-  daysOfWeek: z.array(z.string()),
-});
-type PromptInput = z.infer<typeof PromptInputSchema>;
-
-// Main entry function
 export async function generatePersonalizedMealPlan(
   input: GeneratePersonalizedMealPlanInput
 ): Promise<GeneratePersonalizedMealPlanOutput> {
   return generatePersonalizedMealPlanFlow(input);
 }
 
-// AI Prompt - Now asks for a FULL WEEKLY plan in one go.
-const prompt = ai.definePrompt({
-  name: 'generateWeeklyMealPlanPrompt',
-  input: { schema: PromptInputSchema },
-  output: { schema: AIUnvalidatedWeeklyMealPlanSchema },
-  prompt: `You are a highly precise nutritional data generation service. Your ONLY task is to create a complete 7-day meal plan based on the user's profile and specific macronutrient targets for each meal.
+// This schema is for the internal daily prompt, containing only necessary info.
+const DailyPromptInputSchema = z.object({
+  dayOfWeek: z.string(),
+  mealTargets: z.array(
+    z.object({
+      mealName: z.string(),
+      calories: z.number(),
+      protein: z.number(),
+      carbs: z.number(),
+      fat: z.number(),
+    })
+  ),
+  age: z.number().optional(),
+  gender: z.string().optional(),
+  dietGoalOnboarding: z.string().optional(),
+  preferredDiet: z.string().optional(),
+  allergies: z.array(z.string()).optional(),
+  dispreferredIngredients: z.array(z.string()).optional(),
+  preferredIngredients: z.array(z.string()).optional(),
+  preferredCuisines: z.array(z.string()).optional(),
+  dispreferredCuisines: z.array(z.string()).optional(),
+  medicalConditions: z.array(z.string()).optional(),
+  medications: z.array(z.string()).optional(),
+});
+type DailyPromptInput = z.infer<typeof DailyPromptInputSchema>;
+
+// A prompt specifically for generating a SINGLE DAY's meal plan.
+const dailyPrompt = ai.definePrompt({
+  name: 'generateDailyMealPlanPrompt',
+  input: { schema: DailyPromptInputSchema },
+  output: { schema: AIDailyPlanOutputSchema },
+  prompt: `You are a highly precise nutritional data generation service. Your ONLY task is to create a list of meals for a single day, {{dayOfWeek}}, that strictly matches the provided macronutrient targets for each meal.
 
 **USER PROFILE (FOR CONTEXT ONLY - DO NOT REPEAT IN OUTPUT):**
 - Age: {{age}}
@@ -57,13 +73,17 @@ const prompt = ai.definePrompt({
 {{#if medications.length}}- Medications: {{#each medications}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
 **ABSOLUTE REQUIREMENTS FOR MEAL GENERATION:**
-1.  You MUST generate a plan for all 7 days of the week: {{#each daysOfWeek}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}.
-2.  For each day, you MUST generate a meal object for each meal listed in the targets below.
-3.  The total macros for the ingredients you list for each meal MUST fall within a 5% tolerance of the targets.
-    - **EXAMPLE CALCULATION:** If Target Calories = 500, a 5% tolerance means the sum of your ingredient calories must be between 475 and 525.
-    - **YOU MUST PERFORM THIS CHECK FOR EVERY MEAL AND EVERY MACRONUTRIENT (CALORIES, PROTEIN, CARBS, FAT).**
 
-**DAILY MEAL TARGETS (Use these for EACH of the 7 days):**
+For each meal listed below, you MUST generate a corresponding meal object. The total macros for the ingredients you list for each meal MUST fall within a 5% tolerance of the targets.
+
+**EXAMPLE CALCULATION:**
+- If Target Calories = 500, a 5% tolerance means the sum of your ingredient calories must be between 475 and 525.
+- If Target Protein = 30g, a 5% tolerance means the sum of your ingredient protein must be between 28.5g and 31.5g.
+- **YOU MUST PERFORM THIS CHECK FOR EVERY MEAL AND EVERY MACRONUTRIENT (CALORIES, PROTEIN, CARBS, FAT).**
+
+**MEAL TARGETS FOR {{dayOfWeek}} (FROM USER'S MACRO SPLITTER):**
+You are being provided with specific macronutrient targets for each meal. These targets were set by the user in the "Macro Splitter" tool. It is absolutely critical that you respect these targets.
+
 {{#each mealTargets}}
 - **Meal: {{this.mealName}}**
   - **TARGET Calories:** {{this.calories}} kcal
@@ -73,18 +93,15 @@ const prompt = ai.definePrompt({
 {{/each}}
 
 **CRITICAL OUTPUT INSTRUCTIONS:**
-1.  Your response MUST be ONLY a single, valid JSON object that strictly matches the provided output schema.
-2.  The JSON object must have one top-level key: "weeklyMealPlan".
-3.  "weeklyMealPlan" must be an array of 7 day objects.
-4.  Each day object must have a "day" (e.g., "Monday") and a "meals" array.
-5.  Each meal object in the "meals" array MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array.
-6.  Each ingredient object MUST have a "name", "calories", "protein", "carbs", and "fat". All values must be numbers.
-7.  **Before finalizing your output, you MUST double-check your math for ALL meals across ALL 7 days.** If any meal is outside the 5% tolerance, you must adjust its ingredients and recalculate until it is correct.
-8.  Do NOT include any text, notes, greetings, or markdown like \`\`\`json outside the final JSON object.
+1.  Respond with ONLY a valid JSON object matching the provided schema. Do NOT include any text, notes, greetings, or markdown like \`\`\`json outside the JSON object.
+2.  For each meal in the targets, create a corresponding meal object in the "meals" array.
+3.  Each meal object MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array.
+4.  For each ingredient object MUST have a "name", and the precise "calories", "protein", "carbs", and "fat" values for the portion used in the meal. All values must be numbers.
+5.  **Before finalizing your output, you MUST double-check your math.** Sum the macros for each ingredient list to ensure the totals for each meal are within the 5% tolerance of the targets provided above. If they are not, you must adjust the ingredients and recalculate until they are. ONLY output the final, correct version.
 `,
 });
 
-// Genkit Flow - Orchestrator and validator for a single-shot weekly plan
+// The flow takes the full user profile, calculates targets, and then iterates to generate a plan.
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
@@ -94,7 +111,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
   async (
     input: GeneratePersonalizedMealPlanInput
   ): Promise<GeneratePersonalizedMealPlanOutput> => {
-    // 1. Calculate total daily targets from user profile
+    // 1. Calculate total daily targets from the provided input object
     const dailyTargets = calculateEstimatedDailyTargets({
       age: input.age,
       gender: input.gender,
@@ -140,115 +157,107 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
       fat: Math.round(dailyTargets.fatGrams! * (dist.fat_pct / 100)),
     }));
 
-    // 4. Create the detailed input object for the prompt
-    const promptInput: PromptInput = {
-      ...input,
-      mealTargets: mealTargets,
-      daysOfWeek: daysOfWeek,
-    };
-
-    // 5. Call the prompt and get the structured output
-    const { output } = await prompt(promptInput);
-
-    if (!output) {
-      throw new Error(
-        getAIApiErrorMessage({ message: 'AI did not return a meal plan.' })
-      );
-    }
-
-    // The initial parsing is now handled by Genkit. We just need to validate.
-    const validationResult =
-      AIUnvalidatedWeeklyMealPlanSchema.safeParse(output);
-    if (!validationResult.success) {
-      console.error(
-        'AI output validation error after Genkit parsing:',
-        validationResult.error.flatten()
-      );
-      throw new Error(
-        `AI returned data in an unexpected format. Details: ${validationResult.error.message}`
-      );
-    }
-
-    const { weeklyMealPlan: unvalidatedPlan } = validationResult.data || { weeklyMealPlan: [] };
-
-    // SANITIZATION STEP: Filter out empty days/meals and ensure every ingredient has the required fields, providing defaults if missing.
-    // This makes the data robust for the rest of the application.
-    const sanitizedWeeklyMealPlan = (unvalidatedPlan || [])
-        .map(day => {
-            if (!day || !day.day || !day.meals || day.meals.length === 0) return null;
-            
-            const processedMeals = day.meals.map(meal => {
-                if (!meal || !meal.ingredients || meal.ingredients.length === 0) return null;
-                
-                return {
-                    ...meal,
-                    ingredients: meal.ingredients.map(ing => ({
-                        name: ing.name ?? 'Unknown Ingredient',
-                        calories: ing.calories ?? 0,
-                        protein: ing.protein ?? 0,
-                        carbs: ing.carbs ?? 0,
-                        fat: ing.fat ?? 0,
-                    })),
-                };
-            }).filter(meal => meal !== null);
-            
-            if (processedMeals.length === 0) return null;
-
-            return {
-                ...day,
-                meals: processedMeals,
-            };
-        })
-        .filter(day => day !== null);
-
-
-    if (sanitizedWeeklyMealPlan.length === 0) {
-        throw new Error(
-            getAIApiErrorMessage({ message: 'The AI returned a plan with no valid days or meals. Please try again.' })
-        );
-    }
-
-    // 6. Calculate meal-level and weekly summary in reliable application code
-    const weeklySummary = {
+    // 4. Loop through each day of the week and generate a plan
+    const processedWeeklyPlan: DayPlan[] = [];
+    let weeklySummary = {
       totalCalories: 0,
       totalProtein: 0,
       totalCarbs: 0,
       totalFat: 0,
     };
 
-    // Use the SANITIZED plan for all subsequent operations
-    sanitizedWeeklyMealPlan.forEach((day) => {
-      (day!.meals).forEach((meal, index) => {
-        // Forcefully correct or add the meal_name based on its order.
-        (meal as any).meal_name = mealTargets[index]?.mealName || `Meal ${index + 1}`;
-        
-        // Add a fallback for meal_title if the AI forgets it
-        meal!.meal_title = meal!.meal_title || `AI Generated ${(meal as any).meal_name}`;
-        
-        const mealTotals = (meal!.ingredients!).reduce((totals, ing) => {
-          totals.calories += ing.calories;
-          totals.protein += ing.protein;
-          totals.carbs += ing.carbs;
-          totals.fat += ing.fat;
-          return totals;
-        }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
-        
-        // Mutate the meal object to add calculated totals
-        (meal as any).total_calories = mealTotals.calories;
-        (meal as any).total_protein_g = mealTotals.protein;
-        (meal as any).total_carbs_g = mealTotals.carbs;
-        (meal as any).total_fat_g = mealTotals.fat;
+    for (const dayOfWeek of daysOfWeek) {
+      try {
+        const dailyPromptInput: DailyPromptInput = {
+          dayOfWeek,
+          mealTargets,
+          age: input.age ?? undefined,
+          gender: input.gender ?? undefined,
+          dietGoalOnboarding: input.dietGoalOnboarding ?? undefined,
+          preferredDiet: input.preferredDiet ?? undefined,
+          allergies: input.allergies ?? [],
+          dispreferredIngredients: input.dispreferredIngredients ?? [],
+          preferredIngredients: input.preferredIngredients ?? [],
+          preferredCuisines: input.preferredCuisines ?? [],
+          dispreferredCuisines: input.dispreferredCuisines ?? [],
+          medicalConditions: input.medicalConditions ?? [],
+          medications: input.medications ?? [],
+        };
 
-        // Add meal totals to the weekly summary
-        weeklySummary.totalCalories += mealTotals.calories;
-        weeklySummary.totalProtein += mealTotals.protein;
-        weeklySummary.totalCarbs += mealTotals.carbs;
-        weeklySummary.totalFat += mealTotals.fat;
-      });
-    });
+        const { output: dailyOutput } = await dailyPrompt(dailyPromptInput);
+
+        if (
+          !dailyOutput ||
+          !dailyOutput.meals ||
+          dailyOutput.meals.length === 0
+        ) {
+          console.warn(`AI returned no meals for ${dayOfWeek}. Skipping.`);
+          continue;
+        }
+
+        const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
+          .map((meal, index) => {
+            if (!meal.ingredients || meal.ingredients.length === 0) {
+              return null;
+            }
+
+            const sanitizedIngredients = meal.ingredients!.map((ing) => ({
+              name: ing.name ?? 'Unknown Ingredient',
+              calories: ing.calories ?? 0,
+              protein: ing.protein ?? 0,
+              carbs: ing.carbs ?? 0,
+              fat: ing.fat ?? 0,
+            }));
+
+            const mealTotals = sanitizedIngredients.reduce(
+              (totals, ing) => {
+                totals.calories += ing.calories;
+                totals.protein += ing.protein;
+                totals.carbs += ing.carbs;
+                totals.fat += ing.fat;
+                return totals;
+              },
+              { calories: 0, protein: 0, carbs: 0, fat: 0 }
+            );
+
+            weeklySummary.totalCalories += mealTotals.calories;
+            weeklySummary.totalProtein += mealTotals.protein;
+            weeklySummary.totalCarbs += mealTotals.carbs;
+            weeklySummary.totalFat += mealTotals.fat;
+
+            return {
+              meal_name: mealTargets[index]?.mealName || `Meal ${index + 1}`,
+              meal_title:
+                meal.meal_title ||
+                `AI Generated ${mealTargets[index]?.mealName || 'Meal'}`,
+              ingredients: sanitizedIngredients,
+              total_calories: mealTotals.calories,
+              total_protein_g: mealTotals.protein,
+              total_carbs_g: mealTotals.carbs,
+              total_fat_g: mealTotals.fat,
+            };
+          })
+          .filter((meal): meal is AIGeneratedMeal => meal !== null);
+
+        if (processedMeals.length > 0) {
+          processedWeeklyPlan.push({ day: dayOfWeek, meals: processedMeals });
+        }
+      } catch (e) {
+        console.error(`Failed to generate meal plan for ${dayOfWeek}:`, e);
+      }
+    }
+
+    if (processedWeeklyPlan.length === 0) {
+      throw new Error(
+        getAIApiErrorMessage({
+          message:
+            'The AI failed to generate a valid meal plan for any day of the week. Please try again.',
+        })
+      );
+    }
 
     const finalOutput: GeneratePersonalizedMealPlanOutput = {
-      weeklyMealPlan: sanitizedWeeklyMealPlan as any, // Cast is safe because we sanitized it
+      weeklyMealPlan: processedWeeklyPlan,
       weeklySummary,
     };
 
