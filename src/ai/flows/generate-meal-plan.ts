@@ -47,9 +47,9 @@ const dailyPrompt = ai.definePrompt({
   name: 'generateDailyMealPlanPrompt',
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `You are a nutritional data assistant. Your task is to generate a meal plan for a single day, which is {{dayOfWeek}}, based on specific macro targets for each meal.
+  prompt: `You are a highly precise nutritional data generation service. Your ONLY task is to create a list of meals for a single day, {{dayOfWeek}}, that strictly matches the provided macronutrient targets for each meal.
 
-**USER PROFILE FOR CONTEXT:**
+**USER PROFILE (FOR CONTEXT ONLY - DO NOT REPEAT IN OUTPUT):**
 - Age: {{age}}
 - Gender: {{gender}}
 - Dietary Goal: {{dietGoalOnboarding}}
@@ -62,10 +62,16 @@ const dailyPrompt = ai.definePrompt({
 {{#if medicalConditions.length}}- Medical Conditions: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if medications.length}}- Medications: {{#each medications}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
+**ABSOLUTE REQUIREMENTS FOR MEAL GENERATION:**
 
-**MEAL TARGETS FOR TODAY ({{dayOfWeek}}):**
-You MUST create meals that adhere to the following targets. The total calories, protein, carbs, and fat for each meal suggestion MUST be within a 5% margin of error of the target values provided.
+For each meal listed below, you MUST generate a corresponding meal object. The total macros for the ingredients you list for each meal MUST fall within a 5% tolerance of the targets.
 
+**EXAMPLE CALCULATION:**
+- If Target Calories = 500, a 5% tolerance means the sum of your ingredient calories must be between 475 and 525.
+- If Target Protein = 30g, a 5% tolerance means the sum of your ingredient protein must be between 28.5g and 31.5g.
+- **YOU MUST PERFORM THIS CHECK FOR EVERY MEAL AND EVERY MACRONUTRIENT (CALORIES, PROTEIN, CARBS, FAT).**
+
+**MEAL TARGETS FOR {{dayOfWeek}}:**
 {{#each mealTargets}}
 - **{{this.mealName}}**:
   - Target Calories: {{this.calories}} kcal
@@ -75,12 +81,11 @@ You MUST create meals that adhere to the following targets. The total calories, 
 {{/each}}
 
 **CRITICAL OUTPUT INSTRUCTIONS:**
-1.  Respond with ONLY a valid JSON object matching the provided schema.
-2.  Do NOT include any text, notes, greetings, or markdown like \`\`\`json outside the JSON object.
-3.  For each meal in the targets, create a corresponding meal object in the "meals" array.
-4.  Each meal object MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array.
-5.  Each ingredient object MUST have a "name", "calories", "protein", "carbs", and "fat". All values must be numbers.
-6.  You MUST calculate the total macros for each meal based on its ingredients and ensure they are within a 5% margin of the targets specified above.
+1.  Respond with ONLY a valid JSON object matching the provided schema. Do NOT include any text, notes, greetings, or markdown like \`\`\`json outside the JSON object.
+2.  For each meal in the targets, create a corresponding meal object in the "meals" array.
+3.  Each meal object MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array.
+4.  For each ingredient object MUST have a "name", and the precise "calories", "protein", "carbs", and "fat" values for the portion used in the meal. All values must be numbers.
+5.  **Before finalizing your output, you MUST double-check your math.** Sum the macros for each ingredient list to ensure the totals for each meal are within the 5% tolerance of the targets provided above. If they are not, you must adjust the ingredients and recalculate until they are. ONLY output the final, correct version.
 `,
 });
 
