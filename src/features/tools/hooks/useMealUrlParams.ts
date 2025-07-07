@@ -39,7 +39,8 @@ export function useMealUrlParams() {
       if (name !== 'demo') updateQueryParams(name, targets[name].toString());
 
       if (name === 'demo') {
-        isDemo ? updateQueryParams('demo', 'true') : removeQueryParams('demo');
+        if (isDemo) updateQueryParams('demo', 'true');
+        else removeQueryParams('demo');
       }
     });
   }
@@ -64,6 +65,7 @@ export function useMealUrlParams() {
   }
 
   return {
+    getQueryParams,
     updateUrlWithMeal,
     updateUrlWithTargets,
     getCurrentMealParams,

@@ -1,14 +1,13 @@
+'use client';
 
-"use client";
-
-import React, { useState, useRef, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bot, Loader2, Send, UserIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { handleSupportQuery } from '@/ai/flows/support-chatbot-flow';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { Bot, Loader2, Send, UserIcon } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Message {
   id: string;
@@ -25,7 +24,9 @@ export function SupportChat() {
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
-      const scrollViewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+      const scrollViewport = scrollAreaRef.current.querySelector(
+        'div[data-radix-scroll-area-viewport]'
+      );
       if (scrollViewport) {
         scrollViewport.scrollTop = scrollViewport.scrollHeight;
       }
@@ -51,7 +52,9 @@ export function SupportChat() {
     setIsLoading(true);
 
     try {
-      const response = await handleSupportQuery({ userQuery: userMessage.text });
+      const response = await handleSupportQuery({
+        userQuery: userMessage.text,
+      });
       const botMessage: Message = {
         id: Date.now().toString() + '-bot',
         sender: 'bot',
@@ -60,12 +63,14 @@ export function SupportChat() {
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error: any) {
-      console.error("Error fetching bot response:", error);
-      console.error("Full AI error object (SupportChat):", error); // Log the full error object
+      console.error('Error fetching bot response:', error);
+      console.error('Full AI error object (SupportChat):', error); // Log the full error object
       const errorMessage: Message = {
         id: Date.now().toString() + '-error',
         sender: 'bot',
-        text: `Sorry, I encountered an error: ${error.message || "Please try again later."}`,
+        text: `Sorry, I encountered an error: ${
+          error.message || 'Please try again later.'
+        }`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -75,67 +80,90 @@ export function SupportChat() {
   };
 
   return (
-    <div className="flex flex-col h-[60vh] max-h-[700px] min-h-[400px] bg-card border rounded-lg shadow-lg">
-      <ScrollArea className="flex-grow p-4 space-y-4" ref={scrollAreaRef}>
+    <div className='flex flex-col h-[60vh] max-h-[700px] min-h-[400px] bg-card border rounded-lg shadow-lg'>
+      <ScrollArea className='flex-grow p-4 space-y-4' ref={scrollAreaRef}>
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={cn(
-              "flex items-end gap-2 mb-4",
+              'flex items-end gap-2 mb-4',
               msg.sender === 'user' ? 'justify-end' : 'justify-start'
             )}
           >
             {msg.sender === 'bot' && (
-              <Avatar className="h-8 w-8 self-start">
-                <AvatarFallback><Bot className="h-5 w-5 text-primary" /></AvatarFallback>
+              <Avatar className='h-8 w-8 self-start'>
+                <AvatarFallback>
+                  <Bot className='h-5 w-5 text-primary' />
+                </AvatarFallback>
               </Avatar>
             )}
             <div
               className={cn(
-                "max-w-[70%] rounded-lg px-4 py-2 text-sm shadow",
+                'max-w-[70%] rounded-lg px-4 py-2 text-sm shadow',
                 msg.sender === 'user'
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground'
               )}
             >
-              <p className="whitespace-pre-wrap">{msg.text}</p>
-              <p className={cn(
-                "text-xs mt-1 opacity-70",
-                msg.sender === 'user' ? 'text-right' : 'text-left'
-              )}>
-                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <p className='whitespace-pre-wrap'>{msg.text}</p>
+              <p
+                className={cn(
+                  'text-xs mt-1 opacity-70',
+                  msg.sender === 'user' ? 'text-right' : 'text-left'
+                )}
+              >
+                {msg.timestamp.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
               </p>
             </div>
             {msg.sender === 'user' && (
-              <Avatar className="h-8 w-8 self-start">
-                <AvatarFallback><UserIcon className="h-5 w-5" /></AvatarFallback>
+              <Avatar className='h-8 w-8 self-start'>
+                <AvatarFallback>
+                  <UserIcon className='h-5 w-5' />
+                </AvatarFallback>
               </Avatar>
             )}
           </div>
         ))}
         {isLoading && (
-          <div className="flex items-center gap-2 mb-4 justify-start">
-            <Avatar className="h-8 w-8 self-start">
-              <AvatarFallback><Bot className="h-5 w-5 text-primary" /></AvatarFallback>
+          <div className='flex items-center gap-2 mb-4 justify-start'>
+            <Avatar className='h-8 w-8 self-start'>
+              <AvatarFallback>
+                <Bot className='h-5 w-5 text-primary' />
+              </AvatarFallback>
             </Avatar>
-            <div className="max-w-[70%] rounded-lg px-4 py-3 text-sm shadow bg-muted text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" /> Typing...
+            <div className='max-w-[70%] rounded-lg px-4 py-3 text-sm shadow bg-muted text-muted-foreground'>
+              <Loader2 className='h-4 w-4 animate-spin inline-block mr-2' />{' '}
+              Typing...
             </div>
           </div>
         )}
       </ScrollArea>
-      <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t p-4">
+      <form
+        onSubmit={handleSubmit}
+        className='flex items-center gap-2 border-t p-4'
+      >
         <Input
-          type="text"
-          placeholder="Ask about how to use NutriPlan..."
+          type='text'
+          placeholder='Ask about how to use NutriPlan...'
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          className="flex-grow"
+          className='flex-grow'
           disabled={isLoading}
         />
-        <Button type="submit" disabled={isLoading || !inputValue.trim()} size="icon">
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          <span className="sr-only">Send</span>
+        <Button
+          type='submit'
+          disabled={isLoading || !inputValue.trim()}
+          size='icon'
+        >
+          {isLoading ? (
+            <Loader2 className='h-4 w-4 animate-spin' />
+          ) : (
+            <Send className='h-4 w-4' />
+          )}
+          <span className='sr-only'>Send</span>
         </Button>
       </form>
     </div>

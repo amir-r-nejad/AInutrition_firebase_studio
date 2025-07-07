@@ -63,7 +63,7 @@ export default function CurrentMealPlanPage() {
     }
 
     fetchUserData(getProfileDataForOptimization, handleError);
-  }, [toast]);
+  }, [fetchUserData, toast]);
 
   useEffect(() => {
     function handleError() {
@@ -75,7 +75,7 @@ export default function CurrentMealPlanPage() {
     }
 
     fetchMealPlan(handleError);
-  }, [toast]);
+  }, [fetchMealPlan, toast]);
 
   const handleEditMeal = (dayIndex: number, mealIndex: number) => {
     const mealToEdit = weeklyPlan.days[dayIndex].meals[mealIndex];
@@ -101,7 +101,7 @@ export default function CurrentMealPlanPage() {
           updatedMeal.customName || updatedMeal.name
         } has been updated.`,
       });
-    } catch (error) {
+    } catch {
       toast({
         title: 'Save Error',
         description: 'Could not save meal plan.',

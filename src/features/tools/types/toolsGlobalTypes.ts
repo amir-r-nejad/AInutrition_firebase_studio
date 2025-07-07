@@ -9,3 +9,19 @@ export type MealInputTypes = {
   medicalConditions?: string[] | undefined;
   medications?: string[] | undefined;
 };
+
+export type TotalMacros = {
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  source?: string;
+};
+
+export type CalculatedMealMacros = {
+  mealName: string;
+  Calories: number;
+  'Protein (g)': number;
+  'Carbs (g)': number;
+  'Fat (g)': number;
+};

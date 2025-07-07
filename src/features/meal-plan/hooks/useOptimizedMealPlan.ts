@@ -1,5 +1,3 @@
-'use client';
-
 import {
   generatePersonalizedMealPlan,
   type GeneratePersonalizedMealPlanOutput,
@@ -39,7 +37,7 @@ export function useOptimizedMealPlan() {
     }
 
     fetchUserData(getFullProfileData, toastError, setMeal);
-  }, [user, toast]);
+  }, [user, toast, fetchUserData]);
 
   const handleGeneratePlan = async () => {
     if (!user?.uid) {
@@ -90,7 +88,3 @@ export function useOptimizedMealPlan() {
 
   return { handleGeneratePlan, isLoading, isLoadingProfile, mealPlan, error };
 }
-
-export type UseOptimizedMealPlanReturn = ReturnType<
-  typeof useOptimizedMealPlan
->;

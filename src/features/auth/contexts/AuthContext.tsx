@@ -4,7 +4,14 @@ import { useToast } from '@/hooks/use-toast';
 import { signOut as fSignOut } from '@/lib/firebase/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { createContext, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import { getUserProfile, onboardingUpdateUser } from '@/app/api/user/database';
 import { useUser } from '@/hooks/use-user';
@@ -29,13 +36,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const rawUser = useUser();
-  const user: User | null = rawUser
-    ? {
-        uid: rawUser.uid,
-        email: rawUser.email,
-        emailVerified: rawUser.emailVerified,
-      }
-    : null;
+  const user: User | null = useMemo(() => {
+    return rawUser
+      ? {
+          uid: rawUser.uid,
+          email: rawUser.email,
+          emailVerified: rawUser.emailVerified,
+        }
+      : null;
+  }, [rawUser]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isOnboarded, setIsOnboarded] = useState<boolean>(
@@ -47,23 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
   const { toast } = useToast();
 
-  const route = new RouteChecker(pathname);
-
-  async function refreshOnboardingStatus() {
-    if (!user?.uid) return;
-
-    try {
-      const userProfile = await getUserProfile(user.uid);
-
-      const hasCompletedOnboarding =
-        userProfile && userProfile.onboardingComplete ? true : false;
-
-      setIsOnboarded(hasCompletedOnboarding);
-      setStoredOnboardingStatus(hasCompletedOnboarding);
-    } catch (error) {
-      console.error('Failed to refresh onboarding status:', error);
-    }
-  }
+  const route = useMemo(() => new RouteChecker(pathname), [pathname]);
 
   function logout() {
     if (isLoading) return;
@@ -130,6 +123,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const refreshOnboardingStatus = useCallback(
+    async function () {
+      if (!user?.uid) return;
+
+      try {
+        const userProfile = await getUserProfile(user.uid);
+
+        const hasCompletedOnboarding =
+          userProfile && userProfile.onboardingComplete ? true : false;
+
+        setIsOnboarded(hasCompletedOnboarding);
+        setStoredOnboardingStatus(hasCompletedOnboarding);
+      } catch (error) {
+        console.error('Failed to refresh onboarding status:', error);
+      }
+    },
+    [user?.uid]
+  );
+
   useEffect(() => {
     if (isInitialLoad) {
       setIsInitialLoad(false);
@@ -176,6 +188,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
   }, [
+    user,
     rawUser,
     isLoading,
     pathname,
@@ -183,15 +196,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isInitialLoad,
     router,
     toast,
-    route.isAuthPage,
-    route.isOnboardingPage,
-    route.isDashboardPage,
+    route,
   ]);
 
   // Refresh onboarding status when user changes
   useEffect(() => {
     if (user?.uid && !isOnboarded) refreshOnboardingStatus();
-  }, [rawUser?.uid, isOnboarded, refreshOnboardingStatus]);
+  }, [user?.uid, isOnboarded, refreshOnboardingStatus]);
 
   const contextValue: AuthContextType = {
     user,
