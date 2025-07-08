@@ -24,40 +24,40 @@ export function useMealUrlParams() {
   function updateUrlWithMeal(mealName: string) {
     updateQueryParams('mealName', mealName);
 
-    PARAMS_NAME.forEach(
-      (name) => name !== 'mealName' && removeQueryParams(name)
-    );
-  }
-
-  function updateUrlWithTargets(
-    targets: TargetMacros,
-    isDemo: boolean = false
-  ) {
-    if (!targets) return;
-
     PARAMS_NAME.forEach((name) => {
-      if (name !== 'demo') updateQueryParams(name, targets[name].toString());
-
-      if (name === 'demo') {
-        if (isDemo) updateQueryParams('demo', 'true');
-        else removeQueryParams('demo');
-      }
+      if (name !== 'mealName') removeQueryParams(name);
     });
   }
 
-  function getCurrentMealParams() {
-    return {
-      mealName: getQueryParams('mealName') || '',
-      calories: getQueryParams('calories')
-        ? Number(getQueryParams('calories'))
-        : null,
-      protein: getQueryParams('protein')
-        ? Number(getQueryParams('protein'))
-        : null,
-      carbs: getQueryParams('carbs') ? Number(getQueryParams('carbs')) : null,
-      fat: getQueryParams('fat') ? Number(getQueryParams('fat')) : null,
-      isDemo: getQueryParams('demo') === 'true',
-    };
+  function updateUrlWithTargets(targets: TargetMacros) {
+    if (!targets) return;
+
+    updateQueryParams('mealName', targets.mealName);
+    updateQueryParams('calories', targets.calories.toString());
+    updateQueryParams('protein', targets.protein.toString());
+    updateQueryParams('carbs', targets.carbs.toString());
+    updateQueryParams('fat', targets.fat.toString());
+  }
+
+  function getCurrentMealParams(selectedMealName: string | null) {
+    if (!selectedMealName) return null;
+
+    const caloriesParam = getQueryParams('calories');
+    const proteinParam = getQueryParams('protein');
+    const carbsParam = getQueryParams('carbs');
+    const fatParam = getQueryParams('fat');
+
+    if (caloriesParam && proteinParam && carbsParam && fatParam) {
+      return {
+        mealName: selectedMealName,
+        calories: parseFloat(caloriesParam),
+        protein: parseFloat(proteinParam),
+        carbs: parseFloat(carbsParam),
+        fat: parseFloat(fatParam),
+      };
+    }
+
+    return null;
   }
 
   function clearMealParams() {
@@ -70,5 +70,6 @@ export function useMealUrlParams() {
     updateUrlWithTargets,
     getCurrentMealParams,
     clearMealParams,
+    updateQueryParams,
   };
 }

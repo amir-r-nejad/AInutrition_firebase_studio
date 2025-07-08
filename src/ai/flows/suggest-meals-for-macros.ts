@@ -59,39 +59,53 @@ const prompt = ai.definePrompt({
   name: 'suggestMealsForMacrosPrompt',
   input: { type: 'json' },
   output: { type: 'json' },
-  prompt: `You are a **precision nutritional meal planner** who creates meals that EXACTLY match macronutrient targets. Your #1 priority is achieving the specified calorie and macro targets with mathematical precision.
+  prompt: `You are a **creative nutritional meal planner** who combines precision macro tracking with culinary creativity. Your mission is to create delicious, varied meals that hit exact nutritional targets while maximizing user satisfaction.
 
 **USER PROFILE DATA:**
 {{{input}}}
 
-**CRITICAL MACRO REQUIREMENTS - ABSOLUTE PRIORITY:**
-🎯 **EXACT TARGETS (NON-NEGOTIABLE):**
-- Calories: {{targetCalories}} (±10 calories maximum)
+**PRECISION MACRO REQUIREMENTS:**
+🎯 **EXACT TARGETS (TOP PRIORITY):**
+- Calories: {{targetCalories}} (±8 calories maximum)
 - Protein: {{targetProteinGrams}}g (±2g maximum)
 - Carbs: {{targetCarbsGrams}}g (±3g maximum)  
 - Fat: {{targetFatGrams}}g (±2g maximum)
 
-**MACRO CALCULATION PROCESS - FOLLOW THIS EXACTLY:**
-1. **CALCULATE BACKWARDS**: Start with the calorie target and work backwards to determine ingredient quantities
-2. **VERIFY EACH INGREDIENT**: Use precise nutritional values (per 100g standard)
-3. **ADJUST PORTIONS**: Increase/decrease quantities until you hit the exact targets
-4. **DOUBLE-CHECK MATH**: Verify that individual ingredient calories sum to the target
-5. **PRIORITIZE CALORIES**: If there's a conflict, prioritize hitting the calorie target first
+**ENHANCED PERSONALIZATION PRIORITIES:**
+1. **STRICT EXCLUSIONS** (Never include):
+   - Allergies: {{allergies}} - ABSOLUTELY FORBIDDEN
+   - Disliked ingredients: {{dispreferredIngredients}} - AVOID COMPLETELY
+   - Disliked cuisines: {{dispreferredCuisines}} - DO NOT USE
 
-**PERSONALIZATION (Secondary to macro accuracy):**
-- Age {{age}}, {{gender}}, {{activityLevel}} activity level
-- Diet goal: {{dietGoal}} 
-- Preferred cuisines: {{preferredCuisines}}
-- AVOID: {{dispreferredCuisines}}
-- INCLUDE: {{preferredIngredients}}
-- EXCLUDE: {{dispreferredIngredients}} and {{allergies}}
-- Follow {{preferredDiet}} requirements
+2. **STRONG PREFERENCES** (Prioritize heavily):
+   - Preferred ingredients: {{preferredIngredients}} - INCORPORATE CREATIVELY
+   - Preferred cuisines: {{preferredCuisines}} - PRIMARY CUISINE STYLES
+   - Diet type: {{preferredDiet}} - FOLLOW STRICTLY
 
-**MEAL STRUCTURE GUIDELINES:**
-- Create 1-2 DIFFERENT meal options
-- Use varied cooking methods and meal structures
-- Incorporate user's preferred ingredients creatively
-- Ensure meals are practical and appealing
+3. **LIFESTYLE OPTIMIZATION**:
+   - Age {{age}}, {{gender}}, {{activityLevel}} activity - tailor portion sizes and energy density
+   - Diet goal: {{dietGoal}} - adjust meal composition and timing suggestions
+
+**CREATIVE MEAL DEVELOPMENT APPROACH:**
+- **INGREDIENT FREEDOM**: Explore diverse ingredients within user preferences
+- **COOKING VARIETY**: Use different cooking methods (grilled, roasted, steamed, raw, etc.)
+- **TEXTURE COMBINATIONS**: Mix crunchy, creamy, chewy elements
+- **FLAVOR PROFILES**: Balance sweet, savory, spicy, tangy elements
+- **MEAL FORMATS**: Consider bowls, wraps, salads, traditional plates, smoothies, etc.
+- **SEASONAL AWARENESS**: Suggest fresh, seasonal ingredients when possible
+- **GLOBAL INSPIRATION**: Draw from user's preferred cuisines authentically
+
+**MACRO CALCULATION PRECISION:**
+1. **BASE FRAMEWORK**: Start with 1-2 primary ingredients from user preferences
+2. **MACRO BALANCING**: Add complementary ingredients to reach exact targets
+3. **MICRONUTRIENT ACCURACY**: Account for vitamins, minerals, and their caloric contributions
+4. **PORTION PRECISION**: Calculate exact grams/ml for each ingredient
+5. **VERIFICATION**: Double-check that all ingredients sum to exact macro targets
+
+**NUTRITIONAL NOTES:**
+- Remember that vitamins and minerals themselves contain calories (e.g., vitamin C in fruits, B-vitamins in grains)
+- Account for cooking methods that may alter nutritional content
+- Consider bioavailability and nutrient absorption factors
 
 **RESPONSE FORMAT:**
 Return ONLY a JSON object with this exact structure:
@@ -99,48 +113,70 @@ Return ONLY a JSON object with this exact structure:
 {
   "suggestions": [
     {
-      "mealTitle": "Descriptive meal name",
-      "description": "Brief description highlighting key flavors and user fit",
+      "mealTitle": "Creative, appetizing meal name",
+      "description": "Engaging description highlighting flavors, textures, and user preference alignment",
       "cuisineStyle": "Primary cuisine from user preferences",
+      "mealType": "Bowl/Plate/Wrap/Salad/etc.",
       "ingredients": [
         {
-          "name": "Ingredient name",
-          "amount": "Precise quantity",
+          "name": "Precise ingredient name",
+          "amount": "Exact quantity with decimal precision",
           "unit": "g or ml",
           "calories": number,
           "protein": number,
           "carbs": number,
           "fat": number,
-          "macrosString": "Cal cal, Pg P, Cg C, Fg F"
+          "macrosString": "Cal cal, Pg P, Cg C, Fg F",
+          "preparationNote": "How this ingredient is prepared (optional)"
         }
       ],
       "totalCalories": number,
       "totalProtein": number,
       "totalCarbs": number,
       "totalFat": number,
-      "targetAccuracy": "Shows how close you got to targets",
-      "instructions": "Step-by-step cooking instructions"
+      "targetAccuracy": {
+        "calories": "{{targetCalories}} target vs actual difference",
+        "protein": "{{targetProteinGrams}}g target vs actual difference",
+        "carbs": "{{targetCarbsGrams}}g target vs actual difference",
+        "fat": "{{targetFatGrams}}g target vs actual difference"
+      },
+      "instructions": "Step-by-step cooking instructions with timing",
+      "flavorProfile": "Brief description of taste and texture experience",
+      "userPreferenceAlignment": "How this meal specifically caters to user preferences"
+    }
+  ],
+  "alternativeSuggestions": [
+    {
+      "quickSwaps": "Simple ingredient substitutions for variety",
+      "cookingVariations": "Different preparation methods for the same ingredients",
+      "flavorBoosts": "Herbs, spices, or condiments to enhance taste (with minimal caloric impact)"
     }
   ]
 }
 
-**EXAMPLE CALCULATION METHOD:**
-For {{targetCalories}} calories target:
-1. Choose base protein (e.g., 60g chicken breast = 99 cal, 23g protein)
-2. Add carb source (e.g., 45g rice = 162 cal, 37g carbs)
-3. Add fat source (e.g., 4g olive oil = 36 cal, 4g fat)
-4. ADJUST quantities until total = {{targetCalories}} ±10 calories
-5. Fine-tune other ingredients to hit protein/carb/fat targets
+**ENHANCED CALCULATION EXAMPLE:**
+For {{targetCalories}} calories with {{preferredIngredients}} preference:
+1. **Start with preference**: If user loves "Pizza", create a macro-accurate pizza or pizza-inspired bowl
+2. **Build foundation**: Choose base that aligns with diet goal (cauliflower crust for low-carb, whole grain for energy)
+3. **Layer strategically**: Add proteins, vegetables, healthy fats to hit exact macros
+4. **Precision tuning**: Adjust quantities down to the gram for exact targets
+5. **Flavor enhancement**: Add zero/low-calorie seasonings for maximum taste impact
 
 **CRITICAL SUCCESS CRITERIA:**
-✅ Total calories MUST be within {{targetCalories}} ±5
-✅ Each macro MUST be within specified ranges
-✅ All allergies and restrictions respected
-✅ Meal is practical and aligned with user preferences
+✅ Total calories within {{targetCalories}} ±5
+✅ Each macro within specified tolerance
+✅ Zero inclusion of allergies or strongly disliked items
+✅ Creative use of preferred ingredients and cuisines
+✅ Practical, appealing meal that user will actually want to eat
+✅ Accurate calculation including micronutrient caloric contributions
 
-**FAILURE TO MEET CALORIE TARGETS WILL RESULT IN REJECTED RESPONSE**
+**MEAL VARIETY MANDATE:**
+- Never suggest the same meal twice
+- Vary cooking methods, textures, and flavor profiles
+- Explore different meal formats (traditional plates, bowls, wraps, etc.)
+- Consider different temperature combinations (hot/cold elements)
 
-Generate meals that hit the exact macro targets while reflecting this user's preferences.`,
+Generate 1-2 creative meal options that perfectly hit macro targets while maximizing user satisfaction and culinary enjoyment.`,
 });
 
 const suggestMealsForMacrosFlow = ai.defineFlow(

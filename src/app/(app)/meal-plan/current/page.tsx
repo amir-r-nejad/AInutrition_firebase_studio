@@ -167,12 +167,14 @@ export default function CurrentMealPlanPage() {
         return;
       }
 
-      const mealDistribution = defaultMacroPercentages[mealToOptimize.name] || {
-        calories_pct: 0,
-        protein_pct: 0,
-        carbs_pct: 0,
-        fat_pct: 0,
-      };
+      let mealDistribution;
+      const userMealDistributions = profileData.mealDistributions;
+      if (!userMealDistributions)
+        mealDistribution = defaultMacroPercentages[mealToOptimize.name];
+      else
+        mealDistribution = userMealDistributions.filter(
+          (meal) => meal.mealName === mealToOptimize.name
+        )[0];
 
       const targetMacrosForMeal = {
         calories: Math.round(

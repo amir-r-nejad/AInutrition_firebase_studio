@@ -129,7 +129,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       try {
         const userProfile = await getUserProfile(user.uid);
-
         const hasCompletedOnboarding =
           userProfile && userProfile.onboardingComplete ? true : false;
 

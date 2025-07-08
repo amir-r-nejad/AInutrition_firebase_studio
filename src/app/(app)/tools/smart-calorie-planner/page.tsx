@@ -59,7 +59,6 @@ import { calculateBMR, calculateTDEE } from '@/lib/nutrition-calculator';
 import {
   preprocessDataForFirestore,
   SmartCaloriePlannerFormSchema,
-  type CustomCalculatedTargets,
   type GlobalCalculatedTargets,
   type SmartCaloriePlannerFormValues,
 } from '@/lib/schemas';

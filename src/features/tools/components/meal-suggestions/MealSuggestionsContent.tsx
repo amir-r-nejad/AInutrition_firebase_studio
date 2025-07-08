@@ -69,13 +69,18 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import PreferenceTextarea from './PreferenceTextarea';
+import { useMealUrlParams } from '../../hooks/useMealUrlParams';
 import {
   getProfileDataForSuggestions,
   updateMealSuggestion,
 } from '../../lib/data-service';
+import { getExampleTargetsForMeal } from '../../lib/utils';
+import PreferenceTextarea from './PreferenceTextarea';
 
 function MealSuggestionsContent() {
+  const { updateUrlWithMeal, getQueryParams, getCurrentMealParams } =
+    useMealUrlParams();
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -92,40 +97,23 @@ function MealSuggestionsContent() {
     SuggestMealsForMacrosOutput['suggestions']
   >([]);
   const [error, setError] = useState<string | null>(null);
-  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // Derive values from URL query parameters
   const selectedMealName = useMemo(() => {
-    const mealNameParam = searchParams?.get('mealName');
+    const mealNameParam = getQueryParams('mealName');
     return mealNameParam && mealNames.includes(mealNameParam)
       ? mealNameParam
       : null;
-  }, [searchParams]);
+  }, [getQueryParams]);
 
   const targetMacros = useMemo(() => {
-    if (!searchParams || !selectedMealName) return null;
-
-    const caloriesParam = searchParams.get('calories');
-    const proteinParam = searchParams.get('protein');
-    const carbsParam = searchParams.get('carbs');
-    const fatParam = searchParams.get('fat');
-
-    if (caloriesParam && proteinParam && carbsParam && fatParam) {
-      return {
-        mealName: selectedMealName,
-        calories: parseFloat(caloriesParam),
-        protein: parseFloat(proteinParam),
-        carbs: parseFloat(carbsParam),
-        fat: parseFloat(fatParam),
-      };
-    }
-    return null;
-  }, [searchParams, selectedMealName]);
+    return getCurrentMealParams(selectedMealName);
+  }, [getCurrentMealParams, selectedMealName]);
 
   // Check if we're in demo mode from URL
   const isDemoModeFromUrl = useMemo(() => {
-    return searchParams?.get('demo') === 'true';
-  }, [searchParams]);
+    return getQueryParams('demo') === 'true';
+  }, [getQueryParams]);
 
   const preferenceForm = useForm<MealSuggestionPreferencesValues>({
     resolver: zodResolver(MealSuggestionPreferencesSchema),
@@ -141,6 +129,28 @@ function MealSuggestionsContent() {
       medications: [],
     },
   });
+
+  // Function to update URL with all target macros
+  const updateUrlWithTargets = useCallback(
+    (targets: typeof targetMacros, isDemo: boolean = false) => {
+      if (!targets) return;
+
+      const urlSearchParams = new URLSearchParams(searchParams);
+      urlSearchParams.set('mealName', targets.mealName);
+      urlSearchParams.set('calories', targets.calories.toString());
+      urlSearchParams.set('protein', targets.protein.toString());
+      urlSearchParams.set('carbs', targets.carbs.toString());
+      urlSearchParams.set('fat', targets.fat.toString());
+
+      if (isDemo) urlSearchParams.set('demo', 'true');
+      else urlSearchParams.delete('demo');
+
+      router.push(`${pathname}?${urlSearchParams.toString()}`, {
+        scroll: false,
+      });
+    },
+    [pathname, router, searchParams]
+  );
 
   // Load profile data and set form values only once
   useEffect(() => {
@@ -191,12 +201,10 @@ function MealSuggestionsContent() {
         });
       }
     }
-  }, [user, toast]);
+  }, [user, toast, preferenceForm]);
 
   const calculateTargetsForSelectedMeal = useCallback(() => {
-    if (!selectedMealName) {
-      return;
-    }
+    if (!selectedMealName) return;
 
     // Clear previous suggestions and errors when calculating new targets
     setSuggestions([]);
@@ -226,7 +234,14 @@ function MealSuggestionsContent() {
         dietGoal: profileToUse.dietGoalOnboarding!,
       });
 
-      const mealDistribution = defaultMacroPercentages[selectedMealName];
+      let mealDistribution;
+      const userMealDistributions = fullProfileData.mealDistributions;
+      if (!userMealDistributions)
+        mealDistribution = defaultMacroPercentages[selectedMealName];
+      else
+        mealDistribution = userMealDistributions.filter(
+          (meal) => meal.mealName === selectedMealName
+        )[0];
 
       if (
         dailyTotals.targetCalories &&
@@ -253,12 +268,10 @@ function MealSuggestionsContent() {
 
         // Update URL with calculated targets
         updateUrlWithTargets(newTargets, false);
-        setIsDemoMode(false);
       } else {
         // Set demo mode and use example targets
         const exampleTargets = getExampleTargetsForMeal(selectedMealName);
         updateUrlWithTargets(exampleTargets, true);
-        setIsDemoMode(true);
         toast({
           title: 'Using Example Targets',
           description: `Could not calculate specific targets for ${selectedMealName} from profile. Ensure profile basics (age, weight, height, gender, activity, goal) are complete.`,
@@ -270,7 +283,6 @@ function MealSuggestionsContent() {
       // Set demo mode and use example targets
       const exampleTargets = getExampleTargetsForMeal(selectedMealName);
       updateUrlWithTargets(exampleTargets, true);
-      setIsDemoMode(true);
       toast({
         title: 'Profile Incomplete or Demo',
         description: `Showing example targets for ${selectedMealName}. Please complete your profile via Onboarding or Smart Calorie Planner for personalized calculations.`,
@@ -278,91 +290,13 @@ function MealSuggestionsContent() {
         variant: 'default',
       });
     }
-  }, [selectedMealName, fullProfileData, toast]);
+  }, [selectedMealName, fullProfileData, updateUrlWithTargets, toast]);
 
-  // Helper function to get example targets for a meal
-  const getExampleTargetsForMeal = (mealName: string) => {
-    const exampleDailyTotals = {
-      targetCalories: 2000,
-      targetProtein: 150,
-      targetCarbs: 250,
-      targetFat: 67,
-    };
-
-    const mealDistribution = defaultMacroPercentages[mealName];
-
-    return {
-      mealName,
-      calories: Math.round(
-        exampleDailyTotals.targetCalories *
-          (mealDistribution.calories_pct / 100)
-      ),
-      protein: Math.round(
-        exampleDailyTotals.targetProtein * (mealDistribution.protein_pct / 100)
-      ),
-      carbs: Math.round(
-        exampleDailyTotals.targetCarbs * (mealDistribution.carbs_pct / 100)
-      ),
-      fat: Math.round(
-        exampleDailyTotals.targetFat * (mealDistribution.fat_pct / 100)
-      ),
-    };
-  };
-
-  // Calculate targets when meal is selected and we don't have targets in URL
   useEffect(() => {
-    if (selectedMealName && !targetMacros && !isLoadingProfile) {
+    if (selectedMealName && !isLoadingProfile) {
       calculateTargetsForSelectedMeal();
     }
-  }, [
-    selectedMealName,
-    targetMacros,
-    isLoadingProfile,
-    calculateTargetsForSelectedMeal,
-  ]);
-
-  // Sync isDemoMode state with URL
-  useEffect(() => {
-    setIsDemoMode(isDemoModeFromUrl);
-  }, [isDemoModeFromUrl]);
-
-  // Function to update URL with meal selection only
-  const updateUrlWithMeal = (mealName: string) => {
-    const urlSearchParams = new URLSearchParams(searchParams);
-
-    urlSearchParams.set('mealName', mealName);
-    urlSearchParams.delete('calories');
-    urlSearchParams.delete('protein');
-    urlSearchParams.delete('carbs');
-    urlSearchParams.delete('fat');
-    urlSearchParams.delete('demo');
-
-    router.push(`${pathname}?${urlSearchParams.toString()}`, {
-      scroll: false,
-    });
-  };
-
-  // Function to update URL with all target macros
-  const updateUrlWithTargets = (
-    targets: typeof targetMacros,
-    isDemo: boolean = false
-  ) => {
-    if (!targets) return;
-
-    const urlSearchParams = new URLSearchParams(searchParams);
-    urlSearchParams.set('mealName', targets.mealName);
-    urlSearchParams.set('calories', targets.calories.toString());
-    urlSearchParams.set('protein', targets.protein.toString());
-    urlSearchParams.set('carbs', targets.carbs.toString());
-    urlSearchParams.set('fat', targets.fat.toString());
-
-    if (isDemo) urlSearchParams.set('demo', 'true');
-    else urlSearchParams.delete('demo');
-
-    router.push(`${pathname}?${urlSearchParams.toString()}`, {
-      scroll: false,
-    });
-  };
+  }, [selectedMealName, isLoadingProfile, calculateTargetsForSelectedMeal]);
 
   const handleMealSelectionChange = (mealValue: string) => {
     // Clear suggestions and errors when changing meal
@@ -426,7 +360,11 @@ function MealSuggestionsContent() {
     );
 
     try {
-      await updateMealSuggestion(user?.uid!, currentPreferences);
+      if (!user?.uid) return;
+      console.log(aiInput);
+
+      await updateMealSuggestion(user?.uid, currentPreferences);
+
       const result = await suggestMealsForMacros(aiInput);
       if (result && result.suggestions) {
         setSuggestions(result.suggestions);
