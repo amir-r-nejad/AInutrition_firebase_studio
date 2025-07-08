@@ -46,24 +46,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     : null;
 
   const [profile, setProfile] = useState<FullProfileType | null>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
 
   const isOnboarded = !!profile?.onboardingComplete;
-  const isLoading = isLoadingUser || isProfileLoading;
+  
+  // Simplified loading logic: loading is true if Firebase auth is loading,
+  // OR if we have a firebase user but haven't yet loaded their profile from Firestore.
+  const isLoading = isLoadingUser || (!!firebaseUser && !profile);
 
   useEffect(() => {
     const manageUserProfile = async () => {
       if (!firebaseUser) {
         setProfile(null);
-        setIsProfileLoading(false);
         return;
       }
 
-      setIsProfileLoading(true);
       try {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         const docSnap = await getDoc(userDocRef);
@@ -82,7 +82,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           };
           await setDoc(userDocRef, preprocessDataForFirestore(newProfileData), { merge: true });
           setProfile(newProfileData as FullProfileType);
-          console.log('AuthContext: New user profile created and set in state.');
         }
       } catch (error) {
         console.error('AuthContext: Failed to fetch or create user profile:', error);
@@ -92,8 +91,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           variant: 'destructive',
         });
         setProfile(null); // Ensure profile is null on error
-      } finally {
-        setIsProfileLoading(false);
       }
     };
 
