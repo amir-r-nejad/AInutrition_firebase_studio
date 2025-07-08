@@ -22,7 +22,7 @@ import {
 } from '../../../lib/schemas';
 
 export async function addUser(u: string) {
-  let user = JSON.parse(u) as User;
+  const user = JSON.parse(u) as User;
   try {
     const userRef = collection(db, 'users');
     const q = query(userRef, where('uid', '==', '' + user.uid));
@@ -209,15 +209,11 @@ export async function getUserProfile(
   }
 
   try {
-    const userRef = collection(db, 'users');
-    const q = query(userRef, where('uid', '==', userId));
-    const userSnapshot = await getDocs(q);
+    const docRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return null;
 
-    if (userSnapshot.empty) return null;
-
-    const userDoc = userSnapshot.docs[0];
-    const userData = userDoc.data();
-
+    const userData = docSnap.data();
     console.log('Retrieved user data from Firestore:', userData);
 
     return userData as FullProfileType;
