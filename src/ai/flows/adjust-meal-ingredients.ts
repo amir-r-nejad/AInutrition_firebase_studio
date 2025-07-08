@@ -2,13 +2,13 @@
 'use server';
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
 import {
   AdjustMealIngredientsInputSchema,
   AdjustMealIngredientsOutputSchema,
   type AdjustMealIngredientsInput,
   type AdjustMealIngredientsOutput,
 } from '@/lib/schemas';
+import { getAIApiErrorMessage } from '@/lib/utils';
 
 // Genkit Flow
 export async function adjustMealIngredients(
@@ -102,11 +102,7 @@ const adjustMealIngredientsFlow = ai.defineFlow(
       return validationResult.data;
     } catch (error: any) {
         console.error("Error in adjustMealIngredientsFlow:", error);
-        const errorMessage = error.message || '';
-        if (errorMessage.includes('503') || errorMessage.includes('overloaded')) {
-            throw new Error('The AI model is currently overloaded. Please try again in a few moments.');
-        }
-        throw error; // Re-throw other errors
+        throw new Error(getAIApiErrorMessage(error));
     }
   }
 );

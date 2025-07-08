@@ -8,6 +8,7 @@ import {
   type SuggestIngredientSwapInput,
   type SuggestIngredientSwapOutput,
 } from '@/lib/schemas';
+import { getAIApiErrorMessage } from '@/lib/utils';
 
 // Main entry function
 export async function suggestIngredientSwap(
@@ -53,17 +54,22 @@ const suggestIngredientSwapFlow = ai.defineFlow(
   async (
     input: SuggestIngredientSwapInput
   ): Promise<SuggestIngredientSwapOutput> => {
-    const { output } = await prompt(input);
-    if (!output) {
-      throw new Error('AI did not return output.');
-    }
+    try {
+      const { output } = await prompt(input);
+      if (!output) {
+        throw new Error('AI did not return output.');
+      }
 
-    const validationResult = SuggestIngredientSwapOutputSchema.safeParse(output);
-    if (!validationResult.success) {
-        console.error('AI output validation error:', validationResult.error.flatten());
-        throw new Error(`AI returned data in an unexpected format. Details: ${validationResult.error.message}`);
-    }
+      const validationResult = SuggestIngredientSwapOutputSchema.safeParse(output);
+      if (!validationResult.success) {
+          console.error('AI output validation error:', validationResult.error.flatten());
+          throw new Error(`AI returned data in an unexpected format. Details: ${validationResult.error.message}`);
+      }
 
-    return validationResult.data;
+      return validationResult.data;
+    } catch (error: any) {
+      console.error("Error in suggestIngredientSwapFlow:", error);
+      throw new Error(getAIApiErrorMessage(error));
+    }
   }
 );

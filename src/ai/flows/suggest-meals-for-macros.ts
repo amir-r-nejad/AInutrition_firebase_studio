@@ -8,6 +8,7 @@ import {
   type SuggestMealsForMacrosInput,
   type SuggestMealsForMacrosOutput,
 } from '@/lib/schemas';
+import { getAIApiErrorMessage } from '@/lib/utils';
 
 // Main entry function
 export async function suggestMealsForMacros(
@@ -92,17 +93,22 @@ const suggestMealsForMacrosFlow = ai.defineFlow(
   async (
     input: SuggestMealsForMacrosInput
   ): Promise<SuggestMealsForMacrosOutput> => {
-    const { output } = await prompt(input);
-    if (!output) {
-      throw new Error('AI did not return output.');
-    }
+    try {
+      const { output } = await prompt(input);
+      if (!output) {
+        throw new Error('AI did not return output.');
+      }
 
-    const validationResult = SuggestMealsForMacrosOutputSchema.safeParse(output);
-    if (!validationResult.success) {
-        console.error('AI output validation error:', validationResult.error.flatten());
-        throw new Error(`AI returned data in an unexpected format. Details: ${validationResult.error.message}`);
-    }
+      const validationResult = SuggestMealsForMacrosOutputSchema.safeParse(output);
+      if (!validationResult.success) {
+          console.error('AI output validation error:', validationResult.error.flatten());
+          throw new Error(`AI returned data in an unexpected format. Details: ${validationResult.error.message}`);
+      }
 
-    return validationResult.data;
+      return validationResult.data;
+    } catch (error: any) {
+      console.error("Error in suggestMealsForMacrosFlow:", error);
+      throw new Error(getAIApiErrorMessage(error));
+    }
   }
 );
