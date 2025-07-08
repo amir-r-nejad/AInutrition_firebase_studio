@@ -126,10 +126,8 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
           continue;
         }
 
-        // Log API response for debugging
         console.log(`API response for ${dayOfWeek}:`, JSON.stringify(dailyOutput.meals, null, 2));
 
-        // Validate API output against schema
         const parsedOutput = AIDailyPlanOutputSchema.safeParse(dailyOutput);
         if (!parsedOutput.success) {
           console.error(`Invalid AI output for ${dayOfWeek}:`, parsedOutput.error);
@@ -137,7 +135,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         }
         const validDailyOutput = parsedOutput.data;
 
-        const processedMeals: AIGeneratedMeal[] = validDailyOutput.meals
+        const processedMeals = validDailyOutput.meals
           .map((meal, index): AIGeneratedMeal | null => {
             if (!meal.ingredients || meal.ingredients.length === 0) {
               console.warn(`Skipping meal ${index + 1} for ${dayOfWeek}: invalid ingredients`);
