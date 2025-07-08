@@ -46,13 +46,13 @@ import {
 } from '@/components/ui/table';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 
+import { getMissingProfileFields } from '@/features/meal-plan/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
   defaultMacroPercentages,
   mealNames,
   preferredDiets,
 } from '@/lib/constants';
-import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import type { FullProfileType } from '@/lib/schemas';
 import {
   MealSuggestionPreferencesSchema,
@@ -211,28 +211,17 @@ function MealSuggestionsContent() {
     setError(null);
 
     const profileToUse = fullProfileData;
-
-    const requiredProfileFields: (keyof FullProfileType)[] = [
-      'age',
-      'gender',
-      'current_weight',
-      'height_cm',
-      'activityLevel',
-      'dietGoalOnboarding',
-    ];
-    const missingFields = requiredProfileFields.filter(
-      (field) => !profileToUse?.[field]
-    );
+    const missingFields = getMissingProfileFields(profileToUse!);
 
     if (missingFields.length === 0 && profileToUse) {
-      const dailyTotals = calculateEstimatedDailyTargets({
-        age: profileToUse.age!,
-        gender: profileToUse.gender!,
-        currentWeight: profileToUse.current_weight!,
-        height: profileToUse.height_cm!,
-        activityLevel: profileToUse.activityLevel!,
-        dietGoal: profileToUse.dietGoalOnboarding!,
-      });
+      const dailyTotals = {
+        targetCalories:
+          fullProfileData.smartPlannerData?.formValues?.custom_total_calories,
+        targetProtein:
+          fullProfileData.smartPlannerData?.formValues?.proteinGrams,
+        targetCarbs: fullProfileData.smartPlannerData?.formValues?.carbGrams,
+        targetFat: fullProfileData.smartPlannerData?.formValues?.fatGrams,
+      };
 
       let mealDistribution;
       const userMealDistributions = fullProfileData.mealDistributions;
@@ -252,18 +241,12 @@ function MealSuggestionsContent() {
       ) {
         const newTargets = {
           mealName: selectedMealName,
-          calories: Math.round(
-            dailyTotals.targetCalories * (mealDistribution.calories_pct / 100)
-          ),
-          protein: Math.round(
-            dailyTotals.targetProtein * (mealDistribution.protein_pct / 100)
-          ),
-          carbs: Math.round(
-            dailyTotals.targetCarbs * (mealDistribution.carbs_pct / 100)
-          ),
-          fat: Math.round(
-            dailyTotals.targetFat * (mealDistribution.fat_pct / 100)
-          ),
+          calories:
+            dailyTotals.targetCalories * (mealDistribution.calories_pct / 100),
+          protein:
+            dailyTotals.targetProtein * (mealDistribution.protein_pct / 100),
+          carbs: dailyTotals.targetCarbs * (mealDistribution.carbs_pct / 100),
+          fat: dailyTotals.targetFat * (mealDistribution.fat_pct / 100),
         };
 
         // Update URL with calculated targets
@@ -361,8 +344,6 @@ function MealSuggestionsContent() {
 
     try {
       if (!user?.uid) return;
-      console.log(aiInput);
-
       await updateMealSuggestion(user?.uid, currentPreferences);
 
       const result = await suggestMealsForMacros(aiInput);
@@ -589,7 +570,7 @@ function MealSuggestionsContent() {
                 <div className='grid grid-cols-2 md:grid-cols-4 gap-3'>
                   <p>
                     <span className='font-medium'>Calories:</span>{' '}
-                    {targetMacros.calories.toFixed(0)} kcal
+                    {targetMacros.calories.toFixed(1)} kcal
                   </p>
                   <p>
                     <span className='font-medium'>Protein:</span>{' '}
@@ -609,6 +590,7 @@ function MealSuggestionsContent() {
               <Button
                 onClick={handleGetSuggestions}
                 disabled={
+                  targetMacros.calories === 0 ||
                   isLoadingAiSuggestions ||
                   (isLoadingProfile && !isDemoModeFromUrl)
                 }
@@ -626,7 +608,9 @@ function MealSuggestionsContent() {
                   ? 'Loading Profile...'
                   : isLoadingAiSuggestions
                   ? 'Getting Suggestions...'
-                  : '3. Get AI Meal Suggestions'}
+                  : targetMacros.calories !== 0
+                  ? '3. Get AI Meal Suggestions'
+                  : 'Meals must contains a certain amount of calories'}
               </Button>
 
               {error && (

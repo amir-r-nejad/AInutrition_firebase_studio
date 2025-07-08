@@ -1,18 +1,10 @@
 'use client';
 
-import {
-  adjustMealIngredients,
-  type AdjustMealIngredientsInput,
-} from '@/ai/flows/adjust-meal-ingredients';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { adjustMealIngredients } from '@/ai/flows/adjust-meal-ingredients';
+import { Card, CardContent } from '@/components/ui/card';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import SectionHeader from '@/components/ui/SectionHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import EditMealDialog from '@/features/meal-plan/components/current/EditMealDialog';
 import MealCardItem from '@/features/meal-plan/components/current/MealCardItem';
@@ -21,11 +13,13 @@ import {
   getProfileDataForOptimization,
   saveMealPlanData,
 } from '@/features/meal-plan/lib/data-service';
-import { getMissingProfileFields } from '@/features/meal-plan/lib/utils';
+import {
+  getAdjustedMealInput,
+  getMissingProfileFields,
+} from '@/features/meal-plan/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryParams } from '@/hooks/useQueryParams';
-import { daysOfWeek, defaultMacroPercentages } from '@/lib/constants';
-import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
+import { daysOfWeek } from '@/lib/constants';
 import type { Meal } from '@/lib/schemas';
 import { useEffect, useState } from 'react';
 
@@ -142,14 +136,13 @@ export default function CurrentMealPlanPage() {
     }
 
     try {
-      const dailyTargets = calculateEstimatedDailyTargets({
-        age: profileData.age!,
-        gender: profileData.gender!,
-        currentWeight: profileData.current_weight!,
-        height: profileData.height_cm!,
-        activityLevel: profileData.activityLevel!,
-        dietGoal: profileData.dietGoalOnboarding!,
-      });
+      const dailyTargets = {
+        targetCalories:
+          profileData.smartPlannerData?.formValues?.custom_total_calories,
+        targetProtein: profileData.smartPlannerData?.formValues?.proteinGrams,
+        targetCarbs: profileData.smartPlannerData?.formValues?.carbGrams,
+        targetFat: profileData.smartPlannerData?.formValues?.fatGrams,
+      };
 
       if (
         !dailyTargets.targetCalories ||
@@ -167,62 +160,11 @@ export default function CurrentMealPlanPage() {
         return;
       }
 
-      let mealDistribution;
-      const userMealDistributions = profileData.mealDistributions;
-      if (!userMealDistributions)
-        mealDistribution = defaultMacroPercentages[mealToOptimize.name];
-      else
-        mealDistribution = userMealDistributions.filter(
-          (meal) => meal.mealName === mealToOptimize.name
-        )[0];
-
-      const targetMacrosForMeal = {
-        calories: Math.round(
-          dailyTargets.targetCalories * (mealDistribution.calories_pct / 100)
-        ),
-        protein: Math.round(
-          dailyTargets.targetProtein * (mealDistribution.protein_pct / 100)
-        ),
-        carbs: Math.round(
-          dailyTargets.targetCarbs * (mealDistribution.carbs_pct / 100)
-        ),
-        fat: Math.round(
-          dailyTargets.targetFat * (mealDistribution.fat_pct / 100)
-        ),
-      };
-
-      const preparedIngredients = mealToOptimize.ingredients.map((ing) => ({
-        name: ing.name,
-        quantity: Number(ing.quantity) || 0,
-        unit: ing.unit,
-        calories: Number(ing.calories) || 0,
-        protein: Number(ing.protein) || 0,
-        carbs: Number(ing.carbs) || 0,
-        fat: Number(ing.fat) || 0,
-      }));
-
-      const aiInput: AdjustMealIngredientsInput = {
-        originalMeal: {
-          name: mealToOptimize.name,
-          customName: mealToOptimize.customName || '',
-          ingredients: preparedIngredients,
-          totalCalories: Number(mealToOptimize.totalCalories) || 0,
-          totalProtein: Number(mealToOptimize.totalProtein) || 0,
-          totalCarbs: Number(mealToOptimize.totalCarbs) || 0,
-          totalFat: Number(mealToOptimize.totalFat) || 0,
-        },
-        targetMacros: targetMacrosForMeal,
-        userProfile: {
-          age: profileData.age ?? undefined,
-          gender: profileData.gender ?? undefined,
-          activityLevel: profileData.activityLevel ?? undefined,
-          dietGoal: profileData.dietGoalOnboarding ?? undefined,
-          preferredDiet: profileData.preferredDiet ?? undefined,
-          allergies: profileData.allergies ?? [],
-          dispreferredIngredients: profileData.dispreferredIngredients ?? [],
-          preferredIngredients: profileData.preferredIngredients ?? [],
-        },
-      };
+      const aiInput = getAdjustedMealInput(
+        profileData,
+        dailyTargets,
+        mealToOptimize
+      );
 
       const result = await adjustMealIngredients(aiInput);
       if (!result.adjustedMeal || !user?.uid)
@@ -288,15 +230,12 @@ export default function CurrentMealPlanPage() {
   return (
     <div className='container mx-auto py-8'>
       <Card className='shadow-xl'>
-        <CardHeader>
-          <CardTitle className='text-3xl font-bold'>
-            Your Current Weekly Meal Plan
-          </CardTitle>
-          <CardDescription>
-            View and manage your meals for the week. Click on a meal to edit or
-            optimize with AI.
-          </CardDescription>
-        </CardHeader>
+        <SectionHeader
+          className='text-3xl font-bold'
+          title='Your Current Weekly Meal Plan'
+          description='View and manage your meals for the week. Click on a meal to edit or
+          optimize with AI.'
+        />
         <CardContent>
           <Tabs
             defaultValue={getQueryParams('selected_day') ?? daysOfWeek[0]}

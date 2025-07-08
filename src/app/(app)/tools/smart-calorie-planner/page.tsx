@@ -166,7 +166,7 @@ export default function SmartCaloriePlannerPage() {
           }
           setIsLoadingData(false);
         })
-        .catch((err) => {
+        .catch(() => {
           toast({
             title: 'Error',
             description: 'Could not load saved planner data.',
@@ -177,7 +177,7 @@ export default function SmartCaloriePlannerPage() {
     } else {
       setIsLoadingData(false);
     }
-  }, [smartPlannerForm, toast]);
+  }, [smartPlannerForm, toast, user?.uid]);
 
   const onSubmit = async (data: SmartCaloriePlannerFormValues) => {
     const activity = activityLevels.find(
@@ -268,6 +268,7 @@ export default function SmartCaloriePlannerPage() {
         (estimatedFatLossPercent / 100) * data.current_weight;
       const calorieAdjustmentS3 = (7700 * estimatedFatLossKg) / 30;
       targetCaloriesS3 = tdee - calorieAdjustmentS3;
+      console.log(targetCaloriesS3);
     }
 
     finalTargetCalories = Math.max(bmr + 100, Math.round(finalTargetCalories));
@@ -318,15 +319,28 @@ export default function SmartCaloriePlannerPage() {
     setResults(newResults);
     if (user?.uid) {
       try {
+        const newFormData = {
+          ...data,
+          carbCalories: customPlanResults?.carbCalories ?? 0,
+          carbGrams: customPlanResults?.carbGrams ?? 0,
+          carbTargetPct: customPlanResults?.carbTargetPct ?? 0,
+          fatCalories: customPlanResults?.fatCalories ?? 0,
+          fatGrams: customPlanResults?.fatGrams ?? 0,
+          fatTargetPct: customPlanResults?.fatTargetPct ?? 0,
+          proteinCalories: customPlanResults?.proteinCalories ?? 0,
+          proteinGrams: customPlanResults?.proteinGrams ?? 0,
+          proteinTargetPct: customPlanResults?.proteinTargetPct ?? 0,
+        };
+
         await saveSmartPlannerData(user.uid, {
-          formValues: data,
+          formValues: newFormData,
           results: newResults,
         });
         toast({
           title: 'Calculation Complete',
           description: 'Your smart calorie plan has been generated and saved.',
         });
-      } catch (error) {
+      } catch {
         toast({
           title: 'Save Error',
           description: 'Could not save calculation results.',
@@ -335,11 +349,6 @@ export default function SmartCaloriePlannerPage() {
       }
     }
   };
-
-  function onError(error: any) {
-    console.log(error);
-    console.log(smartPlannerForm.formState.errors);
-  }
 
   const handleSmartPlannerReset = async () => {
     smartPlannerForm.reset({
@@ -522,9 +531,8 @@ export default function SmartCaloriePlannerPage() {
           : undefined,
     };
 
-    if (JSON.stringify(customPlanResults) !== JSON.stringify(newCustomPlan)) {
+    if (JSON.stringify(customPlanResults) !== JSON.stringify(newCustomPlan))
       setCustomPlanResults(newCustomPlan);
-    }
   }, [watchedCustomInputs, results, customPlanResults, toast]);
 
   if (isLoadingData) {
@@ -549,10 +557,11 @@ export default function SmartCaloriePlannerPage() {
               data will be used across other tools.
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             <Form {...smartPlannerForm}>
               <form
-                onSubmit={smartPlannerForm.handleSubmit(onSubmit, onError)}
+                onSubmit={smartPlannerForm.handleSubmit(onSubmit)}
                 className='space-y-8'
               >
                 <Accordion
@@ -1013,18 +1022,15 @@ export default function SmartCaloriePlannerPage() {
 
                   <AccordionItem value='help-section'>
                     <AccordionTrigger className='text-xl font-semibold'>
-                      {' '}
                       <div className='flex items-center'>
-                        {' '}
                         <HelpCircle className='mr-2 h-6 w-6 text-primary' /> How
-                        is this calculated?{' '}
-                      </div>{' '}
+                        is this calculated?
+                      </div>
                     </AccordionTrigger>
                     <AccordionContent className='text-sm space-y-4 pt-3 max-h-96 overflow-y-auto'>
                       <div>
-                        {' '}
                         <h4 className='font-semibold text-base'>
-                          1. Basal Metabolic Rate (BMR) & Total Daily Energy
+                          1. Basal Metabolic Rate (BMR) &amp; Total Daily Energy
                           Expenditure (TDEE)
                         </h4>{' '}
                         <p>
@@ -1036,8 +1042,8 @@ export default function SmartCaloriePlannerPage() {
                           <strong className='text-primary'>
                             activity factor
                           </strong>{' '}
-                          (derived from your selected 'Physical Activity Level')
-                          for TDEE.
+                          (derived from your selected &lsquo;Physical Activity
+                          Level&rsquo;) for TDEE.
                         </p>
                       </div>
                       <div>
@@ -1045,21 +1051,25 @@ export default function SmartCaloriePlannerPage() {
                           2. Target Daily Calories
                         </h4>
                         <p>
-                          This is determined based on your goals, selected "Diet
-                          Goal", and optionally, body composition changes:
+                          This is determined based on your goals, selected
+                          &quot;Diet Goal&quot;, and optionally, body
+                          composition changes:
                         </p>
                         <ul className='list-disc pl-5 space-y-1 mt-1'>
                           <li>
-                            <strong>Primary Goal (Weight & Diet Goal):</strong>{' '}
+                            <strong>
+                              Primary Goal (Weight &amp; Diet Goal):
+                            </strong>{' '}
                             Initially calculated from your 1-month weight
-                            target. Your "Diet Goal" (e.g., "Fat loss," "Muscle
-                            gain") then refines this. For example, "Fat loss"
-                            aims for a deficit (e.g., TDEE - 200 to -500 kcal),
-                            while "Muscle gain" aims for a surplus (e.g., TDEE +
-                            150 to +300 kcal). "Recomposition" targets a slight
-                            deficit or near-maintenance calories. These
-                            adjustments ensure the calorie target aligns with
-                            your primary objective.
+                            target. Your &quot;Diet Goal&quot; (e.g., &quot;Fat
+                            loss,&quot; &quot;Muscle gain&quot;) then refines
+                            this. For example, &quot;Fat loss&quot; aims for a
+                            deficit (e.g., TDEE - 200 to -500 kcal), while
+                            &quot;Muscle gain&quot; aims for a surplus (e.g.,
+                            TDEE + 150 to +300 kcal). &quot;Recomposition&quot;
+                            targets a slight deficit or near-maintenance
+                            calories. These adjustments ensure the calorie
+                            target aligns with your primary objective.
                           </li>
                           <li>
                             <strong>
@@ -1085,8 +1095,9 @@ export default function SmartCaloriePlannerPage() {
                         </h4>
                         <p>
                           The default suggested protein/carb/fat percentage
-                          split (shown in the 'Original Plan' results) is based
-                          on your selected "Diet Goal":
+                          split (shown in the &lsquo;Original Plan&rsquo;
+                          results) is based on your selected &quot;Diet
+                          Goal&quot;:
                         </p>
                         <ul className='list-disc pl-5 space-y-1 mt-1'>
                           <li>
@@ -1103,8 +1114,8 @@ export default function SmartCaloriePlannerPage() {
                           </li>
                         </ul>
                         <p className='mt-1'>
-                          You can further customize this in the "Customize Your
-                          Plan" section below.
+                          You can further customize this in the &quot;Customize
+                          Your Plan&quot; section below.
                         </p>
                       </div>
                       <div>
@@ -1313,10 +1324,9 @@ export default function SmartCaloriePlannerPage() {
                         </TableRow>
                       </TableBody>
                       <TableCaption className='text-xs mt-2 text-left'>
-                        {' '}
                         This breakdown is based on your inputs and calculated
-                        goal. For custom macro adjustments, use the 'Customize
-                        Your Plan' section below.{' '}
+                        goal. For custom macro adjustments, use the
+                        &lsquo;Customize Your Plan&rsquo; section below.
                       </TableCaption>
                     </Table>
                   </div>
@@ -1337,11 +1347,7 @@ export default function SmartCaloriePlannerPage() {
                 </CardHeader>
                 <CardContent>
                   <Form {...smartPlannerForm}>
-                    {' '}
-                    {/* This Form tag is redundant here if the outer one covers all inputs */}
                     <form className='space-y-6'>
-                      {' '}
-                      {/* This form tag is also redundant */}
                       <div className='grid md:grid-cols-2 gap-x-6 gap-y-4 items-start'>
                         <FormField
                           control={smartPlannerForm.control}

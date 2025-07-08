@@ -1,17 +1,12 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'; // Added ScrollBar
+import SectionHeader from '@/components/ui/SectionHeader';
 import {
   Table,
   TableBody,
@@ -22,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
+import DailyMacroSummary from '@/features/tools/components/macro-splitter/DailyMacroSummary';
 import { headerLabels, macroPctKeys } from '@/features/tools/lib/config';
 import {
   customMacroSplit,
@@ -50,13 +46,11 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   AlertTriangle,
   CheckCircle2,
-  Info,
   Lightbulb,
   Loader2,
   RefreshCw,
   SplitSquareHorizontal,
 } from 'lucide-react';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -159,16 +153,27 @@ export default function MacroSplitterPage() {
             undefined &&
           profileData.smartPlannerData?.results?.finalTargetCalories !== null
         ) {
-          const calories = profileData.smartPlannerData.formValues
-            ?.custom_total_calories
-            ? profileData.smartPlannerData.formValues?.custom_total_calories
-            : profileData.smartPlannerData.results.finalTargetCalories;
-          const smartResults = profileData.smartPlannerData.results;
+          const usersCustomPlan = profileData.smartPlannerData.formValues;
+          const defaultPlan = profileData.smartPlannerData.results;
+
+          const calories = usersCustomPlan?.custom_total_calories
+            ? usersCustomPlan.custom_total_calories
+            : defaultPlan.finalTargetCalories;
+
+          let smartResults;
+          if (
+            usersCustomPlan?.proteinGrams ||
+            usersCustomPlan?.fatGrams ||
+            usersCustomPlan?.carbGrams
+          )
+            smartResults = profileData.smartPlannerData.formValues;
+          else smartResults = profileData.smartPlannerData.results;
+
           targets = {
             calories: calories || 0,
-            protein_g: smartResults.proteinGrams || 0,
-            carbs_g: smartResults.carbGrams || 0,
-            fat_g: smartResults.fatGrams || 0,
+            protein_g: smartResults?.proteinGrams || 0,
+            carbs_g: smartResults?.carbGrams || 0,
+            fat_g: smartResults?.fatGrams || 0,
             source: 'Smart Calorie Planner Targets',
           };
           sourceMessage =
@@ -378,95 +383,25 @@ export default function MacroSplitterPage() {
   return (
     <div className='container mx-auto py-8 space-y-6'>
       <Card className='shadow-lg'>
-        <CardHeader>
-          <CardTitle className='text-3xl font-bold flex items-center'>
-            <SplitSquareHorizontal className='mr-3 h-8 w-8 text-primary' />
-            Macro Splitter Tool
-          </CardTitle>
-          <CardDescription>
-            Distribute your total daily macros across your meals by percentage.
-            Percentages must be whole numbers (e.g., 20, not 20.5).
-          </CardDescription>
-        </CardHeader>
-        {dailyTargets ? (
-          <CardContent>
-            <h3 className='text-xl font-semibold mb-1 text-primary'>
-              Your Estimated Total Daily Macros:
-            </h3>
-            <div className='grid grid-cols-2 md:grid-cols-4 gap-4 p-4 border rounded-md bg-muted/50 mb-3'>
-              <p>
-                <span className='font-medium'>Calories:</span>{' '}
-                {formatNumber(dailyTargets.calories, {
-                  maximumFractionDigits: 0,
-                })}{' '}
-                kcal
-              </p>
-              <p>
-                <span className='font-medium'>Protein:</span>{' '}
-                {formatNumber(dailyTargets.protein_g, {
-                  minimumFractionDigits: 1,
-                  maximumFractionDigits: 1,
-                })}{' '}
-                g
-              </p>
-              <p>
-                <span className='font-medium'>Carbs:</span>{' '}
-                {formatNumber(dailyTargets.carbs_g, {
-                  minimumFractionDigits: 1,
-                  maximumFractionDigits: 1,
-                })}{' '}
-                g
-              </p>
-              <p>
-                <span className='font-medium'>Fat:</span>{' '}
-                {formatNumber(dailyTargets.fat_g, {
-                  minimumFractionDigits: 1,
-                  maximumFractionDigits: 1,
-                })}{' '}
-                g
-              </p>
-            </div>
-            {dataSourceMessage && (
-              <div className='text-sm text-muted-foreground flex items-center gap-2 p-2 rounded-md border border-dashed bg-background'>
-                <Info className='h-4 w-4 text-accent shrink-0' />
-                <span>{dataSourceMessage}</span>
-              </div>
-            )}
-          </CardContent>
-        ) : (
-          <CardContent>
-            <div className='text-destructive text-center p-4 border border-destructive/50 rounded-md bg-destructive/10'>
-              <p className='mb-2'>
-                Could not load or calculate your total daily macros.
-              </p>
-              <p className='text-sm'>
-                Please ensure your profile is complete or use the{' '}
-                <Link
-                  href='/tools/smart-calorie-planner'
-                  className='underline hover:text-destructive/80'
-                >
-                  Smart Calorie Planner
-                </Link>{' '}
-                to set your targets.
-              </p>
-            </div>
-          </CardContent>
-        )}
+        <SectionHeader
+          className='text-3xl font-bold flex items-center'
+          title='Macro Splitter Tool'
+          description='Distribute your total daily macros across your meals by percentage. Percentages must be whole numbers (e.g., 20, not 20.5).'
+          icon={<SplitSquareHorizontal className='mr-3 h-8 w-8 text-primary' />}
+        />
+
+        <DailyMacroSummary targets={dailyTargets} message={dataSourceMessage} />
       </Card>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
           <Card className='shadow-lg'>
-            <CardHeader>
-              <CardTitle className='text-2xl'>
-                Meal Macro Percentage & Value Distribution
-              </CardTitle>
-              <CardDescription>
-                Enter percentages. Each percentage column must sum to 100%.
-                Calculated values update live. Percentages must be whole numbers
-                (e.g., 20, not 20.5).
-              </CardDescription>
-            </CardHeader>
+            <SectionHeader
+              className='text-2xl'
+              title='Meal Macro Percentage & Value Distribution'
+              description='Enter percentages. Each percentage column must sum to 100%. Calculated values update live. Percentages must be whole numbers (e.g., 20, not 20.5).'
+            />
+
             <CardContent>
               <ScrollArea className='w-full border rounded-md'>
                 <Table className='min-w-[800px]'>
@@ -786,15 +721,12 @@ export default function MacroSplitterPage() {
 
       {calculatedSplit && (
         <Card className='shadow-lg mt-8'>
-          <CardHeader>
-            <CardTitle className='text-2xl'>
-              Final Meal Macros (Snapshot)
-            </CardTitle>
-            <CardDescription>
-              This was the calculated split when you last clicked &quot;Save
-              &amp; Show Final Split&quot;.
-            </CardDescription>
-          </CardHeader>
+          <SectionHeader
+            className='text-2xl'
+            title='Final Meal Macros (Snapshot)'
+            description='This was the calculated split when you last clicked "Save &amp; Show Final Split".'
+          />
+
           <CardContent>
             <ScrollArea className='w-full'>
               <Table className='min-w-[700px]'>
