@@ -1,46 +1,10 @@
 'use server';
 
 import { ai, geminiModel } from '@/ai/genkit';
-import { FullProfileType } from '@/lib/schemas';
-
-// Types
-export interface AdjustMealIngredientsInput {
-  originalMeal: AIServiceMeal;
-  targetMacros: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  userProfile: FullProfileType;
-}
-
-export interface AIServiceIngredient {
-  name: string;
-  quantity: number;
-  unit: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-}
-
-export interface AIServiceMeal {
-  name: string;
-  customName?: string;
-  ingredients: AIServiceIngredient[];
-  totalCalories: number;
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
-}
-
-export interface AdjustMealIngredientsOutput {
-  adjustedMeal: AIServiceMeal;
-  explanation: string;
-}
-
-// Genkit Flow
+import {
+  AdjustMealIngredientsInput,
+  AdjustMealIngredientsOutput,
+} from '@/features/meal-plan/types';
 
 export async function adjustMealIngredients(
   input: AdjustMealIngredientsInput

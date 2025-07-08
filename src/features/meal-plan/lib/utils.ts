@@ -1,14 +1,8 @@
 import { type GeneratePersonalizedMealPlanInput } from '@/ai/flows/generate-meal-plan';
-import { BaseProfileData, FullProfileType } from '@/lib/schemas';
-
-const requiredFields: (keyof FullProfileType)[] = [
-  'age',
-  'gender',
-  'current_weight',
-  'height_cm',
-  'activityLevel',
-  'dietGoalOnboarding',
-];
+import { defaultMacroPercentages } from '@/lib/constants';
+import { BaseProfileData } from '@/lib/schemas';
+import { DailyTargetsTypes, MealToOptimizeTypes } from '../types';
+import { requiredFields } from './config';
 
 export function mapProfileToMealPlanInput(
   profile: Partial<BaseProfileData>
@@ -63,7 +57,6 @@ export function mapProfileToMealPlanInput(
     typicalMealsDescription: profile.typicalMealsDescription ?? undefined,
   };
 
-  // Clean undefineds
   Object.keys(input).forEach(
     (key) =>
       input[key as keyof GeneratePersonalizedMealPlanInput] === undefined &&
@@ -71,6 +64,62 @@ export function mapProfileToMealPlanInput(
   );
 
   return input;
+}
+
+export function getAdjustedMealInput(
+  profileData: Partial<BaseProfileData>,
+  dailyTargets: DailyTargetsTypes,
+  mealToOptimize: MealToOptimizeTypes
+) {
+  let mealDistribution;
+  const userMealDistributions = profileData.mealDistributions;
+  if (!userMealDistributions)
+    mealDistribution = defaultMacroPercentages[mealToOptimize.name];
+  else
+    mealDistribution = userMealDistributions.filter(
+      (meal) => meal.mealName === mealToOptimize.name
+    )[0];
+
+  const targetMacrosForMeal = {
+    calories:
+      dailyTargets.targetCalories! * (mealDistribution.calories_pct / 100),
+    protein: dailyTargets.targetProtein! * (mealDistribution.protein_pct / 100),
+    carbs: dailyTargets.targetCarbs! * (mealDistribution.carbs_pct / 100),
+    fat: dailyTargets.targetFat! * (mealDistribution.fat_pct / 100),
+  };
+
+  const preparedIngredients = mealToOptimize.ingredients.map((ing) => ({
+    name: ing.name,
+    quantity: Number(ing.quantity) || 0,
+    unit: ing.unit,
+    calories: Number(ing.calories) || 0,
+    protein: Number(ing.protein) || 0,
+    carbs: Number(ing.carbs) || 0,
+    fat: Number(ing.fat) || 0,
+  }));
+
+  return {
+    originalMeal: {
+      name: mealToOptimize.name,
+      customName: mealToOptimize.customName || '',
+      ingredients: preparedIngredients,
+      totalCalories: Number(mealToOptimize.totalCalories) || 0,
+      totalProtein: Number(mealToOptimize.totalProtein) || 0,
+      totalCarbs: Number(mealToOptimize.totalCarbs) || 0,
+      totalFat: Number(mealToOptimize.totalFat) || 0,
+    },
+    targetMacros: targetMacrosForMeal,
+    userProfile: {
+      age: profileData.age,
+      gender: profileData.gender,
+      activityLevel: profileData.activityLevel,
+      dietGoal: profileData.dietGoalOnboarding,
+      preferredDiet: profileData.preferredDiet,
+      allergies: profileData.allergies ?? [],
+      dispreferredIngredients: profileData.dispreferredIngredients ?? [],
+      preferredIngredients: profileData.preferredIngredients ?? [],
+    },
+  };
 }
 
 export function getMissingProfileFields(

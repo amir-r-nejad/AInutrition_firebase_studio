@@ -1,17 +1,12 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { SupportChat } from '@/components/SupportChat';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { SupportChat } from '@/components/SupportChat';
+import { Card, CardContent } from '@/components/ui/card';
+import SectionHeader from '@/components/ui/SectionHeader';
 import { HelpCircle, MessageSquareQuote } from 'lucide-react';
 
 const faqItems = [
@@ -47,17 +42,13 @@ export default function FaqAndChatbotPage() {
   return (
     <div className='container mx-auto py-8 space-y-8'>
       <Card className='shadow-xl'>
-        <CardHeader>
-          <div className='flex items-center gap-3 mb-2'>
-            <HelpCircle className='h-8 w-8 text-primary' />
-            <CardTitle className='text-3xl font-bold'>
-              Frequently Asked Questions
-            </CardTitle>
-          </div>
-          <CardDescription>
-            Find answers to common questions about using NutriPlan.
-          </CardDescription>
-        </CardHeader>
+        <SectionHeader
+          icon={<HelpCircle className='h-8 w-8 text-primary' />}
+          className='text-3xl font-bold'
+          title='Frequently Asked Questions'
+          description='Find answers to common questions about using NutriPlan.'
+        />
+
         <CardContent>
           <Accordion type='single' collapsible className='w-full'>
             {faqItems.map((item, index) => (
@@ -75,18 +66,13 @@ export default function FaqAndChatbotPage() {
       </Card>
 
       <Card className='shadow-xl'>
-        <CardHeader>
-          <div className='flex items-center gap-3 mb-2'>
-            <MessageSquareQuote className='h-8 w-8 text-primary' />
-            <CardTitle className='text-3xl font-bold'>
-              Still Have Questions?
-            </CardTitle>
-          </div>
-          <CardDescription>
-            If you couldn&apos;t find your answer in the FAQ, our support bot is
-            here to help!
-          </CardDescription>
-        </CardHeader>
+        <SectionHeader
+          icon={<MessageSquareQuote className='h-8 w-8 text-primary' />}
+          className='text-3xl font-bold'
+          title='Still Have Questions?'
+          description="If you couldn't find your answer in the FAQ, our support bot is here to help!"
+        />
+
         <CardContent>
           <SupportChat />
         </CardContent>

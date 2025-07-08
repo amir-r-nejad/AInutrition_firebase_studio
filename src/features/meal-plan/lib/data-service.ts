@@ -111,6 +111,16 @@ export async function getProfileDataForOptimization(
         allergies: data.allergies || [],
         dispreferredIngredients: data.dispreferredIngredients || [],
         preferredIngredients: data.preferredIngredients || [],
+
+        smartPlannerData: {
+          formValues: {
+            custom_total_calories:
+              data.smartPlannerData?.formValues?.custom_total_calories,
+            proteinGrams: data.smartPlannerData?.formValues?.proteinGrams,
+            carbGrams: data.smartPlannerData?.formValues?.carbGrams,
+            fatGrams: data.smartPlannerData?.formValues?.fatGrams,
+          },
+        },
       };
       // Ensure undefined top-level optional fields become null for consistency
       (Object.keys(profile) as Array<keyof typeof profile>).forEach((key) => {

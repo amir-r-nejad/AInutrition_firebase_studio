@@ -118,6 +118,7 @@ export interface BaseProfileData extends User {
   ideal_goal_weight?: number | null;
   activityLevel?: string | null; // From onboarding
   dietGoalOnboarding?: string | null; // From onboarding
+  dietGoal?: string | null;
 
   // Preferences from Onboarding/MealSuggestions
   preferredDiet?: string | null;
@@ -501,6 +502,45 @@ export const SmartCaloriePlannerFormSchema = z.object({
       .optional()
       .default(50)
   ),
+
+  carbCalories: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().int().optional()
+  ),
+  carbGrams: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().int().optional()
+  ),
+  carbTargetPct: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().int().optional()
+  ),
+
+  fatCalories: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().int().optional()
+  ),
+  fatGrams: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().int().optional()
+  ),
+  fatTargetPct: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().int().optional()
+  ),
+
+  proteinCalories: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().int().optional()
+  ),
+  proteinGrams: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().int().optional()
+  ),
+  proteinTargetPct: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().int().optional()
+  ),
 });
 export type SmartCaloriePlannerFormValues = z.infer<
   typeof SmartCaloriePlannerFormSchema
@@ -547,7 +587,8 @@ const CalculatedTargetsSchema = z.object({
 });
 
 // If you need the inferred TypeScript type:
-type CalculatedTargets = z.infer<typeof CalculatedTargetsSchema>;
+// type CalculatedTargets = z.infer<typeof CalculatedTargetsSchema>;
+
 const CustomCalculatedTargetsSchema = z.object({
   totalCalories: z.number().optional(),
   proteinGrams: z.number().optional(),

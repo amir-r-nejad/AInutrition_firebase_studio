@@ -24,6 +24,7 @@ export default function DailyTargetsPageRemoved() {
             The Daily Targets page has been removed.
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           <p className='text-muted-foreground mb-6'>
             Your total daily macronutrient needs (calories, protein, etc.) for
