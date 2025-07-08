@@ -8,15 +8,14 @@ import {
   type SupportChatbotInput,
   type SupportChatbotOutput,
 } from '@/lib/schemas';
+import { getAIApiErrorMessage } from '@/lib/utils';
 
-// Main entry function
 export async function handleSupportQuery(
   input: SupportChatbotInput
 ): Promise<SupportChatbotOutput> {
   return supportChatbotFlow(input);
 }
 
-// AI Prompt
 const prompt = ai.definePrompt({
   name: 'supportChatbotPrompt',
   input: { schema: SupportChatbotInputSchema },
@@ -51,31 +50,37 @@ Respond ONLY with the pure JSON object that strictly matches the following TypeS
 { botResponse: string; }`,
 });
 
-// Genkit Flow
 const supportChatbotFlow = ai.defineFlow(
   {
     name: 'supportChatbotFlow',
     inputSchema: SupportChatbotInputSchema,
     outputSchema: SupportChatbotOutputSchema,
   },
-  async (input) => {
-    const { output } = await prompt(input);
-    if (!output) {
-      return {
-        botResponse:
-          "I'm sorry, I couldn't process your request at the moment. Please try again.",
-      };
-    }
+  async (input: SupportChatbotInput): Promise<SupportChatbotOutput> => {
+    try {
+      const { output } = await prompt(input);
 
-    const validationResult = SupportChatbotOutputSchema.safeParse(output);
-    if (!validationResult.success) {
-      console.error('AI output validation error:', validationResult.error.flatten());
-      // Return a user-friendly error, but still in the expected format
-      return {
-        botResponse: "I'm sorry, there was an issue with the response format. Please try rephrasing your question.",
-      };
-    }
+      if (!output) {
+        throw new Error(
+          "I'm sorry, I couldn't process your request at the moment. Please try again."
+        );
+      }
 
-    return validationResult.data;
+      const validationResult = SupportChatbotOutputSchema.safeParse(output);
+      if (!validationResult.success) {
+        console.error(
+          'AI output validation error:',
+          validationResult.error.flatten()
+        );
+        throw new Error(
+          "I'm sorry, there was an issue with the response format. Please try rephrasing your question."
+        );
+      }
+
+      return validationResult.data;
+    } catch (error: any) {
+      console.error('Error in supportChatbotFlow:', error);
+      throw new Error(getAIApiErrorMessage(error));
+    }
   }
 );
