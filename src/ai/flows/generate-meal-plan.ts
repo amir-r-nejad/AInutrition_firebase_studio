@@ -9,7 +9,6 @@ import {
   type DayPlan,
   type AIGeneratedMeal,
   type GeneratePersonalizedMealPlanInput,
-  AIDailyMealSchema,
 } from '@/lib/schemas';
 import { daysOfWeek } from '@/lib/constants';
 import { z } from 'zod';
@@ -21,6 +20,8 @@ export async function generatePersonalizedMealPlan(
   return generatePersonalizedMealPlanFlow(input);
 }
 
+// This schema is for the internal daily prompt, containing only necessary info.
+// REMOVED general profile data to force focus on targets and preferences.
 const DailyPromptInputSchema = z.object({
   dayOfWeek: z.string(),
   mealTargets: z.array(
@@ -43,6 +44,8 @@ const DailyPromptInputSchema = z.object({
 });
 type DailyPromptInput = z.infer<typeof DailyPromptInputSchema>;
 
+// A prompt specifically for generating a SINGLE DAY's meal plan.
+// REMOVED the user profile section to make the prompt more focused.
 const dailyPrompt = ai.definePrompt({
   name: 'generateDailyMealPlanPrompt',
   input: { schema: DailyPromptInputSchema },
@@ -58,6 +61,7 @@ const dailyPrompt = ai.definePrompt({
 {{#if dispreferredCuisines.length}}- Cuisines to Avoid: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if medicalConditions.length}}- Medical Conditions: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if medications.length}}- Medications: {{#each medications}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+
 
 **ABSOLUTE REQUIREMENTS FOR MEAL GENERATION:**
 
@@ -80,14 +84,15 @@ You are being provided with specific macronutrient targets for each meal. These 
 {{/each}}
 
 **CRITICAL OUTPUT INSTRUCTIONS:**
-1. Respond with ONLY a valid JSON object matching the provided schema. Do NOT include any text, notes, greetings, or markdown like \`\`\`json outside the JSON object.
-2. For each meal in the targets, create a corresponding meal object in the "meals" array.
-3. Each meal object MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array with at least one ingredient, each with valid "name", "calories", "protein", "carbs", and "fat" values.
-4. For each ingredient object, all fields ("name", "calories", "protein", "carbs", "fat") must be provided and must be numbers (no null or undefined values).
-5. **Before finalizing your output, you MUST double-check your math.** Sum the macros for each ingredient list to ensure the totals for each meal are within the 5% tolerance of the targets provided above. If they are not, you must adjust the ingredients and recalculate until they are. ONLY output the final, correct version.
+1.  Respond with ONLY a valid JSON object matching the provided schema. Do NOT include any text, notes, greetings, or markdown like \`\`\`json outside the JSON object.
+2.  For each meal in the targets, create a corresponding meal object in the "meals" array.
+3.  Each meal object MUST have a "meal_title" (a short, appetizing name) and a non-empty "ingredients" array.
+4.  For each ingredient object MUST have a "name", and the precise "calories", "protein", "carbs", and "fat" values for the portion used in the meal. All values must be numbers.
+5.  **Before finalizing your output, you MUST double-check your math.** Sum the macros for each ingredient list to ensure the totals for each meal are within the 5% tolerance of the targets provided above. If they are not, you must adjust the ingredients and recalculate until they are. ONLY output the final, correct version.
 `,
 });
 
+// The flow takes the pre-calculated targets and user context and iterates to generate a plan.
 const generatePersonalizedMealPlanFlow = ai.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
@@ -98,9 +103,16 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     input: GeneratePersonalizedMealPlanInput
   ): Promise<GeneratePersonalizedMealPlanOutput> => {
     const processedWeeklyPlan: DayPlan[] = [];
+    let weeklySummary = {
+      totalCalories: 0,
+      totalProtein: 0,
+      totalCarbs: 0,
+      totalFat: 0,
+    };
 
     for (const dayOfWeek of daysOfWeek) {
       try {
+        // Construct the simpler input for the daily prompt
         const dailyPromptInput: DailyPromptInput = {
           dayOfWeek,
           mealTargets: input.mealTargets,
@@ -125,57 +137,56 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
           continue;
         }
 
-        const parsedOutput = AIDailyPlanOutputSchema.safeParse(dailyOutput);
-        if (!parsedOutput.success) {
-          console.error(`Invalid AI output for ${dayOfWeek}:`, parsedOutput.error);
-          continue;
+        const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
+          .map((meal, index) => {
+            // Return null for invalid meals to filter out later
+            if (meal === null || !meal.ingredients || meal.ingredients.length === 0) {
+              return null;
+            }
+
+            const sanitizedIngredients = meal.ingredients.map((ing) => ({
+              name: ing.name ?? 'Unknown Ingredient',
+              calories: Number(ing.calories) || 0,
+              protein: Number(ing.protein) || 0,
+              carbs: Number(ing.carbs) || 0,
+              fat: Number(ing.fat) || 0,
+            }));
+
+            const mealTotals = sanitizedIngredients.reduce(
+              (totals, ing) => {
+                totals.calories += ing.calories;
+                totals.protein += ing.protein;
+                totals.carbs += ing.carbs;
+                totals.fat += ing.fat;
+                return totals;
+              },
+              { calories: 0, protein: 0, carbs: 0, fat: 0 }
+            );
+
+            weeklySummary.totalCalories += mealTotals.calories;
+            weeklySummary.totalProtein += mealTotals.protein;
+            weeklySummary.totalCarbs += mealTotals.carbs;
+            weeklySummary.totalFat += mealTotals.fat;
+
+            return {
+              meal_name:
+                input.mealTargets[index]?.mealName || `Meal ${index + 1}`,
+              meal_title:
+                meal.meal_title ||
+                `AI Generated ${input.mealTargets[index]?.mealName || 'Meal'}`,
+              ingredients: sanitizedIngredients,
+              // Explicitly map fields to match AIGeneratedMeal, even if optional
+              total_calories: mealTotals.calories || undefined,
+              total_protein_g: mealTotals.protein || undefined,
+              total_carbs_g: mealTotals.carbs || undefined,
+              total_fat_g: mealTotals.fat || undefined,
+            } as AIGeneratedMeal;
+          })
+          .filter((meal): meal is AIGeneratedMeal => meal !== null);
+
+        if (processedMeals.length > 0) {
+          processedWeeklyPlan.push({ day: dayOfWeek, meals: processedMeals });
         }
-        const validDailyOutput = parsedOutput.data;
-
-        const mealsForThisDay: AIGeneratedMeal[] = [];
-        
-        for (const [index, meal] of validDailyOutput.meals.entries()) {
-          if (!meal || !meal.ingredients || meal.ingredients.length === 0) {
-            console.warn(`Skipping meal ${index + 1} for ${dayOfWeek} due to invalid ingredients.`);
-            continue;
-          }
-
-          const sanitizedIngredients = meal.ingredients.map((ing) => ({
-            name: ing.name ?? 'Unknown Ingredient',
-            calories: ing.calories ?? 0,
-            protein: ing.protein ?? 0,
-            carbs: ing.carbs ?? 0,
-            fat: ing.fat ?? 0,
-          }));
-
-          const mealTotals = sanitizedIngredients.reduce(
-            (totals, ing) => {
-              totals.calories += ing.calories;
-              totals.protein += ing.protein;
-              totals.carbs += ing.carbs;
-              totals.fat += ing.fat;
-              return totals;
-            },
-            { calories: 0, protein: 0, carbs: 0, fat: 0 }
-          );
-
-          const processedMeal: AIGeneratedMeal = {
-            meal_name: input.mealTargets[index]?.mealName || meal.meal_title || `Meal ${index + 1}`,
-            meal_title: meal.meal_title || `AI Generated ${input.mealTargets[index]?.mealName || 'Meal'}`,
-            ingredients: sanitizedIngredients,
-            total_calories: mealTotals.calories,
-            total_protein_g: mealTotals.protein,
-            total_carbs_g: mealTotals.carbs,
-            total_fat_g: mealTotals.fat,
-          };
-          
-          mealsForThisDay.push(processedMeal);
-        }
-
-        if (mealsForThisDay.length > 0) {
-          processedWeeklyPlan.push({ day: dayOfWeek, meals: mealsForThisDay });
-        }
-
       } catch (e) {
         console.error(`Failed to generate meal plan for ${dayOfWeek}:`, e);
       }
@@ -189,16 +200,6 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         })
       );
     }
-
-    const weeklySummary = processedWeeklyPlan.reduce((summary, day) => {
-      day.meals.forEach(meal => {
-        summary.totalCalories += meal.total_calories || 0;
-        summary.totalProtein += meal.total_protein_g || 0;
-        summary.totalCarbs += meal.total_carbs_g || 0;
-        summary.totalFat += meal.total_fat_g || 0;
-      });
-      return summary;
-    }, { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 });
 
     const finalOutput: GeneratePersonalizedMealPlanOutput = {
       weeklyMealPlan: processedWeeklyPlan,

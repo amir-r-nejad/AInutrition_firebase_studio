@@ -1,4 +1,3 @@
-
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -140,16 +139,17 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
 
         const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
           .map((meal, index) => {
-            if (!meal.ingredients || meal.ingredients.length === 0) {
+            // Return null for invalid meals to filter out later
+            if (!meal || !meal.ingredients || meal.ingredients.length === 0) {
               return null;
             }
 
-            const sanitizedIngredients = meal.ingredients!.map((ing) => ({
+            const sanitizedIngredients = meal.ingredients.map((ing) => ({
               name: ing.name ?? 'Unknown Ingredient',
-              calories: ing.calories ?? 0,
-              protein: ing.protein ?? 0,
-              carbs: ing.carbs ?? 0,
-              fat: ing.fat ?? 0,
+              calories: Number(ing.calories) || 0,
+              protein: Number(ing.protein) || 0,
+              carbs: Number(ing.carbs) || 0,
+              fat: Number(ing.fat) || 0,
             }));
 
             const mealTotals = sanitizedIngredients.reduce(
@@ -169,17 +169,14 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
             weeklySummary.totalFat += mealTotals.fat;
 
             return {
-              meal_name:
-                input.mealTargets[index]?.mealName || `Meal ${index + 1}`,
-              meal_title:
-                meal.meal_title ||
-                `AI Generated ${input.mealTargets[index]?.mealName || 'Meal'}`,
+              meal_name: input.mealTargets[index]?.mealName || `Meal ${index + 1}`,
+              meal_title: meal.meal_title || `AI Generated ${input.mealTargets[index]?.mealName || 'Meal'}`,
               ingredients: sanitizedIngredients,
-              total_calories: mealTotals.calories,
-              total_protein_g: mealTotals.protein,
-              total_carbs_g: mealTotals.carbs,
-              total_fat_g: mealTotals.fat,
-            };
+              total_calories: mealTotals.calories || undefined,
+              total_protein_g: mealTotals.protein || undefined,
+              total_carbs_g: mealTotals.carbs || undefined,
+              total_fat_g: mealTotals.fat || undefined,
+            } as AIGeneratedMeal;
           })
           .filter((meal): meal is AIGeneratedMeal => meal !== null);
 
@@ -194,8 +191,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     if (processedWeeklyPlan.length === 0) {
       throw new Error(
         getAIApiErrorMessage({
-          message:
-            'The AI failed to generate a valid meal plan for any day of the week. Please try again.',
+          message: 'The AI failed to generate a valid meal plan for any day of the week. Please try again.',
         })
       );
     }

@@ -6,7 +6,7 @@ import {
   genders,
   preferredDiets,
   smartPlannerDietGoals,
-} from './constants';
+} from '@/lib/constants';
 
 /**
  * Recursively processes data to be compatible with Firestore.
