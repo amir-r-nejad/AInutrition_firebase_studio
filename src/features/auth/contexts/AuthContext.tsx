@@ -201,7 +201,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Refresh onboarding status when user changes
   useEffect(() => {
     if (user?.uid && !isOnboarded) refreshOnboardingStatus();
-  }, [user?.uid, isOnboarded, refreshOnboardingStatus]);
+  }, [user, isOnboarded, refreshOnboardingStatus]);
 
   const contextValue: AuthContextType = {
     user,
