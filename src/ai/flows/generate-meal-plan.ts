@@ -126,8 +126,6 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
           continue;
         }
 
-        console.log(`API response for ${dayOfWeek}:`, JSON.stringify(dailyOutput.meals, null, 2));
-
         const parsedOutput = AIDailyPlanOutputSchema.safeParse(dailyOutput);
         if (!parsedOutput.success) {
           console.error(`Invalid AI output for ${dayOfWeek}:`, parsedOutput.error);
