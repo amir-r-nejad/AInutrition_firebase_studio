@@ -133,8 +133,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         }
         const validDailyOutput = parsedOutput.data;
 
-        const processedMeals = validDailyOutput.meals
-          .map((meal, index): AIGeneratedMeal | null => {
+        const mealsWithNulls = validDailyOutput.meals.map((meal, index): AIGeneratedMeal | null => {
             if (!meal.ingredients || meal.ingredients.length === 0) {
               console.warn(`Skipping meal ${index + 1} for ${dayOfWeek}: invalid ingredients`);
               return null;
@@ -163,13 +162,14 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
               meal_name: input.mealTargets[index]?.mealName || meal.meal_title || `Meal ${index + 1}`,
               meal_title: meal.meal_title || `AI Generated ${input.mealTargets[index]?.mealName || 'Meal'}`,
               ingredients: sanitizedIngredients,
-              total_calories: mealTotals.calories || undefined,
-              total_protein_g: mealTotals.protein || undefined,
-              total_carbs_g: mealTotals.carbs || undefined,
-              total_fat_g: mealTotals.fat || undefined,
+              total_calories: mealTotals.calories,
+              total_protein_g: mealTotals.protein,
+              total_carbs_g: mealTotals.carbs,
+              total_fat_g: mealTotals.fat,
             };
-          })
-          .filter((meal): meal is AIGeneratedMeal => meal !== null);
+          });
+        
+        const processedMeals = mealsWithNulls.filter((meal): meal is AIGeneratedMeal => meal !== null);
 
         if (processedMeals.length > 0) {
           processedWeeklyPlan.push({ day: dayOfWeek, meals: processedMeals });
