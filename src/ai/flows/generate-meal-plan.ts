@@ -1,4 +1,3 @@
-
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -133,46 +132,48 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         }
         const validDailyOutput = parsedOutput.data;
 
-        const mealsWithNulls = validDailyOutput.meals.map((meal, index): AIGeneratedMeal | null => {
-            if (!meal.ingredients || meal.ingredients.length === 0) {
-              console.warn(`Skipping meal ${index + 1} for ${dayOfWeek}: invalid ingredients`);
-              return null;
-            }
+        const mealsForThisDay: AIGeneratedMeal[] = [];
 
-            const sanitizedIngredients = meal.ingredients.map((ing) => ({
-              name: ing.name ?? 'Unknown Ingredient',
-              calories: ing.calories ?? 0,
-              protein: ing.protein ?? 0,
-              carbs: ing.carbs ?? 0,
-              fat: ing.fat ?? 0,
-            }));
+        for (const [index, meal] of validDailyOutput.meals.entries()) {
+          if (!meal.ingredients || meal.ingredients.length === 0) {
+            console.warn(`Skipping meal ${index + 1} for ${dayOfWeek}: invalid ingredients`);
+            continue;
+          }
 
-            const mealTotals = sanitizedIngredients.reduce(
-              (totals, ing) => {
-                totals.calories += ing.calories;
-                totals.protein += ing.protein;
-                totals.carbs += ing.carbs;
-                totals.fat += ing.fat;
-                return totals;
-              },
-              { calories: 0, protein: 0, carbs: 0, fat: 0 }
-            );
+          const sanitizedIngredients = meal.ingredients.map((ing) => ({
+            name: ing.name ?? 'Unknown Ingredient',
+            calories: ing.calories ?? 0,
+            protein: ing.protein ?? 0,
+            carbs: ing.carbs ?? 0,
+            fat: ing.fat ?? 0,
+          }));
 
-            return {
-              meal_name: input.mealTargets[index]?.mealName || meal.meal_title || `Meal ${index + 1}`,
-              meal_title: meal.meal_title || `AI Generated ${input.mealTargets[index]?.mealName || 'Meal'}`,
-              ingredients: sanitizedIngredients,
-              total_calories: mealTotals.calories,
-              total_protein_g: mealTotals.protein,
-              total_carbs_g: mealTotals.carbs,
-              total_fat_g: mealTotals.fat,
-            };
-          });
-        
-        const processedMeals = mealsWithNulls.filter((meal): meal is AIGeneratedMeal => meal !== null);
+          const mealTotals = sanitizedIngredients.reduce(
+            (totals, ing) => {
+              totals.calories += ing.calories;
+              totals.protein += ing.protein;
+              totals.carbs += ing.carbs;
+              totals.fat += ing.fat;
+              return totals;
+            },
+            { calories: 0, protein: 0, carbs: 0, fat: 0 }
+          );
 
-        if (processedMeals.length > 0) {
-          processedWeeklyPlan.push({ day: dayOfWeek, meals: processedMeals });
+          const processedMeal: AIGeneratedMeal = {
+            meal_name: input.mealTargets[index]?.mealName || meal.meal_title || `Meal ${index + 1}`,
+            meal_title: meal.meal_title || `AI Generated ${input.mealTargets[index]?.mealName || 'Meal'}`,
+            ingredients: sanitizedIngredients,
+            total_calories: mealTotals.calories,
+            total_protein_g: mealTotals.protein,
+            total_carbs_g: mealTotals.carbs,
+            total_fat_g: mealTotals.fat,
+          };
+          
+          mealsForThisDay.push(processedMeal);
+        }
+
+        if (mealsForThisDay.length > 0) {
+          processedWeeklyPlan.push({ day: dayOfWeek, meals: mealsForThisDay });
         }
       } catch (e) {
         console.error(`Failed to generate meal plan for ${dayOfWeek}:`, e);
