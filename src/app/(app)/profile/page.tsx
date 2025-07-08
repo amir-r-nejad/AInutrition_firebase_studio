@@ -1,13 +1,8 @@
 'use client';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import SectionHeader from '@/components/ui/SectionHeader';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import ProfileForm from '@/features/profile/components/ProfileForm';
 import ResetOnboarding from '@/features/profile/components/ResetOnboarding';
@@ -26,12 +21,11 @@ export default function ProfilePage() {
 
   return (
     <Card className='max-w-xl mx-auto shadow-lg'>
-      <CardHeader>
-        <CardTitle className='text-3xl font-bold'>Your Account</CardTitle>
-        <CardDescription>
-          Manage your account and related preferences.
-        </CardDescription>
-      </CardHeader>
+      <SectionHeader
+        className='text-3xl font-bold'
+        title='Your Account'
+        description='Manage your account and related preferences.'
+      />
 
       <CardContent>
         <ProfileForm ref={profileRef} user={user} />
