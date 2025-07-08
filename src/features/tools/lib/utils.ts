@@ -4,6 +4,7 @@ import {
 } from '@/lib/schemas';
 import { CalculatedMealMacros, TotalMacros } from '../types/toolsGlobalTypes';
 import { UseFormReturn } from 'react-hook-form';
+import { defaultMacroPercentages } from '@/lib/constants';
 
 export function customMacroSplit(
   totalMacros: TotalMacros,
@@ -53,4 +54,31 @@ export function getMealMacroStats(
   };
 
   return { columnSums, watchedMealDistributions };
+}
+
+export function getExampleTargetsForMeal(mealName: string) {
+  const exampleDailyTotals = {
+    targetCalories: 2000,
+    targetProtein: 150,
+    targetCarbs: 250,
+    targetFat: 67,
+  };
+
+  const mealDistribution = defaultMacroPercentages[mealName];
+
+  return {
+    mealName,
+    calories: Math.round(
+      exampleDailyTotals.targetCalories * (mealDistribution.calories_pct / 100)
+    ),
+    protein: Math.round(
+      exampleDailyTotals.targetProtein * (mealDistribution.protein_pct / 100)
+    ),
+    carbs: Math.round(
+      exampleDailyTotals.targetCarbs * (mealDistribution.carbs_pct / 100)
+    ),
+    fat: Math.round(
+      exampleDailyTotals.targetFat * (mealDistribution.fat_pct / 100)
+    ),
+  };
 }

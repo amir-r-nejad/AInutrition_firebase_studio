@@ -66,7 +66,7 @@ export default function MacroSplitterPage() {
   const pathname = usePathname();
 
   const { user } = useAuth();
-  const { toast, toasts } = useToast();
+  const { toast } = useToast();
   const [dailyTargets, setDailyTargets] = useState<TotalMacros | null>(null);
   const [calculatedSplit, setCalculatedSplit] = useState<
     CalculatedMealMacros[] | null
@@ -159,9 +159,13 @@ export default function MacroSplitterPage() {
             undefined &&
           profileData.smartPlannerData?.results?.finalTargetCalories !== null
         ) {
+          const calories = profileData.smartPlannerData.formValues
+            ?.custom_total_calories
+            ? profileData.smartPlannerData.formValues?.custom_total_calories
+            : profileData.smartPlannerData.results.finalTargetCalories;
           const smartResults = profileData.smartPlannerData.results;
           targets = {
-            calories: smartResults.finalTargetCalories || 0,
+            calories: calories || 0,
             protein_g: smartResults.proteinGrams || 0,
             carbs_g: smartResults.carbGrams || 0,
             fat_g: smartResults.fatGrams || 0,
@@ -392,19 +396,34 @@ export default function MacroSplitterPage() {
             <div className='grid grid-cols-2 md:grid-cols-4 gap-4 p-4 border rounded-md bg-muted/50 mb-3'>
               <p>
                 <span className='font-medium'>Calories:</span>{' '}
-                {dailyTargets.calories.toFixed(0)} kcal
+                {formatNumber(dailyTargets.calories, {
+                  maximumFractionDigits: 0,
+                })}{' '}
+                kcal
               </p>
               <p>
                 <span className='font-medium'>Protein:</span>{' '}
-                {dailyTargets.protein_g.toFixed(1)} g
+                {formatNumber(dailyTargets.protein_g, {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })}{' '}
+                g
               </p>
               <p>
                 <span className='font-medium'>Carbs:</span>{' '}
-                {dailyTargets.carbs_g.toFixed(1)} g
+                {formatNumber(dailyTargets.carbs_g, {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })}{' '}
+                g
               </p>
               <p>
                 <span className='font-medium'>Fat:</span>{' '}
-                {dailyTargets.fat_g.toFixed(1)} g
+                {formatNumber(dailyTargets.fat_g, {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })}{' '}
+                g
               </p>
             </div>
             {dataSourceMessage && (
@@ -553,22 +572,33 @@ export default function MacroSplitterPage() {
                           <TableCell className='px-2 py-1 text-sm text-right tabular-nums h-10'>
                             {isNaN(mealCalories)
                               ? 'N/A'
-                              : mealCalories.toFixed(0)}
+                              : formatNumber(mealCalories, {
+                                  maximumFractionDigits: 0,
+                                })}
                           </TableCell>
                           <TableCell className='px-2 py-1 text-sm text-right tabular-nums h-10'>
                             {isNaN(mealProteinGrams)
                               ? 'N/A'
-                              : mealProteinGrams.toFixed(1)}
+                              : formatNumber(mealProteinGrams, {
+                                  minimumFractionDigits: 1,
+                                  maximumFractionDigits: 1,
+                                })}
                           </TableCell>
-                          <TableCell className='px-2 py-1 text-sm text-right tabular-nums h-10'>
+                          <TableCell className='px-2 py-1 text-sm text-2 text-right tabular-nums h-10'>
                             {isNaN(mealCarbsGrams)
                               ? 'N/A'
-                              : mealCarbsGrams.toFixed(1)}
+                              : formatNumber(mealCarbsGrams, {
+                                  minimumFractionDigits: 1,
+                                  maximumFractionDigits: 1,
+                                })}
                           </TableCell>
                           <TableCell className='px-2 py-1 text-sm text-right tabular-nums h-10'>
                             {isNaN(mealFatGrams)
                               ? 'N/A'
-                              : mealFatGrams.toFixed(1)}
+                              : formatNumber(mealFatGrams, {
+                                  minimumFractionDigits: 1,
+                                  maximumFractionDigits: 1,
+                                })}
                           </TableCell>
                         </TableRow>
                       );
@@ -622,48 +652,61 @@ export default function MacroSplitterPage() {
                       {dailyTargets ? (
                         <>
                           <TableCell className='px-2 py-1 text-right tabular-nums'>
-                            {watchedMealDistributions
-                              .reduce(
+                            {formatNumber(
+                              watchedMealDistributions.reduce(
                                 (sum, meal) =>
                                   sum +
                                   dailyTargets.calories *
                                     ((meal.calories_pct || 0) / 100),
                                 0
-                              )
-                              .toFixed(0)}
+                              ),
+                              { maximumFractionDigits: 0 }
+                            )}
                           </TableCell>
                           <TableCell className='px-2 py-1 text-right tabular-nums'>
-                            {watchedMealDistributions
-                              .reduce(
+                            {formatNumber(
+                              watchedMealDistributions.reduce(
                                 (sum, meal) =>
                                   sum +
                                   dailyTargets.protein_g *
                                     ((meal.protein_pct || 0) / 100),
                                 0
-                              )
-                              .toFixed(1)}
+                              ),
+                              {
+                                minimumFractionDigits: 1,
+                                maximumFractionDigits: 1,
+                              }
+                            )}
                           </TableCell>
                           <TableCell className='px-2 py-1 text-right tabular-nums'>
-                            {watchedMealDistributions
-                              .reduce(
+                            {formatNumber(
+                              watchedMealDistributions.reduce(
                                 (sum, meal) =>
                                   sum +
                                   dailyTargets.carbs_g *
                                     ((meal.carbs_pct || 0) / 100),
                                 0
-                              )
-                              .toFixed(1)}
+                              ),
+                              {
+                                minimumFractionDigits: 1,
+                                maximumFractionDigits: 1,
+                              }
+                            )}
                           </TableCell>
                           <TableCell className='px-2 py-1 text-right tabular-nums'>
-                            {watchedMealDistributions
-                              .reduce(
+                            {formatNumber(
+                              watchedMealDistributions.reduce(
                                 (sum, meal) =>
                                   sum +
                                   dailyTargets.fat_g *
                                     ((meal.fat_pct || 0) / 100),
                                 0
-                              )
-                              .toFixed(1)}
+                              ),
+                              {
+                                minimumFractionDigits: 1,
+                                maximumFractionDigits: 1,
+                              }
+                            )}
                           </TableCell>
                         </>
                       ) : (
@@ -704,7 +747,7 @@ export default function MacroSplitterPage() {
                             >
                               Error in {defaultMealNames[index]}{' '}
                               {key.replace('_pct', ' %')}:{' '}
-                              {error.message.replace(/"/g, '')}
+                              {error.message.replace(/ף/g, '')}
                             </p>
                           )
                       );
@@ -784,16 +827,27 @@ export default function MacroSplitterPage() {
                         {mealData.mealName}
                       </TableCell>
                       <TableCell className='px-2 py-1 text-sm text-right tabular-nums'>
-                        {mealData.Calories}
+                        {formatNumber(mealData.Calories, {
+                          maximumFractionDigits: 0,
+                        })}
                       </TableCell>
                       <TableCell className='px-2 py-1 text-sm text-right tabular-nums'>
-                        {mealData['Protein (g)']}
+                        {formatNumber(mealData['Protein (g)'], {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                        })}
                       </TableCell>
                       <TableCell className='px-2 py-1 text-sm text-right tabular-nums'>
-                        {mealData['Carbs (g)']}
+                        {formatNumber(mealData['Carbs (g)'], {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                        })}
                       </TableCell>
                       <TableCell className='px-2 py-1 text-sm text-right tabular-nums'>
-                        {mealData['Fat (g)']}
+                        {formatNumber(mealData['Fat (g)'], {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                        })}
                       </TableCell>
                       <TableCell className='px-2 py-1 text-right'>
                         <Button
@@ -813,25 +867,40 @@ export default function MacroSplitterPage() {
                       Total
                     </TableCell>
                     <TableCell className='px-2 py-1 text-right tabular-nums'>
-                      {calculatedSplit.reduce(
-                        (sum, meal) => sum + meal.Calories,
-                        0
+                      {formatNumber(
+                        calculatedSplit.reduce(
+                          (sum, meal) => sum + meal.Calories,
+                          0
+                        ),
+                        { maximumFractionDigits: 0 }
                       )}
                     </TableCell>
                     <TableCell className='px-2 py-1 text-right tabular-nums'>
-                      {calculatedSplit
-                        .reduce((sum, meal) => sum + meal['Protein (g)'], 0)
-                        .toFixed(1)}
+                      {formatNumber(
+                        calculatedSplit.reduce(
+                          (sum, meal) => sum + meal['Protein (g)'],
+                          0
+                        ),
+                        { minimumFractionDigits: 1, maximumFractionDigits: 1 }
+                      )}
                     </TableCell>
                     <TableCell className='px-2 py-1 text-right tabular-nums'>
-                      {calculatedSplit
-                        .reduce((sum, meal) => sum + meal['Carbs (g)'], 0)
-                        .toFixed(1)}
+                      {formatNumber(
+                        calculatedSplit.reduce(
+                          (sum, meal) => sum + meal['Carbs (g)'],
+                          0
+                        ),
+                        { minimumFractionDigits: 1, maximumFractionDigits: 1 }
+                      )}
                     </TableCell>
                     <TableCell className='px-2 py-1 text-right tabular-nums'>
-                      {calculatedSplit
-                        .reduce((sum, meal) => sum + meal['Fat (g)'], 0)
-                        .toFixed(1)}
+                      {formatNumber(
+                        calculatedSplit.reduce(
+                          (sum, meal) => sum + meal['Fat (g)'],
+                          0
+                        ),
+                        { minimumFractionDigits: 1, maximumFractionDigits: 1 }
+                      )}
                     </TableCell>
                     <TableCell className='px-2 py-1'></TableCell>
                   </TableRow>

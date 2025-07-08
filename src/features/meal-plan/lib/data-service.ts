@@ -100,6 +100,7 @@ export async function getProfileDataForOptimization(
       const data = docSnap.data() as FullProfileType;
 
       const profile: Partial<FullProfileType> = {
+        mealDistributions: data?.mealDistributions || [],
         age: data.smartPlannerData?.formValues?.age,
         gender: data.smartPlannerData?.formValues?.gender,
         current_weight: data.smartPlannerData?.formValues?.current_weight,

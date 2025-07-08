@@ -15,15 +15,34 @@ export function calculateBMR(
   heightCm: number,
   ageYears: number
 ): number {
-  if (gender === 'male') {
-    return 10 * weightKg + 6.25 * heightCm - 5 * ageYears + 5;
-  } else if (gender === 'female') {
-    return 10 * weightKg + 6.25 * heightCm - 5 * ageYears - 161;
+  // Input validation and sanitization
+  const validWeightKg = Math.max(0, Number(weightKg) || 0);
+  const validHeightCm = Math.max(0, Number(heightCm) || 0);
+  const validAgeYears = Math.max(0, Number(ageYears) || 0);
+
+  // Return 0 if any critical input is invalid
+  if (validWeightKg === 0 || validHeightCm === 0 || validAgeYears === 0) {
+    return 0;
   }
+
+  const validGender = String(gender).toLowerCase().trim();
+
+  if (validGender === 'male') {
+    return Math.round(
+      10 * validWeightKg + 6.25 * validHeightCm - 5 * validAgeYears + 5
+    );
+  } else if (validGender === 'female') {
+    return Math.round(
+      10 * validWeightKg + 6.25 * validHeightCm - 5 * validAgeYears - 161
+    );
+  }
+
   // Fallback for "other" or unspecified - average of male and female
-  const bmrMale = 10 * weightKg + 6.25 * heightCm - 5 * ageYears + 5;
-  const bmrFemale = 10 * weightKg + 6.25 * heightCm - 5 * ageYears - 161;
-  return (bmrMale + bmrFemale) / 2;
+  const bmrMale =
+    10 * validWeightKg + 6.25 * validHeightCm - 5 * validAgeYears + 5;
+  const bmrFemale =
+    10 * validWeightKg + 6.25 * validHeightCm - 5 * validAgeYears - 161;
+  return Math.round((bmrMale + bmrFemale) / 2);
 }
 
 /**
@@ -33,9 +52,21 @@ export function calculateBMR(
  * @returns TDEE in kcal/day.
  */
 export function calculateTDEE(bmr: number, activityLevelValue: string): number {
-  const level = activityLevels.find((l) => l.value === activityLevelValue);
+  const validBmr = Math.max(0, Number(bmr) || 0);
+
+  if (validBmr === 0) {
+    return 0;
+  }
+
+  const validActivityLevelValue = String(activityLevelValue)
+    .toLowerCase()
+    .trim();
+  const level = activityLevels.find(
+    (l) => String(l.value).toLowerCase().trim() === validActivityLevelValue
+  );
+
   const activityFactor = level?.activityFactor || 1.2; // Default to sedentary if not found
-  return bmr * activityFactor;
+  return Math.round(validBmr * activityFactor);
 }
 
 /**
@@ -48,9 +79,21 @@ export function calculateRecommendedProtein(
   weightKg: number,
   activityLevelValue: string
 ): number {
-  const level = activityLevels.find((l) => l.value === activityLevelValue);
+  const validWeightKg = Math.max(0, Number(weightKg) || 0);
+
+  if (validWeightKg === 0) {
+    return 0;
+  }
+
+  const validActivityLevelValue = String(activityLevelValue)
+    .toLowerCase()
+    .trim();
+  const level = activityLevels.find(
+    (l) => String(l.value).toLowerCase().trim() === validActivityLevelValue
+  );
+
   const proteinFactor = level?.proteinFactorPerKg || 0.8; // Default to sedentary if not found
-  return weightKg * proteinFactor;
+  return Math.round(validWeightKg * proteinFactor);
 }
 
 /**
@@ -60,12 +103,24 @@ export function calculateRecommendedProtein(
  * @returns Adjusted TDEE (target calories).
  */
 function adjustTDEEForDietGoal(tdee: number, dietGoal: string): number {
-  if (dietGoal === 'lose_weight') {
-    return tdee - 500; // Typical 500 kcal deficit for weight loss
-  } else if (dietGoal === 'gain_weight') {
-    return tdee + 300; // Typical 300-500 kcal surplus for muscle gain
+  const validTdee = Math.max(0, Number(tdee) || 0);
+
+  if (validTdee === 0) {
+    return 0;
   }
-  return tdee; // Maintain weight
+
+  const validDietGoal = String(dietGoal).toLowerCase().trim();
+
+  if (validDietGoal === 'lose_weight' || validDietGoal === 'weight_loss') {
+    return Math.max(1200, validTdee - 500); // Ensure minimum 1200 calories
+  } else if (
+    validDietGoal === 'gain_weight' ||
+    validDietGoal === 'weight_gain'
+  ) {
+    return validTdee + 300; // Typical 300-500 kcal surplus for muscle gain
+  }
+
+  return validTdee; // Maintain weight
 }
 
 /**
@@ -81,46 +136,71 @@ export function calculateEstimatedDailyTargets(
   bmr?: number;
   tdee?: number;
 } {
-  if (
-    !profile.gender ||
-    !profile.currentWeight ||
-    !profile.height ||
-    !profile.age ||
-    !profile.activityLevel ||
-    !profile.dietGoal
-  ) {
-    return {}; // Not enough data
+  // Handle null/undefined profile
+  if (!profile || typeof profile !== 'object') {
+    return {};
   }
 
-  const bmr = calculateBMR(
-    profile.gender,
-    profile.currentWeight,
-    profile.height,
-    profile.age
-  );
-  let tdee = calculateTDEE(bmr, profile.activityLevel);
-  const protein = calculateRecommendedProtein(
-    profile.currentWeight,
-    profile.activityLevel
-  );
+  // Convert and validate inputs
+  const gender = profile.gender ? String(profile.gender).trim() : '';
+  const currentWeight = Number(profile.currentWeight) || 0;
+  const height = Number(profile.height) || 0;
+  const age = Number(profile.age) || 0;
+  const activityLevel = profile.activityLevel
+    ? String(profile.activityLevel).trim()
+    : '';
+  const dietGoal = profile.dietGoal ? String(profile.dietGoal).trim() : '';
 
-  const targetCalories = adjustTDEEForDietGoal(tdee, profile.dietGoal);
+  // Check if we have minimum required data
+  if (
+    !gender ||
+    currentWeight <= 0 ||
+    height <= 0 ||
+    age <= 0 ||
+    !activityLevel ||
+    !dietGoal
+  ) {
+    return {}; // Not enough valid data
+  }
+
+  const bmr = calculateBMR(gender, currentWeight, height, age);
+
+  if (bmr === 0) {
+    return {};
+  }
+
+  const tdee = calculateTDEE(bmr, activityLevel);
+
+  if (tdee === 0) {
+    return { bmr };
+  }
+
+  const protein = calculateRecommendedProtein(currentWeight, activityLevel);
+  const targetCalories = adjustTDEEForDietGoal(tdee, dietGoal);
+
+  if (targetCalories === 0) {
+    return { bmr, tdee };
+  }
 
   const proteinCalories = protein * 4;
+
   // Aim for fat to be ~25% of total calories
-  const fatGrams = Math.round((targetCalories * 0.25) / 9);
+  const fatGrams = Math.max(0, Math.round((targetCalories * 0.25) / 9));
   const fatCalories = fatGrams * 9;
+
   // Remaining calories for carbs
-  const carbGrams = Math.round(
-    (targetCalories - proteinCalories - fatCalories) / 4
+  const remainingCalories = Math.max(
+    0,
+    targetCalories - proteinCalories - fatCalories
   );
+  const carbGrams = Math.max(0, Math.round(remainingCalories / 4));
 
   return {
-    targetCalories: targetCalories,
+    targetCalories,
     targetProtein: protein,
-    targetFat: fatGrams, // Ensure non-negative
-    targetCarbs: carbGrams, // Ensure non-negative
-    bmr: bmr,
-    tdee: tdee,
+    targetFat: fatGrams,
+    targetCarbs: carbGrams,
+    bmr,
+    tdee,
   };
 }
