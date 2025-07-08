@@ -18,7 +18,6 @@ import type { FullProfileType } from '@/lib/schemas';
 import { Loader2 } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
-import { getAuth } from 'firebase/auth';
 import { preprocessDataForFirestore } from '@/lib/schemas';
 
 interface AuthUser {
@@ -32,7 +31,6 @@ interface AuthContextType {
   isLoading: boolean;
   isOnboarded: boolean;
   logout: () => Promise<void>;
-  refreshOnboardingStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,87 +55,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isOnboarded = !!profile?.onboardingComplete;
   const isLoading = isLoadingUser || isProfileLoading;
 
-  const fetchUserProfile = useCallback(async (isRefresh = false) => {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-    if (!currentUser?.uid) {
-      setProfile(null);
-      setIsProfileLoading(false);
-      return;
-    }
-
-    if (!isRefresh) {
-        setIsProfileLoading(true);
-    }
-
-    try {
-      // REPLACED SERVER ACTION WITH CLIENT-SIDE SDK CALL
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      const docSnap = await getDoc(userDocRef);
-      if (docSnap.exists()) {
-        setProfile(docSnap.data() as FullProfileType);
-      } else {
-        console.warn('AuthContext: No user profile found for userId:', currentUser.uid);
-        setProfile(null);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error);
-      toast({
-        title: 'Error',
-        description: 'Could not fetch user profile from the database.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsProfileLoading(false);
-    }
-  }, [toast]);
-
   useEffect(() => {
-    const addUserProfileOnClient = async () => {
-      const auth = getAuth();
-      const authedUser = auth.currentUser;
-
-      if (!authedUser) {
-          console.log("AuthContext: addUserProfileOnClient called without an authenticated user.");
-          return;
-      }
-      try {
-        const userDocRef = doc(db, 'users', authedUser.uid);
-        const docSnap = await getDoc(userDocRef);
-
-        if (!docSnap.exists()) {
-          const userData = {
-            uid: authedUser.uid,
-            email: authedUser.email,
-            emailVerified: authedUser.emailVerified,
-            displayName: authedUser.displayName,
-            photoURL: authedUser.photoURL,
-            onboardingComplete: false,
-          };
-          await setDoc(userDocRef, preprocessDataForFirestore(userData), { merge: true });
-          console.log('AuthContext: New user profile created on client.');
-        }
-      } catch (e: any) {
-        console.error('AuthContext: Error creating user profile:', e.code, e.message, e);
-        toast({
-          title: 'Profile Creation Failed',
-          description: `Could not create your user profile in the database: ${e.message || 'Some features may not work.'}`,
-          variant: 'destructive',
-        });
-      }
-    };
-    
-    if (firebaseUser) {
-      addUserProfileOnClient().then(() => {
-        if (!isLoadingUser) {
-            fetchUserProfile(false);
-        }
-      });
-    } else {
+    const manageUserProfile = async () => {
+      if (!firebaseUser) {
         setProfile(null);
         setIsProfileLoading(false);
+        return;
+      }
+
+      setIsProfileLoading(true);
+      try {
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const docSnap = await getDoc(userDocRef);
+
+        if (docSnap.exists()) {
+          setProfile(docSnap.data() as FullProfileType);
+        } else {
+          // Profile doesn't exist, so let's create it.
+          const newProfileData = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            emailVerified: firebaseUser.emailVerified,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            onboardingComplete: false, // Default to not onboarded
+          };
+          await setDoc(userDocRef, preprocessDataForFirestore(newProfileData), { merge: true });
+          setProfile(newProfileData as FullProfileType);
+          console.log('AuthContext: New user profile created and set in state.');
+        }
+      } catch (error) {
+        console.error('AuthContext: Failed to fetch or create user profile:', error);
+        toast({
+          title: 'Profile Error',
+          description: 'Could not load your user profile data.',
+          variant: 'destructive',
+        });
+        setProfile(null); // Ensure profile is null on error
+      } finally {
+        setIsProfileLoading(false);
+      }
+    };
+
+    if (!isLoadingUser) {
+      manageUserProfile();
     }
-  }, [firebaseUser, toast, isLoadingUser, fetchUserProfile]);
+  }, [firebaseUser, isLoadingUser, toast]);
+
 
   useEffect(() => {
     if (isLoading) {
@@ -151,11 +115,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       '/reset-password',
       '/verify-email',
     ];
-    const isPublicPage = publicPages.includes(pathname);
+    const isPublicPage = publicPages.some(page => pathname.startsWith(page));
     const isOnboardingPage = pathname === '/onboarding';
 
     if (!user) {
-      if (!isPublicPage && pathname !== '/login') {
+      if (!isPublicPage) {
         router.push('/login');
       }
     } else {
@@ -164,10 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           router.push('/onboarding');
         }
       } else {
-        if (
-          (isPublicPage || isOnboardingPage || pathname === '/') &&
-          pathname !== '/dashboard'
-        ) {
+        if (isPublicPage || isOnboardingPage || pathname === '/') {
           router.push('/dashboard');
         }
       }
@@ -203,7 +164,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading,
     isOnboarded,
     logout,
-    refreshOnboardingStatus: () => fetchUserProfile(true),
   };
 
   return (
