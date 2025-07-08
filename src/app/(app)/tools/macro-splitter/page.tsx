@@ -176,6 +176,7 @@ export default function MacroSplitterPage() {
             fat_g: smartResults?.fatGrams || 0,
             source: 'Smart Calorie Planner Targets',
           };
+
           sourceMessage =
             "Daily totals from 'Smart Calorie Planner'. Adjust there for changes.";
         } else if (
