@@ -72,6 +72,7 @@ import {
   HelpCircle,
   Info,
   RefreshCcw,
+  Save,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
@@ -148,38 +149,84 @@ export default function SmartCaloriePlannerPage() {
     },
   });
 
-  useEffect(() => {
+  const watchedCustomInputs = smartPlannerForm.watch([
+    'custom_total_calories',
+    'custom_protein_per_kg',
+    'remaining_calories_carb_pct',
+    'current_weight',
+  ]);
+
+  function handleCustomPlanReset() {
+    smartPlannerForm.reset({
+      ...smartPlannerForm.getValues(),
+      custom_total_calories: undefined,
+      custom_protein_per_kg: undefined,
+      remaining_calories_carb_pct: 50,
+    });
+    setCustomPlanResults(null);
+    // No need to save to Firestore on custom reset, as the main form save does that
+    toast({
+      title: 'Custom Plan Reset',
+      description: 'Custom plan inputs have been reset.',
+    });
+  }
+
+  async function handleSmartPlannerReset() {
+    smartPlannerForm.reset({
+      age: undefined,
+      gender: undefined,
+      height_cm: undefined,
+      current_weight: undefined,
+      goal_weight_1m: undefined,
+      ideal_goal_weight: undefined,
+      activity_factor_key: 'moderate',
+      dietGoal: 'fat_loss',
+      bf_current: undefined,
+      bf_target: undefined,
+      bf_ideal: undefined,
+      mm_current: undefined,
+      mm_target: undefined,
+      mm_ideal: undefined,
+      bw_current: undefined,
+      bw_target: undefined,
+      bw_ideal: undefined,
+      waist_current: undefined,
+      waist_goal_1m: undefined,
+      waist_ideal: undefined,
+      hips_current: undefined,
+      hips_goal_1m: undefined,
+      hips_ideal: undefined,
+      right_leg_current: undefined,
+      right_leg_goal_1m: undefined,
+      right_leg_ideal: undefined,
+      left_leg_current: undefined,
+      left_leg_goal_1m: undefined,
+      left_leg_ideal: undefined,
+      right_arm_current: undefined,
+      right_arm_goal_1m: undefined,
+      right_arm_ideal: undefined,
+      left_arm_current: undefined,
+      left_arm_goal_1m: undefined,
+      left_arm_ideal: undefined,
+      custom_total_calories: undefined,
+      custom_protein_per_kg: undefined,
+      remaining_calories_carb_pct: 50,
+    });
+    setResults(null);
+    setCustomPlanResults(null);
     if (user?.uid) {
-      setIsLoadingData(true);
-
-      getSmartPlannerData(user.uid)
-        .then((data) => {
-          if (data.formValues) smartPlannerForm.reset(data.formValues);
-          if (
-            data.results &&
-            typeof data.results.tdee === 'number' &&
-            typeof data.results.bmr === 'number'
-          ) {
-            setResults(data.results);
-          } else {
-            setResults(null);
-          }
-          setIsLoadingData(false);
-        })
-        .catch(() => {
-          toast({
-            title: 'Error',
-            description: 'Could not load saved planner data.',
-            variant: 'destructive',
-          });
-          setIsLoadingData(false);
-        });
-    } else {
-      setIsLoadingData(false);
+      await saveSmartPlannerData(user.uid, {
+        formValues: smartPlannerForm.getValues(),
+        results: null,
+      });
     }
-  }, [smartPlannerForm, toast, user?.uid]);
+    toast({
+      title: 'Smart Planner Reset',
+      description: 'All smart planner inputs and results cleared.',
+    });
+  }
 
-  const onSubmit = async (data: SmartCaloriePlannerFormValues) => {
+  async function onSubmit(data: SmartCaloriePlannerFormValues) {
     const activity = activityLevels.find(
       (al) => al.value === data.activity_factor_key
     );
@@ -348,84 +395,72 @@ export default function SmartCaloriePlannerPage() {
         });
       }
     }
-  };
+  }
 
-  const handleSmartPlannerReset = async () => {
-    smartPlannerForm.reset({
-      age: undefined,
-      gender: undefined,
-      height_cm: undefined,
-      current_weight: undefined,
-      goal_weight_1m: undefined,
-      ideal_goal_weight: undefined,
-      activity_factor_key: 'moderate',
-      dietGoal: 'fat_loss',
-      bf_current: undefined,
-      bf_target: undefined,
-      bf_ideal: undefined,
-      mm_current: undefined,
-      mm_target: undefined,
-      mm_ideal: undefined,
-      bw_current: undefined,
-      bw_target: undefined,
-      bw_ideal: undefined,
-      waist_current: undefined,
-      waist_goal_1m: undefined,
-      waist_ideal: undefined,
-      hips_current: undefined,
-      hips_goal_1m: undefined,
-      hips_ideal: undefined,
-      right_leg_current: undefined,
-      right_leg_goal_1m: undefined,
-      right_leg_ideal: undefined,
-      left_leg_current: undefined,
-      left_leg_goal_1m: undefined,
-      left_leg_ideal: undefined,
-      right_arm_current: undefined,
-      right_arm_goal_1m: undefined,
-      right_arm_ideal: undefined,
-      left_arm_current: undefined,
-      left_arm_goal_1m: undefined,
-      left_arm_ideal: undefined,
-      custom_total_calories: undefined,
-      custom_protein_per_kg: undefined,
-      remaining_calories_carb_pct: 50,
-    });
-    setResults(null);
-    setCustomPlanResults(null);
+  async function onCustomizePlanForm(formData: SmartCaloriePlannerFormValues) {
     if (user?.uid) {
-      await saveSmartPlannerData(user.uid, {
-        formValues: smartPlannerForm.getValues(),
-        results: null,
-      });
+      try {
+        const newFormData = {
+          ...formData,
+          carbCalories: customPlanResults?.carbCalories ?? 0,
+          carbGrams: customPlanResults?.carbGrams ?? 0,
+          carbTargetPct: customPlanResults?.carbTargetPct ?? 0,
+          fatCalories: customPlanResults?.fatCalories ?? 0,
+          fatGrams: customPlanResults?.fatGrams ?? 0,
+          fatTargetPct: customPlanResults?.fatTargetPct ?? 0,
+          proteinCalories: customPlanResults?.proteinCalories ?? 0,
+          proteinGrams: customPlanResults?.proteinGrams ?? 0,
+          proteinTargetPct: customPlanResults?.proteinTargetPct ?? 0,
+        };
+
+        await saveSmartPlannerData(user.uid, {
+          formValues: newFormData,
+          results,
+        });
+        toast({
+          title: 'Calculation Complete',
+          description: 'Your smart calorie plan has been generated and saved.',
+        });
+      } catch {
+        toast({
+          title: 'Save Error',
+          description: 'Could not save calculation results.',
+          variant: 'destructive',
+        });
+      }
     }
-    toast({
-      title: 'Smart Planner Reset',
-      description: 'All smart planner inputs and results cleared.',
-    });
-  };
+  }
 
-  const handleCustomPlanReset = () => {
-    smartPlannerForm.reset({
-      ...smartPlannerForm.getValues(),
-      custom_total_calories: undefined,
-      custom_protein_per_kg: undefined,
-      remaining_calories_carb_pct: 50,
-    });
-    setCustomPlanResults(null);
-    // No need to save to Firestore on custom reset, as the main form save does that
-    toast({
-      title: 'Custom Plan Reset',
-      description: 'Custom plan inputs have been reset.',
-    });
-  };
+  useEffect(() => {
+    if (user?.uid) {
+      setIsLoadingData(true);
 
-  const watchedCustomInputs = smartPlannerForm.watch([
-    'custom_total_calories',
-    'custom_protein_per_kg',
-    'remaining_calories_carb_pct',
-    'current_weight',
-  ]);
+      getSmartPlannerData(user.uid)
+        .then((data) => {
+          if (data.formValues) smartPlannerForm.reset(data.formValues);
+          if (
+            data.results &&
+            typeof data.results.tdee === 'number' &&
+            typeof data.results.bmr === 'number'
+          ) {
+            setResults(data.results);
+          } else {
+            setResults(null);
+          }
+          setIsLoadingData(false);
+        })
+        .catch(() => {
+          toast({
+            title: 'Error',
+            description: 'Could not load saved planner data.',
+            variant: 'destructive',
+          });
+          setIsLoadingData(false);
+        });
+    } else {
+      setIsLoadingData(false);
+    }
+  }, [smartPlannerForm, toast, user?.uid]);
 
   useEffect(() => {
     const [
@@ -1338,8 +1373,8 @@ export default function SmartCaloriePlannerPage() {
               <Card className='mt-8'>
                 <CardHeader>
                   <CardTitle className='text-2xl font-semibold flex items-center'>
-                    <Edit3 className='mr-2 h-6 w-6 text-primary' /> Customize
-                    Your Plan
+                    <Edit3 className='mr-2 h-6 w-6 text-primary' />
+                    Customize Your Plan
                   </CardTitle>
                   <CardDescription>
                     Adjust the system-generated plan with your preferences.
@@ -1347,7 +1382,12 @@ export default function SmartCaloriePlannerPage() {
                 </CardHeader>
                 <CardContent>
                   <Form {...smartPlannerForm}>
-                    <form className='space-y-6'>
+                    <form
+                      onSubmit={smartPlannerForm.handleSubmit(
+                        onCustomizePlanForm
+                      )}
+                      className='space-y-6'
+                    >
                       <div className='grid md:grid-cols-2 gap-x-6 gap-y-4 items-start'>
                         <FormField
                           control={smartPlannerForm.control}
@@ -1587,17 +1627,7 @@ export default function SmartCaloriePlannerPage() {
                           }}
                         />
                       </div>
-                      <div className='mt-2 flex justify-end'>
-                        <Button
-                          type='button'
-                          variant='ghost'
-                          onClick={handleCustomPlanReset}
-                          size='sm'
-                        >
-                          <RefreshCcw className='mr-2 h-3 w-3' /> Reset Custom
-                          Inputs
-                        </Button>
-                      </div>
+
                       {customPlanResults && (
                         <div className='mt-6'>
                           <h4 className='text-xl font-semibold mb-2 text-primary'>
@@ -1751,6 +1781,28 @@ export default function SmartCaloriePlannerPage() {
                           </Table>
                         </div>
                       )}
+
+                      <div className='mt-6 flex justify-end gap-1'>
+                        <Button
+                          disabled={smartPlannerForm.formState.isSubmitting}
+                          type='button'
+                          variant='destructive'
+                          onClick={handleCustomPlanReset}
+                          size='sm'
+                        >
+                          <RefreshCcw className='size-3' />
+                          Reset
+                        </Button>
+
+                        <Button
+                          disabled={smartPlannerForm.formState.isSubmitting}
+                          type='submit'
+                          size='sm'
+                        >
+                          <Save className='size-3' />
+                          Save
+                        </Button>
+                      </div>
                     </form>
                   </Form>
                 </CardContent>
