@@ -133,10 +133,10 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         const validDailyOutput = parsedOutput.data;
 
         const mealsForThisDay: AIGeneratedMeal[] = [];
-
+        
         for (const [index, meal] of validDailyOutput.meals.entries()) {
-          if (!meal.ingredients || meal.ingredients.length === 0) {
-            console.warn(`Skipping meal ${index + 1} for ${dayOfWeek}: invalid ingredients`);
+          if (!meal || !meal.ingredients || meal.ingredients.length === 0) {
+            console.warn(`Skipping meal ${index + 1} for ${dayOfWeek} due to invalid ingredients.`);
             continue;
           }
 
@@ -175,6 +175,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
         if (mealsForThisDay.length > 0) {
           processedWeeklyPlan.push({ day: dayOfWeek, meals: mealsForThisDay });
         }
+
       } catch (e) {
         console.error(`Failed to generate meal plan for ${dayOfWeek}:`, e);
       }
