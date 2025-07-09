@@ -83,9 +83,10 @@ export function getAdjustedMealInput(
   const targetMacrosForMeal = {
     calories:
       dailyTargets.targetCalories! * (mealDistribution.calories_pct / 100),
-    protein: dailyTargets.targetProtein! * (mealDistribution.protein_pct / 100),
-    carbs: dailyTargets.targetCarbs! * (mealDistribution.carbs_pct / 100),
-    fat: dailyTargets.targetFat! * (mealDistribution.fat_pct / 100),
+    protein:
+      dailyTargets.targetProtein! * (mealDistribution.calories_pct / 100),
+    carbs: dailyTargets.targetCarbs! * (mealDistribution.calories_pct / 100),
+    fat: dailyTargets.targetFat! * (mealDistribution.calories_pct / 100),
   };
 
   const preparedIngredients = mealToOptimize.ingredients.map((ing) => ({

@@ -244,9 +244,10 @@ function MealSuggestionsContent() {
           calories:
             dailyTotals.targetCalories * (mealDistribution.calories_pct / 100),
           protein:
-            dailyTotals.targetProtein * (mealDistribution.protein_pct / 100),
-          carbs: dailyTotals.targetCarbs * (mealDistribution.carbs_pct / 100),
-          fat: dailyTotals.targetFat * (mealDistribution.fat_pct / 100),
+            dailyTotals.targetProtein * (mealDistribution.calories_pct / 100),
+          carbs:
+            dailyTotals.targetCarbs * (mealDistribution.calories_pct / 100),
+          fat: dailyTotals.targetFat * (mealDistribution.calories_pct / 100),
         };
 
         // Update URL with calculated targets

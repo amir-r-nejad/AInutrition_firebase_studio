@@ -76,9 +76,6 @@ export default function MacroSplitterPage() {
       mealDistributions: defaultMealNames.map((name) => ({
         mealName: name,
         calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
-        protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
-        carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
-        fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
       })),
     },
   });
@@ -436,13 +433,13 @@ export default function MacroSplitterPage() {
                           ((currentPercentages.calories_pct || 0) / 100);
                         mealProteinGrams =
                           dailyTargets.protein_g *
-                          ((currentPercentages.protein_pct || 0) / 100);
+                          ((currentPercentages.calories_pct || 0) / 100);
                         mealCarbsGrams =
                           dailyTargets.carbs_g *
-                          ((currentPercentages.carbs_pct || 0) / 100);
+                          ((currentPercentages.calories_pct || 0) / 100);
                         mealFatGrams =
                           dailyTargets.fat_g *
-                          ((currentPercentages.fat_pct || 0) / 100);
+                          ((currentPercentages.calories_pct || 0) / 100);
                       }
 
                       return (
@@ -573,18 +570,7 @@ export default function MacroSplitterPage() {
                           </TableCell>
                         );
                       })}
-                      <TableCell colSpan={4} className='px-2 py-1'></TableCell>
-                    </TableRow>
-                    <TableRow className='font-semibold text-sm bg-muted/70 h-10'>
-                      <TableCell
-                        className={cn('px-2 py-1', headerLabels[0].className)}
-                      >
-                        Calc. Value Totals:
-                      </TableCell>
-                      <TableCell
-                        colSpan={4}
-                        className='px-2 py-1 border-r'
-                      ></TableCell>
+
                       {dailyTargets ? (
                         <>
                           <TableCell className='px-2 py-1 text-right tabular-nums'>

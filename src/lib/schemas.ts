@@ -276,21 +276,6 @@ export const MealMacroDistributionSchema = z.object({
     .min(0, '% must be >= 0')
     .max(100, '% must be <= 100')
     .default(0),
-  protein_pct: z.coerce
-    .number()
-    .min(0, '% must be >= 0')
-    .max(100, '% must be <= 100')
-    .default(0),
-  carbs_pct: z.coerce
-    .number()
-    .min(0, '% must be >= 0')
-    .max(100, '% must be <= 100')
-    .default(0),
-  fat_pct: z.coerce
-    .number()
-    .min(0, '% must be >= 0')
-    .max(100, '% must be <= 100')
-    .default(0),
 });
 export type MealMacroDistribution = z.infer<typeof MealMacroDistributionSchema>;
 
@@ -310,7 +295,6 @@ export const MacroSplitterFormSchema = z
         0
       );
       if (Math.abs(sum - 100) > 0.01) {
-        // Allow for tiny floating point discrepancies
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `Total ${macroName} percentages must sum to 100%. Current sum: ${sum.toFixed(
@@ -321,9 +305,6 @@ export const MacroSplitterFormSchema = z
       }
     };
     checkSum('calories_pct', 'Calorie');
-    checkSum('protein_pct', 'Protein');
-    checkSum('carbs_pct', 'Carbohydrate');
-    checkSum('fat_pct', 'Fat');
   });
 export type MacroSplitterFormValues = z.infer<typeof MacroSplitterFormSchema>;
 
