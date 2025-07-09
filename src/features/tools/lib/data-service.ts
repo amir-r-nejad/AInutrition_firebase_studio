@@ -1,7 +1,15 @@
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDocFromServer, setDoc } from 'firebase/firestore';
-import { FullProfileType, preprocessDataForFirestore } from '@/lib/schemas';
-import { MealInputTypes } from '../types/toolsGlobalTypes';
+import {
+  FullProfileType,
+  GlobalCalculatedTargets,
+  preprocessDataForFirestore,
+  SmartCaloriePlannerFormValues,
+} from '@/lib/schemas';
+import {
+  customizePlanFormValues,
+  MealInputTypes,
+} from '../types/toolsGlobalTypes';
 
 export async function updateMealSuggestion(
   userId: string,
@@ -38,4 +46,24 @@ export async function getProfileDataForSuggestions(
     );
   }
   return {};
+}
+
+export async function saveSmartPlannerData(
+  userId: string,
+  data: {
+    formValues: SmartCaloriePlannerFormValues | customizePlanFormValues;
+    results: GlobalCalculatedTargets | null;
+  }
+) {
+  if (!userId) throw new Error('User ID is required.');
+  try {
+    const userProfileRef = doc(db, 'users', userId);
+
+    const dataToSave = { smartPlannerData: preprocessDataForFirestore(data) };
+    const dataSave = await setDoc(userProfileRef, dataToSave, { merge: true });
+    console.log('Saved smart planner data:', dataSave);
+  } catch (error) {
+    console.error('Error saving smart planner data to Firestore:', error);
+    throw error;
+  }
 }

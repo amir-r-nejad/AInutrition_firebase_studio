@@ -44,8 +44,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
 
+import { useFetchProfile } from '@/features/meal-plan/hooks/useFetchProfile';
 import { getMissingProfileFields } from '@/features/meal-plan/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -53,7 +53,7 @@ import {
   mealNames,
   preferredDiets,
 } from '@/lib/constants';
-import type { FullProfileType } from '@/lib/schemas';
+import type { BaseProfileData } from '@/lib/schemas';
 import {
   MealSuggestionPreferencesSchema,
   type MealSuggestionPreferencesValues,
@@ -70,33 +70,28 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMealUrlParams } from '../../hooks/useMealUrlParams';
-import {
-  getProfileDataForSuggestions,
-  updateMealSuggestion,
-} from '../../lib/data-service';
-import { getExampleTargetsForMeal } from '../../lib/utils';
+import { updateMealSuggestion } from '../../lib/data-service';
+import { getExampleTargetsForMeal, prepareAiMealInput } from '../../lib/utils';
 import PreferenceTextarea from './PreferenceTextarea';
 
 function MealSuggestionsContent() {
+  const { user, profileData, isLoadingProfile, fetchUserData } =
+    useFetchProfile();
+
   const { updateUrlWithMeal, getQueryParams, getCurrentMealParams } =
     useMealUrlParams();
+
+  const { toast } = useToast();
 
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  const { user } = useAuth();
-  const { toast } = useToast();
-
-  const [fullProfileData, setFullProfileData] =
-    useState<Partial<FullProfileType> | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isLoadingAiSuggestions, setIsLoadingAiSuggestions] = useState(false);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-
   const [suggestions, setSuggestions] = useState<
     SuggestMealsForMacrosOutput['suggestions']
   >([]);
-  const [error, setError] = useState<string | null>(null);
 
   // Derive values from URL query parameters
   const selectedMealName = useMemo(() => {
@@ -152,41 +147,24 @@ function MealSuggestionsContent() {
     [pathname, router, searchParams]
   );
 
-  // Load profile data and set form values only once
   useEffect(() => {
-    if (user?.uid) {
-      setIsLoadingProfile(true);
-      getProfileDataForSuggestions(user.uid)
-        .then((data) => {
-          setFullProfileData(data);
+    function onSuccess(data: Partial<BaseProfileData>) {
+      if (!preferenceForm.formState.isDirty) {
+        preferenceForm.reset({
+          preferredDiet: data.preferredDiet || undefined,
+          preferredCuisines: data.preferredCuisines || [],
+          dispreferredCuisines: data.dispreferredCuisines || [],
+          preferredIngredients: data.preferredIngredients || [],
+          dispreferredIngredients: data.dispreferredIngredients || [],
+          allergies: data.allergies || [],
+          preferredMicronutrients: data.preferredMicronutrients || [],
+          medicalConditions: data.medicalConditions || [],
+          medications: data.medications || [],
+        });
+      }
+    }
 
-          // Only reset form if it hasn't been modified by user
-          if (!preferenceForm.formState.isDirty) {
-            preferenceForm.reset({
-              preferredDiet: data.preferredDiet || undefined,
-              preferredCuisines: data.preferredCuisines || [],
-              dispreferredCuisines: data.dispreferredCuisines || [],
-              preferredIngredients: data.preferredIngredients || [],
-              dispreferredIngredients: data.dispreferredIngredients || [],
-              allergies: data.allergies || [],
-              preferredMicronutrients: data.preferredMicronutrients || [],
-              medicalConditions: data.medicalConditions || [],
-              medications: data.medications || [],
-            });
-          }
-        })
-        .catch(() =>
-          toast({
-            title: 'Error',
-            description: 'Could not load profile data.',
-            variant: 'destructive',
-          })
-        )
-        .finally(() => setIsLoadingProfile(false));
-    } else {
-      setIsLoadingProfile(false);
-
-      // Only reset if form hasn't been modified
+    function onFallBack() {
       if (!preferenceForm.formState.isDirty) {
         preferenceForm.reset({
           preferredDiet: undefined,
@@ -201,7 +179,17 @@ function MealSuggestionsContent() {
         });
       }
     }
-  }, [user, toast, preferenceForm]);
+
+    function onError() {
+      toast({
+        title: 'Error',
+        description: 'Could not load profile data.',
+        variant: 'destructive',
+      });
+    }
+
+    fetchUserData(onError, onSuccess, onFallBack);
+  }, [fetchUserData, toast, preferenceForm]);
 
   const calculateTargetsForSelectedMeal = useCallback(() => {
     if (!selectedMealName) return;
@@ -210,21 +198,20 @@ function MealSuggestionsContent() {
     setSuggestions([]);
     setError(null);
 
-    const profileToUse = fullProfileData;
+    const profileToUse = profileData;
     const missingFields = getMissingProfileFields(profileToUse!);
 
     if (missingFields.length === 0 && profileToUse) {
       const dailyTotals = {
         targetCalories:
-          fullProfileData.smartPlannerData?.formValues?.custom_total_calories,
-        targetProtein:
-          fullProfileData.smartPlannerData?.formValues?.proteinGrams,
-        targetCarbs: fullProfileData.smartPlannerData?.formValues?.carbGrams,
-        targetFat: fullProfileData.smartPlannerData?.formValues?.fatGrams,
+          profileData.smartPlannerData?.formValues?.custom_total_calories,
+        targetProtein: profileData.smartPlannerData?.formValues?.proteinGrams,
+        targetCarbs: profileData.smartPlannerData?.formValues?.carbGrams,
+        targetFat: profileData.smartPlannerData?.formValues?.fatGrams,
       };
 
       let mealDistribution;
-      const userMealDistributions = fullProfileData.mealDistributions;
+      const userMealDistributions = profileData.mealDistributions;
       if (!userMealDistributions)
         mealDistribution = defaultMacroPercentages[selectedMealName];
       else
@@ -274,7 +261,7 @@ function MealSuggestionsContent() {
         variant: 'default',
       });
     }
-  }, [selectedMealName, fullProfileData, updateUrlWithTargets, toast]);
+  }, [selectedMealName, profileData, updateUrlWithTargets, toast]);
 
   useEffect(() => {
     if (selectedMealName && !isLoadingProfile) {
@@ -303,7 +290,7 @@ function MealSuggestionsContent() {
     if (
       isLoadingProfile &&
       !isDemoModeFromUrl &&
-      (!fullProfileData || Object.keys(fullProfileData).length === 0)
+      (!profileData || Object.keys(profileData).length === 0)
     ) {
       toast({
         title: 'Please wait',
@@ -319,32 +306,14 @@ function MealSuggestionsContent() {
 
     const currentPreferences = preferenceForm.getValues();
 
-    const aiInput: SuggestMealsForMacrosInput = {
-      mealName: targetMacros.mealName,
-      targetCalories: targetMacros.calories,
-      targetProteinGrams: targetMacros.protein,
-      targetCarbsGrams: targetMacros.carbs,
-      targetFatGrams: targetMacros.fat,
-      age: fullProfileData?.age ?? undefined,
-      gender: fullProfileData?.gender ?? undefined,
-      activityLevel: fullProfileData?.activityLevel ?? undefined,
-      dietGoal: fullProfileData?.dietGoalOnboarding ?? undefined,
-      preferredDiet: currentPreferences.preferredDiet,
-      preferredCuisines: currentPreferences.preferredCuisines,
-      dispreferredCuisines: currentPreferences.dispreferredCuisines,
-      preferredIngredients: currentPreferences.preferredIngredients,
-      dispreferredIngredients: currentPreferences.dispreferredIngredients,
-      allergies: currentPreferences.allergies,
-    };
-
-    Object.keys(aiInput).forEach(
-      (key) =>
-        aiInput[key as keyof SuggestMealsForMacrosInput] === undefined &&
-        delete aiInput[key as keyof SuggestMealsForMacrosInput]
-    );
-
     try {
-      if (!user?.uid) return;
+      if (!user?.uid || !profileData) return;
+      const aiInput = prepareAiMealInput({
+        targetMacros,
+        profileData,
+        currentPreferences,
+      });
+
       await updateMealSuggestion(user?.uid, currentPreferences);
 
       const result = await suggestMealsForMacros(aiInput);
@@ -610,7 +579,7 @@ function MealSuggestionsContent() {
                   : isLoadingAiSuggestions
                   ? 'Getting Suggestions...'
                   : targetMacros.calories !== 0
-                  ? '3. Get AI Meal Suggestions'
+                  ? 'Get AI Meal Suggestions'
                   : 'Meals must contains a certain amount of calories'}
               </Button>
 

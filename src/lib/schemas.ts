@@ -8,7 +8,7 @@ import {
 } from './constants';
 
 // Helper for preprocessing optional number fields: empty string, null, or non-numeric becomes undefined
-const preprocessOptionalNumber = (val: unknown) => {
+export const preprocessOptionalNumber = (val: unknown) => {
   if (val === '' || val === null || val === undefined) {
     return undefined;
   }

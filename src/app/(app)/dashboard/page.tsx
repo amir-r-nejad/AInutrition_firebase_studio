@@ -9,7 +9,7 @@ import {
   SplitSquareHorizontal,
   Target,
   User,
-} from 'lucide-react'; // Removed Scaling
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 

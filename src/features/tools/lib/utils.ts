@@ -2,9 +2,14 @@ import {
   MealMacroDistribution,
   type MacroSplitterFormValues,
 } from '@/lib/schemas';
-import { CalculatedMealMacros, TotalMacros } from '../types/toolsGlobalTypes';
+import {
+  AiMealInputTypes,
+  CalculatedMealMacros,
+  TotalMacros,
+} from '../types/toolsGlobalTypes';
 import { UseFormReturn } from 'react-hook-form';
 import { defaultMacroPercentages } from '@/lib/constants';
+import { SuggestMealsForMacrosInput } from '@/ai/flows/suggest-meals-for-macros';
 
 export function customMacroSplit(
   totalMacros: TotalMacros,
@@ -16,12 +21,14 @@ export function customMacroSplit(
       totalMacros.calories * ((mealPct.calories_pct || 0) / 100)
     ),
     'Protein (g)': Math.round(
-      totalMacros.protein_g * ((mealPct.protein_pct || 0) / 100)
+      totalMacros.protein_g * ((mealPct.calories_pct || 0) / 100)
     ),
     'Carbs (g)': Math.round(
-      totalMacros.carbs_g * ((mealPct.carbs_pct || 0) / 100)
+      totalMacros.carbs_g * ((mealPct.calories_pct || 0) / 100)
     ),
-    'Fat (g)': Math.round(totalMacros.fat_g * ((mealPct.fat_pct || 0) / 100)),
+    'Fat (g)': Math.round(
+      totalMacros.fat_g * ((mealPct.calories_pct || 0) / 100)
+    ),
   }));
 }
 
@@ -30,9 +37,6 @@ export function getMealMacroStats(
     mealDistributions: {
       mealName: string;
       calories_pct: number;
-      protein_pct: number;
-      carbs_pct: number;
-      fat_pct: number;
     }[];
   }>
 ) {
@@ -48,9 +52,6 @@ export function getMealMacroStats(
 
   const columnSums = {
     calories_pct: calculateColumnSum('calories_pct'),
-    protein_pct: calculateColumnSum('protein_pct'),
-    carbs_pct: calculateColumnSum('carbs_pct'),
-    fat_pct: calculateColumnSum('fat_pct'),
   };
 
   return { columnSums, watchedMealDistributions };
@@ -81,4 +82,36 @@ export function getExampleTargetsForMeal(mealName: string) {
       exampleDailyTotals.targetFat * (mealDistribution.fat_pct / 100)
     ),
   };
+}
+
+export function prepareAiMealInput({
+  targetMacros,
+  profileData,
+  currentPreferences,
+}: AiMealInputTypes): SuggestMealsForMacrosInput {
+  const aiInput = {
+    mealName: targetMacros.mealName,
+    targetCalories: targetMacros.calories,
+    targetProteinGrams: targetMacros.protein,
+    targetCarbsGrams: targetMacros.carbs,
+    targetFatGrams: targetMacros.fat,
+    age: profileData?.age ?? undefined,
+    gender: profileData?.gender ?? undefined,
+    activityLevel: profileData?.activityLevel ?? undefined,
+    dietGoal: profileData?.dietGoalOnboarding ?? undefined,
+    preferredDiet: currentPreferences.preferredDiet,
+    preferredCuisines: currentPreferences.preferredCuisines,
+    dispreferredCuisines: currentPreferences.dispreferredCuisines,
+    preferredIngredients: currentPreferences.preferredIngredients,
+    dispreferredIngredients: currentPreferences.dispreferredIngredients,
+    allergies: currentPreferences.allergies,
+  };
+
+  Object.keys(aiInput).forEach(
+    (key) =>
+      aiInput[key as keyof SuggestMealsForMacrosInput] === undefined &&
+      delete aiInput[key as keyof SuggestMealsForMacrosInput]
+  );
+
+  return aiInput;
 }

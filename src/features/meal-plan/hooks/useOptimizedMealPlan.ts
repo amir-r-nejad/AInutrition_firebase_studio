@@ -7,7 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import { mapProfileToMealPlanInput } from '../lib/utils';
 import { useFetchProfile } from './useFetchProfile';
-import { getFullProfileData } from '@/features/meal-plan/lib/data-service';
 
 export function useOptimizedMealPlan() {
   const { user, profileData, isLoadingProfile, fetchUserData } =
@@ -36,7 +35,7 @@ export function useOptimizedMealPlan() {
       });
     }
 
-    fetchUserData(getFullProfileData, toastError, setMeal);
+    fetchUserData(toastError, setMeal);
   }, [user, toast, fetchUserData]);
 
   const handleGeneratePlan = async () => {

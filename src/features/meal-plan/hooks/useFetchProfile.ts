@@ -2,6 +2,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext';
 
 import type { BaseProfileData, FullProfileType } from '@/lib/schemas';
 import { useCallback, useState } from 'react';
+import { getFullProfileData } from '../lib/data-service';
 
 export function useFetchProfile() {
   const { user } = useAuth();
@@ -12,13 +13,13 @@ export function useFetchProfile() {
 
   const fetchUserData = useCallback(
     (
-      fetchFn: (userId: string) => Promise<Partial<BaseProfileData>>,
       onError: () => void,
-      onSuccess?: (data: Partial<BaseProfileData>) => void
+      onSuccess?: (data: Partial<BaseProfileData>) => void,
+      onFallback?: () => void
     ) => {
       if (user?.uid) {
         setIsLoadingProfile(true);
-        fetchFn(user.uid)
+        getFullProfileData(user.uid)
           .then((data) => {
             setProfileData(data);
             if (onSuccess) onSuccess(data);
@@ -27,6 +28,7 @@ export function useFetchProfile() {
           .finally(() => setIsLoadingProfile(false));
       } else {
         setIsLoadingProfile(false);
+        if (onFallback) onFallback();
       }
     },
     [user?.uid]

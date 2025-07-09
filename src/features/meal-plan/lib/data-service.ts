@@ -88,57 +88,6 @@ export async function saveMealPlanData(
   }
 }
 
-export async function getProfileDataForOptimization(
-  userId: string
-): Promise<Partial<FullProfileType>> {
-  if (!userId) return {};
-  try {
-    const userProfileRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userProfileRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data() as FullProfileType;
-
-      const profile: Partial<FullProfileType> = {
-        mealDistributions: data?.mealDistributions || [],
-        age: data.smartPlannerData?.formValues?.age,
-        gender: data.smartPlannerData?.formValues?.gender,
-        current_weight: data.smartPlannerData?.formValues?.current_weight,
-        height_cm: data.smartPlannerData?.formValues?.height_cm,
-        activityLevel: data.smartPlannerData?.formValues?.activity_factor_key,
-        dietGoalOnboarding: data.smartPlannerData?.formValues?.dietGoal,
-        preferredDiet: data.preferredDiet,
-        allergies: data.allergies || [],
-        dispreferredIngredients: data.dispreferredIngredients || [],
-        preferredIngredients: data.preferredIngredients || [],
-
-        smartPlannerData: {
-          formValues: {
-            custom_total_calories:
-              data.smartPlannerData?.formValues?.custom_total_calories,
-            proteinGrams: data.smartPlannerData?.formValues?.proteinGrams,
-            carbGrams: data.smartPlannerData?.formValues?.carbGrams,
-            fatGrams: data.smartPlannerData?.formValues?.fatGrams,
-          },
-        },
-      };
-      // Ensure undefined top-level optional fields become null for consistency
-      (Object.keys(profile) as Array<keyof typeof profile>).forEach((key) => {
-        if (profile[key] === undefined) {
-          (profile as any)[key] = null;
-        }
-      });
-      return profile;
-    }
-  } catch (error) {
-    console.error(
-      'Error fetching profile data from Firestore for optimization:',
-      error
-    );
-  }
-  return {};
-}
-
 export async function getFullProfileData(
   userId: string
 ): Promise<Partial<FullProfileType>> {
@@ -171,21 +120,4 @@ export async function saveOptimizedMealPlan(
     console.error('Error saving AI meal plan data to Firestore:', error);
     throw error;
   }
-}
-
-export function generateInitialWeeklyPlan(): WeeklyMealPlan {
-  return {
-    days: daysOfWeek.map((day) => ({
-      dayOfWeek: day,
-      meals: mealNames.map((mealName) => ({
-        name: mealName,
-        customName: '',
-        ingredients: [],
-        totalCalories: null,
-        totalProtein: null,
-        totalCarbs: null,
-        totalFat: null,
-      })),
-    })),
-  };
 }

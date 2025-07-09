@@ -9,10 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import EditMealDialog from '@/features/meal-plan/components/current/EditMealDialog';
 import MealCardItem from '@/features/meal-plan/components/current/MealCardItem';
 import { useUserMealPlanData } from '@/features/meal-plan/hooks/useUserMealPlanData';
-import {
-  getProfileDataForOptimization,
-  saveMealPlanData,
-} from '@/features/meal-plan/lib/data-service';
+import { saveMealPlanData } from '@/features/meal-plan/lib/data-service';
 import {
   getAdjustedMealInput,
   getMissingProfileFields,
@@ -24,9 +21,8 @@ import type { Meal } from '@/lib/schemas';
 import { useEffect, useState } from 'react';
 
 export default function CurrentMealPlanPage() {
-  const { getQueryParams, updateQueryParams } = useQueryParams();
   const { toast } = useToast();
-
+  const { getQueryParams, updateQueryParams } = useQueryParams();
   const {
     user,
     weeklyPlan,
@@ -56,7 +52,7 @@ export default function CurrentMealPlanPage() {
       });
     }
 
-    fetchUserData(getProfileDataForOptimization, handleError);
+    fetchUserData(handleError);
   }, [fetchUserData, toast]);
 
   useEffect(() => {
