@@ -456,8 +456,7 @@ export default function MacroSplitterPage() {
                             <TableCell
                               key={macroKey}
                               className={cn(
-                                'px-1 py-1 text-right tabular-nums h-10',
-                                macroKey === 'fat_pct' ? 'border-r' : ''
+                                'px-1 py-1 text-right tabular-nums h-10'
                               )}
                             >
                               <FormField
@@ -553,8 +552,7 @@ export default function MacroSplitterPage() {
                             key={`sum-${key}`}
                             className={cn(
                               'px-2 py-1 text-right tabular-nums',
-                              isSum100 ? 'text-green-600' : 'text-destructive',
-                              key === 'fat_pct' ? 'border-r' : ''
+                              isSum100 ? 'text-green-600' : 'text-destructive'
                             )}
                           >
                             {formatNumber(sum / 100, {
@@ -591,7 +589,7 @@ export default function MacroSplitterPage() {
                                 (sum, meal) =>
                                   sum +
                                   dailyTargets.protein_g *
-                                    ((meal.protein_pct || 0) / 100),
+                                    ((meal.calories_pct || 0) / 100),
                                 0
                               ),
                               {
@@ -606,7 +604,7 @@ export default function MacroSplitterPage() {
                                 (sum, meal) =>
                                   sum +
                                   dailyTargets.carbs_g *
-                                    ((meal.carbs_pct || 0) / 100),
+                                    ((meal.calories_pct || 0) / 100),
                                 0
                               ),
                               {
@@ -621,7 +619,7 @@ export default function MacroSplitterPage() {
                                 (sum, meal) =>
                                   sum +
                                   dailyTargets.fat_g *
-                                    ((meal.fat_pct || 0) / 100),
+                                    ((meal.calories_pct || 0) / 100),
                                 0
                               ),
                               {
