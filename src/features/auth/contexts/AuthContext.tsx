@@ -86,7 +86,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // User is authenticated. Now check for onboarding completion from their profile.
-    // The profile might still be loading, so we check for its existence.
     if (profile) {
         if (!profile.onboardingComplete) {
             if (pathname !== '/onboarding') {
@@ -100,8 +99,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             router.push('/dashboard');
         }
     }
-
-
   }, [authUser, profile, isAuthLoading, pathname, router]);
 
   const logout = useCallback(async () => {
@@ -142,6 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         // The routing useEffect will handle moving to the dashboard.
       } catch (error) {
+        console.error("Onboarding completion error:", error);
         toast({
           title: 'Onboarding Error',
           description: 'Could not save your profile. Please try again.',

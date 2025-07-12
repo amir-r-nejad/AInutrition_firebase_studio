@@ -4,7 +4,6 @@ import { db } from '@/lib/firebase/clientApp';
 import {
   collection,
   addDoc,
-  updateDoc,
   query,
   where,
   getDocs,
@@ -14,12 +13,11 @@ import {
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import {
-  CustomCalculatedTargets,
-  FullProfileType,
-  GlobalCalculatedTargets,
-  OnboardingFormValues,
-  ProfileFormValues,
-  SmartCaloriePlannerFormValues,
+  type OnboardingFormValues,
+  type FullProfileType,
+  type ProfileFormValues,
+  type SmartCaloriePlannerFormValues,
+  type GlobalCalculatedTargets,
 } from '@/lib/schemas';
 
 export async function addUser(u: string) {
@@ -29,14 +27,14 @@ export async function addUser(u: string) {
     const userRef = collection(db, 'users');
     const q = query(userRef, where('uid', '==', '' + user.uid));
     const userSnapshot = await getDocs(q);
-    console.log('Queried Users: ', userSnapshot.size, 'for UID:', user.uid);
     if (userSnapshot.empty) {
-      console.log('No user found, adding new user:', user);
-      await addDoc(userRef, user);
-    } else {
-      console.log('User already exists, not adding.');
+      await addDoc(userRef, { 
+        uid: user.uid,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        onboardingComplete: false,
+       });
     }
-    return user;
   } catch (e) {
     console.log('addUser error:', e);
   }
@@ -45,10 +43,19 @@ export async function addUser(u: string) {
 export async function onboardingUpdateUser(
   userId: string,
   onboardingValues: OnboardingFormValues
-) {
+): Promise<boolean> {
   try {
     const userRef = doc(db, 'users', userId);
-    await setDoc(userRef, { ...onboardingValues, onboardingComplete: true }, { merge: true });
+    
+    // Create a new object with all onboarding values and set onboardingComplete to true
+    const dataToSave: Partial<FullProfileType> = {
+      ...onboardingValues,
+      onboardingComplete: true,
+    };
+
+    // Use setDoc with merge: true to update or create the document
+    await setDoc(userRef, dataToSave, { merge: true });
+    
     console.log(
       'onboardingUpdateUser: Successfully updated user doc for UID:',
       userId
@@ -56,13 +63,13 @@ export async function onboardingUpdateUser(
     return true;
   } catch (e) {
     console.error('onboardingUpdateUser error:', e);
-    throw e;
+    throw e; // Re-throw the error to be caught by the calling function
   }
 }
+
 export async function getSmartPlannerData(userId: string): Promise<{
   formValues: Partial<SmartCaloriePlannerFormValues>;
   results?: GlobalCalculatedTargets | null;
-  manualMacroResults?: CustomCalculatedTargets | null;
 }> {
   'use server';
   if (!userId) return { formValues: {} };

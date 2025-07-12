@@ -36,29 +36,20 @@ import {
   genders,
   onboardingStepsData,
   smartPlannerDietGoals,
-  mealNames,
-  defaultMacroPercentages,
 } from '@/lib/constants';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import {
   type GlobalCalculatedTargets,
   OnboardingFormSchema,
   type OnboardingFormValues,
-  type FullProfileType,
-  preprocessDataForFirestore,
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle, Leaf, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
-import { getAuth } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
 
 export default function OnboardingPage() {
   const { user, completeOnboarding, isLoading: isAuthLoading } = useAuth();
-  const router = useRouter();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -157,12 +148,6 @@ export default function OnboardingPage() {
       setCalculatedTargets(null);
     }
   }, [form]);
-
-  useEffect(() => {
-    if (currentStep === 3) {
-      updateCalculatedTargetsForStep3();
-    }
-  }, [currentStep, updateCalculatedTargetsForStep3]);
 
   const watchedCustomInputs = form.watch([
     'custom_total_calories',
@@ -323,10 +308,6 @@ export default function OnboardingPage() {
     if (currentStep === 2) {
       updateCalculatedTargetsForStep3();
     }
-
-    if (currentStep === 3 && !customCalculatedTargets && calculatedTargets) {
-      setCustomCalculatedTargets(calculatedTargets);
-    }
     
     if (currentStep < 5) {
       setCurrentStep((prev) => prev + 1);
@@ -397,7 +378,10 @@ export default function OnboardingPage() {
             >
               {currentStep === 1 && (
                 <div className='text-center p-4'>
-                  {/* Welcome/Introduction content for step 1 */}
+                   <h2 className="text-2xl font-semibold">Welcome, {user.email}!</h2>
+                  <p className="mt-2 text-muted-foreground">
+                    Let's get your profile set up so we can start building your personalized nutrition plan.
+                  </p>
                 </div>
               )}
 
