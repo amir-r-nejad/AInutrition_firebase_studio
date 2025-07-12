@@ -1,20 +1,18 @@
+'use server';
 
-"use server";
+import { FirebaseApp, initializeApp, initializeServerApp } from 'firebase/app';
+import { getAuth, User } from 'firebase/auth';
+import { cookies } from 'next/headers';
+import { firebaseConfig } from '../../../lib/constants';
 
-import { FirebaseApp, FirebaseError, initializeApp, initializeServerApp,FirebaseServerApp } from "firebase/app";
-import { cookies } from "next/headers";
-import { getAuth, NextOrObserver, Unsubscribe, User } from "firebase/auth";
-import { firebaseConfig } from "../../../lib/constants";
-
-
-export interface IAuthincatedAppUser{
-    firebaseServerApp:FirebaseApp,
-     currentUser: User
+export interface IAuthincatedAppUser {
+  firebaseServerApp: FirebaseApp;
+  currentUser: User;
 }
 
-export async function getAuthenticatedAppForUser(){
-  "use server";
-  const authIdToken = (await cookies()).get("__session")?.value;
+export async function getAuthenticatedAppForUser() {
+  'use server';
+  const authIdToken = (await cookies()).get('__session')?.value;
 
   // Firebase Server App is a new feature in the JS SDK that allows you to
   // instantiate the SDK with credentials retrieved from the client & has

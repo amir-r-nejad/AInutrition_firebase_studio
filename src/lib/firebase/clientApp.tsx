@@ -1,6 +1,6 @@
 'use client';
 
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'; // Ensure Firestore is imported
 import { getStorage } from 'firebase/storage';

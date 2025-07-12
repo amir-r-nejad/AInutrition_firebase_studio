@@ -355,6 +355,7 @@ export default function SmartCaloriePlannerPage() {
 
       getSmartPlannerData(user.uid)
         .then((data) => {
+          console.log(data);
           if (data.formValues) {
             setSmartPlannerData(data.formValues);
             smartPlannerForm.reset(data.formValues);

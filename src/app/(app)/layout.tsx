@@ -77,11 +77,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!currentUser) {
-    // AuthProvider should handle redirection.
-    // This is a fallback rendering if redirection hasn't happened yet.
     return (
       <div className='flex h-screen items-center justify-center'>
-        {/* You can put a more specific message or keep the spinner */}
         <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-primary'></div>
         <p className='ml-2'>Redirecting...</p>
       </div>
@@ -108,7 +105,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               const IconComponent = item.icon; // Get the icon component
               return (
                 <SidebarMenuItem key={item.label}>
-                  <Link href={item.href!} legacyBehavior passHref>
+                  <Link href={item.href!} passHref>
                     <SidebarMenuButton
                       isActive={false} // This needs to be dynamic based on current path
                       tooltip={item.label}
@@ -157,7 +154,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <header className='sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-4'>
           <SidebarTrigger className='sm:hidden' />
         </header>
-        <main className='flex-1 p-4 md:p-6 overflow-auto'>{children}</main>
+        <main className='flex-1 p-4 md:p-6 overflow-auto min-h-dvh'>
+          {children}
+        </main>
         <Toaster />
       </SidebarInset>
     </SidebarProvider>

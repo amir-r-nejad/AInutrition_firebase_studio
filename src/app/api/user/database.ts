@@ -70,12 +70,25 @@ export async function getSmartPlannerData(userId: string): Promise<{
   if (!userId) return { formValues: {} };
 
   try {
+    let profile;
+    let isUserExist;
+
     const userDocRef = doc(db, 'users', userId);
     const docSnap = await getDoc(userDocRef);
-    console.log('getSmartPlannerData: docSnap.size=', docSnap.data());
 
     if (docSnap.exists()) {
-      const profile = docSnap.data() as FullProfileType;
+    } else {
+      const userRef = collection(db, 'users');
+      const q = query(userRef, where('uid', '==', userId));
+      const userSnapshot = await getDocs(q);
+
+      profile = userSnapshot.docs[0].data() as FullProfileType;
+      isUserExist = !userSnapshot.empty;
+    }
+
+    if (isUserExist) {
+      profile = docSnap.data() as FullProfileType;
+      isUserExist = docSnap.exists();
 
       // Map FullProfileType fields to SmartCaloriePlannerFormValues
       const formValues: Partial<SmartCaloriePlannerFormValues> = {

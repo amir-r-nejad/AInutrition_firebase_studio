@@ -151,7 +151,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Handle unauthenticated users
     if (!user) {
-      if (!route.isAuthPage() && route.isDashboardPage()) {
+      if (
+        !isOnboarded &&
+        !route.isAuthPage() &&
+        route.isDashboardPage() &&
+        route.isOnboardingPage()
+      ) {
         console.log('Redirecting unauthenticated user to login');
         router.push('/login');
       }
@@ -200,7 +205,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Refresh onboarding status when user changes
   useEffect(() => {
-    if (user?.uid && !isOnboarded) refreshOnboardingStatus();
+    if (!isOnboarded) refreshOnboardingStatus();
   }, [user, isOnboarded, refreshOnboardingStatus]);
 
   const contextValue: AuthContextType = {

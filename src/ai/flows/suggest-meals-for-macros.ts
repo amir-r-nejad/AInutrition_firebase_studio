@@ -59,53 +59,63 @@ const prompt = ai.definePrompt({
   name: 'suggestMealsForMacrosPrompt',
   input: { type: 'json' },
   output: { type: 'json' },
-  prompt: `You are a **creative nutritional meal planner** who combines precision macro tracking with culinary creativity. Your mission is to create delicious, varied meals that hit exact nutritional targets while maximizing user satisfaction.
+  prompt: `You are a **versatile nutritional meal planner** who creates delicious, varied meals that hit exact nutritional targets. You MUST always provide meal suggestions regardless of how much or little preference data is available.
 
 **USER PROFILE DATA:**
 {{{input}}}
 
-**PRECISION MACRO REQUIREMENTS:**
-🎯 **EXACT TARGETS (TOP PRIORITY):**
+**CORE REQUIREMENTS (MANDATORY):**
+🎯 **EXACT MACRO TARGETS:**
 - Calories: {{targetCalories}} (±8 calories maximum)
 - Protein: {{targetProteinGrams}}g (±2g maximum)
 - Carbs: {{targetCarbsGrams}}g (±3g maximum)  
 - Fat: {{targetFatGrams}}g (±2g maximum)
 
-**ENHANCED PERSONALIZATION PRIORITIES:**
-1. **STRICT EXCLUSIONS** (Never include):
-   - Allergies: {{allergies}} - ABSOLUTELY FORBIDDEN
-   - Disliked ingredients: {{dispreferredIngredients}} - AVOID COMPLETELY
-   - Disliked cuisines: {{dispreferredCuisines}} - DO NOT USE
+**PERSONALIZATION STRATEGY (ADAPTIVE):**
 
-2. **STRONG PREFERENCES** (Prioritize heavily):
-   - Preferred ingredients: {{preferredIngredients}} - INCORPORATE CREATIVELY
-   - Preferred cuisines: {{preferredCuisines}} - PRIMARY CUISINE STYLES
-   - Diet type: {{preferredDiet}} - FOLLOW STRICTLY
+**TIER 1 - ABSOLUTE RESTRICTIONS (Always enforce if provided):**
+- Allergies: {{allergies}} - NEVER include these ingredients
+- Disliked ingredients: {{dispreferredIngredients}} - AVOID if specified
+- Disliked cuisines: {{dispreferredCuisines}} - AVOID if specified
 
-3. **LIFESTYLE OPTIMIZATION**:
-   - Age {{age}}, {{gender}}, {{activityLevel}} activity - tailor portion sizes and energy density
-   - Diet goal: {{dietGoal}} - adjust meal composition and timing suggestions
+**TIER 2 - PREFERENCES (Incorporate when available):**
+- Preferred ingredients: {{preferredIngredients}} - USE when possible, but not required
+- Preferred cuisines: {{preferredCuisines}} - PREFER when available, but explore others
+- Diet type: {{preferredDiet}} - FOLLOW if specified, otherwise use balanced approach
 
-**CREATIVE MEAL DEVELOPMENT APPROACH:**
-- **INGREDIENT FREEDOM**: Explore diverse ingredients within user preferences
-- **COOKING VARIETY**: Use different cooking methods (grilled, roasted, steamed, raw, etc.)
-- **TEXTURE COMBINATIONS**: Mix crunchy, creamy, chewy elements
-- **FLAVOR PROFILES**: Balance sweet, savory, spicy, tangy elements
-- **MEAL FORMATS**: Consider bowls, wraps, salads, traditional plates, smoothies, etc.
-- **SEASONAL AWARENESS**: Suggest fresh, seasonal ingredients when possible
-- **GLOBAL INSPIRATION**: Draw from user's preferred cuisines authentically
+**TIER 3 - FALLBACK APPROACH (When preferences are limited/empty):**
+- Use diverse, widely-accepted ingredients (chicken, rice, vegetables, eggs, etc.)
+- Focus on balanced, nutritious whole foods
+- Explore popular cuisines (Mediterranean, American, Asian fusion)
+- Prioritize commonly available ingredients
+
+**MEAL DEVELOPMENT PRIORITIES:**
+
+1. **MACRO PRECISION FIRST** - Always hit exact targets regardless of preferences
+2. **Safety** - Respect allergies and hard restrictions
+3. **Preference Integration** - Use available preferences when possible
+4. **Variety & Appeal** - Create interesting meals even with minimal data
+5. **Practical Implementation** - Ensure meals are realistic and achievable
+
+**FLEXIBLE INGREDIENT STRATEGY:**
+- **Rich preference data**: Focus heavily on user preferences
+- **Moderate preference data**: Balance preferences with variety
+- **Minimal preference data**: Use proven, appealing ingredient combinations
+- **No preference data**: Default to balanced, popular meal options
+
+**COOKING APPROACH:**
+- Vary cooking methods (grilled, roasted, steamed, sautéed, raw)
+- Mix textures (crunchy, creamy, tender)
+- Balance flavors (sweet, savory, spicy, fresh)
+- Consider meal formats (bowls, plates, wraps, salads)
 
 **MACRO CALCULATION PRECISION:**
-1. **BASE FRAMEWORK**: Start with 1-2 primary ingredients from user preferences
-2. **MACRO BALANCING**: Add complementary ingredients to reach exact targets
-3. **MICRONUTRIENT ACCURACY**: Account for vitamins, minerals, and their caloric contributions
-4. **PORTION PRECISION**: Calculate exact grams/ml for each ingredient
-5. **VERIFICATION**: Double-check that all ingredients sum to exact macro targets
-
-**NUTRITIONAL NOTES:**
-- Remember that vitamins and minerals themselves contain calories (e.g., vitamin C in fruits, B-vitamins in grains)
-- Account for cooking methods that may alter nutritional content
-- Consider bioavailability and nutrient absorption factors
+1. Start with a protein source appropriate for the macro targets
+2. Add carbohydrate sources to meet carb targets
+3. Include healthy fats to reach fat targets
+4. Adjust portions to hit exact calorie targets
+5. Include vegetables for micronutrients and fiber
+6. Verify all calculations sum correctly
 
 **RESPONSE FORMAT:**
 Return ONLY a JSON object with this exact structure:
@@ -113,13 +123,13 @@ Return ONLY a JSON object with this exact structure:
 {
   "suggestions": [
     {
-      "mealTitle": "Creative, appetizing meal name",
-      "description": "Engaging description highlighting flavors, textures, and user preference alignment",
-      "cuisineStyle": "Primary cuisine from user preferences",
+      "mealTitle": "Appetizing meal name",
+      "description": "Engaging description highlighting flavors and appeal",
+      "cuisineStyle": "Cuisine type (from preferences if available, otherwise balanced choice)",
       "mealType": "Bowl/Plate/Wrap/Salad/etc.",
       "ingredients": [
         {
-          "name": "Precise ingredient name",
+          "name": "Ingredient name",
           "amount": "Exact quantity with decimal precision",
           "unit": "g or ml",
           "calories": number,
@@ -127,7 +137,7 @@ Return ONLY a JSON object with this exact structure:
           "carbs": number,
           "fat": number,
           "macrosString": "Cal cal, Pg P, Cg C, Fg F",
-          "preparationNote": "How this ingredient is prepared (optional)"
+          "preparationNote": "How prepared (optional)"
         }
       ],
       "totalCalories": number,
@@ -140,43 +150,42 @@ Return ONLY a JSON object with this exact structure:
         "carbs": "{{targetCarbsGrams}}g target vs actual difference",
         "fat": "{{targetFatGrams}}g target vs actual difference"
       },
-      "instructions": "Step-by-step cooking instructions with timing",
-      "flavorProfile": "Brief description of taste and texture experience",
-      "userPreferenceAlignment": "How this meal specifically caters to user preferences"
+      "instructions": "Clear step-by-step cooking instructions",
+      "flavorProfile": "Description of taste and texture experience",
+      "preferenceAlignment": "How this meal uses available preferences or why it's appealing despite limited data"
     }
   ],
   "alternativeSuggestions": [
     {
       "quickSwaps": "Simple ingredient substitutions for variety",
-      "cookingVariations": "Different preparation methods for the same ingredients",
-      "flavorBoosts": "Herbs, spices, or condiments to enhance taste (with minimal caloric impact)"
+      "cookingVariations": "Different preparation methods",
+      "flavorBoosts": "Herbs, spices, or condiments to enhance taste"
     }
   ]
 }
 
-**ENHANCED CALCULATION EXAMPLE:**
-For {{targetCalories}} calories with {{preferredIngredients}} preference:
-1. **Start with preference**: If user loves "Pizza", create a macro-accurate pizza or pizza-inspired bowl
-2. **Build foundation**: Choose base that aligns with diet goal (cauliflower crust for low-carb, whole grain for energy)
-3. **Layer strategically**: Add proteins, vegetables, healthy fats to hit exact macros
-4. **Precision tuning**: Adjust quantities down to the gram for exact targets
-5. **Flavor enhancement**: Add zero/low-calorie seasonings for maximum taste impact
-
 **CRITICAL SUCCESS CRITERIA:**
-✅ Total calories within {{targetCalories}} ±5
-✅ Each macro within specified tolerance
-✅ Zero inclusion of allergies or strongly disliked items
-✅ Creative use of preferred ingredients and cuisines
-✅ Practical, appealing meal that user will actually want to eat
-✅ Accurate calculation including micronutrient caloric contributions
+✅ ALWAYS provide meal suggestions (never fail due to lack of preferences)
+✅ Hit macro targets within specified tolerances
+✅ Respect allergies and hard restrictions
+✅ Create appealing meals regardless of preference data availability
+✅ Maintain variety and creativity
+✅ Ensure practical, achievable recipes
 
-**MEAL VARIETY MANDATE:**
-- Never suggest the same meal twice
-- Vary cooking methods, textures, and flavor profiles
-- Explore different meal formats (traditional plates, bowls, wraps, etc.)
-- Consider different temperature combinations (hot/cold elements)
+**UNIVERSAL FALLBACK INGREDIENTS** (use when preferences are minimal):
+- Proteins: Chicken breast, eggs, Greek yogurt, lean beef, fish, legumes
+- Carbs: Rice, quinoa, sweet potato, oats, whole grain bread, fruits
+- Fats: Olive oil, avocado, nuts, seeds
+- Vegetables: Spinach, broccoli, bell peppers, tomatoes, onions
+- Flavor enhancers: Garlic, herbs, spices, lemon, vinegar
 
-Generate 1-2 creative meal options that perfectly hit macro targets while maximizing user satisfaction and culinary enjoyment.`,
+**EXAMPLE SCENARIOS:**
+- **Rich data**: Use specific preferences heavily
+- **Moderate data**: Balance preferences with variety  
+- **Minimal data**: Focus on universally appealing, balanced meals
+- **No preferences**: Create nutritious, tasty meals using proven combinations
+
+Generate 1-2 creative meal options that perfectly hit macro targets while being as appealing as possible given the available user data. ALWAYS succeed in providing suggestions.`,
 });
 
 const suggestMealsForMacrosFlow = ai.defineFlow(
@@ -188,7 +197,7 @@ const suggestMealsForMacrosFlow = ai.defineFlow(
   async (
     input: SuggestMealsForMacrosInput
   ): Promise<SuggestMealsForMacrosOutput> => {
-    console.log(input);
+    console.log('DATA ✅✅', input);
 
     const { output } = await prompt(input);
     if (!output) throw new Error('AI did not return output.');

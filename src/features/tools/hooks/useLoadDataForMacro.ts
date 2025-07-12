@@ -112,6 +112,8 @@ export function useLoadDataForMacro(
             smartResults = profileData.smartPlannerData.formValues;
           else smartResults = profileData.smartPlannerData.results;
 
+          console.log('TEST', smartResults.proteinGrams);
+
           targets = {
             calories: calories || 0,
             protein_g: smartResults?.proteinGrams || 0,
