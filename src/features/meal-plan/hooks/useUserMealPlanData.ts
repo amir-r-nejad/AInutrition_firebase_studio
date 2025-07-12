@@ -2,38 +2,15 @@
 import {
   generateInitialWeeklyPlan,
   getMealPlanData,
-  getProfileDataForOptimization,
 } from '@/features/meal-plan/lib/data-service';
-import type { FullProfileType, WeeklyMealPlan } from '@/lib/schemas';
+import type { WeeklyMealPlan } from '@/lib/schemas';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 
 export function useUserMealPlanData() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [weeklyPlan, setWeeklyPlan] = useState<WeeklyMealPlan | null>(null);
-  const [profileData, setProfileData] = useState<Partial<FullProfileType> | null>(null);
   const [isLoadingPlan, setIsLoadingPlan] = useState(true);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-
-  const fetchUserData = useCallback(() => {
-    if (user?.uid) {
-      setIsLoadingProfile(true);
-      getProfileDataForOptimization(user.uid)
-        .then((data) => {
-          setProfileData(data);
-        })
-        .catch(() => {
-          // Handle error, e.g., show a toast
-        })
-        .finally(() => setIsLoadingProfile(false));
-    } else {
-      setIsLoadingProfile(false);
-    }
-  }, [user?.uid]);
-
-  useEffect(() => {
-    fetchUserData();
-  }, [fetchUserData]);
 
   const fetchMealPlan = useCallback(
     (onError: () => void) => {
@@ -58,13 +35,25 @@ export function useUserMealPlanData() {
     [user?.uid]
   );
 
+  useEffect(() => {
+    // Only fetch the meal plan if the user object is available
+    if (user?.uid) {
+      fetchMealPlan(() => {
+        // Handle error, e.g., show a toast. This is passed from the component.
+      });
+    } else if (!isAuthLoading) {
+        // If auth is done and there's no user, we can stop loading.
+        setIsLoadingPlan(false);
+    }
+  }, [user, isAuthLoading, fetchMealPlan]);
+
+
   return {
     user,
-    profileData,
-    fetchUserData,
+    profileData: user, // The full user profile is now available from useAuth()
     fetchMealPlan,
     isLoadingPlan: isAuthLoading || isLoadingPlan,
-    isLoadingProfile: isAuthLoading || isLoadingProfile,
+    isLoadingProfile: isAuthLoading, // Profile loading is tied to auth context loading
     weeklyPlan,
     setWeeklyPlan,
   };

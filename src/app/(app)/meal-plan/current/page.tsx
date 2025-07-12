@@ -44,7 +44,6 @@ import { useAuth } from '@/features/auth/contexts/AuthContext';
 
 export default function CurrentMealPlanPage() {
   const { toast } = useToast();
-  const { user } = useAuth();
   const {
     weeklyPlan,
     setWeeklyPlan,
@@ -52,7 +51,7 @@ export default function CurrentMealPlanPage() {
     profileData,
     isLoadingProfile,
     fetchMealPlan,
-    fetchUserData,
+    user
   } = useUserMealPlanData();
 
   const [editingMeal, setEditingMeal] = useState<{
@@ -115,21 +114,11 @@ export default function CurrentMealPlanPage() {
   };
 
   const handleOptimizeMeal = async (dayIndex: number, mealIndex: number) => {
-    if (!weeklyPlan) return;
+    if (!weeklyPlan || !profileData) return;
     const mealKey = `${weeklyPlan.days[dayIndex].dayOfWeek}-${mealIndex}`;
     setOptimizingMealKey(mealKey);
 
     const mealToOptimize = weeklyPlan.days[dayIndex].meals[mealIndex];
-
-    if (isLoadingProfile || !profileData) {
-      toast({
-        title: 'Profile Data Loading',
-        description: 'User profile data is still loading. Please wait a moment and try again.',
-        variant: 'default',
-      });
-      setOptimizingMealKey(null);
-      return;
-    }
 
     const missingFields = getMissingProfileFields(profileData);
 
@@ -222,7 +211,7 @@ export default function CurrentMealPlanPage() {
   };
 
 
-  if (isLoadingPlan || (user && isLoadingProfile)) return <LoadingScreen />;
+  if (isLoadingPlan || isLoadingProfile) return <LoadingScreen />;
 
   return (
     <div className='container mx-auto py-8'>
@@ -357,4 +346,3 @@ export default function CurrentMealPlanPage() {
     </div>
   );
 }
-

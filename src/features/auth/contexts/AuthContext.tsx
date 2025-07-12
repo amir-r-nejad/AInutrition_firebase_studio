@@ -53,7 +53,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // This case might happen if a user is created in Auth but their DB doc fails.
             // For now, we treat them as a new user.
             setProfile({
-                ...authUser,
+                uid: authUser.uid,
+                email: authUser.email,
+                emailVerified: authUser.emailVerified,
                 onboardingComplete: false
             });
           }
@@ -71,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // This effect handles routing based on the final loading and profile state.
-    if (isAuthLoading) return; // Wait until auth loading is finished.
+    if (isAuthLoading || (authUser && !profile)) return; // Wait until auth loading and profile loading is finished.
 
     const isAuthPage = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email'].includes(pathname);
 
