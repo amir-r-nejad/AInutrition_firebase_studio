@@ -1,6 +1,6 @@
 
 'use server';
-import { db } from '@/lib/firebase/firebase';
+import { db } from '@/lib/firebase/clientApp';
 import {
   collection,
   addDoc,
@@ -10,6 +10,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  setDoc,
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import {
@@ -19,7 +20,7 @@ import {
   OnboardingFormValues,
   ProfileFormValues,
   SmartCaloriePlannerFormValues,
-} from '../../../lib/schemas';
+} from '@/lib/schemas';
 
 export async function addUser(u: string) {
   'use server';
@@ -46,26 +47,8 @@ export async function onboardingUpdateUser(
   onboardingValues: OnboardingFormValues
 ) {
   try {
-    const userRef = collection(db, 'users');
-    const q = query(userRef, where('uid', '==', '' + userId));
-    const userSnapshot = await getDocs(q);
-    console.log(
-      'onboardingUpdateUser: userSnapshot.size=',
-      userSnapshot.size,
-      'userId=',
-      userId,
-      'onboardingValues=',
-      onboardingValues
-    );
-
-    if (userSnapshot.empty) {
-      console.error('onboardingUpdateUser: User not found for UID:', userId);
-      throw new Error('User not found');
-    }
-
-    // Assuming uid is unique, so only one doc
-    const userDoc = userSnapshot.docs[0];
-    await updateDoc(userDoc.ref, onboardingValues);
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, { ...onboardingValues, onboardingComplete: true }, { merge: true });
     console.log(
       'onboardingUpdateUser: Successfully updated user doc for UID:',
       userId
@@ -87,75 +70,72 @@ export async function getSmartPlannerData(userId: string): Promise<{
   try {
     const userDocRef = doc(db, 'users', userId);
     const docSnap = await getDoc(userDocRef);
-    console.log('getSmartPlannerData: docSnap.size=', docSnap.data());
 
     if (docSnap.exists()) {
       const profile = docSnap.data() as FullProfileType;
 
-      // Map FullProfileType fields to SmartCaloriePlannerFormValues
       const formValues: Partial<SmartCaloriePlannerFormValues> = {
-        age: profile.smartPlannerData?.formValues?.age ?? undefined,
-        gender: profile.smartPlannerData?.formValues?.gender ?? undefined,
-        height_cm: profile.smartPlannerData?.formValues?.height_cm ?? undefined,
+        age: profile.smartPlannerData?.formValues?.age ?? profile.age ?? undefined,
+        gender: profile.smartPlannerData?.formValues?.gender ?? profile.gender ?? undefined,
+        height_cm: profile.smartPlannerData?.formValues?.height_cm ?? profile.height_cm ?? undefined,
         current_weight:
-          profile.smartPlannerData?.formValues?.current_weight ?? undefined,
+          profile.smartPlannerData?.formValues?.current_weight ?? profile.current_weight ?? undefined,
         goal_weight_1m:
-          profile.smartPlannerData?.formValues?.goal_weight_1m ?? undefined,
+          profile.smartPlannerData?.formValues?.goal_weight_1m ?? profile.goal_weight_1m ?? undefined,
         ideal_goal_weight:
-          profile.smartPlannerData?.formValues?.ideal_goal_weight ?? undefined,
+          profile.smartPlannerData?.formValues?.ideal_goal_weight ?? profile.ideal_goal_weight ?? undefined,
         activity_factor_key:
           profile.smartPlannerData?.formValues?.activity_factor_key ??
-          'moderate',
-        dietGoal: profile.smartPlannerData?.formValues?.dietGoal ?? 'fat_loss',
+          profile.activityLevel ?? 'moderate',
+        dietGoal: profile.smartPlannerData?.formValues?.dietGoal ?? profile.dietGoalOnboarding ?? 'fat_loss',
         bf_current:
-          profile.smartPlannerData?.formValues?.bf_current ?? undefined,
-        bf_target: profile.smartPlannerData?.formValues?.bf_target ?? undefined,
-        bf_ideal: profile.smartPlannerData?.formValues?.bf_ideal ?? undefined,
+          profile.smartPlannerData?.formValues?.bf_current ?? profile.bf_current ?? undefined,
+        bf_target: profile.smartPlannerData?.formValues?.bf_target ?? profile.bf_target ?? undefined,
+        bf_ideal: profile.smartPlannerData?.formValues?.bf_ideal ?? profile.bf_ideal ?? undefined,
         mm_current:
-          profile.smartPlannerData?.formValues?.mm_current ?? undefined,
-        mm_target: profile.smartPlannerData?.formValues?.mm_target ?? undefined,
-        mm_ideal: profile.smartPlannerData?.formValues?.mm_ideal ?? undefined,
+          profile.smartPlannerData?.formValues?.mm_current ?? profile.mm_current ?? undefined,
+        mm_target: profile.smartPlannerData?.formValues?.mm_target ?? profile.mm_target ?? undefined,
+        mm_ideal: profile.smartPlannerData?.formValues?.mm_ideal ?? profile.mm_ideal ?? undefined,
         bw_current:
-          profile.smartPlannerData?.formValues?.bw_current ?? undefined,
-        bw_target: profile.smartPlannerData?.formValues?.bw_target ?? undefined,
-        bw_ideal: profile.smartPlannerData?.formValues?.bw_ideal ?? undefined,
+          profile.smartPlannerData?.formValues?.bw_current ?? profile.bw_current ?? undefined,
+        bw_target: profile.smartPlannerData?.formValues?.bw_target ?? profile.bw_target ?? undefined,
+        bw_ideal: profile.smartPlannerData?.formValues?.bw_ideal ?? profile.bw_ideal ?? undefined,
         waist_current:
-          profile.smartPlannerData?.formValues?.waist_current ?? undefined,
+          profile.smartPlannerData?.formValues?.waist_current ?? profile.waist_current ?? undefined,
         waist_goal_1m:
-          profile.smartPlannerData?.formValues?.waist_goal_1m ?? undefined,
+          profile.smartPlannerData?.formValues?.waist_goal_1m ?? profile.waist_goal_1m ?? undefined,
         waist_ideal:
-          profile.smartPlannerData?.formValues?.waist_ideal ?? undefined,
+          profile.smartPlannerData?.formValues?.waist_ideal ?? profile.waist_ideal ?? undefined,
         hips_current:
-          profile.smartPlannerData?.formValues?.hips_current ?? undefined,
+          profile.smartPlannerData?.formValues?.hips_current ?? profile.hips_current ?? undefined,
         hips_goal_1m:
-          profile.smartPlannerData?.formValues?.hips_goal_1m ?? undefined,
+          profile.smartPlannerData?.formValues?.hips_goal_1m ?? profile.hips_goal_1m ?? undefined,
         hips_ideal:
-          profile.smartPlannerData?.formValues?.hips_ideal ?? undefined,
+          profile.smartPlannerData?.formValues?.hips_ideal ?? profile.hips_ideal ?? undefined,
         right_leg_current:
-          profile.smartPlannerData?.formValues?.right_leg_current ?? undefined,
+          profile.smartPlannerData?.formValues?.right_leg_current ?? profile.right_leg_current ?? undefined,
         right_leg_goal_1m:
-          profile.smartPlannerData?.formValues?.right_leg_goal_1m ?? undefined,
+          profile.smartPlannerData?.formValues?.right_leg_goal_1m ?? profile.right_leg_goal_1m ?? undefined,
         right_leg_ideal:
-          profile.smartPlannerData?.formValues?.right_leg_ideal ?? undefined,
+          profile.smartPlannerData?.formValues?.right_leg_ideal ?? profile.right_leg_ideal ?? undefined,
         left_leg_current:
-          profile.smartPlannerData?.formValues?.left_leg_current ?? undefined,
+          profile.smartPlannerData?.formValues?.left_leg_current ?? profile.left_leg_current ?? undefined,
         left_leg_goal_1m:
-          profile.smartPlannerData?.formValues?.left_leg_goal_1m ?? undefined,
+          profile.smartPlannerData?.formValues?.left_leg_goal_1m ?? profile.left_leg_goal_1m ?? undefined,
         left_leg_ideal:
-          profile.smartPlannerData?.formValues?.left_leg_ideal ?? undefined,
+          profile.smartPlannerData?.formValues?.left_leg_ideal ?? profile.left_leg_ideal ?? undefined,
         right_arm_current:
-          profile.smartPlannerData?.formValues?.right_arm_current ?? undefined,
+          profile.smartPlannerData?.formValues?.right_arm_current ?? profile.right_arm_current ?? undefined,
         right_arm_goal_1m:
-          profile.smartPlannerData?.formValues?.right_arm_goal_1m ?? undefined,
+          profile.smartPlannerData?.formValues?.right_arm_goal_1m ?? profile.right_arm_goal_1m ?? undefined,
         right_arm_ideal:
-          profile.smartPlannerData?.formValues?.right_arm_ideal ?? undefined,
+          profile.smartPlannerData?.formValues?.right_arm_ideal ?? profile.right_arm_ideal ?? undefined,
         left_arm_current:
-          profile.smartPlannerData?.formValues?.left_arm_current ?? undefined,
+          profile.smartPlannerData?.formValues?.left_arm_current ?? profile.left_arm_current ?? undefined,
         left_arm_goal_1m:
-          profile.smartPlannerData?.formValues?.left_arm_goal_1m ?? undefined,
+          profile.smartPlannerData?.formValues?.left_arm_goal_1m ?? profile.left_arm_goal_1m ?? undefined,
         left_arm_ideal:
-          profile.smartPlannerData?.formValues?.left_arm_ideal ?? undefined,
-        // Load custom inputs from saved smartPlannerData
+          profile.smartPlannerData?.formValues?.left_arm_ideal ?? profile.left_arm_ideal ?? undefined,
         custom_total_calories:
           profile.smartPlannerData?.formValues?.custom_total_calories ??
           undefined,
@@ -167,9 +147,8 @@ export async function getSmartPlannerData(userId: string): Promise<{
           50,
       };
       return {
-        formValues, // Merged form values from profile and specific smart planner inputs
+        formValues,
         results: profile.smartPlannerData?.results ?? null,
-        //  manualMacroResults: profile.manualMacroResults ?? null, TODO
       };
     }
   } catch (error) {
@@ -190,8 +169,7 @@ export async function getProfileData(
 
     if (docSnap.exists()) {
       const fullProfile = docSnap.data() as FullProfileType;
-      console.log('Fetched Profile from firestore:', fullProfile);
-
+      
       return {
         name: fullProfile.name ?? undefined,
         subscriptionStatus: fullProfile.subscriptionStatus ?? undefined,
@@ -212,7 +190,6 @@ export async function getProfileData(
     console.error('Error fetching profile from Firestore:', error);
   }
 
-  console.log('Returning fallback values');
   return {};
 }
 
@@ -234,6 +211,6 @@ export async function getUserProfile(
     }
   } catch (error) {
     console.error('Error fetching user profile:', error);
-    throw error;
+    return null;
   }
 }

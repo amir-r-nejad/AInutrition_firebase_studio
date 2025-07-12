@@ -10,157 +10,87 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useState,
 } from 'react';
 
 import { useUser } from '@/hooks/use-user';
-import type { OnboardingFormValues } from '@/lib/schemas';
-
-interface User {
-  uid: string;
-  email: string | null;
-  emailVerified: boolean;
-}
+import type { FullProfileType, OnboardingFormValues } from '@/lib/schemas';
+import {
+  getUserProfile,
+  onboardingUpdateUser,
+} from '@/app/api/user/database';
 
 interface AuthContextType {
-  user: AuthUser | null;
+  user: FullProfileType | null;
   isLoading: boolean;
-  isOnboarded: boolean;
   logout: () => Promise<void>;
   completeOnboarding: (profileData: OnboardingFormValues) => Promise<void>;
-  refreshOnboardingStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const rawUser = useUser();
-  const user: User | null = rawUser
-    ? {
-        uid: rawUser.uid,
-        email: rawUser.email,
-        emailVerified: rawUser.emailVerified,
-      }
-    : null;
-
+  const { user: authUser, isLoading: isAuthLoading } = useUser();
   const [profile, setProfile] = useState<FullProfileType | null>(null);
+  const [isProfileLoading, setProfileLoading] = useState(true);
 
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
 
-  const isAuthPage = useCallback(() => {
-    const authPages = [
-      '/login',
-      '/signup',
-      '/forgot-password',
-      '/reset-password',
-    ];
-    return authPages.includes(pathname);
-  }, [pathname]);
-
-  const isOnboardingPage = useCallback(() => {
-    return pathname === '/onboarding';
-  }, [pathname]);
-
-  const isDashboardPage = useCallback(() => {
-    const publicPages = ['/dashboard'];
-    return publicPages.includes(pathname);
-  }, [pathname]);
-
-  // Function to refresh onboarding status from server
-  const refreshOnboardingStatus = useCallback(async () => {
-    if (!user?.uid) return;
-
-    try {
-      const userProfile = await getUserProfile(user.uid);
-      const hasCompletedOnboarding =
-        userProfile && userProfile.onboardingComplete ? true : false;
-      setIsOnboarded(hasCompletedOnboarding);
-      setStoredOnboardingStatus(hasCompletedOnboarding);
-    } catch (error) {
-      console.error('Failed to refresh onboarding status:', error);
-    }
-  }, [user?.uid]);
+  const isLoading = isAuthLoading || isProfileLoading;
 
   useEffect(() => {
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
-      return;
+    if (authUser?.uid && !profile) {
+      setProfileLoading(true);
+      getUserProfile(authUser.uid)
+        .then((userProfile) => {
+          if (userProfile) {
+            setProfile(userProfile);
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to fetch user profile:', error);
+        })
+        .finally(() => {
+          setProfileLoading(false);
+        });
+    } else if (!authUser) {
+      setProfile(null);
+      setProfileLoading(false);
     }
+  }, [authUser, profile]);
 
-    console.log('Auth state changed:', {
-      user: user?.uid,
-      isLoading,
-      pathname,
-      isOnboarded,
-    });
-
+  useEffect(() => {
     if (isLoading) return;
 
-    // Handle unauthenticated users
-    if (!user) {
-      if (!isAuthPage() && isDashboardPage()) {
-        console.log('Redirecting unauthenticated user to login');
+    const isAuthPage = ['/login', '/signup', '/forgot-password', '/reset-password'].includes(pathname);
+
+    if (!authUser) {
+      if (!isAuthPage) {
         router.push('/login');
       }
       return;
     }
-
-    if (user) {
-      if (!user.emailVerified && !isAuthPage() && !isOnboardingPage()) {
-        toast({
-          title: 'Email Not Verified',
-          description: 'Please verify your email address to continue.',
-          variant: 'destructive',
-          duration: 7000,
-        });
-        return;
+    
+    if (!profile?.onboardingComplete) {
+      if (pathname !== '/onboarding') {
+        router.push('/onboarding');
       }
-
-      if (!isOnboarded) {
-        if (!isOnboardingPage()) {
-          console.log('Redirecting to onboarding');
-          router.push('/onboarding');
-        }
-        return;
-      }
-
-      if (isAuthPage() || isOnboardingPage()) {
-        console.log('Redirecting authenticated user to dashboard');
-        router.push('/dashboard');
-      }
+      return;
     }
-  }, [
-    rawUser,
-    isLoading,
-    pathname,
-    isOnboarded,
-    isInitialLoad,
-    router,
-    toast,
-    isAuthPage,
-    isOnboardingPage,
-    isDashboardPage,
-  ]);
 
-  // Refresh onboarding status when user changes
-  useEffect(() => {
-    if (user?.uid && !isOnboarded) {
-      refreshOnboardingStatus();
+    if (isAuthPage || pathname === '/onboarding') {
+      router.push('/dashboard');
     }
-  }, [user?.uid, isOnboarded, refreshOnboardingStatus]);
+
+  }, [authUser, profile, isLoading, pathname, router]);
 
   const logout = useCallback(async () => {
-    if (isLoading) return;
-
-    setIsLoading(true);
     try {
       await fSignOut();
-      setIsOnboarded(false);
-      setStoredOnboardingStatus(false);
-      console.log('User logged out successfully');
+      setProfile(null);
+      router.push('/login');
     } catch (error) {
       console.error('Firebase logout error:', error);
       toast({
@@ -169,11 +99,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         variant: 'destructive',
       });
     }
-  }, [isLoading, toast]);
+  }, [router, toast]);
 
   const completeOnboarding = useCallback(
     async (profileData: OnboardingFormValues) => {
-      if (!user?.uid) {
+      if (!authUser?.uid) {
         toast({
           title: 'Authentication Error',
           description: 'No user found. Cannot complete onboarding.',
@@ -181,47 +111,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         return;
       }
-
-      if (isLoading) return;
-
-      setIsLoading(true);
       try {
-        await onboardingUpdateUser(user.uid, profileData);
-
-        setIsOnboarded(true);
-        setStoredOnboardingStatus(true);
-
-        console.log('Onboarding completed successfully');
-
+        await onboardingUpdateUser(authUser.uid, profileData);
+        const updatedProfile = await getUserProfile(authUser.uid);
+        if (updatedProfile) {
+          setProfile(updatedProfile);
+        }
         toast({
           title: 'Profile Complete!',
           description: 'Your profile has been saved successfully.',
-          variant: 'default',
         });
-
         router.push('/dashboard');
       } catch (error) {
-        console.error('Error saving onboarding data:', error);
         toast({
           title: 'Onboarding Error',
-          description:
-            error instanceof Error
-              ? error.message
-              : 'Could not save your profile. Please try again.',
+          description: 'Could not save your profile. Please try again.',
           variant: 'destructive',
         });
-      } finally {
-        setIsLoading(false);
       }
     },
-    [user?.uid, isLoading, router, toast]
+    [authUser?.uid, router, toast]
   );
 
   const contextValue: AuthContextType = {
-    user,
+    user: profile,
     isLoading,
-    isOnboarded,
     logout,
+    completeOnboarding,
   };
 
   return (
@@ -232,6 +148,5 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
-
   return context;
 };

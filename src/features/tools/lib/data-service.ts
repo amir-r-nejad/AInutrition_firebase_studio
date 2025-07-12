@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDocFromServer, setDoc } from 'firebase/firestore';
 import { FullProfileType, preprocessDataForFirestore } from '@/lib/schemas';

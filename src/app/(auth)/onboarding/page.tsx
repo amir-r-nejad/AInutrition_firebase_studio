@@ -48,7 +48,7 @@ import {
   preprocessDataForFirestore,
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, CheckCircle, Leaf } from 'lucide-react';
+import { AlertCircle, CheckCircle, Leaf, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
 import { doc, setDoc } from 'firebase/firestore';
@@ -57,7 +57,7 @@ import { getAuth } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
 export default function OnboardingPage() {
-  const { user } = useAuth();
+  const { user, completeOnboarding, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
@@ -349,245 +349,9 @@ export default function OnboardingPage() {
   };
 
   const processAndSaveData = async (data: OnboardingFormValues) => {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-
-    if (!currentUser) {
-      toast({
-        title: 'Error',
-        description: 'User not authenticated. Please log in again to continue.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    let processedData: Record<string, any> = { ...data };
-
-    const arrayLikeFields: (keyof OnboardingFormValues)[] = [
-      'allergies',
-      'preferredCuisines',
-      'dispreferredCuisines',
-      'preferredIngredients',
-      'dispreferredIngredients',
-      'preferredMicronutrients',
-      'medicalConditions',
-      'medications',
-    ];
-
-    arrayLikeFields.forEach((field) => {
-      if (
-        typeof processedData[field] === 'string' &&
-        (processedData[field] as string).trim() !== ''
-      ) {
-        processedData[field] = (processedData[field] as string)
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s);
-      } else if (
-        typeof processedData[field] === 'string' &&
-        (processedData[field] as string).trim() === ''
-      ) {
-        processedData[field] = [];
-      } else if (
-        processedData[field] === undefined ||
-        processedData[field] === null
-      ) {
-        processedData[field] = [];
-      }
-    });
-
-    let finalResultsToSave: GlobalCalculatedTargets | null = null;
-    if (
-      customCalculatedTargets &&
-      ((data.custom_total_calories !== undefined &&
-        data.custom_total_calories !== null) ||
-        (data.custom_protein_per_kg !== undefined &&
-          data.custom_protein_per_kg !== null))
-    ) {
-      finalResultsToSave = customCalculatedTargets;
-    } else if (calculatedTargets) {
-      finalResultsToSave = calculatedTargets;
-    }
-
-    const smartPlannerFormValuesForStorage = {
-      age: processedData.age,
-      gender: processedData.gender,
-      height_cm: processedData.height_cm,
-      current_weight: processedData.current_weight,
-      goal_weight_1m: processedData.goal_weight_1m,
-      ideal_goal_weight: processedData.ideal_goal_weight,
-      activity_factor_key: processedData.activityLevel,
-      dietGoal: processedData.dietGoalOnboarding,
-      bf_current: processedData.bf_current,
-      bf_target: processedData.bf_target,
-      bf_ideal: processedData.bf_ideal,
-      mm_current: processedData.mm_current,
-      mm_target: processedData.mm_target,
-      mm_ideal: processedData.mm_ideal,
-      bw_current: processedData.bw_current,
-      bw_target: processedData.bw_target,
-      bw_ideal: processedData.bw_ideal,
-      waist_current: processedData.waist_current,
-      waist_goal_1m: processedData.waist_goal_1m,
-      waist_ideal: processedData.waist_ideal,
-      hips_current: processedData.hips_current,
-      hips_goal_1m: processedData.hips_goal_1m,
-      hips_ideal: processedData.hips_ideal,
-      right_leg_current: processedData.right_leg_current,
-      right_leg_goal_1m: processedData.right_leg_goal_1m,
-      right_leg_ideal: processedData.right_leg_ideal,
-      left_leg_current: processedData.left_leg_current,
-      left_leg_goal_1m: processedData.left_leg_goal_1m,
-      left_leg_ideal: processedData.left_leg_ideal,
-      right_arm_current: processedData.right_arm_current,
-      right_arm_goal_1m: processedData.right_arm_goal_1m,
-      right_arm_ideal: processedData.right_arm_ideal,
-      left_arm_current: processedData.left_arm_current,
-      left_arm_goal_1m: processedData.left_arm_goal_1m,
-      left_arm_ideal: processedData.left_arm_ideal,
-      custom_total_calories: processedData.custom_total_calories,
-      custom_protein_per_kg: processedData.custom_protein_per_kg,
-      remaining_calories_carb_pct: processedData.remaining_calories_carb_pct,
-    };
-
-    const firestoreReadyData: Partial<FullProfileType> = {
-      ...preprocessDataForFirestore(processedData),
-      smartPlannerData: {
-        formValues: {
-          age: data.age,
-          gender: data.gender,
-          height_cm: data.height_cm,
-          current_weight: data.current_weight,
-          goal_weight_1m: data.goal_weight_1m,
-          ideal_goal_weight: data.ideal_goal_weight,
-          activity_factor_key: data.activityLevel,
-          dietGoal: data.dietGoalOnboarding,
-          custom_total_calories: data.custom_total_calories,
-          custom_protein_per_kg: data.custom_protein_per_kg,
-          remaining_calories_carb_pct: data.remaining_calories_carb_pct,
-        },
-        results: finalResults,
-      },
-      mealDistributions: mealNames.map((name) => ({
-        mealName: name,
-        calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
-        protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
-        carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
-        fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
-      })),
-      onboardingComplete: true,
-    };
-
-    try {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      await setDoc(userDocRef, preprocessDataForFirestore(profileDataToSave), {
-        merge: true,
-      });
-
-      toast({
-        title: 'Onboarding Complete!',
-        description: 'Your profile is saved. Redirecting to your dashboard...',
-      });
-
-      router.push('/dashboard');
-    } catch (error: any) {
-      console.error("Onboarding save error:", error.code, error.message, error);
-      toast({
-        title: 'Onboarding Error',
-        description: `Failed to save onboarding data: ${error.message || 'Please check your connection and try again.'}`,
-        variant: 'destructive',
-      });
-    }
+    await completeOnboarding(data);
   };
 
-  const renderNumberField = (
-    name: FieldPath<OnboardingFormValues>,
-    label: string,
-    placeholder: string,
-    description?: string,
-    step: string = '1'
-  ) => (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          {' '}
-          <FormLabel>{label}</FormLabel>{' '}
-          <FormControl>
-            <div>
-              <Input
-                type='number'
-                placeholder={placeholder}
-                {...field}
-                value={
-                  field.value === undefined ||
-                  field.value === null ||
-                  isNaN(Number(field.value))
-                    ? ''
-                    : String(field.value)
-                }
-                onChange={(e) =>
-                  field.onChange(
-                    e.target.value === ''
-                      ? undefined
-                      : parseFloat(e.target.value)
-                  )
-                }
-                step={step}
-                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
-              />
-            </div>
-          </FormControl>{' '}
-          {description && <FormDescription>{description}</FormDescription>}{' '}
-          <FormMessage />{' '}
-        </FormItem>
-      )}
-    />
-  );
-
-  const renderSelectField = (
-    name: FieldPath<OnboardingFormValues>,
-    label: string,
-    placeholder: string,
-    options: { value: string | number; label: string }[],
-    description?: string
-  ) => (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          {' '}
-          <FormLabel>{label}</FormLabel>{' '}
-          <Select
-            onValueChange={field.onChange}
-            value={String(field.value || '')}
-          >
-            {' '}
-            <FormControl>
-              <div>
-                <SelectTrigger>
-                  {' '}
-                  <SelectValue placeholder={placeholder} />{' '}
-                </SelectTrigger>
-              </div>
-            </FormControl>{' '}
-            <SelectContent>
-              {' '}
-              {options.map((opt) => (
-                <SelectItem key={String(opt.value)} value={String(opt.value)}>
-                  {opt.label}
-                </SelectItem>
-              ))}{' '}
-            </SelectContent>{' '}
-          </Select>{' '}
-          {description && <FormDescription>{description}</FormDescription>}{' '}
-          <FormMessage />{' '}
-        </FormItem>
-      )}
-    />
-  );
 
   if (!activeStepData)
     return (
@@ -595,7 +359,7 @@ export default function OnboardingPage() {
         <p>Loading step...</p>
       </div>
     );
-  if (!user)
+  if (!user || isAuthLoading)
     return <LoadingScreen loadingLabel='Loading user information...' />;
 
   const progressValue = (currentStep / onboardingStepsData.length) * 100;

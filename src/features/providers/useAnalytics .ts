@@ -1,4 +1,7 @@
-import { analytics } from '@/lib/firebase/firebase';
+
+'use client';
+
+import { db as analytics } from '@/lib/firebase/clientApp';
 import { logEvent } from 'firebase/analytics';
 import { useEffect } from 'react';
 
@@ -15,14 +18,14 @@ export function useAnalytics() {
     if (!analytics)
       return console.log('Analytics not available, page view not tracked');
 
-    logEvent(analytics, eventName, eventParams);
+    logEvent(analytics as any, eventName, eventParams);
   }
 
   function trackPageView(page_title: string, page_location: string) {
     if (!analytics)
       return console.log('Analytics not available, page view not tracked');
 
-    logEvent(analytics, 'page_view', {
+    logEvent(analytics as any, 'page_view', {
       page_location,
       page_title,
     });

@@ -1,3 +1,5 @@
+
+'use client';
 import {
   onAuthStateChanged as _onAuthStateChanged,
   onIdTokenChanged as _onIdTokenChanged,
@@ -12,7 +14,7 @@ import {
   User,
   verifyPasswordResetCode,
 } from 'firebase/auth';
-import { auth } from './firebase';
+import { auth } from './clientApp';
 
 export function onAuthStateChanged(cb: NextOrObserver<User>) {
   return _onAuthStateChanged(auth, cb);
