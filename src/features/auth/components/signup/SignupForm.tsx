@@ -10,7 +10,7 @@ import { FieldValues, useForm } from 'react-hook-form';
 import { signupAction } from '../../actions/SignupAction';
 import { signupSchema } from '../../schemas/authSchema';
 import LoginWithGoogleButton from '../shared/LoginWithGoogleButton';
-import SubmitButton from '../shared/SubmitButton';
+import SubmitButton from '../../../../components/ui/SubmitButton';
 
 function SignupForm() {
   const { register, formState, handleSubmit } = useForm({

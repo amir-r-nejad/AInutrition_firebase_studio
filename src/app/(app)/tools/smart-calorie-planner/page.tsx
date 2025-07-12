@@ -61,6 +61,8 @@ import {
   type GlobalCalculatedTargets,
   preprocessDataForFirestore,
   SmartCaloriePlannerFormSchema,
+  type CustomCalculatedTargets,
+  type GlobalCalculatedTargets,
   type SmartCaloriePlannerFormValues,
 } from '@/lib/schemas';
 import { formatNumber } from '@/lib/utils';
@@ -127,83 +129,23 @@ export default function SmartCaloriePlannerPage() {
     },
   });
 
-  const { reset, watch } = smartPlannerForm;
-
-  const loadData = useCallback(() => {
+  useEffect(() => {
     if (user?.uid) {
       setIsLoadingData(true);
-      const userDocRef = doc(db, 'users', user.uid);
-      getDoc(userDocRef)
-        .then((docSnap) => {
-          if (docSnap.exists()) {
-            const profile = docSnap.data();
-            if (profile) {
-              const formSource =
-                profile.smartPlannerData?.formValues ?? (profile as any);
 
-              const formValues: Partial<SmartCaloriePlannerFormValues> = {
-                age: formSource.age ?? undefined,
-                gender: formSource.gender ?? undefined,
-                height_cm: formSource.height_cm ?? undefined,
-                current_weight: formSource.current_weight ?? undefined,
-                goal_weight_1m: formSource.goal_weight_1m ?? undefined,
-                ideal_goal_weight: formSource.ideal_goal_weight ?? undefined,
-                activity_factor_key:
-                  formSource.activity_factor_key ??
-                  formSource.activityLevel ??
-                  'moderate',
-                dietGoal:
-                  formSource.dietGoal ??
-                  formSource.dietGoalOnboarding ??
-                  'fat_loss',
-                bf_current: formSource.bf_current ?? undefined,
-                bf_target: formSource.bf_target ?? undefined,
-                bf_ideal: formSource.bf_ideal ?? undefined,
-                mm_current: formSource.mm_current ?? undefined,
-                mm_target: formSource.mm_target ?? undefined,
-                mm_ideal: formSource.mm_ideal ?? undefined,
-                bw_current: formSource.bw_current ?? undefined,
-                bw_target: formSource.bw_target ?? undefined,
-                bw_ideal: formSource.bw_ideal ?? undefined,
-                waist_current: formSource.waist_current ?? undefined,
-                waist_goal_1m: formSource.waist_goal_1m ?? undefined,
-                waist_ideal: formSource.waist_ideal ?? undefined,
-                hips_current: formSource.hips_current ?? undefined,
-                hips_goal_1m: formSource.hips_goal_1m ?? undefined,
-                hips_ideal: formSource.hips_ideal ?? undefined,
-                right_leg_current: formSource.right_leg_current ?? undefined,
-                right_leg_goal_1m: formSource.right_leg_goal_1m ?? undefined,
-                right_leg_ideal: formSource.right_leg_ideal ?? undefined,
-                left_leg_current: formSource.left_leg_current ?? undefined,
-                left_leg_goal_1m: formSource.left_leg_goal_1m ?? undefined,
-                left_leg_ideal: formSource.left_leg_ideal ?? undefined,
-                right_arm_current: formSource.right_arm_current ?? undefined,
-                right_arm_goal_1m: formSource.right_arm_goal_1m ?? undefined,
-                right_arm_ideal: formSource.right_arm_ideal ?? undefined,
-                left_arm_current: formSource.left_arm_current ?? undefined,
-                left_arm_goal_1m: formSource.left_arm_goal_1m ?? undefined,
-                left_arm_ideal: formSource.left_arm_ideal ?? undefined,
-                custom_total_calories:
-                  formSource.custom_total_calories ?? undefined,
-                custom_protein_per_kg:
-                  formSource.custom_protein_per_kg ?? undefined,
-                remaining_calories_carb_pct:
-                  formSource.remaining_calories_carb_pct ?? 50,
-              };
-
-              reset(formValues);
-
-              if (
-                profile.smartPlannerData?.results &&
-                typeof profile.smartPlannerData.results.tdee === 'number' &&
-                typeof profile.smartPlannerData.results.bmr === 'number'
-              ) {
-                setResults(profile.smartPlannerData.results);
-              } else {
-                setResults(null);
-              }
-            }
+      getSmartPlannerData(user.uid)
+        .then((data) => {
+          if (data.formValues) smartPlannerForm.reset(data.formValues);
+          if (
+            data.results &&
+            typeof data.results.tdee === 'number' &&
+            typeof data.results.bmr === 'number'
+          ) {
+            setResults(data.results);
+          } else {
+            setResults(null);
           }
+          setIsLoadingData(false);
         })
         .catch((err) => {
           toast({
@@ -211,21 +153,14 @@ export default function SmartCaloriePlannerPage() {
             description: 'Could not load saved planner data.',
             variant: 'destructive',
           });
-        })
-        .finally(() => {
           setIsLoadingData(false);
         });
     } else {
       setIsLoadingData(false);
     }
-  }, [user, reset, toast]);
+  }, [user, smartPlannerForm, toast]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-
-  const onSubmit = async (data: SmartCaloriePlannerFormValues) => {
+  async function onSubmit(data: SmartCaloriePlannerFormValues) {
     const activity = activityLevels.find(
       (al) => al.value === data.activity_factor_key
     );
@@ -314,6 +249,7 @@ export default function SmartCaloriePlannerPage() {
         (estimatedFatLossPercent / 100) * data.current_weight;
       const calorieAdjustmentS3 = (7700 * estimatedFatLossKg) / 30;
       targetCaloriesS3 = tdee - calorieAdjustmentS3;
+      console.log(targetCaloriesS3);
     }
 
     finalTargetCalories = Math.max(bmr + 100, Math.round(finalTargetCalories));
@@ -364,19 +300,15 @@ export default function SmartCaloriePlannerPage() {
     setResults(newResults);
     if (user?.uid) {
       try {
-        const userProfileRef = doc(db, 'users', user.uid);
-        const dataToSave = {
-          smartPlannerData: preprocessDataForFirestore({
-            formValues: data,
-            results: newResults,
-          }),
-        };
-        await setDoc(userProfileRef, dataToSave, { merge: true });
+        await saveSmartPlannerData(user.uid, {
+          formValues: data,
+          results: newResults,
+        });
         toast({
           title: 'Calculation Complete',
           description: 'Your smart calorie plan has been generated and saved.',
         });
-      } catch (error) {
+      } catch {
         toast({
           title: 'Save Error',
           description: 'Could not save calculation results.',
@@ -433,18 +365,12 @@ export default function SmartCaloriePlannerPage() {
       remaining_calories_carb_pct: 50,
     });
     setResults(null);
+    setCustomPlanResults(null);
     if (user?.uid) {
-      const userProfileRef = doc(db, 'users', user.uid);
-      await setDoc(
-        userProfileRef,
-        {
-          smartPlannerData: {
-            formValues: smartPlannerForm.getValues(),
-            results: null,
-          },
-        },
-        { merge: true }
-      );
+      await saveSmartPlannerData(user.uid, {
+        formValues: smartPlannerForm.getValues(),
+        results: null,
+      });
     }
     toast({
       title: 'Smart Planner Reset',
@@ -459,6 +385,7 @@ export default function SmartCaloriePlannerPage() {
       custom_protein_per_kg: undefined,
       remaining_calories_carb_pct: 50,
     });
+    setCustomPlanResults(null);
     // No need to save to Firestore on custom reset, as the main form save does that
     toast({
       title: 'Custom Plan Reset',
@@ -466,12 +393,21 @@ export default function SmartCaloriePlannerPage() {
     });
   };
 
-  const customTotalCalories = watch('custom_total_calories');
-  const customProteinPerKg = watch('custom_protein_per_kg');
-  const remainingCarbPct = watch('remaining_calories_carb_pct');
-  const currentWeightMainForm = watch('current_weight');
+  const watchedCustomInputs = smartPlannerForm.watch([
+    'custom_total_calories',
+    'custom_protein_per_kg',
+    'remaining_calories_carb_pct',
+    'current_weight',
+  ]);
 
-  const customPlanResults = useMemo<GlobalCalculatedTargets | null>(() => {
+  useEffect(() => {
+    const [
+      customTotalCalories,
+      customProteinPerKg,
+      remainingCarbPct,
+      currentWeightMainForm,
+    ] = watchedCustomInputs;
+
     if (
       !results ||
       currentWeightMainForm === undefined ||
@@ -566,44 +502,11 @@ export default function SmartCaloriePlannerPage() {
           ? ((results.tdee - finalCustomTotalCalories) * 7) / 7700
           : undefined,
     };
-  }, [results, currentWeightMainForm, customTotalCalories, customProteinPerKg, remainingCarbPct]);
 
-  const handleSaveCustomPlan = async () => {
-    if (!user?.uid || !customPlanResults) {
-      toast({
-        title: 'Cannot Save',
-        description: 'No custom plan results to save or user not logged in.',
-        variant: 'destructive',
-      });
-      return;
+    if (JSON.stringify(customPlanResults) !== JSON.stringify(newCustomPlan)) {
+      setCustomPlanResults(newCustomPlan);
     }
-
-    const currentFormValues = smartPlannerForm.getValues();
-
-    try {
-      const userProfileRef = doc(db, 'users', user.uid);
-      const dataToSave = {
-        smartPlannerData: preprocessDataForFirestore({
-          formValues: currentFormValues,
-          results: customPlanResults, // SAVING THE CUSTOM RESULTS!
-        }),
-      };
-      await setDoc(userProfileRef, dataToSave, { merge: true });
-
-      setResults(customPlanResults); // Update the main results display as well
-      toast({
-        title: 'Custom Plan Saved!',
-        description:
-          'Your custom macros are now the active targets for other tools.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Save Error',
-        description: 'Could not save your custom plan.',
-        variant: 'destructive',
-      });
-    }
-  };
+  }, [watchedCustomInputs, results, customPlanResults, toast]);
 
   if (isLoadingData) {
     return (
@@ -627,10 +530,11 @@ export default function SmartCaloriePlannerPage() {
               data will be used across other tools.
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             <Form {...smartPlannerForm}>
               <form
-                onSubmit={smartPlannerForm.handleSubmit(onSubmit, onError)}
+                onSubmit={smartPlannerForm.handleSubmit(onSubmit)}
                 className='space-y-8'
               >
                 <Accordion
@@ -1091,18 +995,15 @@ export default function SmartCaloriePlannerPage() {
 
                   <AccordionItem value='help-section'>
                     <AccordionTrigger className='text-xl font-semibold'>
-                      {' '}
                       <div className='flex items-center'>
-                        {' '}
                         <HelpCircle className='mr-2 h-6 w-6 text-primary' /> How
-                        is this calculated?{' '}
-                      </div>{' '}
+                        is this calculated?
+                      </div>
                     </AccordionTrigger>
                     <AccordionContent className='text-sm space-y-4 pt-3 max-h-96 overflow-y-auto'>
                       <div>
-                        {' '}
                         <h4 className='font-semibold text-base'>
-                          1. Basal Metabolic Rate (BMR) & Total Daily Energy
+                          1. Basal Metabolic Rate (BMR) &amp; Total Daily Energy
                           Expenditure (TDEE)
                         </h4>{' '}
                         <p>
@@ -1114,8 +1015,8 @@ export default function SmartCaloriePlannerPage() {
                           <strong className='text-primary'>
                             activity factor
                           </strong>{' '}
-                          (derived from your selected 'Physical Activity Level')
-                          for TDEE.
+                          (derived from your selected &lsquo;Physical Activity
+                          Level&rsquo;) for TDEE.
                         </p>
                       </div>
                       <div>
@@ -1123,21 +1024,25 @@ export default function SmartCaloriePlannerPage() {
                           2. Target Daily Calories
                         </h4>
                         <p>
-                          This is determined based on your goals, selected "Diet
-                          Goal", and optionally, body composition changes:
+                          This is determined based on your goals, selected
+                          &quot;Diet Goal&quot;, and optionally, body
+                          composition changes:
                         </p>
                         <ul className='list-disc pl-5 space-y-1 mt-1'>
                           <li>
-                            <strong>Primary Goal (Weight & Diet Goal):</strong>{' '}
+                            <strong>
+                              Primary Goal (Weight &amp; Diet Goal):
+                            </strong>{' '}
                             Initially calculated from your 1-month weight
-                            target. Your "Diet Goal" (e.g., "Fat loss," "Muscle
-                            gain") then refines this. For example, "Fat loss"
-                            aims for a deficit (e.g., TDEE - 200 to -500 kcal),
-                            while "Muscle gain" aims for a surplus (e.g., TDEE +
-                            150 to +300 kcal). "Recomposition" targets a slight
-                            deficit or near-maintenance calories. These
-                            adjustments ensure the calorie target aligns with
-                            your primary objective.
+                            target. Your &quot;Diet Goal&quot; (e.g., &quot;Fat
+                            loss,&quot; &quot;Muscle gain&quot;) then refines
+                            this. For example, &quot;Fat loss&quot; aims for a
+                            deficit (e.g., TDEE - 200 to -500 kcal), while
+                            &quot;Muscle gain&quot; aims for a surplus (e.g.,
+                            TDEE + 150 to +300 kcal). &quot;Recomposition&quot;
+                            targets a slight deficit or near-maintenance
+                            calories. These adjustments ensure the calorie
+                            target aligns with your primary objective.
                           </li>
                           <li>
                             <strong>
@@ -1163,8 +1068,9 @@ export default function SmartCaloriePlannerPage() {
                         </h4>
                         <p>
                           The default suggested protein/carb/fat percentage
-                          split (shown in the 'Original Plan' results) is based
-                          on your selected "Diet Goal":
+                          split (shown in the &lsquo;Original Plan&rsquo;
+                          results) is based on your selected &quot;Diet
+                          Goal&quot;:
                         </p>
                         <ul className='list-disc pl-5 space-y-1 mt-1'>
                           <li>
@@ -1181,8 +1087,8 @@ export default function SmartCaloriePlannerPage() {
                           </li>
                         </ul>
                         <p className='mt-1'>
-                          You can further customize this in the "Customize Your
-                          Plan" section below.
+                          You can further customize this in the &quot;Customize
+                          Your Plan&quot; section below.
                         </p>
                       </div>
                       <div>
@@ -1391,10 +1297,9 @@ export default function SmartCaloriePlannerPage() {
                         </TableRow>
                       </TableBody>
                       <TableCaption className='text-xs mt-2 text-left'>
-                        {' '}
                         This breakdown is based on your inputs and calculated
-                        goal. For custom macro adjustments, use the 'Customize
-                        Your Plan' section below.{' '}
+                        goal. For custom macro adjustments, use the
+                        &lsquo;Customize Your Plan&rsquo; section below.
                       </TableCaption>
                     </Table>
                   </div>
@@ -1406,8 +1311,8 @@ export default function SmartCaloriePlannerPage() {
               <Card className='mt-8'>
                 <CardHeader>
                   <CardTitle className='text-2xl font-semibold flex items-center'>
-                    <Edit3 className='mr-2 h-6 w-6 text-primary' /> Customize
-                    Your Plan
+                    <Edit3 className='mr-2 h-6 w-6 text-primary' />
+                    Customize Your Plan
                   </CardTitle>
                   <CardDescription>
                     Adjust the system-generated plan with your preferences.
@@ -1415,11 +1320,12 @@ export default function SmartCaloriePlannerPage() {
                 </CardHeader>
                 <CardContent>
                   <Form {...smartPlannerForm}>
-                    {' '}
-                    {/* This Form tag is redundant here if the outer one covers all inputs */}
-                    <form className='space-y-6'>
-                      {' '}
-                      {/* This form tag is also redundant */}
+                    <form
+                      onSubmit={smartPlannerForm.handleSubmit(
+                        onCustomizePlanForm
+                      )}
+                      className='space-y-6'
+                    >
                       <div className='grid md:grid-cols-2 gap-x-6 gap-y-4 items-start'>
                         <FormField
                           control={smartPlannerForm.control}
@@ -1659,17 +1565,7 @@ export default function SmartCaloriePlannerPage() {
                           }}
                         />
                       </div>
-                      <div className='mt-2 flex justify-end'>
-                        <Button
-                          type='button'
-                          variant='ghost'
-                          onClick={handleCustomPlanReset}
-                          size='sm'
-                        >
-                          <RefreshCcw className='mr-2 h-3 w-3' /> Reset Custom
-                          Inputs
-                        </Button>
-                      </div>
+
                       {customPlanResults && (
                         <div className='mt-6'>
                           <h4 className='text-xl font-semibold mb-2 text-primary'>
@@ -1832,6 +1728,28 @@ export default function SmartCaloriePlannerPage() {
                           </Button>
                         </div>
                       )}
+
+                      <div className='mt-6 flex justify-end gap-1'>
+                        <Button
+                          disabled={smartPlannerForm.formState.isSubmitting}
+                          type='button'
+                          variant='destructive'
+                          onClick={handleCustomPlanReset}
+                          size='sm'
+                        >
+                          <RefreshCcw className='size-3' />
+                          Reset
+                        </Button>
+
+                        <Button
+                          disabled={smartPlannerForm.formState.isSubmitting}
+                          type='submit'
+                          size='sm'
+                        >
+                          <Save className='size-3' />
+                          Save
+                        </Button>
+                      </div>
                     </form>
                   </Form>
                 </CardContent>

@@ -18,15 +18,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { Progress } from '@/components/ui/progress';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import {
   Tooltip,
@@ -34,6 +27,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import NumberField from '@/features/auth/components/shared/NumberField';
+import { default as SelectField } from '@/features/auth/components/shared/SelectField';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -53,7 +48,7 @@ import {
   preprocessDataForFirestore,
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, CheckCircle, Leaf, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Leaf } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
 import { doc, setDoc } from 'firebase/firestore';
@@ -366,17 +361,97 @@ export default function OnboardingPage() {
       return;
     }
 
-    const finalResults = customCalculatedTargets ?? calculatedTargets ?? null;
+    let processedData: Record<string, any> = { ...data };
 
-    const profileDataToSave: Partial<FullProfileType> = {
-      age: data.age,
-      gender: data.gender,
-      height_cm: data.height_cm,
-      current_weight: data.current_weight,
-      goal_weight_1m: data.goal_weight_1m,
-      ideal_goal_weight: data.ideal_goal_weight,
-      activityLevel: data.activityLevel,
-      dietGoalOnboarding: data.dietGoalOnboarding,
+    const arrayLikeFields: (keyof OnboardingFormValues)[] = [
+      'allergies',
+      'preferredCuisines',
+      'dispreferredCuisines',
+      'preferredIngredients',
+      'dispreferredIngredients',
+      'preferredMicronutrients',
+      'medicalConditions',
+      'medications',
+    ];
+
+    arrayLikeFields.forEach((field) => {
+      if (
+        typeof processedData[field] === 'string' &&
+        (processedData[field] as string).trim() !== ''
+      ) {
+        processedData[field] = (processedData[field] as string)
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s);
+      } else if (
+        typeof processedData[field] === 'string' &&
+        (processedData[field] as string).trim() === ''
+      ) {
+        processedData[field] = [];
+      } else if (
+        processedData[field] === undefined ||
+        processedData[field] === null
+      ) {
+        processedData[field] = [];
+      }
+    });
+
+    let finalResultsToSave: GlobalCalculatedTargets | null = null;
+    if (
+      customCalculatedTargets &&
+      ((data.custom_total_calories !== undefined &&
+        data.custom_total_calories !== null) ||
+        (data.custom_protein_per_kg !== undefined &&
+          data.custom_protein_per_kg !== null))
+    ) {
+      finalResultsToSave = customCalculatedTargets;
+    } else if (calculatedTargets) {
+      finalResultsToSave = calculatedTargets;
+    }
+
+    const smartPlannerFormValuesForStorage = {
+      age: processedData.age,
+      gender: processedData.gender,
+      height_cm: processedData.height_cm,
+      current_weight: processedData.current_weight,
+      goal_weight_1m: processedData.goal_weight_1m,
+      ideal_goal_weight: processedData.ideal_goal_weight,
+      activity_factor_key: processedData.activityLevel,
+      dietGoal: processedData.dietGoalOnboarding,
+      bf_current: processedData.bf_current,
+      bf_target: processedData.bf_target,
+      bf_ideal: processedData.bf_ideal,
+      mm_current: processedData.mm_current,
+      mm_target: processedData.mm_target,
+      mm_ideal: processedData.mm_ideal,
+      bw_current: processedData.bw_current,
+      bw_target: processedData.bw_target,
+      bw_ideal: processedData.bw_ideal,
+      waist_current: processedData.waist_current,
+      waist_goal_1m: processedData.waist_goal_1m,
+      waist_ideal: processedData.waist_ideal,
+      hips_current: processedData.hips_current,
+      hips_goal_1m: processedData.hips_goal_1m,
+      hips_ideal: processedData.hips_ideal,
+      right_leg_current: processedData.right_leg_current,
+      right_leg_goal_1m: processedData.right_leg_goal_1m,
+      right_leg_ideal: processedData.right_leg_ideal,
+      left_leg_current: processedData.left_leg_current,
+      left_leg_goal_1m: processedData.left_leg_goal_1m,
+      left_leg_ideal: processedData.left_leg_ideal,
+      right_arm_current: processedData.right_arm_current,
+      right_arm_goal_1m: processedData.right_arm_goal_1m,
+      right_arm_ideal: processedData.right_arm_ideal,
+      left_arm_current: processedData.left_arm_current,
+      left_arm_goal_1m: processedData.left_arm_goal_1m,
+      left_arm_ideal: processedData.left_arm_ideal,
+      custom_total_calories: processedData.custom_total_calories,
+      custom_protein_per_kg: processedData.custom_protein_per_kg,
+      remaining_calories_carb_pct: processedData.remaining_calories_carb_pct,
+    };
+
+    const firestoreReadyData: Partial<FullProfileType> = {
+      ...preprocessDataForFirestore(processedData),
       smartPlannerData: {
         formValues: {
           age: data.age,
@@ -437,7 +512,8 @@ export default function OnboardingPage() {
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          {' '}
+          <FormLabel>{label}</FormLabel>{' '}
           <FormControl>
             <div>
               <Input
@@ -462,9 +538,9 @@ export default function OnboardingPage() {
                 onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
               />
             </div>
-          </FormControl>
-          {description && <FormDescription>{description}</FormDescription>}
-          <FormMessage />
+          </FormControl>{' '}
+          {description && <FormDescription>{description}</FormDescription>}{' '}
+          <FormMessage />{' '}
         </FormItem>
       )}
     />
@@ -482,28 +558,32 @@ export default function OnboardingPage() {
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          {' '}
+          <FormLabel>{label}</FormLabel>{' '}
           <Select
             onValueChange={field.onChange}
             value={String(field.value || '')}
           >
+            {' '}
             <FormControl>
               <div>
                 <SelectTrigger>
-                  <SelectValue placeholder={placeholder} />
+                  {' '}
+                  <SelectValue placeholder={placeholder} />{' '}
                 </SelectTrigger>
               </div>
-            </FormControl>
+            </FormControl>{' '}
             <SelectContent>
+              {' '}
               {options.map((opt) => (
                 <SelectItem key={String(opt.value)} value={String(opt.value)}>
                   {opt.label}
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {description && <FormDescription>{description}</FormDescription>}
-          <FormMessage />
+              ))}{' '}
+            </SelectContent>{' '}
+          </Select>{' '}
+          {description && <FormDescription>{description}</FormDescription>}{' '}
+          <FormMessage />{' '}
         </FormItem>
       )}
     />
@@ -516,14 +596,7 @@ export default function OnboardingPage() {
       </div>
     );
   if (!user)
-    return (
-      <div className='flex justify-center items-center h-screen'>
-        <div className='flex justify-center items-center'>
-          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-          <p>Loading user information...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen loadingLabel='Loading user information...' />;
 
   const progressValue = (currentStep / onboardingStepsData.length) * 100;
 
@@ -566,59 +639,69 @@ export default function OnboardingPage() {
 
               {currentStep === 2 && (
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                  {renderNumberField(
-                    'age',
-                    'Age (Years)',
-                    'e.g., 30',
-                    undefined,
-                    '1'
-                  )}
-                  {renderSelectField(
-                    'gender',
-                    'Biological Sex',
-                    'Select sex',
-                    genders
-                  )}
-                  {renderNumberField(
-                    'height_cm',
-                    'Height (cm)',
-                    'e.g., 175',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderNumberField(
-                    'current_weight',
-                    'Current Weight (kg)',
-                    'e.g., 70',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderNumberField(
-                    'goal_weight_1m',
-                    'Target Weight After 1 Month (kg)',
-                    'e.g., 68',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderNumberField(
-                    'ideal_goal_weight',
-                    'Long-Term Goal Weight (kg, Optional)',
-                    'e.g., 65',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderSelectField(
-                    'activityLevel',
-                    'Physical Activity Level',
-                    'Select activity level',
-                    activityLevels
-                  )}
-                  {renderSelectField(
-                    'dietGoalOnboarding',
-                    'Primary Diet Goal',
-                    'Select your diet goal',
-                    smartPlannerDietGoals
-                  )}
+                  <NumberField<OnboardingFormValues>
+                    name='age'
+                    label='Age (Years)'
+                    placeholder='e.g., 30'
+                    step='1'
+                    control={form.control}
+                  />
+
+                  <SelectField<OnboardingFormValues>
+                    name='gender'
+                    label='Biological Sex'
+                    placeholder='Select sex'
+                    options={genders}
+                    control={form.control}
+                  />
+
+                  <NumberField<OnboardingFormValues>
+                    name='height_cm'
+                    label='Height (cm)'
+                    placeholder='e.g., 175'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <NumberField<OnboardingFormValues>
+                    name='current_weight'
+                    label='Current Weight (kg)'
+                    placeholder='e.g., 70'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <NumberField<OnboardingFormValues>
+                    name='goal_weight_1m'
+                    label='Target Weight After 1 Month (kg)'
+                    placeholder='e.g., 68'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <NumberField<OnboardingFormValues>
+                    name='ideal_goal_weight'
+                    label='Long-Term Goal Weight (kg, Optional)'
+                    placeholder='e.g., 65'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <SelectField<OnboardingFormValues>
+                    name='activityLevel'
+                    label='Physical Activity Level'
+                    placeholder='Select activity level'
+                    options={activityLevels}
+                    control={form.control}
+                  />
+
+                  <SelectField<OnboardingFormValues>
+                    name='dietGoalOnboarding'
+                    label='Primary Diet Goal'
+                    placeholder='Select your diet goal'
+                    options={smartPlannerDietGoals}
+                    control={form.control}
+                  />
                 </div>
               )}
 
@@ -694,20 +777,21 @@ export default function OnboardingPage() {
                   <h3 className='text-lg font-semibold text-primary mb-3'>
                     Customize Your Daily Targets
                   </h3>
-                  {renderNumberField(
-                    'custom_total_calories',
-                    'Custom Total Calories (Optional)',
-                    `e.g., ${
+                  <NumberField<OnboardingFormValues>
+                    name='custom_total_calories'
+                    label='Custom Total Calories (Optional)'
+                    placeholder={`e.g., ${
                       calculatedTargets?.finalTargetCalories?.toFixed(0) ||
                       '2000'
-                    }`,
-                    'Overrides system-calculated total daily calories.',
-                    '1'
-                  )}
-                  {renderNumberField(
-                    'custom_protein_per_kg',
-                    'Custom Protein (g/kg body weight) (Optional)',
-                    `e.g., ${
+                    }`}
+                    description='Overrides system-calculated total daily calories.'
+                    step='1'
+                    control={form.control}
+                  />
+                  <NumberField<OnboardingFormValues>
+                    name='custom_protein_per_kg'
+                    label='Custom Protein (g/kg body weight) (Optional)'
+                    placeholder={`e.g., ${
                       calculatedTargets?.proteinGrams &&
                       calculatedTargets?.current_weight_for_custom_calc
                         ? (
@@ -715,10 +799,11 @@ export default function OnboardingPage() {
                             calculatedTargets.current_weight_for_custom_calc
                           ).toFixed(1)
                         : '1.6'
-                    }`,
-                    'Sets your protein intake in grams per kg of your current body weight.',
-                    '0.1'
-                  )}
+                    }`}
+                    description='Sets your protein intake in grams per kg of your current body weight.'
+                    step='0.1'
+                    control={form.control}
+                  />
                   <FormField
                     control={form.control}
                     name='remaining_calories_carb_pct'

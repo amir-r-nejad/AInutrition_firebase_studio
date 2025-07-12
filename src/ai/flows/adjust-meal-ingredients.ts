@@ -1,16 +1,48 @@
 
 'use server';
 
-import { ai } from '@/ai/genkit';
-import {
-  AdjustMealIngredientsInputSchema,
-  AdjustMealIngredientsOutputSchema,
-  type AdjustMealIngredientsInput,
-  type AdjustMealIngredientsOutput,
-} from '@/lib/schemas';
-import { getAIApiErrorMessage } from '@/lib/utils';
+import { ai, geminiModel } from '@/ai/genkit';
+import { FullProfileType } from '@/lib/schemas';
+
+// Types
+export interface AdjustMealIngredientsInput {
+  originalMeal: AIServiceMeal;
+  targetMacros: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  userProfile: FullProfileType;
+}
+
+export interface AIServiceIngredient {
+  name: string;
+  quantity: number;
+  unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export interface AIServiceMeal {
+  name: string;
+  customName?: string;
+  ingredients: AIServiceIngredient[];
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+}
+
+export interface AdjustMealIngredientsOutput {
+  adjustedMeal: AIServiceMeal;
+  explanation: string;
+}
 
 // Genkit Flow
+
 export async function adjustMealIngredients(
   input: AdjustMealIngredientsInput
 ): Promise<AdjustMealIngredientsOutput> {
@@ -18,20 +50,11 @@ export async function adjustMealIngredients(
 }
 
 const prompt = ai.definePrompt({
+  model: geminiModel,
   name: 'adjustMealIngredientsPrompt',
-  input: { schema: AdjustMealIngredientsInputSchema }, // Use the main input schema directly
-  output: { schema: AdjustMealIngredientsOutputSchema },
-  prompt: `You are an expert nutritionist. Your task is to adjust the quantities of the **existing ingredients** for a given meal to precisely match target macronutrients.
-
-**-- ABSOLUTELY CRITICAL RULES --**
-1.  **YOU MUST NOT ADD NEW INGREDIENTS.** The output ingredient list must be identical to the input ingredient list.
-2.  **YOU MUST NOT REMOVE EXISTING INGREDIENTS.** The output ingredient list must be identical to the input ingredient list.
-3.  **YOU MUST NOT CHANGE OR SWAP ANY INGREDIENTS.**
-4.  Your **ONLY** allowed action is to modify the \`quantity\` value for each ingredient provided.
-5.  After adjusting quantities, you MUST accurately recalculate the \`calories\`, \`protein\`, \`carbs\`, and \`fat\` for each ingredient, as well as the \`totalCalories\`, \`totalProtein\`, \`totalCarbs\`, and \`totalFat\` for the entire meal.
-6.  The \`name\` of the meal in the output JSON **MUST** exactly match the "Original Meal Type" provided in the input.
-7.  The \`customName\` of the meal in the output JSON **MUST** exactly match the "Original Custom Meal Name" provided in the input. If no custom name was provided, this field should be omitted or be an empty string.
-
+  input: { type: 'json' },
+  output: { type: 'json' },
+  prompt: `You are an expert nutritionist and chef. Your task is to adjust a given meal to precisely match target macronutrients, while strictly respecting the user's allergies and preferences.
 
 User Profile:
 {{#if userProfile.age}}Age: {{userProfile.age}}{{/if}}
@@ -39,34 +62,45 @@ User Profile:
 {{#if userProfile.activityLevel}}Activity Level: {{userProfile.activityLevel}}{{/if}}
 {{#if userProfile.dietGoal}}Diet Goal: {{userProfile.dietGoal}}{{/if}}
 {{#if userProfile.preferredDiet}}Preferred Diet: {{userProfile.preferredDiet}}{{/if}}
-{{#if userProfile.allergies.length}}Allergies: {{#each userProfile.allergies}}{{{this}}}{{/each}}{{/if}}
-{{#if userProfile.dispreferredIngredients.length}}Dislikes: {{#each userProfile.dispreferredIngredients}}{{{this}}}{{/each}}{{/if}}
-{{#if userProfile.preferredIngredients.length}}Preferred Ingredients: {{#each userProfile.preferredIngredients}}{{{this}}}{{/each}}{{/if}}
+{{#if userProfile.allergies.length}}Allergies: {{userProfile.allergies}}{{/if}}
+{{#if userProfile.dispreferredIngredients.length}}Dislikes: {{userProfile.dispreferredIngredients}}{{/if}}
+{{#if userProfile.preferredIngredients.length}}Preferred Ingredients: {{userProfile.preferredIngredients}}{{/if}}
 
-Original Meal Type: {{originalMeal.name}}
-{{#if originalMeal.customName}}Original Custom Meal Name: {{originalMeal.customName}}{{/if}}
-Ingredients:
-{{#each originalMeal.ingredients}}
-- {{this.name}}: {{this.quantity}} {{this.unit}} (Calories: {{this.calories}}, Protein: {{this.protein}}g, Carbs: {{this.carbs}}g, Fat: {{this.fat}}g)
-{{/each}}
-Current Totals:
-- Calories: {{originalMeal.totalCalories}}
-- Protein: {{originalMeal.totalProtein}}g
-- Carbs: {{originalMeal.totalCarbs}}g
-- Fat: {{originalMeal.totalFat}}g
+Original Meal:
+{{originalMeal}}
 
-Target Macros for "{{originalMeal.name}}":
-- Calories: {{targetMacros.calories}}
-- Protein: {{targetMacros.protein}}g
-- Carbs: {{targetMacros.carbs}}g
-- Fat: {{targetMacros.fat}}g
+Target Macros:
+{{targetMacros}}
 
 Strict Instructions for Output:
 - Your response MUST be a JSON object with ONLY these exact two top-level properties: "adjustedMeal" and "explanation".
-- The \`adjustedMeal\` object MUST represent the modified meal and contain ONLY these properties: "name", "customName", "ingredients", "totalCalories", "totalProtein", "totalCarbs", "totalFat".
-- The \`ingredients\` array objects MUST contain ONLY these properties: "name", "quantity", "unit", "calories", "protein", "carbs", "fat".
-- DO NOT add any extra fields, properties, keys, or markdown formatting (like \`\`\`json) to the response.
-- Respond ONLY with the pure JSON object that strictly matches the following TypeScript type:
+    - "adjustedMeal": This object MUST represent the modified meal and contain ONLY these exact properties:
+        - "name": string — The original name of the meal.
+        - "customName"?: string — (Optional) A custom name for the meal if provided by the user or if a significant change warrants a new descriptive name. If not applicable, omit this field.
+        - "ingredients": An array of objects, where each object represents an ingredient. Each ingredient object MUST contain ONLY these exact properties:
+            - "name": string — The name of the ingredient (e.g., "Chicken Breast").
+            - "quantity": number — The numerical amount of the ingredient.
+            - "unit": string — The unit of measurement for the quantity (e.g., "g", "ml", "cup", "unit").
+            - "calories": number — Calories for this specific quantity of the ingredient.
+            - "protein": number — Protein in grams for this specific quantity of the ingredient.
+            - "carbs": number — Carbohydrates in grams for this specific quantity of the ingredient.
+            - "fat": number — Fat in grams for this specific quantity of the ingredient.
+        - "totalCalories": number — The sum of calories from all ingredients in the adjusted meal.
+        - "totalProtein": number — The sum of protein (grams) from all ingredients in the adjusted meal.
+        - "totalCarbs": number — The sum of carbohydrates (grams) from all ingredients in the adjusted meal.
+        - "totalFat": number — The sum of fat (grams) from all ingredients in the adjusted meal.
+    - "explanation": string — A clear and concise explanation of the adjustments made, how they meet the target macros, and how user preferences/allergies were respected.
+
+⚠️ Important Rules:
+- Modify ingredients (quantities, swaps, additions, removals) to match the target macros as closely as possible.
+- Ensure all "total" macro fields ("totalCalories", "totalProtein", "totalCarbs", "totalFat") are accurately calculated and summed based on the "ingredients" list.
+- Avoid all specified allergens and try to respect all dislikes and preferred ingredients.
+- Use the exact field names and spelling provided.
+- DO NOT add any extra fields, properties, or keys at any level of the JSON structure beyond what is explicitly defined above.
+- DO NOT include any introductory text, concluding remarks, markdown formatting (like json), or any other commentary outside of the pure JSON object.
+- All numerical values must be realistic and positive.
+
+Respond ONLY with the pure JSON object that strictly matches the following TypeScript type:
 { adjustedMeal: { name: string; customName?: string; ingredients: { name: string; quantity: number; unit: string; calories: number; protein: number; carbs: number; fat: number; }[]; totalCalories: number; totalProtein: number; totalCarbs: number; totalFat: number; }; explanation: string; }
 `,
 });
@@ -80,29 +114,10 @@ const adjustMealIngredientsFlow = ai.defineFlow(
   async (
     input: AdjustMealIngredientsInput
   ): Promise<AdjustMealIngredientsOutput> => {
-    try {
-      const { output } = await prompt(input);
-      
-      if (!output) {
-        throw new Error('AI did not return an output for meal adjustment.');
-      }
-
-      const validationResult =
-        AdjustMealIngredientsOutputSchema.safeParse(output);
-      if (!validationResult.success) {
-        console.error(
-          'AI output validation error:',
-          validationResult.error.flatten()
-        );
-        throw new Error(
-          `AI returned data in an unexpected format. Details: ${validationResult.error.message}`
-        );
-      }
-
-      return validationResult.data;
-    } catch (error: any) {
-        console.error("Error in adjustMealIngredientsFlow:", error);
-        throw new Error(getAIApiErrorMessage(error));
+    const { output } = await prompt(input);
+    if (!output) {
+      throw new Error('AI did not return an output for meal adjustment.');
     }
+    return output as AdjustMealIngredientsOutput;
   }
 );

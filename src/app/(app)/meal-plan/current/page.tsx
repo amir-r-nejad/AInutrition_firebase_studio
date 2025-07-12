@@ -1,7 +1,10 @@
 
 'use client';
 
-import { adjustMealIngredients } from '@/ai/flows/adjust-meal-ingredients';
+import {
+  adjustMealIngredients,
+  type AdjustMealIngredientsInput,
+} from '@/ai/flows/adjust-meal-ingredients';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -22,8 +25,19 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import SectionHeader from '@/components/ui/SectionHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import EditMealDialog from '@/features/meal-plan/components/current/EditMealDialog';
+import MealCardItem from '@/features/meal-plan/components/current/MealCardItem';
+import { useUserMealPlanData } from '@/features/meal-plan/hooks/useUserMealPlanData';
+import {
+  getProfileDataForOptimization,
+  saveMealPlanData,
+} from '@/features/meal-plan/lib/data-service';
+import {
+  getAdjustedMealInput,
+  getMissingProfileFields,
+} from '@/features/meal-plan/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
   daysOfWeek,
@@ -36,14 +50,126 @@ import type {
   FullProfileType,
   Ingredient,
   Meal,
-  SmartCaloriePlannerFormValues,
-  AdjustMealIngredientsInput,
+  WeeklyMealPlan,
 } from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
-import { getAIApiErrorMessage } from '@/lib/utils';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Loader2, Pencil, PlusCircle, Trash2, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+
+async function getMealPlanData(userId: string): Promise<WeeklyMealPlan | null> {
+  if (!userId) return null;
+  try {
+    const userProfileRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(userProfileRef);
+    if (docSnap.exists()) {
+      const profileData = docSnap.data() as any;
+      if (profileData.currentWeeklyPlan) {
+        const fullPlan: WeeklyMealPlan = {
+          days: daysOfWeek.map((dayName: string) => {
+            const existingDay = profileData.currentWeeklyPlan?.days?.find(
+              (d: any) => d.dayOfWeek === dayName
+            );
+            if (existingDay) {
+              return {
+                ...existingDay,
+                meals: mealNames.map((mealName: string) => {
+                  const existingMeal = existingDay.meals.find(
+                    (m: any) => m.name === mealName
+                  );
+                  return (
+                    existingMeal || {
+                      name: mealName,
+                      customName: '',
+                      ingredients: [],
+                      totalCalories: null,
+                      totalProtein: null,
+                      totalCarbs: null,
+                      totalFat: null,
+                    }
+                  );
+                }),
+              };
+            }
+            return {
+              dayOfWeek: dayName,
+              meals: mealNames.map((mealName: string) => ({
+                name: mealName,
+                customName: '',
+                ingredients: [],
+                totalCalories: null,
+                totalProtein: null,
+                totalCarbs: null,
+                totalFat: null,
+              })),
+            };
+          }),
+        };
+        return fullPlan;
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching meal plan data from Firestore:', error);
+  }
+  return null;
+}
+
+async function saveMealPlanData(userId: string, planData: WeeklyMealPlan) {
+  if (!userId) throw new Error('User ID required to save meal plan.');
+  try {
+    const userProfileRef = doc(db, 'users', userId);
+    const sanitizedPlanData = preprocessDataForFirestore(planData);
+
+    await setDoc(
+      userProfileRef,
+      { currentWeeklyPlan: sanitizedPlanData },
+      { merge: true }
+    );
+  } catch (error) {
+    console.error('Error saving meal plan data to Firestore:', error);
+    throw error;
+  }
+}
+
+async function getProfileDataForOptimization(
+  userId: string
+): Promise<Partial<FullProfileType>> {
+  if (!userId) return {};
+  try {
+    const userProfileRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(userProfileRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data() as FullProfileType;
+
+      const profile: Partial<FullProfileType> = {
+        age: data.smartPlannerData?.formValues?.age,
+        gender: data.smartPlannerData?.formValues?.gender,
+        current_weight: data.smartPlannerData?.formValues?.current_weight,
+        height_cm: data.smartPlannerData?.formValues?.height_cm,
+        activityLevel: data.smartPlannerData?.formValues?.activity_factor_key,
+        dietGoalOnboarding: data.smartPlannerData?.formValues?.dietGoal,
+        preferredDiet: data.preferredDiet,
+        allergies: data.allergies || [],
+        dispreferredIngredients: data.dispreferredIngredients || [],
+        preferredIngredients: data.preferredIngredients || [],
+      };
+      // Ensure undefined top-level optional fields become null for consistency
+      (Object.keys(profile) as Array<keyof typeof profile>).forEach((key) => {
+        if (profile[key] === undefined) {
+          (profile as any)[key] = null;
+        }
+      });
+      return profile;
+    }
+  } catch (error) {
+    console.error(
+      'Error fetching profile data from Firestore for optimization:',
+      error
+    );
+  }
+  return {};
+}
 
 const generateInitialWeeklyPlan = (): WeeklyMealPlan => ({
   days: daysOfWeek.map((day) => ({
@@ -60,68 +186,66 @@ const generateInitialWeeklyPlan = (): WeeklyMealPlan => ({
   })),
 });
 
-// Helper function to safely convert values to numbers or a fallback
-const safeConvertToNumber = (value: any, fallback: number | null = null) => {
-    if (value === null || value === undefined || value === '') {
-        return fallback;
-    }
-    const num = Number(value);
-    return isNaN(num) ? fallback : num;
-};
-
-
 export default function CurrentMealPlanPage() {
-  const { user } = useAuth();
+  const { getQueryParams, updateQueryParams } = useQueryParams();
   const { toast } = useToast();
-  const [weeklyPlan, setWeeklyPlan] = useState<WeeklyMealPlan>(
-    generateInitialWeeklyPlan()
-  );
+
+  const {
+    user,
+    weeklyPlan,
+    setWeeklyPlan,
+    isLoadingPlan,
+    profileData,
+    isLoadingProfile,
+    fetchMealPlan,
+    fetchUserData,
+  } = useUserMealPlanData();
+
   const [editingMeal, setEditingMeal] = useState<{
     dayIndex: number;
     mealIndex: number;
     meal: Meal;
   } | null>(null);
+  const [optimizingMealKey, setOptimizingMealKey] = useState<string | null>(
+    null
+  );
   const [profileData, setProfileData] =
-    useState<FullProfileType | null>(null);
+    useState<Partial<FullProfileType> | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingPlan, setIsLoadingPlan] = useState(true);
-  const [isOptimizingMeal, setIsOptimizingMeal] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.uid) {
       setIsLoadingPlan(true);
-      setIsLoadingProfile(true);
-
-      // Client-side fetch for both profile and meal plan
-      const userDocRef = doc(db, 'users', user.uid);
-      getDoc(userDocRef)
-        .then((docSnap) => {
-          if (docSnap.exists()) {
-            const fullProfile = docSnap.data() as FullProfileType;
-            setProfileData(fullProfile);
-            if (fullProfile.currentWeeklyPlan) {
-              setWeeklyPlan(fullProfile.currentWeeklyPlan);
-            } else {
-              setWeeklyPlan(generateInitialWeeklyPlan());
-            }
+      getMealPlanData(user.uid)
+        .then((plan) => {
+          if (plan) {
+            setWeeklyPlan(plan);
           } else {
-            setProfileData(null);
             setWeeklyPlan(generateInitialWeeklyPlan());
           }
         })
-        .catch((error) => {
+        .catch(() => {
           toast({
-            title: 'Error Loading Data',
-            description: error instanceof Error ? error.message : 'Could not load your data.',
+            title: 'Error',
+            description: 'Could not load meal plan.',
             variant: 'destructive',
           });
           setWeeklyPlan(generateInitialWeeklyPlan());
         })
-        .finally(() => {
-            setIsLoadingPlan(false);
-            setIsLoadingProfile(false);
-        });
+        .finally(() => setIsLoadingPlan(false));
 
+      setIsLoadingProfile(true);
+      getProfileDataForOptimization(user.uid)
+        .then((data) => setProfileData(data))
+        .catch(() =>
+          toast({
+            title: 'Error',
+            description: 'Could not load profile data for optimization.',
+            variant: 'destructive',
+          })
+        )
+        .finally(() => setIsLoadingProfile(false));
     } else {
       setIsLoadingPlan(false);
       setIsLoadingProfile(false);
@@ -158,7 +282,6 @@ export default function CurrentMealPlanPage() {
         } has been updated.`,
       });
     } catch (error) {
-       const errorMessage = error instanceof Error ? error.message : 'Could not save meal plan.';
       toast({
         title: 'Save Error',
         description: errorMessage,
@@ -183,35 +306,15 @@ export default function CurrentMealPlanPage() {
       return;
     }
 
-    if (mealToOptimize.ingredients.length === 0) {
-        toast({
-            title: 'No Ingredients',
-            description: 'Please add some ingredients to the meal before optimizing.',
-            variant: 'destructive',
-        });
-        setIsOptimizingMeal(null);
-        return;
-    }
-
-    const smartPlannerValues = profileData.smartPlannerData?.formValues;
-    const requiredFields: (keyof SmartCaloriePlannerFormValues)[] = [
-      'age', 'gender', 'current_weight', 'height_cm', 'activity_factor_key', 'dietGoal',
+    const requiredFields: (keyof FullProfileType)[] = [
+      'age',
+      'gender',
+      'current_weight',
+      'height_cm',
+      'activityLevel',
+      'dietGoalOnboarding',
     ];
-
-    if (!smartPlannerValues) {
-      toast({
-        title: 'Profile Data Missing',
-        description: 'Could not find Smart Calorie Planner data in your profile. Please complete it first.',
-        variant: 'destructive',
-        duration: 7000,
-      });
-      setIsOptimizingMeal(null);
-      return;
-    }
-
-    const missingFields = requiredFields.filter(
-      (field) => smartPlannerValues[field] === undefined || smartPlannerValues[field] === null
-    );
+    const missingFields = requiredFields.filter((field) => !profileData[field]);
 
     if (missingFields.length > 0) {
       toast({
@@ -225,34 +328,21 @@ export default function CurrentMealPlanPage() {
     }
 
     try {
-      let dailyTargets: {
-        finalTargetCalories?: number | null;
-        proteinGrams?: number | null;
-        carbGrams?: number | null;
-        fatGrams?: number | null;
-      } | null = null;
-      
-      const smartResults = profileData.smartPlannerData?.results;
+      const dailyTargets = calculateEstimatedDailyTargets({
+        age: profileData.age!,
+        gender: profileData.gender!,
+        currentWeight: profileData.current_weight!,
+        height: profileData.height_cm!,
+        activityLevel: profileData.activityLevel!,
+        dietGoal: profileData.dietGoalOnboarding!,
+      });
 
-      if (smartResults && smartResults.finalTargetCalories) {
-          dailyTargets = {
-            finalTargetCalories: smartResults.finalTargetCalories,
-            proteinGrams: smartResults.proteinGrams,
-            carbGrams: smartResults.carbGrams,
-            fatGrams: smartResults.fatGrams,
-          };
-      } else {
-          dailyTargets = calculateEstimatedDailyTargets({
-            age: smartPlannerValues.age!,
-            gender: smartPlannerValues.gender!,
-            currentWeight: smartPlannerValues.current_weight!,
-            height: smartPlannerValues.height_cm!,
-            activityLevel: smartPlannerValues.activity_factor_key!,
-            dietGoal: smartPlannerValues.dietGoal!,
-          });
-      }
-      
-      if (!dailyTargets?.finalTargetCalories || !dailyTargets.proteinGrams || !dailyTargets.carbGrams || !dailyTargets.fatGrams) {
+      if (
+        !dailyTargets.targetCalories ||
+        !dailyTargets.targetProtein ||
+        !dailyTargets.targetCarbs ||
+        !dailyTargets.targetFat
+      ) {
         toast({
           title: 'Calculation Error',
           description: 'Could not calculate daily targets from profile. Ensure profile is complete or use the Smart Calorie Planner.',
@@ -262,18 +352,26 @@ export default function CurrentMealPlanPage() {
         return;
       }
 
-      const customDistributions = profileData.mealDistributions;
-      const mealDistribution =
-        (customDistributions && customDistributions.find((d) => d.mealName === mealToOptimize.name)) ||
-        defaultMacroPercentages[mealToOptimize.name] || {
-          calories_pct: 0, protein_pct: 0, carbs_pct: 0, fat_pct: 0,
-        };
+      const mealDistribution = defaultMacroPercentages[mealToOptimize.name] || {
+        calories_pct: 0,
+        protein_pct: 0,
+        carbs_pct: 0,
+        fat_pct: 0,
+      };
 
       const targetMacrosForMeal = {
-        calories: Math.round(dailyTargets.finalTargetCalories * (mealDistribution.calories_pct / 100)),
-        protein: Math.round(dailyTargets.proteinGrams * (mealDistribution.protein_pct / 100)),
-        carbs: Math.round(dailyTargets.carbGrams * (mealDistribution.carbs_pct / 100)),
-        fat: Math.round(dailyTargets.fatGrams * (mealDistribution.fat_pct / 100)),
+        calories: Math.round(
+          dailyTargets.targetCalories * (mealDistribution.calories_pct / 100)
+        ),
+        protein: Math.round(
+          dailyTargets.targetProtein * (mealDistribution.protein_pct / 100)
+        ),
+        carbs: Math.round(
+          dailyTargets.targetCarbs * (mealDistribution.carbs_pct / 100)
+        ),
+        fat: Math.round(
+          dailyTargets.targetFat * (mealDistribution.fat_pct / 100)
+        ),
       };
 
       const preparedIngredients = mealToOptimize.ingredients.map((ing) => ({
@@ -289,7 +387,7 @@ export default function CurrentMealPlanPage() {
       const aiInput: AdjustMealIngredientsInput = {
         originalMeal: {
           name: mealToOptimize.name,
-          customName: mealToOptimize.customName || undefined,
+          customName: mealToOptimize.customName || '',
           ingredients: preparedIngredients,
           totalCalories: Number(mealToOptimize.totalCalories) || 0,
           totalProtein: Number(mealToOptimize.totalProtein) || 0,
@@ -310,43 +408,40 @@ export default function CurrentMealPlanPage() {
       };
 
       const result = await adjustMealIngredients(aiInput);
+      if (!result.adjustedMeal || !user?.uid)
+        throw new Error(
+          'AI did not return an adjusted meal or an unexpected format was received.'
+        );
 
       if (result.adjustedMeal && user?.uid) {
-        const { ingredients, totalCalories, totalProtein, totalCarbs, totalFat } = result.adjustedMeal;
-
-        // Construct the updated meal safely, preserving original names
-        const updatedMealData: Meal = {
-          name: mealToOptimize.name, // Always keep original name
-          customName: mealToOptimize.customName, // Always keep original custom name
-          id: mealToOptimize.id, // Preserve ID if it exists
-          ingredients: ingredients.map((ing) => ({
-            ...ing,
-            quantity: safeConvertToNumber(ing.quantity, 0),
-            calories: safeConvertToNumber(ing.calories, 0),
-            protein: safeConvertToNumber(ing.protein, 0),
-            carbs: safeConvertToNumber(ing.carbs, 0),
-            fat: safeConvertToNumber(ing.fat, 0),
-          })),
-          totalCalories: safeConvertToNumber(totalCalories, 0),
-          totalProtein: safeConvertToNumber(totalProtein, 0),
-          totalCarbs: safeConvertToNumber(totalCarbs, 0),
-          totalFat: safeConvertToNumber(totalFat, 0),
-        };
-        
         const newWeeklyPlan = JSON.parse(JSON.stringify(weeklyPlan));
+        const updatedMealData = {
+          ...result.adjustedMeal,
+          id: mealToOptimize.id,
+          totalCalories: Number(result.adjustedMeal.totalCalories) || null,
+          totalProtein: Number(result.adjustedMeal.totalProtein) || null,
+          totalCarbs: Number(result.adjustedMeal.totalCarbs) || null,
+          totalFat: Number(result.adjustedMeal.totalFat) || null,
+          ingredients: result.adjustedMeal.ingredients.map((ing) => ({
+            ...ing,
+            quantity: Number(ing.quantity) || 0,
+            calories: Number(ing.calories) || null,
+            protein: Number(ing.protein) || null,
+            carbs: Number(ing.carbs) || null,
+            fat: Number(ing.fat) || null,
+          })),
+        };
         newWeeklyPlan.days[dayIndex].meals[mealIndex] = updatedMealData;
         setWeeklyPlan(newWeeklyPlan);
-
-        const sanitizedPlan = preprocessDataForFirestore(newWeeklyPlan);
-        const userDocRef = doc(db, 'users', user.uid);
-        await setDoc(userDocRef, { currentWeeklyPlan: sanitizedPlan }, { merge: true });
-
+        await saveMealPlanData(user.uid, newWeeklyPlan);
         toast({
-          title: `Meal Optimized: ${mealToOptimize.customName || mealToOptimize.name}`,
+          title: `Meal Optimized: ${mealToOptimize.name}`,
           description: result.explanation || 'AI has adjusted the ingredients.',
         });
       } else {
-        throw new Error('AI did not return an adjusted meal or an unexpected format was received.');
+        throw new Error(
+          'AI did not return an adjusted meal or an unexpected format was received.'
+        );
       }
     } catch (error: any) {
       console.error('Error optimizing meal:', error);
@@ -363,14 +458,7 @@ export default function CurrentMealPlanPage() {
   };
 
 
-  if (isLoadingPlan || (user && isLoadingProfile)) {
-    return (
-      <div className='flex justify-center items-center h-screen'>
-        <Loader2 className='h-12 w-12 animate-spin text-primary' />
-        <p className='ml-4 text-lg'>Loading data...</p>
-      </div>
-    );
-  }
+  if (isLoadingPlan || (user && isLoadingProfile)) return <LoadingScreen />;
 
   return (
     <div className='container mx-auto py-8'>
@@ -380,15 +468,20 @@ export default function CurrentMealPlanPage() {
             Your Current Weekly Meal Plan
           </CardTitle>
           <CardDescription>
-            View and manage your meals for the week. Click on a meal to edit.
+            View and manage your meals for the week. Click on a meal to edit or
+            optimize with AI.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue={daysOfWeek[0]} className='w-full'>
+          <Tabs
+            defaultValue={getQueryParams('selected_day') ?? daysOfWeek[0]}
+            className='w-full'
+          >
             <ScrollArea className='w-full whitespace-nowrap rounded-md'>
               <TabsList className='inline-flex h-auto'>
                 {daysOfWeek.map((day) => (
                   <TabsTrigger
+                    onClick={() => updateQueryParams('selected_day', day)}
                     key={day}
                     value={day}
                     className='px-4 py-2 text-base'
@@ -408,8 +501,8 @@ export default function CurrentMealPlanPage() {
               >
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
                   {dayPlan.meals.map((meal, mealIndex) => {
-                    const mealKey = `${dayPlan.dayOfWeek}-${mealIndex}`;
-                    const isOptimizingThis = isOptimizingMeal === mealKey;
+                    const mealKey = `${dayPlan.dayOfWeek}-${meal.name}-${mealIndex}`;
+                    const isOptimizing = optimizingMealKey === mealKey;
                     return (
                       <Card key={mealKey} className='flex flex-col'>
                         <CardHeader>
@@ -452,21 +545,24 @@ export default function CurrentMealPlanPage() {
                             variant='outline'
                             size='sm'
                             onClick={() => handleEditMeal(dayIndex, mealIndex)}
+                            disabled={isOptimizing}
                           >
                             <Pencil className='mr-2 h-4 w-4' /> Edit Meal
                           </Button>
                           <Button
-                            variant='secondary'
+                            variant='default'
                             size='sm'
-                            onClick={() => handleOptimizeMeal(dayIndex, mealIndex)}
-                            disabled={isOptimizingThis}
+                            onClick={() =>
+                              handleOptimizeMeal(dayIndex, mealIndex)
+                            }
+                            disabled={isOptimizing || isLoadingProfile}
                           >
-                             {isOptimizingThis ? (
-                                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                            {isOptimizing ? (
+                              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                             ) : (
-                                <Wand2 className='mr-2 h-4 w-4' />
+                              <Wand2 className='mr-2 h-4 w-4' />
                             )}
-                            {isOptimizingThis ? 'Optimizing...' : 'Optimize Meal'}
+                            {isOptimizing ? 'Optimizing...' : 'Optimize Meal'}
                           </Button>
                         </CardFooter>
                       </Card>
@@ -740,27 +836,17 @@ function EditMealDialog({
             </Button>
           </div>
         </div>
-        <DialogFooter className='gap-2 sm:justify-end'>
-          <div className='flex gap-2 justify-end'>
-            <DialogClose asChild>
-              <Button type='button' variant='outline' onClick={onClose}>
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button type='button' onClick={handleSubmit}>
-              Save Changes
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type='button' variant='outline' onClick={onClose}>
+              Cancel
             </Button>
-          </div>
+          </DialogClose>
+          <Button type='button' onClick={handleSubmit}>
+            Save Changes
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-// FIX: Added missing type definition for WeeklyMealPlan used in this component
-type WeeklyMealPlan = {
-  days: {
-    dayOfWeek: string;
-    meals: Meal[];
-  }[];
-};

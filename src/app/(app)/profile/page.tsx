@@ -36,10 +36,9 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
+  ProfileFormSchema,
   type FullProfileType,
   type ProfileFormValues,
-  ProfileFormSchema,
-  preprocessDataForFirestore,
 } from '@/lib/schemas';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -49,58 +48,55 @@ import {
   exerciseFrequencies,
   exerciseIntensities,
 } from '@/lib/constants';
-import { AlertTriangle, RefreshCcw, Loader2 } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
+import { AlertTriangle, RefreshCcw } from 'lucide-react';
+import { getProfileData } from '@/app/api/user/database';
 
+async function saveProfileData(userId: string, data: ProfileFormValues) {
+  if (!userId) throw new Error('User ID is required to save profile data.');
+
+  try {
+    const userProfileRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(userProfileRef);
+    let existingProfile: Partial<FullProfileType> = {};
+    if (docSnap.exists()) {
+      existingProfile = docSnap.data() as FullProfileType;
+    }
+
+    const dataToSave: Record<string, any> = { ...existingProfile };
+
+    // Merge only the fields present in ProfileFormValues
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        const formKey = key as keyof ProfileFormValues;
+        if (data[formKey] === undefined) {
+          dataToSave[formKey] = null; // Convert undefined from form to null for Firestore
+        } else {
+          dataToSave[formKey] = data[formKey];
+        }
+      }
+    }
+
+    await setDoc(userProfileRef, dataToSave, { merge: true });
+  } catch (error) {
+    console.error('Error saving profile to Firestore:', error);
+    throw error;
+  }
+}
 
 export default function ProfilePage() {
+  const profileRef = useRef<ProfileFormHandle>(null);
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
-
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(ProfileFormSchema),
-    defaultValues: {
-      name: undefined,
-      goalWeight: 0,
-      subscriptionStatus: undefined,
-      painMobilityIssues: undefined,
-      injuries: [],
-      surgeries: [],
-      exerciseGoals: [],
-      exercisePreferences: [],
-      exerciseFrequency: undefined,
-      exerciseIntensity: undefined,
-      equipmentAccess: [],
-    },
-  });
 
   useEffect(() => {
     if (user?.uid) {
       setIsLoading(true);
-      // Client-side fetch
-      const userDocRef = doc(db, 'users', user.uid);
-      getDoc(userDocRef)
-        .then((docSnap) => {
-          if (docSnap.exists()) {
-            const profileData = docSnap.data() as FullProfileType;
-            // Map the full profile to the form values
-            const profileDataSubset = {
-                name: profileData.name ?? undefined,
-                subscriptionStatus: profileData.subscriptionStatus ?? undefined,
-                goalWeight: profileData.goalWeight ?? undefined,
-                painMobilityIssues: profileData.painMobilityIssues ?? undefined,
-                injuries: profileData.injuries || [],
-                surgeries: profileData.surgeries || [],
-                exerciseGoals: profileData.exerciseGoals || [],
-                exercisePreferences: profileData.exercisePreferences || [],
-                exerciseFrequency: profileData.exerciseFrequency ?? undefined,
-                exerciseIntensity: profileData.exerciseIntensity ?? undefined,
-                equipmentAccess: profileData.equipmentAccess || [],
-            };
-            form.reset(profileDataSubset);
-          }
+      getProfileData(user.uid)
+        .then((profileDataSubset) => {
+          console.log(profileDataSubset);
+          form.reset(profileDataSubset);
+          setIsLoading(false);
         })
         .catch((error) => {
           console.error('Error loading profile data:', error);
@@ -109,8 +105,6 @@ export default function ProfilePage() {
             description: 'Could not load profile data.',
             variant: 'destructive',
           });
-        })
-        .finally(() => {
           setIsLoading(false);
         });
     } else {
@@ -119,6 +113,7 @@ export default function ProfilePage() {
   }, [user, form, toast]);
 
   async function onSubmit(data: ProfileFormValues) {
+    console.log('Submitting profile data:', data);
     if (!user?.uid) {
       toast({
         title: 'Error',
@@ -128,31 +123,23 @@ export default function ProfilePage() {
       return;
     }
     try {
-      // Client-side Firestore write
-      const userProfileRef = doc(db, 'users', user.uid);
-      await setDoc(userProfileRef, preprocessDataForFirestore(data), { merge: true });
-
+      await saveProfileData(user.uid, data);
       toast({
         title: 'Profile Updated',
         description: 'Your profile has been successfully updated.',
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Could not update profile. Please try again.';
       toast({
         title: 'Update Failed',
-        description: errorMessage,
+        description: 'Could not update profile. Please try again.',
         variant: 'destructive',
       });
     }
   }
 
   function onError(error: any) {
-    console.error("Form validation error:", error);
-    toast({
-        title: 'Validation Error',
-        description: 'Please check the form for invalid fields.',
-        variant: 'destructive',
-      });
+    console.log(error);
+    console.log(form.getValues());
   }
 
   const renderCommaSeparatedInput = (
@@ -176,7 +163,7 @@ export default function ProfilePage() {
                 <Textarea
                   placeholder={placeholder}
                   value={displayValue}
-                  onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                  onChange={(e) => field.onChange(e.target.value.split(','))}
                   className='h-10 resize-none'
                 />
               </div>
@@ -221,23 +208,22 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && user) {
     return (
       <div className='flex justify-center items-center h-full'>
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2">Loading profile...</p>
+        <p>Loading profile...</p>
       </div>
     );
   }
 
   return (
     <Card className='max-w-xl mx-auto shadow-lg'>
-      <CardHeader>
-        <CardTitle className='text-3xl font-bold'>Your Account</CardTitle>
-        <CardDescription>
-          Manage your account and related preferences.
-        </CardDescription>
-      </CardHeader>
+      <SectionHeader
+        className='text-3xl font-bold'
+        title='Your Account'
+        description='Manage your account and related preferences.'
+      />
+
       <CardContent>
         <Form {...form}>
           <form
@@ -331,7 +317,6 @@ export default function ProfilePage() {
                             type='number'
                             placeholder='Enter your goal weight in kg'
                             {...field}
-                            onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))}
                             value={field.value ?? ''}
                           />
                         </FormControl>
@@ -341,7 +326,9 @@ export default function ProfilePage() {
                   />
                 </AccordionContent>
               </AccordionItem>
-              
+
+              {/* Medical Info & Physical Limitations and Exercise Preferences accordions were removed */}
+              {/* Adding them back for completeness as per user's current file state */}
               <AccordionItem value='medical-physical'>
                 <AccordionTrigger className='text-xl font-semibold'>
                   Medical Info & Physical Limitations
@@ -470,12 +457,12 @@ export default function ProfilePage() {
               className='w-full text-lg py-6'
               disabled={form.formState.isSubmitting}
             >
-              {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {form.formState.isSubmitting ? 'Saving...' : 'Save Profile'}
             </Button>
           </form>
         </Form>
 
+        {/* Developer Section for Resetting Onboarding */}
         <Card className='mt-12 border-destructive/50'>
           <CardHeader>
             <CardTitle className='text-lg flex items-center text-destructive'>

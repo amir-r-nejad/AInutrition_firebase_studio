@@ -2,16 +2,10 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'; // Added ScrollBar
 import {
   Table,
   TableBody,
@@ -22,6 +16,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
+import DailyMacroSummary from '@/features/tools/components/macro-splitter/DailyMacroSummary';
+import { headerLabels, macroPctKeys } from '@/features/tools/lib/config';
+import {
+  customMacroSplit,
+  getMealMacroStats,
+} from '@/features/tools/lib/utils';
+import {
+  CalculatedMealMacros,
+  TotalMacros,
+} from '@/features/tools/types/toolsGlobalTypes';
 import { useToast } from '@/hooks/use-toast';
 import {
   defaultMacroPercentages,
@@ -33,7 +37,6 @@ import {
   preprocessDataForFirestore,
   type MacroSplitterFormValues,
   type MealMacroDistribution,
-  MacroSplitterFormSchema,
 } from '@/lib/schemas';
 import { cn, formatNumber } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,7 +44,6 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   AlertTriangle,
   CheckCircle2,
-  Info,
   Lightbulb,
   Loader2,
   RefreshCw,
@@ -50,7 +52,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 interface TotalMacros {
@@ -61,39 +63,41 @@ interface TotalMacros {
   source?: string;
 }
 
-// REFACTORED: Use standard keys for easier processing
 interface CalculatedMealMacros {
   mealName: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
+  Calories: number;
+  'Protein (g)': number;
+  'Carbs (g)': number;
+  'Fat (g)': number;
 }
 
-// REFACTORED: Updated to return the new, cleaner interface
 function customMacroSplit(
   totalMacros: TotalMacros,
   mealMacroDistribution: MacroSplitterFormValues['mealDistributions']
 ): CalculatedMealMacros[] {
   return mealMacroDistribution.map((mealPct) => ({
     mealName: mealPct.mealName,
-    calories: Math.round(
+    Calories: Math.round(
       totalMacros.calories * ((mealPct.calories_pct || 0) / 100)
     ),
-    protein: Math.round(
+    'Protein (g)': Math.round(
       totalMacros.protein_g * ((mealPct.protein_pct || 0) / 100)
     ),
-    carbs: Math.round(
+    'Carbs (g)': Math.round(
       totalMacros.carbs_g * ((mealPct.carbs_pct || 0) / 100)
     ),
-    fat: Math.round(totalMacros.fat_g * ((mealPct.fat_pct || 0) / 100)),
+    'Fat (g)': Math.round(totalMacros.fat_g * ((mealPct.fat_pct || 0) / 100)),
   }));
 }
 
 export default function MacroSplitterPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { toast, toasts } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [dailyTargets, setDailyTargets] = useState<TotalMacros | null>(null);
   const [calculatedSplit, setCalculatedSplit] = useState<
     CalculatedMealMacros[] | null
@@ -122,6 +126,8 @@ export default function MacroSplitterPage() {
     name: 'mealDistributions',
   });
 
+  const { columnSums, watchedMealDistributions } = getMealMacroStats(form);
+
   const watchedMealDistributions = form.watch('mealDistributions');
 
   // NEW: Effect to automatically calculate and show the split whenever inputs change
@@ -137,19 +143,50 @@ export default function MacroSplitterPage() {
       setIsLoading(false);
       return;
     }
+    setIsLoading(true);
+    let targets: TotalMacros | null = null;
+    let sourceMessage = '';
 
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const userDocRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(userDocRef);
-        const profile = docSnap.exists() ? docSnap.data() : null;
+    try {
+      const userProfileRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(userProfileRef);
 
-        if (!profile) {
-          toast({
-            title: 'Profile not found',
-            description: 'Could not load your user profile.',
-            variant: 'destructive',
+      if (docSnap.exists()) {
+        const profileData = docSnap.data() as FullProfileType;
+
+        // Load meal distributions if saved
+        if (
+          profileData.mealDistributions &&
+          Array.isArray(profileData.mealDistributions) &&
+          profileData.mealDistributions.length === defaultMealNames.length
+        ) {
+          form.reset({ mealDistributions: profileData.mealDistributions });
+          const savedSplitToastExists =
+            toasts &&
+            Array.isArray(toasts) &&
+            toasts.find(
+              (t) =>
+                t.description ===
+                'Your previously saved macro split percentages have been loaded.'
+            );
+          if (!savedSplitToastExists) {
+            toast({
+              title: 'Loaded Saved Split',
+              description:
+                'Your previously saved macro split percentages have been loaded.',
+              duration: 3000,
+            });
+          }
+        } else {
+          form.reset({
+            // Reset to default percentages if none saved or invalid
+            mealDistributions: defaultMealNames.map((name) => ({
+              mealName: name,
+              calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
+              protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
+              carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
+              fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
+            })),
           });
           setIsLoading(false);
           return;
@@ -162,14 +199,15 @@ export default function MacroSplitterPage() {
           profile.smartPlannerData?.results?.finalTargetCalories !== undefined &&
           profile.smartPlannerData?.results?.finalTargetCalories !== null
         ) {
-          const smartResults = profile.smartPlannerData.results;
+          const smartResults = profileData.smartPlannerData.results;
           targets = {
-            calories: smartResults.finalTargetCalories || 0,
-            protein_g: smartResults.proteinGrams || 0,
-            carbs_g: smartResults.carbGrams || 0,
-            fat_g: smartResults.fatGrams || 0,
+            calories: calories || 0,
+            protein_g: smartResults?.proteinGrams || 0,
+            carbs_g: smartResults?.carbGrams || 0,
+            fat_g: smartResults?.fatGrams || 0,
             source: 'Smart Calorie Planner Targets',
           };
+
           sourceMessage =
             "Daily totals from 'Smart Calorie Planner'. Adjust there for changes.";
         } else if (
@@ -215,54 +253,45 @@ export default function MacroSplitterPage() {
         setDailyTargets(targets);
         setDataSourceMessage(sourceMessage);
 
-        const mealDistributions = profile.mealDistributions;
-        if (
-          mealDistributions &&
-          Array.isArray(mealDistributions) &&
-          mealDistributions.length > 0
-        ) {
-          form.reset({
-            mealDistributions:
-              mealDistributions as MacroSplitterFormValues['mealDistributions'],
-          });
-        }
-
-        if (sourceMessage && targets) {
-          toast({
-            title: 'Daily Totals Loaded',
-            description: sourceMessage,
-            duration: 6000,
-          });
-        }
-
-        if (!targets) {
-          toast({
-            title: 'No Daily Totals',
-            description:
-              'Could not find or calculate daily macro totals. Please use the Smart Calorie Planner or complete your profile.',
-            variant: 'destructive',
-            duration: 6000,
-          });
-        }
-      } catch (error) {
+    if (targets && sourceMessage) {
+      const shouldShowToast =
+        toasts && Array.isArray(toasts)
+          ? !toasts.find((t) => t.description === sourceMessage)
+          : true;
+      if (shouldShowToast) {
         toast({
-          title: 'Error Loading Data',
-          description:
-            error instanceof Error
-              ? error.message
-              : 'Failed to load data for the Macro Splitter.',
-          variant: 'destructive',
+          title: 'Daily Totals Loaded',
+          description: sourceMessage,
+          duration: 6000,
         });
-        console.error('Error in loadData:', error);
-      } finally {
-        setIsLoading(false);
       }
-    };
-    
-    loadData();
-  }, [user?.uid, form, toast]);
+    } else if (!targets) {
+      toast({
+        title: 'No Daily Totals',
+        description:
+          'Could not find or calculate daily macro totals. Please use the Smart Calorie Planner or complete your profile.',
+        variant: 'destructive',
+        duration: 6000,
+      });
+    }
+
+    setIsLoading(false);
+  }, [user, toast, form]);
+
+  useEffect(() => {
+    loadDataForSplitter();
+  }, []);
 
   const onSubmit = async (data: MacroSplitterFormValues) => {
+    if (!dailyTargets) {
+      toast({
+        title: 'Error',
+        description:
+          'Daily macro totals not available. Please ensure your profile is complete or use the Smart Calorie Planner.',
+        variant: 'destructive',
+      });
+      return;
+    }
     if (!user?.uid) {
       toast({
         title: 'Error',
@@ -273,11 +302,13 @@ export default function MacroSplitterPage() {
     }
 
     try {
+      console.log(user);
+      const userProfileRef = doc(db, 'users', user.uid);
       const distributionsToSave = preprocessDataForFirestore(
         data.mealDistributions
       );
-      const userProfileRef = doc(db, 'users', user.uid);
-      await setDoc(
+
+      const mamd = await setDoc(
         userProfileRef,
         { mealDistributions: distributionsToSave },
         { merge: true }
@@ -337,17 +368,18 @@ export default function MacroSplitterPage() {
     }
   };
 
-  // REFACTORED: Uses the new clean keys from the refactored interface
   const handleSuggestMeals = (mealData: CalculatedMealMacros) => {
     const queryParams = new URLSearchParams({
       mealName: mealData.mealName,
-      calories: mealData.calories.toString(),
-      protein: mealData.protein.toString(),
-      carbs: mealData.carbs.toString(),
-      fat: mealData.fat.toString(),
+      calories: mealData.Calories.toString(),
+      protein: mealData['Protein (g)'].toString(),
+      carbs: mealData['Carbs (g)'].toString(),
+      fat: mealData['Fat (g)'].toString(),
     }).toString();
     router.push(`/tools/meal-suggestions?${queryParams}`);
   };
+
+  const watchedMealDistributions = form.watch('mealDistributions');
 
   const calculateColumnSum = (
     macroKey: keyof Omit<MealMacroDistribution, 'mealName'>
@@ -411,7 +443,7 @@ export default function MacroSplitterPage() {
           </CardTitle>
           <CardDescription>
             Distribute your total daily macros across your meals by percentage.
-            Percentages can include decimals (e.g., 21.7).
+            Percentages must be whole numbers (e.g., 20, not 20.5).
           </CardDescription>
         </CardHeader>
         {dailyTargets ? (
@@ -473,7 +505,9 @@ export default function MacroSplitterPage() {
                 Meal Macro Percentage & Value Distribution
               </CardTitle>
               <CardDescription>
-                Enter percentages for each meal. Each percentage column should sum to 100%. Calculated macro values will update live based on your inputs.
+                Enter percentages. Each percentage column must sum to 100%.
+                Calculated values update live. Percentages must be whole numbers
+                (e.g., 20, not 20.5).
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -557,16 +591,24 @@ export default function MacroSplitterPage() {
                             </TableCell>
                           ))}
                           <TableCell className='px-2 py-1 text-sm text-right tabular-nums h-10'>
-                            {currentSplit ? currentSplit.calories.toFixed(0) : 'N/A'}
+                            {isNaN(mealCalories)
+                              ? 'N/A'
+                              : mealCalories.toFixed(0)}
                           </TableCell>
                           <TableCell className='px-2 py-1 text-sm text-right tabular-nums h-10'>
-                             {currentSplit ? currentSplit.protein.toFixed(1) : 'N/A'}
+                            {isNaN(mealProteinGrams)
+                              ? 'N/A'
+                              : mealProteinGrams.toFixed(1)}
                           </TableCell>
                           <TableCell className='px-2 py-1 text-sm text-right tabular-nums h-10'>
-                            {currentSplit ? currentSplit.carbs.toFixed(1) : 'N/A'}
+                            {isNaN(mealCarbsGrams)
+                              ? 'N/A'
+                              : mealCarbsGrams.toFixed(1)}
                           </TableCell>
                           <TableCell className='px-2 py-1 text-sm text-right tabular-nums h-10'>
-                            {currentSplit ? currentSplit.fat.toFixed(1) : 'N/A'}
+                            {isNaN(mealFatGrams)
+                              ? 'N/A'
+                              : mealFatGrams.toFixed(1)}
                           </TableCell>
                         </TableRow>
                       );
@@ -619,16 +661,48 @@ export default function MacroSplitterPage() {
                       {calculatedSplit ? (
                         <>
                           <TableCell className='px-2 py-1 text-right tabular-nums'>
-                            {calculatedSplit.reduce((sum, meal) => sum + meal.calories, 0).toFixed(0)}
+                            {watchedMealDistributions
+                              .reduce(
+                                (sum, meal) =>
+                                  sum +
+                                  dailyTargets.calories *
+                                    ((meal.calories_pct || 0) / 100),
+                                0
+                              )
+                              .toFixed(0)}
                           </TableCell>
                           <TableCell className='px-2 py-1 text-right tabular-nums'>
-                            {calculatedSplit.reduce((sum, meal) => sum + meal.protein, 0).toFixed(1)}
+                            {watchedMealDistributions
+                              .reduce(
+                                (sum, meal) =>
+                                  sum +
+                                  dailyTargets.protein_g *
+                                    ((meal.protein_pct || 0) / 100),
+                                0
+                              )
+                              .toFixed(1)}
                           </TableCell>
                           <TableCell className='px-2 py-1 text-right tabular-nums'>
-                            {calculatedSplit.reduce((sum, meal) => sum + meal.carbs, 0).toFixed(1)}
+                            {watchedMealDistributions
+                              .reduce(
+                                (sum, meal) =>
+                                  sum +
+                                  dailyTargets.carbs_g *
+                                    ((meal.carbs_pct || 0) / 100),
+                                0
+                              )
+                              .toFixed(1)}
                           </TableCell>
                           <TableCell className='px-2 py-1 text-right tabular-nums'>
-                             {calculatedSplit.reduce((sum, meal) => sum + meal.fat, 0).toFixed(1)}
+                            {watchedMealDistributions
+                              .reduce(
+                                (sum, meal) =>
+                                  sum +
+                                  dailyTargets.fat_g *
+                                    ((meal.fat_pct || 0) / 100),
+                                0
+                              )
+                              .toFixed(1)}
                           </TableCell>
                         </>
                       ) : (
@@ -669,7 +743,7 @@ export default function MacroSplitterPage() {
                             >
                               Error in {defaultMealNames[index]}{' '}
                               {key.replace('_pct', ' %')}:{' '}
-                              {error.message.replace(/"/g, '')}
+                              {error.message.replace(/ף/g, '')}
                             </p>
                           )
                       );
@@ -709,10 +783,11 @@ export default function MacroSplitterPage() {
         <Card className='shadow-lg mt-8'>
           <CardHeader>
             <CardTitle className='text-2xl'>
-              Final Meal Macros
+              Final Meal Macros (Snapshot)
             </CardTitle>
             <CardDescription>
-              This table updates automatically as you change percentages above. Use the buttons below to get meal ideas for a specific row.
+              This was the calculated split when you last clicked "Save &amp;
+              Show Final Split".
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -747,16 +822,16 @@ export default function MacroSplitterPage() {
                         {mealData.mealName}
                       </TableCell>
                       <TableCell className='px-2 py-1 text-sm text-right tabular-nums'>
-                        {mealData.calories}
+                        {mealData.Calories}
                       </TableCell>
                       <TableCell className='px-2 py-1 text-sm text-right tabular-nums'>
-                        {mealData.protein.toFixed(1)}
+                        {mealData['Protein (g)']}
                       </TableCell>
                       <TableCell className='px-2 py-1 text-sm text-right tabular-nums'>
-                        {mealData.carbs.toFixed(1)}
+                        {mealData['Carbs (g)']}
                       </TableCell>
                       <TableCell className='px-2 py-1 text-sm text-right tabular-nums'>
-                        {mealData.fat.toFixed(1)}
+                        {mealData['Fat (g)']}
                       </TableCell>
                       <TableCell className='px-2 py-1 text-right'>
                         <Button
@@ -776,16 +851,25 @@ export default function MacroSplitterPage() {
                       Total
                     </TableCell>
                     <TableCell className='px-2 py-1 text-right tabular-nums'>
-                      {calculatedSplit.reduce((sum, meal) => sum + meal.calories, 0)}
+                      {calculatedSplit.reduce(
+                        (sum, meal) => sum + meal.Calories,
+                        0
+                      )}
                     </TableCell>
                     <TableCell className='px-2 py-1 text-right tabular-nums'>
-                      {calculatedSplit.reduce((sum, meal) => sum + meal.protein, 0).toFixed(1)}
+                      {calculatedSplit
+                        .reduce((sum, meal) => sum + meal['Protein (g)'], 0)
+                        .toFixed(1)}
                     </TableCell>
                     <TableCell className='px-2 py-1 text-right tabular-nums'>
-                      {calculatedSplit.reduce((sum, meal) => sum + meal.carbs, 0).toFixed(1)}
+                      {calculatedSplit
+                        .reduce((sum, meal) => sum + meal['Carbs (g)'], 0)
+                        .toFixed(1)}
                     </TableCell>
                     <TableCell className='px-2 py-1 text-right tabular-nums'>
-                      {calculatedSplit.reduce((sum, meal) => sum + meal.fat, 0).toFixed(1)}
+                      {calculatedSplit
+                        .reduce((sum, meal) => sum + meal['Fat (g)'], 0)
+                        .toFixed(1)}
                     </TableCell>
                     <TableCell className='px-2 py-1'></TableCell>
                   </TableRow>

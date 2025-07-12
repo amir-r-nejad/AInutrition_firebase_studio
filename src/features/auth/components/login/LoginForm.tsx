@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { loginAction } from '../../actions/LoginAction';
 import { loginSchema } from '../../schemas/authSchema';
 import LoginWithGoogleButton from '../shared/LoginWithGoogleButton';
-import SubmitButton from '../shared/SubmitButton';
+import SubmitButton from '@/components/ui/SubmitButton';
 
 function LoginForm() {
   const router = useRouter();
@@ -32,7 +32,7 @@ function LoginForm() {
     });
 
     if (isSuccess) {
-      toast({ title: 'Login Successful', description: `Welcome back!` });
+      toast({ title: 'Login Successful', description: `Welcome back!!!` });
       return router.push('/dashboard');
     }
 

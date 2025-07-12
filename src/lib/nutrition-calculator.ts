@@ -16,15 +16,34 @@ export function calculateBMR(
   heightCm: number,
   ageYears: number
 ): number {
-  if (gender === 'male') {
-    return 10 * weightKg + 6.25 * heightCm - 5 * ageYears + 5;
-  } else if (gender === 'female') {
-    return 10 * weightKg + 6.25 * heightCm - 5 * ageYears - 161;
+  // Input validation and sanitization
+  const validWeightKg = Math.max(0, Number(weightKg) || 0);
+  const validHeightCm = Math.max(0, Number(heightCm) || 0);
+  const validAgeYears = Math.max(0, Number(ageYears) || 0);
+
+  // Return 0 if any critical input is invalid
+  if (validWeightKg === 0 || validHeightCm === 0 || validAgeYears === 0) {
+    return 0;
   }
+
+  const validGender = String(gender).toLowerCase().trim();
+
+  if (validGender === 'male') {
+    return Math.round(
+      10 * validWeightKg + 6.25 * validHeightCm - 5 * validAgeYears + 5
+    );
+  } else if (validGender === 'female') {
+    return Math.round(
+      10 * validWeightKg + 6.25 * validHeightCm - 5 * validAgeYears - 161
+    );
+  }
+
   // Fallback for "other" or unspecified - average of male and female
-  const bmrMale = 10 * weightKg + 6.25 * heightCm - 5 * ageYears + 5;
-  const bmrFemale = 10 * weightKg + 6.25 * heightCm - 5 * ageYears - 161;
-  return (bmrMale + bmrFemale) / 2;
+  const bmrMale =
+    10 * validWeightKg + 6.25 * validHeightCm - 5 * validAgeYears + 5;
+  const bmrFemale =
+    10 * validWeightKg + 6.25 * validHeightCm - 5 * validAgeYears - 161;
+  return Math.round((bmrMale + bmrFemale) / 2);
 }
 
 /**
@@ -34,9 +53,21 @@ export function calculateBMR(
  * @returns TDEE in kcal/day.
  */
 export function calculateTDEE(bmr: number, activityLevelValue: string): number {
-  const level = activityLevels.find((l) => l.value === activityLevelValue);
+  const validBmr = Math.max(0, Number(bmr) || 0);
+
+  if (validBmr === 0) {
+    return 0;
+  }
+
+  const validActivityLevelValue = String(activityLevelValue)
+    .toLowerCase()
+    .trim();
+  const level = activityLevels.find(
+    (l) => String(l.value).toLowerCase().trim() === validActivityLevelValue
+  );
+
   const activityFactor = level?.activityFactor || 1.2; // Default to sedentary if not found
-  return bmr * activityFactor;
+  return Math.round(validBmr * activityFactor);
 }
 
 /**
@@ -49,9 +80,21 @@ export function calculateRecommendedProtein(
   weightKg: number,
   activityLevelValue: string
 ): number {
-  const level = activityLevels.find((l) => l.value === activityLevelValue);
+  const validWeightKg = Math.max(0, Number(weightKg) || 0);
+
+  if (validWeightKg === 0) {
+    return 0;
+  }
+
+  const validActivityLevelValue = String(activityLevelValue)
+    .toLowerCase()
+    .trim();
+  const level = activityLevels.find(
+    (l) => String(l.value).toLowerCase().trim() === validActivityLevelValue
+  );
+
   const proteinFactor = level?.proteinFactorPerKg || 0.8; // Default to sedentary if not found
-  return weightKg * proteinFactor;
+  return Math.round(validWeightKg * proteinFactor);
 }
 
 /**
@@ -61,13 +104,11 @@ export function calculateRecommendedProtein(
  * @returns Adjusted TDEE (target calories).
  */
 function adjustTDEEForDietGoal(tdee: number, dietGoal: string): number {
-  // FIX: Using correct diet goal values from constants
-  if (dietGoal === 'fat_loss') {
+  if (dietGoal === 'lose_weight') {
     return tdee - 500; // Typical 500 kcal deficit for weight loss
-  } else if (dietGoal === 'muscle_gain') {
+  } else if (dietGoal === 'gain_weight') {
     return tdee + 300; // Typical 300-500 kcal surplus for muscle gain
   }
-  // 'recomp' and 'maintain_weight' will fall through to return tdee
   return tdee; // Maintain weight
 }
 
@@ -98,15 +139,12 @@ export function calculateEstimatedDailyTargets(profile: {
   if (
     !profile.gender ||
     profile.currentWeight === undefined ||
-    profile.currentWeight === null ||
     profile.height === undefined ||
-    profile.height === null ||
     profile.age === undefined ||
-    profile.age === null ||
     !profile.activityLevel ||
     !profile.dietGoal
   ) {
-    return {}; // Not enough data
+    return {}; // Not enough valid data
   }
 
   const bmr = calculateBMR(
@@ -116,47 +154,27 @@ export function calculateEstimatedDailyTargets(profile: {
     profile.age
   );
   let tdee = calculateTDEE(bmr, profile.activityLevel);
+  const protein = calculateRecommendedProtein(
+    profile.currentWeight,
+    profile.activityLevel
+  );
 
-  // This logic is now aligned with the Smart Calorie Planner for consistency.
-  let targetCalories = tdee; // Start with maintenance
-  if (profile.dietGoal === 'fat_loss') {
-      targetCalories = tdee - 500;
-  } else if (profile.dietGoal === 'muscle_gain') {
-      targetCalories = tdee + 300;
-  } else if (profile.dietGoal === 'recomp') {
-      targetCalories = tdee - 200; // Slight deficit for recomp
-  }
+  const targetCalories = adjustTDEEForDietGoal(tdee, profile.dietGoal);
 
-  // Define macro splits based on goal
-  let proteinTargetPct = 0.25,
-      carbTargetPct = 0.50,
-      fatTargetPct = 0.25; // Default for maintenance
+  const proteinCalories = protein * 4;
+  // Aim for fat to be ~25% of total calories
+  const fatGrams = Math.round((targetCalories * 0.25) / 9);
+  const fatCalories = fatGrams * 9;
+  // Remaining calories for carbs
+  const carbGrams = Math.round(
+    (targetCalories - proteinCalories - fatCalories) / 4
+  );
 
-  if (profile.dietGoal === 'fat_loss') {
-      proteinTargetPct = 0.35;
-      carbTargetPct = 0.35;
-      fatTargetPct = 0.3;
-  } else if (profile.dietGoal === 'muscle_gain') {
-      proteinTargetPct = 0.3;
-      carbTargetPct = 0.5;
-      fatTargetPct = 0.2;
-  } else if (profile.dietGoal === 'recomp') {
-      proteinTargetPct = 0.4;
-      carbTargetPct = 0.35;
-      fatTargetPct = 0.25;
-  }
-
-  const proteinGrams = Math.round((targetCalories * proteinTargetPct) / 4);
-  const carbGrams = Math.round((targetCalories * carbTargetPct) / 4);
-  const fatGrams = Math.round((targetCalories * fatTargetPct) / 9);
-
-
-  // FIX: Return object with keys that match what the application expects
   return {
-    finalTargetCalories: targetCalories,
-    proteinGrams: proteinGrams,
-    fatGrams: fatGrams,
-    carbGrams: carbGrams,
+    targetCalories: targetCalories,
+    targetProtein: protein,
+    targetFat: fatGrams, // Ensure non-negative
+    targetCarbs: carbGrams, // Ensure non-negative
     bmr: bmr,
     tdee: tdee,
   };

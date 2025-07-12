@@ -32,7 +32,7 @@ export async function signInWithGoogle() {
   }
 }
 
-export async function signOut() {
+export function signOut() {
   try {
     return auth.signOut();
   } catch (error) {
