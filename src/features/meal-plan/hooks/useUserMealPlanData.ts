@@ -1,25 +1,46 @@
+
 import {
   generateInitialWeeklyPlan,
   getMealPlanData,
+  getProfileDataForOptimization,
 } from '@/features/meal-plan/lib/data-service';
 import type { FullProfileType, WeeklyMealPlan } from '@/lib/schemas';
-import { useCallback, useState } from 'react';
-import { useFetchProfile } from './useFetchProfile';
+import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
 
 export function useUserMealPlanData() {
-  const { user, fetchUserData, isLoadingProfile, profileData } =
-    useFetchProfile();
-  const [weeklyPlan, setWeeklyPlan] = useState<WeeklyMealPlan>(
-    generateInitialWeeklyPlan()
-  );
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const [weeklyPlan, setWeeklyPlan] = useState<WeeklyMealPlan | null>(null);
+  const [profileData, setProfileData] = useState<Partial<FullProfileType> | null>(null);
   const [isLoadingPlan, setIsLoadingPlan] = useState(true);
-  useState<Partial<FullProfileType> | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+  const fetchUserData = useCallback(() => {
+    if (user?.uid) {
+      setIsLoadingProfile(true);
+      getProfileDataForOptimization(user.uid)
+        .then((data) => {
+          setProfileData(data);
+        })
+        .catch(() => {
+          // Handle error, e.g., show a toast
+        })
+        .finally(() => setIsLoadingProfile(false));
+    } else {
+      setIsLoadingProfile(false);
+    }
+  }, [user?.uid]);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
 
   const fetchMealPlan = useCallback(
     (onError: () => void) => {
       if (!user?.uid) {
         setIsLoadingPlan(false);
-        return setWeeklyPlan(generateInitialWeeklyPlan());
+        setWeeklyPlan(generateInitialWeeklyPlan());
+        return;
       }
 
       setIsLoadingPlan(true);
@@ -42,9 +63,9 @@ export function useUserMealPlanData() {
     profileData,
     fetchUserData,
     fetchMealPlan,
-    isLoadingPlan,
+    isLoadingPlan: isAuthLoading || isLoadingPlan,
+    isLoadingProfile: isAuthLoading || isLoadingProfile,
     weeklyPlan,
     setWeeklyPlan,
-    isLoadingProfile,
   };
 }

@@ -1,3 +1,4 @@
+
 import { GeneratePersonalizedMealPlanOutput } from '@/ai/flows/generate-meal-plan';
 import { daysOfWeek, mealNames } from '@/lib/constants';
 import { db } from '@/lib/firebase/clientApp';
@@ -15,7 +16,7 @@ export async function getMealPlanData(
     const docSnap = await getDocFromServer(userProfileRef);
 
     if (!docSnap.exists()) {
-      throw new Error('Failed to fetch profile data');
+      return null;
     }
 
     const profileData = docSnap.data() as any;
@@ -58,7 +59,6 @@ export async function getMealPlanData(
         }),
       };
 
-      console.log('Returning full plan with', fullPlan.days.length, 'days');
       return fullPlan;
     }
   } catch (error) {
@@ -100,28 +100,21 @@ export async function getProfileDataForOptimization(
       const data = docSnap.data() as FullProfileType;
 
       const profile: Partial<FullProfileType> = {
-        mealDistributions: data?.mealDistributions || [],
-        age: data.smartPlannerData?.formValues?.age,
-        gender: data.smartPlannerData?.formValues?.gender,
-        current_weight: data.smartPlannerData?.formValues?.current_weight,
-        height_cm: data.smartPlannerData?.formValues?.height_cm,
-        activityLevel: data.smartPlannerData?.formValues?.activity_factor_key,
-        dietGoalOnboarding: data.smartPlannerData?.formValues?.dietGoal,
+        age: data.age,
+        gender: data.gender,
+        current_weight: data.current_weight,
+        height_cm: data.height_cm,
+        activityLevel: data.activityLevel,
+        dietGoalOnboarding: data.dietGoalOnboarding,
         preferredDiet: data.preferredDiet,
         allergies: data.allergies || [],
         dispreferredIngredients: data.dispreferredIngredients || [],
         preferredIngredients: data.preferredIngredients || [],
+        mealDistributions: data.mealDistributions || [],
 
-        smartPlannerData: {
-          formValues: {
-            custom_total_calories:
-              data.smartPlannerData?.formValues?.custom_total_calories,
-            proteinGrams: data.smartPlannerData?.formValues?.proteinGrams,
-            carbGrams: data.smartPlannerData?.formValues?.carbGrams,
-            fatGrams: data.smartPlannerData?.formValues?.fatGrams,
-          },
-        },
+        smartPlannerData: data.smartPlannerData,
       };
+
       // Ensure undefined top-level optional fields become null for consistency
       (Object.keys(profile) as Array<keyof typeof profile>).forEach((key) => {
         if (profile[key] === undefined) {

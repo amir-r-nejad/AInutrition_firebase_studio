@@ -1,7 +1,8 @@
-import { useAuth } from '@/features/auth/contexts/AuthContext';
 
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { getProfileDataForOptimization } from '@/features/meal-plan/lib/data-service';
 import type { BaseProfileData, FullProfileType } from '@/lib/schemas';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export function useFetchProfile() {
   const { user } = useAuth();
@@ -11,19 +12,16 @@ export function useFetchProfile() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   const fetchUserData = useCallback(
-    (
-      fetchFn: (userId: string) => Promise<Partial<BaseProfileData>>,
-      onError: () => void,
-      onSuccess?: (data: Partial<BaseProfileData>) => void
-    ) => {
+    () => {
       if (user?.uid) {
         setIsLoadingProfile(true);
-        fetchFn(user.uid)
+        getProfileDataForOptimization(user.uid)
           .then((data) => {
             setProfileData(data);
-            if (onSuccess) onSuccess(data);
           })
-          .catch(() => onError())
+          .catch(() => {
+            // Handle error, maybe with a toast
+          })
           .finally(() => setIsLoadingProfile(false));
       } else {
         setIsLoadingProfile(false);
@@ -31,6 +29,11 @@ export function useFetchProfile() {
     },
     [user?.uid]
   );
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
+
 
   return { isLoadingProfile, profileData, fetchUserData, user };
 }

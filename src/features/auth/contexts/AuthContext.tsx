@@ -32,13 +32,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { user: authUser, isLoading: isAuthLoading } = useUser();
   const [profile, setProfile] = useState<FullProfileType | null>(null);
-  const [isProfileLoading, setProfileLoading] = useState(true);
-
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
-
-  const isLoading = isAuthLoading || isProfileLoading;
 
   useEffect(() => {
     // This effect handles fetching the user's profile from Firestore
@@ -49,7 +45,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (authUser?.uid) {
       // User is logged in via Firebase, now fetch their profile data.
-      setProfileLoading(true);
       getUserProfile(authUser.uid)
         .then((userProfile) => {
           if (userProfile) {
@@ -57,27 +52,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else {
             // This case might happen if a user is created in Auth but their DB doc fails.
             // For now, we treat them as a new user.
-            setProfile(null);
+            setProfile({
+                ...authUser,
+                onboardingComplete: false
+            });
           }
         })
         .catch((error) => {
           console.error('Failed to fetch user profile:', error);
           setProfile(null); // Ensure we don't get stuck in a weird state
-        })
-        .finally(() => {
-          setProfileLoading(false);
         });
     } else {
       // No user is logged in with Firebase.
       setProfile(null);
-      setProfileLoading(false);
     }
   }, [authUser, isAuthLoading]);
 
 
   useEffect(() => {
     // This effect handles routing based on the final loading and profile state.
-    if (isLoading) return; // Wait until all loading is finished.
+    if (isAuthLoading) return; // Wait until auth loading is finished.
 
     const isAuthPage = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email'].includes(pathname);
 
@@ -89,20 +83,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // User is authenticated. Now check for onboarding completion.
-    if (!profile?.onboardingComplete) {
-      if (pathname !== '/onboarding') {
-        router.push('/onboarding');
-      }
-      return;
+    // User is authenticated. Now check for onboarding completion from their profile.
+    // The profile might still be loading, so we check for its existence.
+    if (profile) {
+        if (!profile.onboardingComplete) {
+            if (pathname !== '/onboarding') {
+                router.push('/onboarding');
+            }
+            return;
+        }
+
+        // User is authenticated and onboarded.
+        if (isAuthPage || pathname === '/onboarding' || pathname === '/') {
+            router.push('/dashboard');
+        }
     }
 
-    // User is authenticated and onboarded.
-    if (isAuthPage || pathname === '/onboarding' || pathname === '/') {
-      router.push('/dashboard');
-    }
 
-  }, [authUser, profile, isLoading, pathname, router]);
+  }, [authUser, profile, isAuthLoading, pathname, router]);
 
   const logout = useCallback(async () => {
     try {
@@ -154,7 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const contextValue: AuthContextType = {
     user: profile,
-    isLoading,
+    isLoading: isAuthLoading || (!!authUser && !profile), // Loading if auth is loading OR if there's a user but no profile yet
     logout,
     completeOnboarding,
   };
