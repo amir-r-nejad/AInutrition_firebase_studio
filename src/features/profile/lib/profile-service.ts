@@ -5,6 +5,9 @@ import { db } from '@/lib/firebase/clientApp';
 import { type FullProfileType, type ProfileFormValues } from '@/lib/schemas';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
+// This function is being deprecated in favor of the server action in /src/app/api/user/database.ts
+// It is kept here to prevent breaking imports but should not be used for new development.
+// The logic has been moved to saveProfileData in the database.ts file.
 export async function saveProfileData(userId: string, data: ProfileFormValues) {
   if (!userId) throw new Error('User ID is required to save profile data.');
 

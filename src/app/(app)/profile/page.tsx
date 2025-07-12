@@ -42,7 +42,7 @@ import {
 } from '@/lib/schemas';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   subscriptionStatuses,
   exerciseFrequencies,
@@ -51,52 +51,40 @@ import {
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
-import { getProfileData } from '@/app/api/user/database';
+import { getProfileData, saveProfileData } from '@/app/api/user/database';
+import SectionHeader from '@/components/ui/SectionHeader';
 
-async function saveProfileData(userId: string, data: ProfileFormValues) {
-  if (!userId) throw new Error('User ID is required to save profile data.');
-
-  try {
-    const userProfileRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userProfileRef);
-    let existingProfile: Partial<FullProfileType> = {};
-    if (docSnap.exists()) {
-      existingProfile = docSnap.data() as FullProfileType;
-    }
-
-    const dataToSave: Record<string, any> = { ...existingProfile };
-
-    // Merge only the fields present in ProfileFormValues
-    for (const key in data) {
-      if (Object.prototype.hasOwnProperty.call(data, key)) {
-        const formKey = key as keyof ProfileFormValues;
-        if (data[formKey] === undefined) {
-          dataToSave[formKey] = null; // Convert undefined from form to null for Firestore
-        } else {
-          dataToSave[formKey] = data[formKey];
-        }
-      }
-    }
-
-    await setDoc(userProfileRef, dataToSave, { merge: true });
-  } catch (error) {
-    console.error('Error saving profile to Firestore:', error);
-    throw error;
-  }
-}
 
 export default function ProfilePage() {
-  const profileRef = useRef<ProfileFormHandle>(null);
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(ProfileFormSchema),
+    defaultValues: {
+      name: undefined,
+      goalWeight: undefined,
+      subscriptionStatus: undefined,
+      painMobilityIssues: undefined,
+      injuries: [],
+      surgeries: [],
+      exerciseGoals: [],
+      exercisePreferences: [],
+      exerciseFrequency: undefined,
+      exerciseIntensity: undefined,
+      equipmentAccess: [],
+    },
+  });
 
   useEffect(() => {
     if (user?.uid) {
       setIsLoading(true);
       getProfileData(user.uid)
         .then((profileDataSubset) => {
-          console.log(profileDataSubset);
-          form.reset(profileDataSubset);
-          setIsLoading(false);
+          if(profileDataSubset) {
+            form.reset(profileDataSubset);
+          }
         })
         .catch((error) => {
           console.error('Error loading profile data:', error);
@@ -105,15 +93,14 @@ export default function ProfilePage() {
             description: 'Could not load profile data.',
             variant: 'destructive',
           });
-          setIsLoading(false);
-        });
+        })
+        .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }
   }, [user, form, toast]);
 
   async function onSubmit(data: ProfileFormValues) {
-    console.log('Submitting profile data:', data);
     if (!user?.uid) {
       toast({
         title: 'Error',
@@ -138,8 +125,8 @@ export default function ProfilePage() {
   }
 
   function onError(error: any) {
-    console.log(error);
-    console.log(form.getValues());
+    console.log("Form Errors:", error);
+    console.log("Form Values:", form.getValues());
   }
 
   const renderCommaSeparatedInput = (
@@ -318,6 +305,7 @@ export default function ProfilePage() {
                             placeholder='Enter your goal weight in kg'
                             {...field}
                             value={field.value ?? ''}
+                            onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                           />
                         </FormControl>
                         <FormMessage />
@@ -327,8 +315,6 @@ export default function ProfilePage() {
                 </AccordionContent>
               </AccordionItem>
 
-              {/* Medical Info & Physical Limitations and Exercise Preferences accordions were removed */}
-              {/* Adding them back for completeness as per user's current file state */}
               <AccordionItem value='medical-physical'>
                 <AccordionTrigger className='text-xl font-semibold'>
                   Medical Info & Physical Limitations
