@@ -1,19 +1,15 @@
 
 'use server';
 
-import { ai, geminiModel } from '@/ai/genkit';
-
-// Types
-export interface SupportChatbotInput {
-  userQuery: string;
-}
-
-export interface SupportChatbotOutput {
-  botResponse: string;
-}
+import { ai } from '@/ai/genkit';
+import {
+  SupportChatbotInputSchema,
+  SupportChatbotOutputSchema,
+  type SupportChatbotInput,
+  type SupportChatbotOutput,
+} from '@/lib/schemas';
 
 // Main entry function
-
 export async function handleSupportQuery(
   input: SupportChatbotInput
 ): Promise<SupportChatbotOutput> {
@@ -21,13 +17,10 @@ export async function handleSupportQuery(
 }
 
 const prompt = ai.definePrompt({
-  model: geminiModel,
   name: 'supportChatbotPrompt',
-  input: { type: 'json' },
-  output: { type: 'json' },
+  input: { schema: SupportChatbotInputSchema },
+  output: { schema: SupportChatbotOutputSchema },
   prompt: `You are a friendly and helpful support chatbot for "NutriPlan", a web application for personalized nutrition and meal planning.
-
-User Query: {{{input}}}
 
 Your task is to analyze the user's question and provide specific, actionable help about NutriPlan features.
 
@@ -40,11 +33,12 @@ KNOWLEDGE BASE:
 - AI Meal Plan: Generate optimized meal plans using AI.
 
 RESPONSE GUIDELINES:
-1. Be direct and specific about the relevant feature
-2. Provide actionable information
-3. Keep responses concise but helpful
-4. Focus on what the user can do with the feature
-5. Do not ask follow-up questions
+1. Be direct and specific about the relevant feature.
+2. Provide actionable information.
+3. Keep responses concise but helpful.
+4. Focus on what the user can do with the feature.
+5. Do not ask follow-up questions.
+6. Your response MUST be a JSON object with one key: "botResponse".
 
 USER QUESTION: {{userQuery}}
 
@@ -65,6 +59,6 @@ const supportChatbotFlow = ai.defineFlow(
           "I'm sorry, I couldn't process your request at the moment. Please try again.",
       };
     }
-    return output as SupportChatbotOutput;
+    return output;
   }
 );

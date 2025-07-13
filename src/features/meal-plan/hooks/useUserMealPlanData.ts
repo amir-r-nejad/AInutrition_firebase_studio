@@ -35,25 +35,12 @@ export function useUserMealPlanData() {
     [user?.uid]
   );
 
-  useEffect(() => {
-    // Only fetch the meal plan if the user object is available
-    if (user?.uid) {
-      fetchMealPlan(() => {
-        // Handle error, e.g., show a toast. This is passed from the component.
-      });
-    } else if (!isAuthLoading) {
-        // If auth is done and there's no user, we can stop loading.
-        setIsLoadingPlan(false);
-    }
-  }, [user, isAuthLoading, fetchMealPlan]);
-
-
   return {
     user,
-    profileData: user, // The full user profile is now available from useAuth()
+    profileData: user,
     fetchMealPlan,
     isLoadingPlan: isAuthLoading || isLoadingPlan,
-    isLoadingProfile: isAuthLoading, // Profile loading is tied to auth context loading
+    isLoadingProfile: isAuthLoading,
     weeklyPlan,
     setWeeklyPlan,
   };

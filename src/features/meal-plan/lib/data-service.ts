@@ -4,7 +4,7 @@ import { daysOfWeek, mealNames } from '@/lib/constants';
 import { db } from '@/lib/firebase/clientApp';
 import type { FullProfileType, WeeklyMealPlan } from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
-import { doc, getDoc, getDocFromServer, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export async function getMealPlanData(
   userId: string
@@ -13,7 +13,7 @@ export async function getMealPlanData(
 
   try {
     const userProfileRef = doc(db, 'users', userId);
-    const docSnap = await getDocFromServer(userProfileRef);
+    const docSnap = await getDoc(userProfileRef);
 
     if (!docSnap.exists()) {
       return null;
@@ -97,31 +97,7 @@ export async function getProfileDataForOptimization(
     const docSnap = await getDoc(userProfileRef);
 
     if (docSnap.exists()) {
-      const data = docSnap.data() as FullProfileType;
-
-      const profile: Partial<FullProfileType> = {
-        age: data.age,
-        gender: data.gender,
-        current_weight: data.current_weight,
-        height_cm: data.height_cm,
-        activityLevel: data.activityLevel,
-        dietGoalOnboarding: data.dietGoalOnboarding,
-        preferredDiet: data.preferredDiet,
-        allergies: data.allergies || [],
-        dispreferredIngredients: data.dispreferredIngredients || [],
-        preferredIngredients: data.preferredIngredients || [],
-        mealDistributions: data.mealDistributions || [],
-
-        smartPlannerData: data.smartPlannerData,
-      };
-
-      // Ensure undefined top-level optional fields become null for consistency
-      (Object.keys(profile) as Array<keyof typeof profile>).forEach((key) => {
-        if (profile[key] === undefined) {
-          (profile as any)[key] = null;
-        }
-      });
-      return profile;
+      return docSnap.data() as Partial<FullProfileType>;
     }
   } catch (error) {
     console.error(
@@ -157,7 +133,7 @@ export async function saveOptimizedMealPlan(
     const userProfileRef = doc(db, 'users', userId);
     await setDoc(
       userProfileRef,
-      { aiGeneratedMealPlan: planData },
+      { aiGeneratedMealPlan: preprocessDataForFirestore(planData) },
       { merge: true }
     );
   } catch (error) {

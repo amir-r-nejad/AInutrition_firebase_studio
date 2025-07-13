@@ -8,8 +8,8 @@ import {
   type SmartCaloriePlannerFormValues,
   type GlobalCalculatedTargets,
 } from '@/lib/schemas';
-import { db } from '@/lib/firebase/serverApp'; // Corrected: Use server-safe db
-import { User } from 'firebase/auth';
+import { db } from '@/lib/firebase/serverApp';
+import type { User } from 'firebase/auth';
 
 export async function addUser(u: string) {
   'use server';
@@ -20,7 +20,8 @@ export async function addUser(u: string) {
     const userSnapshot = await q.get();
 
     if (userSnapshot.empty) {
-      await usersCollection.add({
+      const userDocRef = usersCollection.doc(user.uid);
+      await userDocRef.set({
         uid: user.uid,
         email: user.email,
         emailVerified: user.emailVerified,
@@ -37,28 +38,13 @@ export async function onboardingUpdateUser(
   onboardingValues: OnboardingFormValues
 ): Promise<boolean> {
   try {
-    // Find the document ID for the user with the given UID
-    const usersCollection = db.collection('users');
-    const q = usersCollection.where('uid', '==', userId);
-    const userSnapshot = await q.get();
+    const userRef = db.collection('users').doc(userId);
 
-    if (userSnapshot.empty) {
-      console.error(
-        'onboardingUpdateUser error: No user document found for UID:',
-        userId
-      );
-      throw new Error('User document not found.');
-    }
-    const userDocId = userSnapshot.docs[0].id;
-    const userRef = db.collection('users').doc(userDocId);
-
-    // Create a new object with all onboarding values and set onboardingComplete to true
     const dataToSave: Partial<FullProfileType> = {
       ...onboardingValues,
       onboardingComplete: true,
     };
 
-    // Use set with merge: true to update or create the document
     await userRef.set(dataToSave, { merge: true });
 
     console.log(
@@ -68,7 +54,7 @@ export async function onboardingUpdateUser(
     return true;
   } catch (e) {
     console.error('onboardingUpdateUser error:', e);
-    throw e; // Re-throw the error to be caught by the calling function
+    throw e;
   }
 }
 
@@ -230,8 +216,8 @@ export async function getSmartPlannerData(userId: string): Promise<{
           userProfile.smartPlannerData?.formValues?.custom_protein_per_kg ??
           undefined,
         remaining_calories_carb_pct:
-          userProfile.smartPlannerData?.formValues?.remaining_calories_carb_pct ??
-          50,
+          userProfile.smartPlannerData?.formValues
+            ?.remaining_calories_carb_pct ?? 50,
       };
       return {
         formValues,
@@ -266,8 +252,6 @@ export async function getProfileData(
         exerciseIntensity: fullProfile.exerciseIntensity ?? undefined,
         equipmentAccess: fullProfile.equipmentAccess || [],
       };
-    } else {
-      console.log('No document found for userId:', userId);
     }
   } catch (error) {
     console.error('Error fetching profile from Firestore:', error);
@@ -281,33 +265,8 @@ export async function saveProfileData(userId: string, data: ProfileFormValues) {
   if (!userId) throw new Error('User ID is required to save profile data.');
 
   try {
-    const existingProfile = await getUserProfile(userId);
-
-    const dataToSave: Record<string, any> = { ...existingProfile };
-
-    // Merge only the fields present in ProfileFormValues
-    for (const key in data) {
-      if (Object.prototype.hasOwnProperty.call(data, key)) {
-        const formKey = key as keyof ProfileFormValues;
-        if (data[formKey] === undefined) {
-          dataToSave[formKey] = null; // Convert undefined from form to null for Firestore
-        } else {
-          dataToSave[formKey] = data[formKey];
-        }
-      }
-    }
-
-    const usersCollection = db.collection('users');
-    const q = usersCollection.where('uid', '==', userId);
-    const userSnapshot = await q.get();
-
-    if (userSnapshot.empty) {
-      throw new Error('User document not found for saving profile data.');
-    }
-    const userDocId = userSnapshot.docs[0].id;
-    const userRef = db.collection('users').doc(userDocId);
-
-    await userRef.set(dataToSave, { merge: true });
+    const userRef = db.collection('users').doc(userId);
+    await userRef.set(data, { merge: true });
   } catch (error) {
     console.error('Error saving profile to Firestore:', error);
     throw error;
@@ -321,13 +280,11 @@ export async function getUserProfile(
   if (!userId) return null;
 
   try {
-    const usersCollection = db.collection('users');
-    const q = usersCollection.where('uid', '==', userId);
-    const userSnapshot = await q.get();
+    const userDocRef = db.collection('users').doc(userId);
+    const userSnapshot = await userDocRef.get();
 
-    if (!userSnapshot.empty) {
-      const userDoc = userSnapshot.docs[0];
-      return userDoc.data() as FullProfileType;
+    if (userSnapshot.exists) {
+      return userSnapshot.data() as FullProfileType;
     } else {
       console.log('No user profile found for userId:', userId);
       return null;
