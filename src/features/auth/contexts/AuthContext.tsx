@@ -38,11 +38,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // This effect handles fetching the user's profile from Firestore
+    // once the initial Firebase Auth state is resolved.
     if (isAuthLoading) {
+      // Don't do anything until Firebase Auth has confirmed the login state.
       return;
     }
 
     if (authUser) {
+      // User is authenticated with Firebase. Now fetch their profile data.
       setIsProfileLoading(true);
       getUserProfile(authUser.uid)
         .then((userProfile) => {
@@ -50,20 +54,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         })
         .catch((error) => {
           console.error('Failed to fetch user profile:', error);
-          setProfile(null);
+          setProfile(null); // Ensure profile is null on error
         })
         .finally(() => {
-          setIsProfileLoading(false);
+          setIsProfileLoading(false); // Profile fetch attempt is complete
         });
     } else {
+      // No authenticated user, so no profile to fetch.
       setProfile(null);
       setIsProfileLoading(false);
     }
-  }, [authUser, isAuthLoading]);
+  }, [authUser, isAuthLoading]); // This runs ONLY when auth state changes.
 
   const isLoading = isAuthLoading || isProfileLoading;
 
   useEffect(() => {
+    // This effect handles routing based on the user's state.
+    // It waits until the combined loading state is false.
     if (isLoading) {
       return;
     }
@@ -77,23 +84,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     ].includes(pathname);
 
     if (!authUser) {
+      // If user is not logged in, and not on an auth page, redirect to login.
       if (!isAuthPage) {
         router.push('/login');
       }
       return;
     }
 
-    if (authUser && !profile?.onboardingComplete) {
+    // From here, we know `authUser` exists.
+    if (!profile?.onboardingComplete) {
+      // If user is logged in but hasn't completed onboarding, redirect them.
       if (pathname !== '/onboarding') {
         router.push('/onboarding');
       }
       return;
     }
 
-    if (authUser && profile?.onboardingComplete) {
-      if (isAuthPage || pathname === '/onboarding' || pathname === '/') {
-        router.push('/dashboard');
-      }
+    // If user is logged in and has completed onboarding.
+    if (isAuthPage || pathname === '/onboarding' || pathname === '/') {
+      // If they are on an auth page, the onboarding page, or the root, send to dashboard.
+      router.push('/dashboard');
     }
   }, [isLoading, authUser, profile, pathname, router]);
 
@@ -128,6 +138,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       try {
         await onboardingUpdateUser(authUser.uid, profileData);
+        // After saving, re-fetch the profile to get the latest `onboardingComplete` status
         const updatedProfile = await getUserProfile(authUser.uid);
         if (updatedProfile) {
           setProfile(updatedProfile);
@@ -143,7 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           description: 'Could not save your profile. Please try again.',
           variant: 'destructive',
         });
-        throw error;
+        throw error; // Re-throw to let the form know about the error
       }
     },
     [authUser?.uid, toast]
