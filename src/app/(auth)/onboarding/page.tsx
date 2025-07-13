@@ -421,7 +421,7 @@ export default function OnboardingPage() {
 
                   <NumberField<OnboardingFormValues>
                     name='goal_weight_1m'
-                    label='Target Weight After 1 Month (kg)'
+                    label='Target Weight After 1 Month (kg, Optional)'
                     placeholder='e.g., 68'
                     step='0.1'
                     control={form.control}

@@ -191,29 +191,27 @@ export default function SmartCaloriePlannerPage() {
     );
     const tdee = calculateTDEE(bmr, data.activity_factor_key!);
 
-    let targetCalories;
+    let targetCalories = tdee;
+
+    if (data.dietGoal === 'fat_loss') {
+        targetCalories = tdee - 500;
+    } else if (data.dietGoal === 'muscle_gain') {
+        targetCalories = tdee + 300;
+    } else if (data.dietGoal === 'recomp') {
+        targetCalories = tdee; 
+    }
+
     if (data.goal_weight_1m && data.current_weight) {
       const weightDeltaKg1M = data.current_weight - data.goal_weight_1m;
       const calorieAdjustment = (7700 * weightDeltaKg1M) / 30;
       targetCalories = tdee - calorieAdjustment;
-    } else {
-      targetCalories = tdee;
     }
 
+    let finalTargetCalories = Math.max(bmr + 100, Math.round(targetCalories));
     if (data.dietGoal === 'fat_loss') {
-      targetCalories = Math.min(targetCalories, tdee - 200);
-      targetCalories = Math.max(targetCalories, bmr + 200, 1200);
-    } else if (data.dietGoal === 'muscle_gain') {
-      targetCalories = Math.max(targetCalories, tdee + 150);
-    } else if (data.dietGoal === 'recomp') {
-      targetCalories = Math.min(
-        Math.max(targetCalories, tdee - 300),
-        tdee + 100
-      );
-      targetCalories = Math.max(targetCalories, bmr + 100, 1400);
+      finalTargetCalories = Math.max(finalTargetCalories, 1200);
     }
 
-    const finalTargetCalories = Math.max(bmr + 100, Math.round(targetCalories));
 
     const estimatedWeeklyWeightChangeKg =
       ((tdee - finalTargetCalories) * 7) / 7700;

@@ -165,9 +165,9 @@ export async function getUserProfile(
 ): Promise<FullProfileType | null> {
   'use server';
   if (!userId) return null;
-  const { db } = getFirebaseAdmin();
-
+  
   try {
+    const { db } = getFirebaseAdmin();
     const userDocRef = db.collection('users').doc(userId);
     const userSnapshot = await userDocRef.get();
 

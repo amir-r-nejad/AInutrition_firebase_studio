@@ -324,7 +324,7 @@ export const OnboardingFormSchema = z.object({
   gender: z.enum(genders.map((g) => g.value) as [string, ...string[]], { required_error: 'Gender is required.' }),
   height_cm: z.coerce.number().min(50, 'Height must be at least 50cm').max(300),
   current_weight: z.coerce.number().min(20, 'Weight must be at least 20kg').max(500),
-  goal_weight_1m: z.coerce.number().min(20, 'Target weight must be at least 20kg').max(500),
+  goal_weight_1m: z.coerce.number().min(20, 'Target weight must be at least 20kg').max(500).optional(),
   ideal_goal_weight: z.preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional()),
   activityLevel: z.enum(allActivityLevels.map((al) => al.value) as [string, ...string[]], { required_error: 'Activity level is required.' }),
   dietGoalOnboarding: z.enum(smartPlannerDietGoals.map((g) => g.value) as [string, ...string[]], { required_error: 'Diet goal is required.' }),
