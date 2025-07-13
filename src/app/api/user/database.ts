@@ -8,12 +8,13 @@ import {
   type SmartCaloriePlannerFormValues,
   type GlobalCalculatedTargets,
 } from '@/lib/schemas';
-import { db } from '@/lib/firebase/serverApp';
+import { getFirebaseAdmin } from '@/lib/firebase/serverApp';
 import type { User } from 'firebase/auth';
 
 export async function addUser(u: string) {
   'use server';
   let user = JSON.parse(u) as User;
+  const { db } = getFirebaseAdmin();
   try {
     const usersCollection = db.collection('users');
     const q = usersCollection.where('uid', '==', user.uid);
@@ -37,6 +38,7 @@ export async function onboardingUpdateUser(
   userId: string,
   onboardingValues: OnboardingFormValues
 ): Promise<boolean> {
+  const { db } = getFirebaseAdmin();
   try {
     const userRef = db.collection('users').doc(userId);
 
@@ -263,6 +265,7 @@ export async function getProfileData(
 export async function saveProfileData(userId: string, data: ProfileFormValues) {
   'use server';
   if (!userId) throw new Error('User ID is required to save profile data.');
+  const { db } = getFirebaseAdmin();
 
   try {
     const userRef = db.collection('users').doc(userId);
@@ -278,6 +281,7 @@ export async function getUserProfile(
 ): Promise<FullProfileType | null> {
   'use server';
   if (!userId) return null;
+  const { db } = getFirebaseAdmin();
 
   try {
     const userDocRef = db.collection('users').doc(userId);
