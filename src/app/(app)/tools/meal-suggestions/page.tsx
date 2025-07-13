@@ -1,7 +1,10 @@
-
 'use client';
 
-import { suggestMealsForMacros } from '@/ai/flows/suggest-meals-for-macros';
+import {
+  suggestMealsForMacros,
+  type SuggestMealsForMacrosInput,
+  type SuggestMealsForMacrosOutput,
+} from '@/ai/flows/suggest-meals-for-macros';
 import {
   Accordion,
   AccordionContent,
@@ -51,30 +54,43 @@ import {
 } from '@/lib/constants';
 import { db } from '@/lib/firebase/clientApp';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
-import type {
-  FullProfileType,
-  SuggestMealsForMacrosInput,
-  SuggestMealsForMacrosOutput,
-  MealSuggestionPreferencesValues,
-} from '@/lib/schemas';
+import type { FullProfileType } from '@/lib/schemas';
 import {
   MealSuggestionPreferencesSchema,
-  preprocessDataForFirestore,
+  type MealSuggestionPreferencesValues,
 } from '@/lib/schemas';
-import { getAIApiErrorMessage } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import {
   AlertTriangle,
   ChefHat,
   Loader2,
   Settings,
   Sparkles,
-  Save,
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+
+async function getProfileDataForSuggestions(
+  userId: string
+): Promise<Partial<FullProfileType>> {
+  if (!userId) return {};
+  try {
+    const userCollection = collection(db, 'users');
+    const q = query(userCollection, where('uid', '==', userId));
+    const userSnapshot = await getDocs(q);
+    if (!userSnapshot.empty) {
+      return userSnapshot.docs[0].data() as any;
+    }
+  } catch (error) {
+    console.error(
+      'Error fetching profile data from Firestore for suggestions:',
+      error
+    );
+  }
+  return {};
+}
 
 function MealSuggestionsContent() {
   const searchParams = useSearchParams();
@@ -91,10 +107,9 @@ function MealSuggestionsContent() {
   } | null>(null);
 
   const [fullProfileData, setFullProfileData] =
-    useState<FullProfileType | null>(null);
+    useState<Partial<FullProfileType> | null>(null);
   const [isLoadingAiSuggestions, setIsLoadingAiSuggestions] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   const [suggestions, setSuggestions] = useState<
     SuggestMealsForMacrosOutput['suggestions']
@@ -118,7 +133,137 @@ function MealSuggestionsContent() {
   });
 
   useEffect(() => {
-    // Priority 1: Handle direct navigation with URL params
+    if (user?.uid) {
+      setIsLoadingProfile(true);
+      getProfileDataForSuggestions(user.uid)
+        .then((data) => {
+          setFullProfileData(data);
+          preferenceForm.reset({
+            preferredDiet: data.preferredDiet || undefined,
+            preferredCuisines: data.preferredCuisines || [],
+            dispreferredCuisines: data.dispreferredCuisines || [],
+            preferredIngredients: data.preferredIngredients || [],
+            dispreferredIngredients: data.dispreferredIngredients || [],
+            allergies: data.allergies || [],
+            preferredMicronutrients: data.preferredMicronutrients || [],
+            medicalConditions: data.medicalConditions || [],
+            medications: data.medications || [],
+          });
+        })
+        .catch(() =>
+          toast({
+            title: 'Error',
+            description: 'Could not load profile data.',
+            variant: 'destructive',
+          })
+        )
+        .finally(() => setIsLoadingProfile(false));
+    } else {
+      setIsLoadingProfile(false);
+      preferenceForm.reset({
+        preferredDiet: undefined,
+        preferredCuisines: [],
+        dispreferredCuisines: [],
+        preferredIngredients: [],
+        dispreferredIngredients: [],
+        allergies: [],
+        preferredMicronutrients: [],
+        medicalConditions: [],
+        medications: [],
+      });
+    }
+  }, [user, toast, preferenceForm]);
+
+  const calculateTargetsForSelectedMeal = useCallback(() => {
+    if (!selectedMealName) {
+      setTargetMacros(null);
+      setIsDemoMode(false);
+      return;
+    }
+    setError(null);
+    setSuggestions([]);
+
+    const profileToUse = fullProfileData;
+    const exampleTargets = {
+      mealName: selectedMealName,
+      calories: 500,
+      protein: 30,
+      carbs: 60,
+      fat: 20,
+    };
+
+    const requiredProfileFields: (keyof FullProfileType)[] = [
+      'age',
+      'gender',
+      'current_weight',
+      'height_cm',
+      'activityLevel',
+      'dietGoalOnboarding',
+    ];
+    const missingFields = requiredProfileFields.filter(
+      (field) => !profileToUse?.[field]
+    );
+
+    if (missingFields.length === 0 && profileToUse) {
+      const dailyTotals = calculateEstimatedDailyTargets({
+        age: profileToUse.age!,
+        gender: profileToUse.gender!,
+        currentWeight: profileToUse.current_weight!,
+        height: profileToUse.height_cm!,
+        activityLevel: profileToUse.activityLevel!,
+        dietGoal: profileToUse.dietGoalOnboarding!,
+      });
+      const mealDistribution = defaultMacroPercentages[selectedMealName];
+
+      if (
+        dailyTotals.finalTargetCalories &&
+        dailyTotals.proteinGrams &&
+        dailyTotals.carbGrams &&
+        dailyTotals.fatGrams &&
+        mealDistribution
+      ) {
+        setTargetMacros({
+          mealName: selectedMealName,
+          calories: Math.round(
+            dailyTotals.finalTargetCalories *
+              (mealDistribution.calories_pct / 100)
+          ),
+          protein: Math.round(
+            dailyTotals.proteinGrams * (mealDistribution.protein_pct / 100)
+          ),
+          carbs: Math.round(
+            dailyTotals.carbGrams * (mealDistribution.carbs_pct / 100)
+          ),
+          fat: Math.round(
+            dailyTotals.fatGrams * (mealDistribution.fat_pct / 100)
+          ),
+        });
+        setIsDemoMode(false);
+      } else {
+        setTargetMacros(exampleTargets);
+        setIsDemoMode(true);
+        toast({
+          title: 'Using Example Targets',
+          description: `Could not calculate specific targets for ${selectedMealName} from profile. Ensure profile basics (age, weight, height, gender, activity, goal) are complete.`,
+          duration: 6000,
+          variant: 'default',
+        });
+      }
+    } else {
+      setTargetMacros(exampleTargets);
+      setIsDemoMode(true);
+      toast({
+        title: 'Profile Incomplete or Demo',
+        description: `Showing example targets for ${selectedMealName}. Please complete your profile via Onboarding or Smart Calorie Planner for personalized calculations.`,
+        duration: 7000,
+        variant: 'default',
+      });
+    }
+  }, [selectedMealName, fullProfileData, toast]);
+
+  useEffect(() => {
+    if (!searchParams) return;
+
     const mealNameParam = searchParams.get('mealName');
     const caloriesParam = searchParams.get('calories');
     const proteinParam = searchParams.get('protein');
@@ -140,153 +285,16 @@ function MealSuggestionsContent() {
         carbs: parseFloat(carbsParam),
         fat: parseFloat(fatParam),
       };
+
       setSelectedMealName(mealNameParam);
       setTargetMacros(newTargets);
       setIsDemoMode(false);
       setSuggestions([]);
       setError(null);
-      sessionStorage.removeItem('mealSuggestionsCache'); // Clear cache when navigating via params
-    } else {
-      // Priority 2: Restore from session storage if no URL params
-      try {
-        const cachedData = sessionStorage.getItem('mealSuggestionsCache');
-        if (cachedData) {
-          const { mealName, suggestions: cachedSuggestions, targetMacros: cachedMacros } = JSON.parse(cachedData);
-          setSelectedMealName(mealName);
-          setTargetMacros(cachedMacros);
-          setSuggestions(cachedSuggestions);
-        }
-      } catch (e) {
-        console.error("Could not load suggestions from session storage", e);
-        sessionStorage.removeItem('mealSuggestionsCache');
-      }
+    } else if (mealNameParam && mealNames.includes(mealNameParam)) {
+      setSelectedMealName(mealNameParam);
     }
   }, [searchParams]);
-
-  useEffect(() => {
-    if (user?.uid) {
-      setIsLoadingProfile(true);
-      const userDocRef = doc(db, 'users', user.uid);
-      getDoc(userDocRef)
-        .then((docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data() as FullProfileType;
-            setFullProfileData(data);
-            if (data) {
-              preferenceForm.reset({
-                preferredDiet: data.preferredDiet ?? undefined,
-                preferredCuisines: data.preferredCuisines ?? [],
-                dispreferredCuisines: data.dispreferredCuisines ?? [],
-                preferredIngredients: data.preferredIngredients ?? [],
-                dispreferredIngredients: data.dispreferredIngredients ?? [],
-                allergies: data.allergies ?? [],
-                preferredMicronutrients: data.preferredMicronutrients ?? [],
-                medicalConditions: data.medicalConditions ?? [],
-                medications: data.medications ?? [],
-              });
-            }
-          }
-        })
-        .catch((err) =>
-          toast({
-            title: 'Error Loading Profile',
-            description:
-              err instanceof Error
-                ? err.message
-                : 'Could not load your profile preferences.',
-            variant: 'destructive',
-          })
-        )
-        .finally(() => setIsLoadingProfile(false));
-    } else {
-      setIsLoadingProfile(false);
-    }
-  }, [user, toast, preferenceForm]);
-
-  const calculateTargetsForSelectedMeal = useCallback(() => {
-    if (!selectedMealName) {
-      setTargetMacros(null);
-      setIsDemoMode(false);
-      return;
-    }
-    setError(null);
-    setSuggestions([]);
-
-    const profileToUse = fullProfileData;
-
-    let dailyTotals: { calories: number; protein: number; carbs: number; fat: number } | null = null;
-
-    if (profileToUse?.smartPlannerData?.results?.finalTargetCalories) {
-        const smartResults = profileToUse.smartPlannerData.results;
-        dailyTotals = {
-            calories: smartResults.finalTargetCalories || 0,
-            protein: smartResults.proteinGrams || 0,
-            carbs: smartResults.carbGrams || 0,
-            fat: smartResults.fatGrams || 0,
-        };
-    } 
-    else if (
-        profileToUse?.age &&
-        profileToUse?.gender &&
-        profileToUse?.current_weight &&
-        profileToUse?.height_cm &&
-        profileToUse?.activityLevel &&
-        profileToUse?.dietGoalOnboarding
-    ) {
-        const estimatedTargets = calculateEstimatedDailyTargets({
-            age: profileToUse.age,
-            gender: profileToUse.gender,
-            currentWeight: profileToUse.current_weight,
-            height: profileToUse.height_cm,
-            activityLevel: profileToUse.activityLevel,
-            dietGoal: profileToUse.dietGoalOnboarding,
-        });
-
-        if (estimatedTargets.finalTargetCalories) {
-            dailyTotals = {
-                calories: estimatedTargets.finalTargetCalories,
-                protein: estimatedTargets.proteinGrams || 0,
-                carbs: estimatedTargets.carbGrams || 0,
-                fat: estimatedTargets.fatGrams || 0,
-            };
-        }
-    }
-
-    if (dailyTotals && selectedMealName) {
-      const customDistributions = profileToUse?.mealDistributions;
-      const mealDistribution = 
-        customDistributions?.find((d) => d.mealName === selectedMealName) || 
-        defaultMacroPercentages[selectedMealName];
-
-      if (mealDistribution) {
-        setTargetMacros({
-          mealName: selectedMealName,
-          calories: Math.round(dailyTotals.calories * ((mealDistribution.calories_pct || 0) / 100)),
-          protein: Math.round(dailyTotals.protein * ((mealDistribution.protein_pct || 0) / 100)),
-          carbs: Math.round(dailyTotals.carbs * ((mealDistribution.carbs_pct || 0) / 100)),
-          fat: Math.round(dailyTotals.fat * ((mealDistribution.fat_pct || 0) / 100)),
-        });
-        setIsDemoMode(false);
-        return;
-      }
-    }
-    
-    const exampleTargets = {
-      mealName: selectedMealName,
-      calories: 500,
-      protein: 30,
-      carbs: 60,
-      fat: 20,
-    };
-    setTargetMacros(exampleTargets);
-    setIsDemoMode(true);
-    toast({
-      title: 'Profile Incomplete or Demo',
-      description: `Showing example targets for ${selectedMealName}. Please complete your profile for personalized calculations.`,
-      duration: 7000,
-      variant: 'default',
-    });
-  }, [selectedMealName, fullProfileData, toast]);
 
   useEffect(() => {
     if (selectedMealName && !targetMacros && !isLoadingProfile) {
@@ -305,28 +313,6 @@ function MealSuggestionsContent() {
     setSuggestions([]);
     setError(null);
     setIsDemoMode(false);
-    sessionStorage.removeItem('mealSuggestionsCache');
-  };
-
-  const handleSavePreferences = async () => {
-    if (!user?.uid) {
-        toast({ title: 'Error', description: 'You must be logged in to save preferences.', variant: 'destructive' });
-        return;
-    }
-    setIsSavingPreferences(true);
-    try {
-        const currentPreferences = preferenceForm.getValues();
-        const userProfileRef = doc(db, 'users', user.uid);
-        
-        await setDoc(userProfileRef, preprocessDataForFirestore(currentPreferences), { merge: true });
-
-        toast({ title: 'Success', description: 'Your preferences have been saved.' });
-    } catch (error) {
-        toast({ title: 'Save Failed', description: "Could not save your preferences.", variant: 'destructive' });
-        console.error("Error saving preferences:", error);
-    } finally {
-        setIsSavingPreferences(false);
-    }
   };
 
   const handleGetSuggestions = async () => {
@@ -363,18 +349,16 @@ function MealSuggestionsContent() {
       targetProteinGrams: targetMacros.protein,
       targetCarbsGrams: targetMacros.carbs,
       targetFatGrams: targetMacros.fat,
-      age: !isDemoMode ? fullProfileData?.age ?? undefined : undefined,
-      gender: !isDemoMode ? fullProfileData?.gender ?? undefined : undefined,
-      activityLevel: !isDemoMode ? fullProfileData?.activityLevel ?? undefined : undefined,
-      dietGoal: !isDemoMode ? fullProfileData?.dietGoalOnboarding ?? undefined : undefined,
+      age: !isDemoMode ? fullProfileData?.age : undefined,
+      gender: !isDemoMode ? fullProfileData?.gender : undefined,
+      activityLevel: !isDemoMode ? fullProfileData?.activityLevel : undefined,
+      dietGoal: !isDemoMode ? fullProfileData?.dietGoalOnboarding : undefined,
       preferredDiet: currentPreferences.preferredDiet,
       preferredCuisines: currentPreferences.preferredCuisines,
       dispreferredCuisines: currentPreferences.dispreferredCuisines,
       preferredIngredients: currentPreferences.preferredIngredients,
       dispreferredIngredients: currentPreferences.dispreferredIngredients,
       allergies: currentPreferences.allergies,
-      medicalConditions: currentPreferences.medicalConditions,
-      medications: currentPreferences.medications,
     };
 
     Object.keys(aiInput).forEach(
@@ -387,15 +371,6 @@ function MealSuggestionsContent() {
       const result = await suggestMealsForMacros(aiInput);
       if (result && result.suggestions) {
         setSuggestions(result.suggestions);
-        try {
-            sessionStorage.setItem('mealSuggestionsCache', JSON.stringify({
-                mealName: targetMacros.mealName,
-                suggestions: result.suggestions,
-                targetMacros: targetMacros
-            }));
-        } catch (e) {
-            console.error("Could not save suggestions to session storage", e);
-        }
       } else {
         setError('AI did not return valid suggestions.');
         toast({
@@ -405,13 +380,17 @@ function MealSuggestionsContent() {
         });
       }
     } catch (err: any) {
-      const errorMessage = getAIApiErrorMessage(err);
-      setError(errorMessage);
+      console.error('Error getting meal suggestions:', err);
+      console.error('Full AI error object (MealSuggestionsPage):', err);
+      const errorMessage = err.message || 'An unknown error occurred';
+      setError(
+        `Failed to fetch meal suggestions: ${errorMessage}. Please try again.`
+      );
       toast({
         title: 'AI Error',
-        description: errorMessage,
+        description: `Could not get meal suggestions from AI: ${errorMessage}`,
         variant: 'destructive',
-        duration: 8000,
+        duration: 7000,
       });
     } finally {
       setIsLoadingAiSuggestions(false);
@@ -438,7 +417,7 @@ function MealSuggestionsContent() {
                 <Textarea
                   placeholder={placeholder}
                   value={displayValue}
-                  onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                  onChange={(e) => field.onChange(e.target.value.split(','))}
                   className='h-10 resize-none'
                   onWheel={(e) =>
                     (e.currentTarget as HTMLTextAreaElement).blur()
@@ -568,12 +547,6 @@ function MealSuggestionsContent() {
                     </Card>
                   </form>
                 </Form>
-                 <div className="mt-4 flex justify-end">
-                    <Button onClick={handleSavePreferences} disabled={isSavingPreferences}>
-                        {isSavingPreferences ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        Save Preferences
-                    </Button>
-                </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -790,14 +763,7 @@ function MealSuggestionsContent() {
 
 export default function MealSuggestionsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className='flex justify-center items-center h-screen'>
-          <Loader2 className='h-12 w-12 animate-spin text-primary' />
-          <p className='ml-4 text-lg'>Loading...</p>
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingScreen />}>
       <MealSuggestionsContent />
     </Suspense>
   );

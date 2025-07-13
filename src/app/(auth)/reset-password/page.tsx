@@ -1,3 +1,5 @@
+
+'use client';
 import ResetPasswordContent from '@/features/auth/components/resetPassword/ResetPasswordContent';
 import { Suspense } from 'react';
 

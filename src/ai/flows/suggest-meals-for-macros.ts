@@ -18,40 +18,20 @@ export async function suggestMealsForMacros(
 }
 
 // AI Prompt
+
 const prompt = ai.definePrompt({
   name: 'suggestMealsForMacrosPrompt',
-  input: { schema: SuggestMealsForMacrosInputSchema },
-  output: { schema: SuggestMealsForMacrosOutputSchema },
-  prompt: `You are an expert AI nutritionist and personal chef. Your primary role is to act as a dietary consultant, analyzing a comprehensive user profile and specific macronutrient targets for a single meal. Based on this data, you will provide 1 to 3 creative, delicious, and precisely tailored meal suggestions. Your suggestions must be holistic, considering not just the numbers, but the user's entire lifestyle, preferences, and health status.
+  input: { type: 'json' },
+  output: { type: 'json' },
+  prompt: `You are a creative nutritionist and recipe developer. Your task is to suggest 1-3 detailed meal ideas for a specific mealtime that precisely meet the user's macronutrient targets and strictly adhere to their preferences.
 
-**User's Comprehensive Profile:**
-{{#if age}}**Age:** {{age}}{{/if}}
-{{#if gender}}**Gender:** {{gender}}{{/if}}
-{{#if activityLevel}}**Activity Level:** {{activityLevel}}{{/if}}
-{{#if dietGoal}}**Primary Diet Goal:** {{dietGoal}}{{/if}}
-{{#if preferredDiet}}**Stated Dietary Preference:** {{preferredDiet}}{{/if}}
-{{#if allergies.length}}**Critical Allergies to Avoid:** {{allergies}}{{/if}}
-{{#if medicalConditions.length}}**Medical Conditions to Consider:** {{medicalConditions}}{{/if}}
-{{#if medications.length}}**Medications:** {{medications}}{{/if}}
-{{#if preferredCuisines.length}}**Preferred Cuisines:** {{preferredCuisines}}{{/if}}
-{{#if dispreferredCuisines.length}}**Cuisines to Avoid:** {{dispreferredCuisines}}{{/if}}
-{{#if preferredIngredients.length}}**Likes:** {{preferredIngredients}}{{/if}}
-{{#if dispreferredIngredients.length}}**Dislikes:** {{dispreferredIngredients}}{{/if}}
+{{{input}}}
 
-**Target Macronutrients for this specific meal: "{{mealName}}":**
-- **Calories:** {{targetCalories}} kcal
-- **Protein:** {{targetProteinGrams}}g
-- **Carbohydrates:** {{targetCarbsGrams}}g
-- **Fat:** {{targetFatGrams}}g
-
-**Your Task & Expert Explanation Requirement:**
-Generate 1 to 3 detailed meal suggestions that meet the user's macronutrient targets. For each suggestion, you MUST provide an insightful 'description' that explains *why* this meal is an excellent choice for the user, as a real nutritionist would. This explanation should connect the meal to the user's profile. For example: "This meal is high in fiber and lean protein, which will keep you feeling full longer, supporting your **fat loss goal**. We've used Greek yogurt as a base to boost the protein content while respecting your preference for **Mediterranean cuisine**."
-
-**Strict Instructions for JSON Output:**
+Strict Instructions for Output:
 - Your response MUST be a JSON object with ONLY one exact top-level property: "suggestions".
     - "suggestions": This MUST be an array containing 1 to 3 meal suggestion objects. Each meal suggestion object MUST contain ONLY these exact properties:
         - "mealTitle": string — A concise and appealing title for the meal (e.g., "Mediterranean Chicken Salad").
-        - "description": string — A brief, engaging, and **expert** description of the meal that explains *why* it fits the user's goals and profile, as detailed in the task description above.
+        - "description": string — A brief, engaging description of the meal.
         - "ingredients": An array of objects, where each object represents a single ingredient. Each ingredient object MUST contain ONLY these exact properties:
             - "name": string — The name of the ingredient (e.g., "Chicken Breast").
             - "amount": string — The quantity of the ingredient as a string (e.g., "150", "1/2").
@@ -67,10 +47,9 @@ Generate 1 to 3 detailed meal suggestions that meet the user's macronutrient tar
         - "totalFat": number — The sum of fat (grams) from all ingredients in this meal.
         - "instructions"?: string — (Optional) Step-by-step cooking instructions for the meal. If not applicable or not requested, omit this field.
 
-**⚠️ Important Rules:**
-- Ensure the 'totalCalories', 'totalProtein', 'totalCarbs', and 'totalFat' for each suggested meal are within a 5% margin of error of the target values provided.
+⚠️ Important Rules:
 - Ensure all meal suggestions are realistic, diverse, and nutritionally valid.
-- Strictly respect all specified allergies, preferences, and medical conditions.
+- Strictly respect all specified allergies, preferences, and dislikes.
 - Double-check all macro sums: "totalCalories", "totalProtein", "totalCarbs", and "totalFat" MUST be accurately calculated and match the sum of their respective values from the "ingredients" list for each meal.
 - Use actual numerical values for all number fields. Do NOT use string representations for numbers.
 - DO NOT return empty "ingredients" lists for any meal suggestion.
@@ -84,6 +63,7 @@ Respond ONLY with the pure JSON object that strictly matches the following TypeS
 });
 
 // Genkit Flow
+
 const suggestMealsForMacrosFlow = ai.defineFlow(
   {
     name: 'suggestMealsForMacrosFlow',
@@ -93,22 +73,10 @@ const suggestMealsForMacrosFlow = ai.defineFlow(
   async (
     input: SuggestMealsForMacrosInput
   ): Promise<SuggestMealsForMacrosOutput> => {
-    try {
-      const { output } = await prompt(input);
-      if (!output) {
-        throw new Error('AI did not return output.');
-      }
-
-      const validationResult = SuggestMealsForMacrosOutputSchema.safeParse(output);
-      if (!validationResult.success) {
-          console.error('AI output validation error:', validationResult.error.flatten());
-          throw new Error(`AI returned data in an unexpected format. Details: ${validationResult.error.message}`);
-      }
-
-      return validationResult.data;
-    } catch (error: any) {
-      console.error("Error in suggestMealsForMacrosFlow:", error);
-      throw new Error(getAIApiErrorMessage(error));
+    const { output } = await prompt(input);
+    if (!output) {
+      throw new Error('AI did not return output.');
     }
+    return output as SuggestMealsForMacrosOutput;
   }
 );

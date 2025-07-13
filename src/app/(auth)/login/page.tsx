@@ -17,7 +17,7 @@ export default async function LoginPage() {
         <div className='flex justify-center items-center mb-4'>
           <Leaf className='h-10 w-10 text-primary' />
         </div>
-        <CardTitle className='text-2xl font-bold'>Welcome Back!</CardTitle>
+        <CardTitle className='text-2xl font-bold'>Welcome Back!!!</CardTitle>
         <CardDescription>
           Enter your credentials to access NutriPlan
         </CardDescription>
