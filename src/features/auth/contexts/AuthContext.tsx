@@ -20,8 +20,6 @@ import {
   onboardingUpdateUser,
 } from '@/app/api/user/database';
 
-type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
-
 interface AuthContextType {
   user: FullProfileType | null;
   isLoading: boolean;
@@ -39,37 +37,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
   const { toast } = useToast();
 
+  const isLoading = isAuthLoading || isProfileLoading;
+
   useEffect(() => {
-    // Don't do anything until Firebase has confirmed the auth state
+    // This effect handles fetching the profile AFTER the auth state is known.
     if (isAuthLoading) {
-      return;
+      return; // Do nothing until Firebase auth state is resolved.
     }
 
-    if (!authUser) {
+    if (authUser) {
+      setIsProfileLoading(true); // Set loading true before fetching
+      getUserProfile(authUser.uid)
+        .then((userProfile) => {
+          setProfile(userProfile);
+        })
+        .catch((error) => {
+          console.error('Failed to fetch user profile:', error);
+          setProfile(null);
+        })
+        .finally(() => {
+          setIsProfileLoading(false); // Mark profile loading as complete
+        });
+    } else {
+      // No authenticated user from Firebase.
       setProfile(null);
-      setIsProfileLoading(false); // No profile to load
-      return;
+      setIsProfileLoading(false); // No profile to load, so stop loading.
     }
-
-    // User is authenticated, now fetch their profile data.
-    setIsProfileLoading(true);
-    getUserProfile(authUser.uid)
-      .then((userProfile) => {
-        setProfile(userProfile);
-      })
-      .catch((error) => {
-        console.error('Failed to fetch user profile:', error);
-        setProfile(null); // Ensure profile is null on error
-      })
-      .finally(() => {
-        setIsProfileLoading(false); // Profile loading is finished
-      });
-  }, [authUser, isAuthLoading]);
+  }, [authUser, isAuthLoading]); // Reruns ONLY when auth state changes.
 
   useEffect(() => {
-    // Wait until both auth check and profile fetch are complete
-    if (isAuthLoading || isProfileLoading) {
-      return;
+    // This effect handles routing AFTER all loading is complete.
+    if (isLoading) {
+      return; // Do not perform any routing actions while loading.
     }
 
     const isAuthPage = [
@@ -80,35 +79,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       '/verify-email',
     ].includes(pathname);
 
-    // If there's no authenticated user, redirect to login unless already on an auth page
     if (!authUser) {
+      // User is not logged in.
       if (!isAuthPage) {
         router.push('/login');
       }
-      return;
-    }
-
-    // User is authenticated
-    // If onboarding is not complete, redirect to onboarding page
-    if (!profile?.onboardingComplete) {
-      if (pathname !== '/onboarding') {
-        router.push('/onboarding');
+    } else {
+      // User is logged in.
+      if (!profile?.onboardingComplete) {
+        // User needs to complete onboarding.
+        if (pathname !== '/onboarding') {
+          router.push('/onboarding');
+        }
+      } else {
+        // User is onboarded and authenticated.
+        if (isAuthPage || pathname === '/onboarding' || pathname === '/') {
+          router.push('/dashboard');
+        }
       }
-      return;
     }
-
-    // If onboarding is complete and user is on an auth page, redirect to dashboard
-    if (isAuthPage || pathname === '/onboarding' || pathname === '/') {
-      router.push('/dashboard');
-    }
-  }, [
-    isAuthLoading,
-    isProfileLoading,
-    authUser,
-    profile,
-    pathname,
-    router,
-  ]);
+  }, [isLoading, authUser, profile, pathname, router]);
 
   const logout = useCallback(async () => {
     try {
@@ -164,7 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const contextValue: AuthContextType = {
     user: profile,
-    isLoading: isAuthLoading || isProfileLoading,
+    isLoading: isLoading,
     logout,
     completeOnboarding,
   };
