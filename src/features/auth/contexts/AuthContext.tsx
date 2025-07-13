@@ -20,6 +20,8 @@ import {
   onboardingUpdateUser,
 } from '@/app/api/user/database';
 
+type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+
 interface AuthContextType {
   user: FullProfileType | null;
   isLoading: boolean;
@@ -32,47 +34,43 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { user: authUser, isLoading: isAuthLoading } = useUser();
   const [profile, setProfile] = useState<FullProfileType | null>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [status, setStatus] = useState<AuthStatus>('loading');
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect handles fetching the user's profile from Firestore
-    // once the initial Firebase Auth state is resolved.
     if (isAuthLoading) {
-      // Don't do anything until Firebase Auth has confirmed the login state.
+      setStatus('loading');
       return;
     }
 
-    if (authUser) {
-      // User is authenticated with Firebase. Now fetch their profile data.
-      setIsProfileLoading(true);
-      getUserProfile(authUser.uid)
-        .then((userProfile) => {
-          setProfile(userProfile);
-        })
-        .catch((error) => {
-          console.error('Failed to fetch user profile:', error);
-          setProfile(null); // Ensure profile is null on error
-        })
-        .finally(() => {
-          setIsProfileLoading(false); // Profile fetch attempt is complete
-        });
-    } else {
-      // No authenticated user, so no profile to fetch.
+    if (!authUser) {
       setProfile(null);
-      setIsProfileLoading(false);
+      setStatus('unauthenticated');
+      return;
     }
-  }, [authUser, isAuthLoading]); // This runs ONLY when auth state changes.
 
-  const isLoading = isAuthLoading || isProfileLoading;
+    // Auth user exists, now we fetch the profile.
+    // The status remains 'loading' until the profile is fetched.
+    getUserProfile(authUser.uid)
+      .then((userProfile) => {
+        setProfile(userProfile);
+        // We can now determine the final authenticated state.
+        setStatus('authenticated'); 
+      })
+      .catch((error) => {
+        console.error('Failed to fetch user profile:', error);
+        setProfile(null);
+        // Even on error, we are no longer loading. Treat as unauthenticated to be safe.
+        setStatus('unauthenticated');
+      });
+      
+  }, [authUser, isAuthLoading]);
 
   useEffect(() => {
-    // This effect handles routing based on the user's state.
-    // It waits until the combined loading state is false.
-    if (isLoading) {
-      return;
+    if (status === 'loading') {
+      return; // Do nothing while we wait for auth state.
     }
 
     const isAuthPage = [
@@ -83,34 +81,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       '/verify-email',
     ].includes(pathname);
 
-    if (!authUser) {
-      // If user is not logged in, and not on an auth page, redirect to login.
+    if (status === 'unauthenticated') {
       if (!isAuthPage) {
         router.push('/login');
       }
       return;
     }
 
-    // From here, we know `authUser` exists.
-    if (!profile?.onboardingComplete) {
-      // If user is logged in but hasn't completed onboarding, redirect them.
-      if (pathname !== '/onboarding') {
-        router.push('/onboarding');
+    if (status === 'authenticated') {
+      if (!profile?.onboardingComplete) {
+        if (pathname !== '/onboarding') {
+          router.push('/onboarding');
+        }
+        return;
       }
-      return;
-    }
 
-    // If user is logged in and has completed onboarding.
-    if (isAuthPage || pathname === '/onboarding' || pathname === '/') {
-      // If they are on an auth page, the onboarding page, or the root, send to dashboard.
-      router.push('/dashboard');
+      if (isAuthPage || pathname === '/onboarding' || pathname === '/') {
+        router.push('/dashboard');
+      }
     }
-  }, [isLoading, authUser, profile, pathname, router]);
+  }, [status, profile, pathname, router]);
 
   const logout = useCallback(async () => {
     try {
       await fSignOut();
       setProfile(null);
+      setStatus('unauthenticated'); // Explicitly set status on logout
       router.push('/login');
       toast({
         title: 'Logged Out',
@@ -138,7 +134,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       try {
         await onboardingUpdateUser(authUser.uid, profileData);
-        // After saving, re-fetch the profile to get the latest `onboardingComplete` status
         const updatedProfile = await getUserProfile(authUser.uid);
         if (updatedProfile) {
           setProfile(updatedProfile);
@@ -154,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           description: 'Could not save your profile. Please try again.',
           variant: 'destructive',
         });
-        throw error; // Re-throw to let the form know about the error
+        throw error;
       }
     },
     [authUser?.uid, toast]
@@ -162,7 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const contextValue: AuthContextType = {
     user: profile,
-    isLoading,
+    isLoading: status === 'loading',
     logout,
     completeOnboarding,
   };
