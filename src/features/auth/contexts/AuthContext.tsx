@@ -38,7 +38,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isAuthLoading && authUser) {
+    if (isAuthLoading) {
+      return; // Wait for Firebase auth to initialize
+    }
+
+    if (authUser) {
       setIsProfileLoading(true);
       getUserProfile(authUser.uid)
         .then((userProfile) => {
@@ -51,9 +55,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .finally(() => {
           setIsProfileLoading(false);
         });
-    } else if (!authUser) {
-      setIsProfileLoading(false);
+    } else {
+      // No authenticated user
       setProfile(null);
+      setIsProfileLoading(false);
     }
   }, [authUser, isAuthLoading]);
 
@@ -80,9 +85,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    // If there is an authenticated user, but their profile hasn't finished loading yet
+    // If there is an authenticated user, but their profile hasn't finished loading yet or failed
     if(!profile) {
-      // This can happen for a brief moment. We wait until the profile is loaded.
+      // This can happen for a brief moment or if Firestore fetch fails.
+      // If we know they are logged in but have no profile, something is wrong.
+      // We could log out or show an error. For now, we wait.
       return;
     }
 
