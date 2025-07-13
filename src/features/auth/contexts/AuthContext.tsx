@@ -38,29 +38,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!authUser || isAuthLoading) {
+    if (!isAuthLoading && authUser) {
+      setIsProfileLoading(true);
+      getUserProfile(authUser.uid)
+        .then((userProfile) => {
+          setProfile(userProfile);
+        })
+        .catch((error) => {
+          console.error('Failed to fetch user profile:', error);
+          setProfile(null); // Explicitly set to null on error
+        })
+        .finally(() => {
+          setIsProfileLoading(false);
+        });
+    } else if (!authUser) {
       setIsProfileLoading(false);
       setProfile(null);
-      return;
     }
-
-    setIsProfileLoading(true);
-    getUserProfile(authUser.uid)
-      .then((userProfile) => {
-        setProfile(userProfile);
-      })
-      .catch((error) => {
-        console.error('Failed to fetch user profile:', error);
-        setProfile(null);
-      })
-      .finally(() => {
-        setIsProfileLoading(false);
-      });
   }, [authUser, isAuthLoading]);
 
+  const isLoading = isAuthLoading || isProfileLoading;
+
   useEffect(() => {
-    const isLoading = isAuthLoading || isProfileLoading;
-    if (isLoading) return;
+    if (isLoading) {
+      return; // Do nothing while loading
+    }
 
     const isAuthPage = [
       '/login',
@@ -70,32 +72,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       '/verify-email',
     ].includes(pathname);
 
+    // If there's no authenticated user and we're not on an auth page, redirect to login
     if (!authUser) {
       if (!isAuthPage) {
         router.push('/login');
       }
       return;
     }
-
-    if (profile) {
-      if (!profile.onboardingComplete) {
-        if (pathname !== '/onboarding') {
-          router.push('/onboarding');
-        }
-        return;
-      }
+    
+    // If there is an authenticated user, but their profile hasn't finished loading yet
+    if(!profile) {
+      // This can happen for a brief moment. We wait until the profile is loaded.
+      return;
     }
 
+    // If onboarding is not complete, redirect to onboarding page
+    if (!profile.onboardingComplete) {
+      if (pathname !== '/onboarding') {
+        router.push('/onboarding');
+      }
+      return;
+    }
+
+    // If user is authenticated and onboarded, but on an auth or onboarding page, redirect to dashboard
     if (isAuthPage || pathname === '/onboarding' || pathname === '/') {
       router.push('/dashboard');
     }
-  }, [authUser, profile, isAuthLoading, isProfileLoading, pathname, router]);
+  }, [isLoading, authUser, profile, pathname, router]);
 
   const logout = useCallback(async () => {
     try {
       await fSignOut();
       setProfile(null);
       router.push('/login');
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
     } catch (error) {
       console.error('Firebase logout error:', error);
       toast({
@@ -126,6 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           title: 'Profile Complete!',
           description: 'Your profile has been saved successfully.',
         });
+        // No need to manually push, the useEffect will handle it
       } catch (error) {
         console.error('Onboarding completion error:', error);
         toast({
@@ -141,7 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const contextValue: AuthContextType = {
     user: profile,
-    isLoading: isAuthLoading || isProfileLoading,
+    isLoading,
     logout,
     completeOnboarding,
   };
