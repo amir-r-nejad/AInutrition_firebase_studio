@@ -54,6 +54,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .catch((error) => {
           console.error('Failed to fetch user profile:', error);
           setProfile(null);
+          toast({
+              title: 'Profile Load Error',
+              description: 'Could not load your profile data. Please try refreshing the page.',
+              variant: 'destructive',
+          });
         })
         .finally(() => {
           setIsProfileLoading(false); // Mark profile loading as complete
@@ -63,7 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setProfile(null);
       setIsProfileLoading(false); // No profile to load, so stop loading.
     }
-  }, [authUser, isAuthLoading]); // Reruns ONLY when auth state changes.
+  }, [authUser, isAuthLoading, toast]); // Reruns ONLY when auth state changes.
 
   useEffect(() => {
     // This effect handles routing AFTER all loading is complete.

@@ -265,14 +265,14 @@ export const MacroSplitterFormSchema = z.object({
 export type MacroSplitterFormValues = z.infer<typeof MacroSplitterFormSchema>;
 
 export const SmartCaloriePlannerFormSchema = z.object({
-  age: z.coerce.number().int('Age must be a whole number.').positive('Age must be positive.'),
-  gender: z.enum(genders.map((g) => g.value) as [string, ...string[]], { required_error: 'Gender is required.' }),
-  height_cm: z.coerce.number().positive('Height must be positive.'),
-  current_weight: z.coerce.number().positive('Weight must be positive.'),
+  age: z.coerce.number().int('Age must be a whole number.').positive('Age must be positive.').optional(),
+  gender: z.enum(genders.map((g) => g.value) as [string, ...string[]]).optional(),
+  height_cm: z.coerce.number().positive('Height must be positive.').optional(),
+  current_weight: z.coerce.number().positive('Weight must be positive.').optional(),
   goal_weight_1m: z.coerce.number().positive('Goal weight must be positive.').optional(),
   ideal_goal_weight: z.preprocess(preprocessOptionalNumber, z.coerce.number().positive().optional()),
-  activity_factor_key: z.enum(allActivityLevels.map((al) => al.value) as [string, ...string[]]),
-  dietGoal: z.enum(smartPlannerDietGoals.map((g) => g.value) as [string, ...string[]]),
+  activity_factor_key: z.enum(allActivityLevels.map((al) => al.value) as [string, ...string[]]).optional(),
+  dietGoal: z.enum(smartPlannerDietGoals.map((g) => g.value) as [string, ...string[]]).optional(),
   bf_current: z.preprocess(preprocessOptionalNumber, z.coerce.number().min(0).max(100).optional()),
   bf_target: z.preprocess(preprocessOptionalNumber, z.coerce.number().min(0).max(100).optional()),
   bf_ideal: z.preprocess(preprocessOptionalNumber, z.coerce.number().min(0).max(100).optional()),
