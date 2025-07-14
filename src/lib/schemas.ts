@@ -104,7 +104,8 @@ export interface FullProfileType {
   current_weight?: number | null;
   goal_weight_1m?: number | null;
   ideal_goal_weight?: number | null;
-  activityLevel?: string | null;
+  activity_factor_key?: string | null;
+  dietGoal?: string | null; 
   dietGoalOnboarding?: string | null;
   preferredDiet?: string | null;
   allergies?: string[] | null;
@@ -154,6 +155,10 @@ export interface FullProfileType {
   exerciseIntensity?: string | null;
   equipmentAccess?: string[] | null;
   goalWeight?: number | null;
+  custom_total_calories?: number | null;
+  activityLevel?: string | null;
+  custom_protein_per_kg?: number | null;
+  remaining_calories_carb_pct?: number | null;
   smartPlannerData?: {
     formValues?: Partial<SmartCaloriePlannerFormValues> | null;
     results?: GlobalCalculatedTargets | null;
@@ -302,7 +307,7 @@ export const SmartCaloriePlannerFormSchema = z.object({
   left_arm_ideal: z.preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional()),
   custom_total_calories: z.preprocess(preprocessOptionalNumber, z.coerce.number().int().positive().optional()),
   custom_protein_per_kg: z.preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional()),
-  remaining_calories_carb_pct: z.preprocess(preprocessOptionalNumber, z.coerce.number().int().min(0).max(100).optional().default(50)),
+  remaining_calories_carb_pct: z.coerce.number().int().min(0).max(100).default(50), // optional() حذف شد
 });
 export type SmartCaloriePlannerFormValues = z.infer<typeof SmartCaloriePlannerFormSchema>;
 

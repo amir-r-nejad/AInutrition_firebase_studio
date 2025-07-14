@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -55,9 +54,10 @@ import {
   smartPlannerDietGoals,
 } from '@/lib/constants';
 import { db } from '@/lib/firebase/clientApp';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, DocumentSnapshot, DocumentData } from '@firebase/firestore';
 import { calculateBMR, calculateTDEE } from '@/lib/nutrition-calculator';
 import {
+  type FullProfileType,
   type GlobalCalculatedTargets,
   preprocessDataForFirestore,
   SmartCaloriePlannerFormSchema,
@@ -65,6 +65,7 @@ import {
 } from '@/lib/schemas';
 import { formatNumber } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ZodError } from 'zod';
 import {
   BrainCircuit,
   Calculator,
@@ -134,61 +135,49 @@ export default function SmartCaloriePlannerPage() {
       setIsLoadingData(true);
       const userDocRef = doc(db, 'users', user.uid);
       getDoc(userDocRef)
-        .then((docSnap) => {
+        .then((docSnap: DocumentSnapshot<DocumentData>) => {
           if (docSnap.exists()) {
-            const profile = docSnap.data();
+            const profile = docSnap.data() as FullProfileType;
             if (profile) {
-              const formSource =
-                profile.smartPlannerData?.formValues ?? (profile as any);
-
               const formValues: Partial<SmartCaloriePlannerFormValues> = {
-                age: formSource.age ?? undefined,
-                gender: formSource.gender ?? undefined,
-                height_cm: formSource.height_cm ?? undefined,
-                current_weight: formSource.current_weight ?? undefined,
-                goal_weight_1m: formSource.goal_weight_1m ?? undefined,
-                ideal_goal_weight: formSource.ideal_goal_weight ?? undefined,
-                activity_factor_key:
-                  formSource.activity_factor_key ??
-                  formSource.activityLevel ??
-                  'moderate',
-                dietGoal:
-                  formSource.dietGoal ??
-                  formSource.dietGoalOnboarding ??
-                  'fat_loss',
-                bf_current: formSource.bf_current ?? undefined,
-                bf_target: formSource.bf_target ?? undefined,
-                bf_ideal: formSource.bf_ideal ?? undefined,
-                mm_current: formSource.mm_current ?? undefined,
-                mm_target: formSource.mm_target ?? undefined,
-                mm_ideal: formSource.mm_ideal ?? undefined,
-                bw_current: formSource.bw_current ?? undefined,
-                bw_target: formSource.bw_target ?? undefined,
-                bw_ideal: formSource.bw_ideal ?? undefined,
-                waist_current: formSource.waist_current ?? undefined,
-                waist_goal_1m: formSource.waist_goal_1m ?? undefined,
-                waist_ideal: formSource.waist_ideal ?? undefined,
-                hips_current: formSource.hips_current ?? undefined,
-                hips_goal_1m: formSource.hips_goal_1m ?? undefined,
-                hips_ideal: formSource.hips_ideal ?? undefined,
-                right_leg_current: formSource.right_leg_current ?? undefined,
-                right_leg_goal_1m: formSource.right_leg_goal_1m ?? undefined,
-                right_leg_ideal: formSource.right_leg_ideal ?? undefined,
-                left_leg_current: formSource.left_leg_current ?? undefined,
-                left_leg_goal_1m: formSource.left_leg_goal_1m ?? undefined,
-                left_leg_ideal: formSource.left_leg_ideal ?? undefined,
-                right_arm_current: formSource.right_arm_current ?? undefined,
-                right_arm_goal_1m: formSource.right_arm_goal_1m ?? undefined,
-                right_arm_ideal: formSource.right_arm_ideal ?? undefined,
-                left_arm_current: formSource.left_arm_current ?? undefined,
-                left_arm_goal_1m: formSource.left_arm_goal_1m ?? undefined,
-                left_arm_ideal: formSource.left_arm_ideal ?? undefined,
-                custom_total_calories:
-                  formSource.custom_total_calories ?? undefined,
-                custom_protein_per_kg:
-                  formSource.custom_protein_per_kg ?? undefined,
-                remaining_calories_carb_pct:
-                  formSource.remaining_calories_carb_pct ?? 50,
+                age: profile.age ?? undefined,
+                gender: profile.gender ?? undefined,
+                height_cm: profile.height_cm ?? undefined,
+                current_weight: profile.current_weight ?? undefined,
+                goal_weight_1m: profile.goal_weight_1m ?? undefined,
+                ideal_goal_weight: profile.ideal_goal_weight ?? undefined,
+                activity_factor_key: profile.activity_factor_key ?? 'moderate', // فقط از activity_factor_key استفاده می‌کنیم
+                dietGoal: profile.dietGoal ?? profile.dietGoalOnboarding ?? 'fat_loss',
+                bf_current: profile.bf_current ?? undefined,
+                bf_target: profile.bf_target ?? undefined,
+                bf_ideal: profile.bf_ideal ?? undefined,
+                mm_current: profile.mm_current ?? undefined,
+                mm_target: profile.mm_target ?? undefined,
+                mm_ideal: profile.mm_ideal ?? undefined,
+                bw_current: profile.bw_current ?? undefined,
+                bw_target: profile.bw_target ?? undefined,
+                bw_ideal: profile.bw_ideal ?? undefined,
+                waist_current: profile.waist_current ?? undefined,
+                waist_goal_1m: profile.waist_goal_1m ?? undefined,
+                waist_ideal: profile.waist_ideal ?? undefined,
+                hips_current: profile.hips_current ?? undefined,
+                hips_goal_1m: profile.hips_goal_1m ?? undefined,
+                hips_ideal: profile.hips_ideal ?? undefined,
+                right_leg_current: profile.right_leg_current ?? undefined,
+                right_leg_goal_1m: profile.right_leg_goal_1m ?? undefined,
+                right_leg_ideal: profile.right_leg_ideal ?? undefined,
+                left_leg_current: profile.left_leg_current ?? undefined,
+                left_leg_goal_1m: profile.left_leg_goal_1m ?? undefined,
+                left_leg_ideal: profile.left_leg_ideal ?? undefined,
+                right_arm_current: profile.right_arm_current ?? undefined,
+                right_arm_goal_1m: profile.right_arm_goal_1m ?? undefined,
+                right_arm_ideal: profile.right_arm_ideal ?? undefined,
+                left_arm_current: profile.left_arm_current ?? undefined,
+                left_arm_goal_1m: profile.left_arm_goal_1m ?? undefined,
+                left_arm_ideal: profile.left_arm_ideal ?? undefined,
+                custom_total_calories: profile.custom_total_calories ?? undefined,
+                custom_protein_per_kg: profile.custom_protein_per_kg ?? undefined,
+                remaining_calories_carb_pct: profile.remaining_calories_carb_pct ?? 50,
               };
 
               reset(formValues);
@@ -205,10 +194,11 @@ export default function SmartCaloriePlannerPage() {
             }
           }
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
+          const typedError = err as Error;
           toast({
             title: 'Error',
-            description: 'Could not load saved planner data.',
+            description: typedError.message || 'Could not load saved planner data.',
             variant: 'destructive',
           });
         })
@@ -223,7 +213,6 @@ export default function SmartCaloriePlannerPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
 
   const onSubmit = async (data: SmartCaloriePlannerFormValues) => {
     const activity = activityLevels.find(
@@ -269,7 +258,7 @@ export default function SmartCaloriePlannerPage() {
         Math.max(targetCaloriesS1, tdee - 300),
         tdee + 100
       );
-      targetCaloriesS1 = Math.max(targetCaloriesS1, bmr + 100, 1400);
+      targetCaloriesS1 = Math.max(targetCaloriesS1, bmr + 200, 1400);
     }
 
     let finalTargetCalories = targetCaloriesS1;
@@ -316,7 +305,7 @@ export default function SmartCaloriePlannerPage() {
       targetCaloriesS3 = tdee - calorieAdjustmentS3;
     }
 
-    finalTargetCalories = Math.max(bmr + 100, Math.round(finalTargetCalories));
+    finalTargetCalories = Math.max(bmr + 200, Math.round(finalTargetCalories));
 
     const estimatedWeeklyWeightChangeKg =
       ((tdee - finalTargetCalories) * 7) / 7700;
@@ -376,18 +365,20 @@ export default function SmartCaloriePlannerPage() {
           title: 'Calculation Complete',
           description: 'Your smart calorie plan has been generated and saved.',
         });
-      } catch (error) {
+      } catch (error: unknown) {
+        const typedError = error as Error;
         toast({
           title: 'Save Error',
-          description: 'Could not save calculation results.',
+          description: typedError.message || 'Could not save calculation results.',
           variant: 'destructive',
         });
       }
     }
   };
 
-  function onError(error: any) {
-    console.log(error);
+  function onError(error: unknown) {
+    const typedError = error as ZodError;
+    console.log(typedError);
     console.log(smartPlannerForm.formState.errors);
   }
 
@@ -445,11 +436,11 @@ export default function SmartCaloriePlannerPage() {
         },
         { merge: true }
       );
+      toast({
+        title: 'Smart Planner Reset',
+        description: 'All smart planner inputs and results cleared.',
+      });
     }
-    toast({
-      title: 'Smart Planner Reset',
-      description: 'All smart planner inputs and results cleared.',
-    });
   };
 
   const handleCustomPlanReset = () => {
@@ -459,7 +450,6 @@ export default function SmartCaloriePlannerPage() {
       custom_protein_per_kg: undefined,
       remaining_calories_carb_pct: 50,
     });
-    // No need to save to Firestore on custom reset, as the main form save does that
     toast({
       title: 'Custom Plan Reset',
       description: 'Custom plan inputs have been reset.',
@@ -510,7 +500,7 @@ export default function SmartCaloriePlannerPage() {
     let calculatedFatCalories = 0;
 
     if (remainingCaloriesForCustom > 0) {
-      const carbRatio = (remainingCarbPct ?? 50) / 100;
+      const carbRatio = remainingCarbPct / 100;
       const fatRatio = 1 - carbRatio;
 
       calculatedCarbCalories = remainingCaloriesForCustom * carbRatio;
@@ -585,21 +575,22 @@ export default function SmartCaloriePlannerPage() {
       const dataToSave = {
         smartPlannerData: preprocessDataForFirestore({
           formValues: currentFormValues,
-          results: customPlanResults, // SAVING THE CUSTOM RESULTS!
+          results: customPlanResults,
         }),
       };
       await setDoc(userProfileRef, dataToSave, { merge: true });
 
-      setResults(customPlanResults); // Update the main results display as well
+      setResults(customPlanResults);
       toast({
         title: 'Custom Plan Saved!',
         description:
           'Your custom macros are now the active targets for other tools.',
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const typedError = error as Error;
       toast({
         title: 'Save Error',
-        description: 'Could not save your custom plan.',
+        description: typedError.message || 'Could not save your custom plan.',
         variant: 'destructive',
       });
     }
@@ -1091,20 +1082,17 @@ export default function SmartCaloriePlannerPage() {
 
                   <AccordionItem value='help-section'>
                     <AccordionTrigger className='text-xl font-semibold'>
-                      {' '}
                       <div className='flex items-center'>
-                        {' '}
                         <HelpCircle className='mr-2 h-6 w-6 text-primary' /> How
-                        is this calculated?{' '}
-                      </div>{' '}
+                        is this calculated?
+                      </div>
                     </AccordionTrigger>
                     <AccordionContent className='text-sm space-y-4 pt-3 max-h-96 overflow-y-auto'>
                       <div>
-                        {' '}
                         <h4 className='font-semibold text-base'>
                           1. Basal Metabolic Rate (BMR) & Total Daily Energy
                           Expenditure (TDEE)
-                        </h4>{' '}
+                        </h4>
                         <p>
                           We use the{' '}
                           <strong className='text-primary'>
@@ -1186,17 +1174,16 @@ export default function SmartCaloriePlannerPage() {
                         </p>
                       </div>
                       <div>
-                        {' '}
                         <h4 className='font-semibold text-base mt-2'>
                           4. Safe Pace
-                        </h4>{' '}
+                        </h4>
                         <p>
                           Sustainable weight loss is often around 0.5–1 kg (1–2
                           lbs) per week. Muscle gain is slower, around 0.25–0.5
                           kg (0.5–1 lb) per week. Large body composition or
                           measurement changes in just 1 month may be unrealistic
                           for many.
-                        </p>{' '}
+                        </p>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -1208,11 +1195,10 @@ export default function SmartCaloriePlannerPage() {
                     className='flex-1 text-lg py-3'
                     disabled={smartPlannerForm.formState.isSubmitting}
                   >
-                    {' '}
-                    <Calculator className='mr-2 h-5 w-5' />{' '}
+                    <Calculator className='mr-2 h-5 w-5' />
                     {smartPlannerForm.formState.isSubmitting
                       ? 'Calculating...'
-                      : 'Calculate Smart Target'}{' '}
+                      : 'Calculate Smart Target'}
                   </Button>
                 </div>
                 <div className='mt-4 flex justify-end'>
@@ -1222,385 +1208,196 @@ export default function SmartCaloriePlannerPage() {
                     onClick={handleSmartPlannerReset}
                     className='text-sm'
                   >
-                    {' '}
                     <RefreshCcw className='mr-2 h-4 w-4' /> Reset Smart Planner
-                    Inputs{' '}
+                    Inputs
                   </Button>
                 </div>
-              </form>
-            </Form>
 
-            {results && (
-              <Card className='mt-8 bg-muted/30 shadow-inner'>
-                <CardHeader>
-                  <CardTitle className='text-2xl font-semibold text-primary'>
-                    Original Plan (System Generated)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className='space-y-4'>
-                  <div className='grid md:grid-cols-2 gap-4 text-base'>
-                    <p>
-                      <strong>Maintenance Calories (TDEE):</strong>{' '}
-                      {results.tdee ? formatNumber(results.tdee) : 'N/A'} kcal
-                    </p>
-                    <p>
-                      <strong>Basal Metabolic Rate (BMR):</strong>{' '}
-                      {results.bmr ? formatNumber(results.bmr) : 'N/A'} kcal
-                    </p>
-                  </div>
-                  <hr />
-                  <p className='text-lg font-medium'>
-                    <strong>
-                      Primary Target Daily Calories:{' '}
-                      <span className='text-primary'>
-                        {results.finalTargetCalories
-                          ? formatNumber(results.finalTargetCalories)
-                          : 'N/A'}{' '}
-                        kcal
-                      </span>
-                    </strong>
-                  </p>
-                  <p className='text-sm text-muted-foreground'>
-                    {' '}
-                    (Based on your weight &amp; diet goals. Optional BF% goal
-                    may refine this.)
-                  </p>
-
-                  <p>
-                    <strong>Estimated Weekly Progress:</strong>{' '}
-                    {results.estimatedWeeklyWeightChangeKg &&
-                    results.estimatedWeeklyWeightChangeKg >= 0
-                      ? `${formatNumber(
-                          results.estimatedWeeklyWeightChangeKg ?? 0,
-                          { maximumFractionDigits: 2 }
-                        )} kg surplus/week (Potential Gain)`
-                      : `${formatNumber(
-                          Math.abs(results.estimatedWeeklyWeightChangeKg ?? 0),
-                          { maximumFractionDigits: 2 }
-                        )} kg deficit/week (Potential Loss)`}
-                  </p>
-                  <hr />
-                  <div className='pt-4'>
-                    <CardTitle className='text-xl font-semibold mb-3 text-primary'>
-                      Suggested Macronutrient Breakdown
-                    </CardTitle>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          {/* */}
-                          <TableHead>Macronutrient</TableHead>
-                          {/* */}
-                          <TableHead className='text-right'>
-                            % of Daily Calories
-                          </TableHead>
-                          {/* */}
-                          <TableHead className='text-right'>
-                            Grams per Day
-                          </TableHead>
-                          {/* */}
-                          <TableHead className='text-right'>
-                            Calories per Day
-                          </TableHead>
-                          {/* */}
-                        </TableRow>
-                        {/* */}
-                      </TableHeader>
-                      <TableBody>
-                        <TableRow>
-                          <TableCell className='font-medium'>Protein</TableCell>
-                          <TableCell className='text-right'>
-                            {results.proteinTargetPct
-                              ? formatNumber(results.proteinTargetPct * 100, {
-                                  maximumFractionDigits: 0,
-                                })
-                              : 'N/A'}
-                            %
-                          </TableCell>
-                          <TableCell className='text-right'>
-                            {results.proteinGrams
-                              ? formatNumber(results.proteinGrams, {
-                                  maximumFractionDigits: 1,
-                                })
-                              : 'N/A'}{' '}
-                            g
-                          </TableCell>
-                          <TableCell className='text-right'>
-                            {results.proteinCalories
-                              ? formatNumber(results.proteinCalories, {
-                                  maximumFractionDigits: 0,
-                                })
+                {results && (
+                  <Card className='mt-8 bg-muted/30 shadow-inner'>
+                    <CardHeader>
+                      <CardTitle className='text-2xl font-semibold text-primary'>
+                        Original Plan (System Generated)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className='space-y-4'>
+                      <div className='grid md:grid-cols-2 gap-4 text-base'>
+                        <p>
+                          <strong>Maintenance Calories (TDEE):</strong>{' '}
+                          {results.tdee ? formatNumber(results.tdee) : 'N/A'} kcal
+                        </p>
+                        <p>
+                          <strong>Basal Metabolic Rate (BMR):</strong>{' '}
+                          {results.bmr ? formatNumber(results.bmr) : 'N/A'} kcal
+                        </p>
+                      </div>
+                      <hr />
+                      <p className='text-lg font-medium'>
+                        <strong>
+                          Primary Target Daily Calories:{' '}
+                          <span className='text-primary'>
+                            {results.finalTargetCalories
+                              ? formatNumber(results.finalTargetCalories)
                               : 'N/A'}{' '}
                             kcal
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className='font-medium'>
-                            Carbohydrates
-                          </TableCell>
-                          <TableCell className='text-right'>
-                            {results.carbTargetPct
-                              ? formatNumber(results.carbTargetPct * 100, {
-                                  maximumFractionDigits: 0,
-                                })
-                              : 'N/A'}
-                            %
-                          </TableCell>
-                          <TableCell className='text-right'>
-                            {results.carbGrams
-                              ? formatNumber(results.carbGrams, {
-                                  maximumFractionDigits: 1,
-                                })
-                              : 'N/A'}{' '}
-                            g
-                          </TableCell>
-                          <TableCell className='text-right'>
-                            {results.carbCalories
-                              ? formatNumber(results.carbCalories, {
-                                  maximumFractionDigits: 0,
-                                })
-                              : 'N/A'}{' '}
-                            kcal
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className='font-medium'>Fat</TableCell>
-                          <TableCell className='text-right'>
-                            {results.fatTargetPct
-                              ? formatNumber(results.fatTargetPct * 100, {
-                                  maximumFractionDigits: 0,
-                                })
-                              : 'N/A'}
-                            %
-                          </TableCell>
-                          <TableCell className='text-right'>
-                            {results.fatGrams
-                              ? formatNumber(results.fatGrams, {
-                                  maximumFractionDigits: 1,
-                                })
-                              : 'N/A'}{' '}
-                            g
-                          </TableCell>
-                          <TableCell className='text-right'>
-                            {results.fatCalories
-                              ? formatNumber(results.fatCalories, {
-                                  maximumFractionDigits: 0,
-                                })
-                              : 'N/A'}{' '}
-                            kcal
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                      <TableCaption className='text-xs mt-2 text-left'>
-                        {' '}
-                        This breakdown is based on your inputs and calculated
-                        goal. For custom macro adjustments, use the 'Customize
-                        Your Plan' section below.{' '}
-                      </TableCaption>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                          </span>
+                        </strong>
+                      </p>
+                      <p className='text-sm text-muted-foreground'>
+                        (Based on your weight & diet goals. Optional BF% goal
+                        may refine this.)
+                      </p>
 
-            {results && (
-              <Card className='mt-8'>
-                <CardHeader>
-                  <CardTitle className='text-2xl font-semibold flex items-center'>
-                    <Edit3 className='mr-2 h-6 w-6 text-primary' /> Customize
-                    Your Plan
-                  </CardTitle>
-                  <CardDescription>
-                    Adjust the system-generated plan with your preferences.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...smartPlannerForm}>
-                    {' '}
-                    {/* This Form tag is redundant here if the outer one covers all inputs */}
-                    <form className='space-y-6'>
-                      {' '}
-                      {/* This form tag is also redundant */}
-                      <div className='grid md:grid-cols-2 gap-x-6 gap-y-4 items-start'>
-                        <FormField
-                          control={smartPlannerForm.control}
-                          name='custom_total_calories'
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className='flex items-center'>
-                                Custom Total Calories
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span>
-                                      <Button
-                                        variant='ghost'
-                                        size='icon'
-                                        className='h-5 w-5 ml-1 p-0'
-                                      >
-                                        <Info className='h-3 w-3' />
-                                      </Button>
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent className='w-64'>
-                                    <p>
-                                      Override the system-calculated total daily
-                                      calories. Leave blank to use the original
-                                      estimate:{' '}
-                                      {results.finalTargetCalories
-                                        ? formatNumber(
-                                            results.finalTargetCalories,
-                                            {
-                                              maximumFractionDigits: 0,
-                                            }
-                                          )
-                                        : 'N/A'}{' '}
-                                      kcal.
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </FormLabel>
-                              <FormControl>
-                                <div>
-                                  <Input
-                                    type='number'
-                                    placeholder={`e.g., ${
-                                      results.finalTargetCalories
-                                        ? formatNumber(
-                                            results.finalTargetCalories,
-                                            {
-                                              maximumFractionDigits: 0,
-                                            }
-                                          )
-                                        : '2000'
-                                    }`}
-                                    {...field}
-                                    value={field.value ?? ''}
-                                    onChange={(e) =>
-                                      field.onChange(
-                                        e.target.value === ''
-                                          ? undefined
-                                          : parseInt(e.target.value, 10)
-                                      )
-                                    }
-                                    step='1'
-                                    onWheel={(e) =>
-                                      (
-                                        e.currentTarget as HTMLInputElement
-                                      ).blur()
-                                    }
-                                  />
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={smartPlannerForm.control}
-                          name='custom_protein_per_kg'
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className='flex items-center'>
-                                Custom Protein (g/kg)
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span>
-                                      <Button
-                                        variant='ghost'
-                                        size='icon'
-                                        className='h-5 w-5 ml-1 p-0'
-                                      >
-                                        <Info className='h-3 w-3' />
-                                      </Button>
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent className='w-64'>
-                                    <p>
-                                      Set your desired protein intake in grams
-                                      per kg of your current body weight (
-                                      {results.current_weight_for_custom_calc
-                                        ? formatNumber(
-                                            results.current_weight_for_custom_calc,
-                                            {
-                                              maximumFractionDigits: 1,
-                                            }
-                                          )
-                                        : smartPlannerForm.getValues(
-                                            'current_weight'
-                                          )
-                                        ? formatNumber(
-                                            smartPlannerForm.getValues(
-                                              'current_weight'
-                                            ),
-                                            {
-                                              maximumFractionDigits: 1,
-                                            }
-                                          )
-                                        : 'N/A'}{' '}
-                                      kg). Affects protein, carbs, and fat
-                                      distribution. Original estimate:{' '}
-                                      {results.current_weight_for_custom_calc &&
-                                      results.current_weight_for_custom_calc >
-                                        0 &&
-                                      results.proteinGrams
-                                        ? formatNumber(
-                                            results.proteinGrams /
-                                              results.current_weight_for_custom_calc,
-                                            { maximumFractionDigits: 1 }
-                                          )
-                                        : 'N/A'}{' '}
-                                      g/kg.
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </FormLabel>
-                              <FormControl>
-                                <div>
-                                  <Input
-                                    type='number'
-                                    placeholder={`e.g., ${
-                                      results.current_weight_for_custom_calc &&
-                                      results.current_weight_for_custom_calc >
-                                        0 &&
-                                      results.proteinGrams
-                                        ? formatNumber(
-                                            results.proteinGrams /
-                                              results.current_weight_for_custom_calc,
-                                            { maximumFractionDigits: 1 }
-                                          )
-                                        : '1.6'
-                                    }`}
-                                    {...field}
-                                    value={field.value ?? ''}
-                                    onChange={(e) =>
-                                      field.onChange(
-                                        e.target.value === ''
-                                          ? undefined
-                                          : parseFloat(e.target.value)
-                                      )
-                                    }
-                                    step='0.1'
-                                    onWheel={(e) =>
-                                      (
-                                        e.currentTarget as HTMLInputElement
-                                      ).blur()
-                                    }
-                                  />
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={smartPlannerForm.control}
-                          name='remaining_calories_carb_pct'
-                          render={({ field }) => {
-                            const currentCarbPct = field.value ?? 50;
-                            const currentFatPct = 100 - currentCarbPct;
-                            return (
-                              <FormItem className='md:col-span-2'>
+                      <p>
+                        <strong>Estimated Weekly Progress:</strong>{' '}
+                        {results.estimatedWeeklyWeightChangeKg &&
+                        results.estimatedWeeklyWeightChangeKg >= 0
+                          ? `${formatNumber(
+                              results.estimatedWeeklyWeightChangeKg ?? 0,
+                              { maximumFractionDigits: 2 }
+                            )} kg surplus/week (Potential Gain)`
+                          : `${formatNumber(
+                              Math.abs(results.estimatedWeeklyWeightChangeKg ?? 0),
+                              { maximumFractionDigits: 2 }
+                            )} kg deficit/week (Potential Loss)`}
+                      </p>
+                      <hr />
+                      <div className='pt-4'>
+                        <CardTitle className='text-xl font-semibold mb-3 text-primary'>
+                          Suggested Macronutrient Breakdown
+                        </CardTitle>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Macronutrient</TableHead>
+                              <TableHead className='text-right'>
+                                % of Daily Calories
+                              </TableHead>
+                              <TableHead className='text-right'>
+                                Grams per Day
+                              </TableHead>
+                              <TableHead className='text-right'>
+                                Calories per Day
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell className='font-medium'>Protein</TableCell>
+                              <TableCell className='text-right'>
+                                {results.proteinTargetPct
+                                  ? formatNumber(results.proteinTargetPct * 100, {
+                                      maximumFractionDigits: 0,
+                                    })
+                                  : 'N/A'}
+                                %
+                              </TableCell>
+                              <TableCell className='text-right'>
+                                {results.proteinGrams
+                                  ? formatNumber(results.proteinGrams, {
+                                      maximumFractionDigits: 1,
+                                    })
+                                  : 'N/A'}{' '}
+                                g
+                              </TableCell>
+                              <TableCell className='text-right'>
+                                {results.proteinCalories
+                                  ? formatNumber(results.proteinCalories, {
+                                      maximumFractionDigits: 0,
+                                    })
+                                  : 'N/A'}{' '}
+                                kcal
+                              </TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className='font-medium'>
+                                Carbohydrates
+                              </TableCell>
+                              <TableCell className='text-right'>
+                                {results.carbTargetPct
+                                  ? formatNumber(results.carbTargetPct * 100, {
+                                      maximumFractionDigits: 0,
+                                    })
+                                  : 'N/A'}
+                                %
+                              </TableCell>
+                              <TableCell className='text-right'>
+                                {results.carbGrams
+                                  ? formatNumber(results.carbGrams, {
+                                      maximumFractionDigits: 1,
+                                    })
+                                  : 'N/A'}{' '}
+                                g
+                              </TableCell>
+                              <TableCell className='text-right'>
+                                {results.carbCalories
+                                  ? formatNumber(results.carbCalories, {
+                                      maximumFractionDigits: 0,
+                                    })
+                                  : 'N/A'}{' '}
+                                kcal
+                              </TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className='font-medium'>Fat</TableCell>
+                              <TableCell className='text-right'>
+                                {results.fatTargetPct
+                                  ? formatNumber(results.fatTargetPct * 100, {
+                                      maximumFractionDigits: 0,
+                                    })
+                                  : 'N/A'}
+                                %
+                              </TableCell>
+                              <TableCell className='text-right'>
+                                {results.fatGrams
+                                  ? formatNumber(results.fatGrams, {
+                                      maximumFractionDigits: 1,
+                                    })
+                                  : 'N/A'}{' '}
+                                g
+                              </TableCell>
+                              <TableCell className='text-right'>
+                                {results.fatCalories
+                                  ? formatNumber(results.fatCalories, {
+                                      maximumFractionDigits: 0,
+                                    })
+                                  : 'N/A'}{' '}
+                                kcal
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                          <TableCaption className='text-xs mt-2 text-left'>
+                            This breakdown is based on your inputs and calculated
+                            goal. For custom macro adjustments, use the 'Customize
+                            Your Plan' section below.
+                          </TableCaption>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {results && (
+                  <Card className='mt-8'>
+                    <CardHeader>
+                      <CardTitle className='text-2xl font-semibold flex items-center'>
+                        <Edit3 className='mr-2 h-6 w-6 text-primary' /> Customize
+                        Your Plan
+                      </CardTitle>
+                      <CardDescription>
+                        Adjust the system-generated plan with your preferences.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className='space-y-6'>
+                        <div className='grid md:grid-cols-2 gap-x-6 gap-y-4 items-start'>
+                          <FormField
+                            control={smartPlannerForm.control}
+                            name='custom_total_calories'
+                            render={({ field }) => (
+                              <FormItem>
                                 <FormLabel className='flex items-center'>
-                                  Remaining Calories from Carbs (%)
+                                  Custom Total Calories
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <span>
@@ -1615,228 +1412,350 @@ export default function SmartCaloriePlannerPage() {
                                     </TooltipTrigger>
                                     <TooltipContent className='w-64'>
                                       <p>
-                                        After protein is set, this slider
-                                        determines how the remaining calories
-                                        are split between carbohydrates and fat.
-                                        Slide to adjust the carbohydrate
-                                        percentage; fat will be the remainder.
+                                        Override the system-calculated total daily
+                                        calories. Leave blank to use the original
+                                        estimate:{' '}
+                                        {results.finalTargetCalories
+                                          ? formatNumber(
+                                              results.finalTargetCalories,
+                                              {
+                                                maximumFractionDigits: 0,
+                                              }
+                                            )
+                                          : 'N/A'}{' '}
+                                        kcal.
                                       </p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </FormLabel>
                                 <FormControl>
-                                  <div className='flex flex-col space-y-2 pt-1'>
-                                    <Slider
-                                      value={[currentCarbPct]}
-                                      onValueChange={(value) =>
-                                        field.onChange(value[0])
+                                  <div>
+                                    <Input
+                                      type='number'
+                                      placeholder={`e.g., ${
+                                        results.finalTargetCalories
+                                          ? formatNumber(
+                                              results.finalTargetCalories,
+                                              {
+                                                maximumFractionDigits: 0,
+                                              }
+                                            )
+                                          : '2000'
+                                      }`}
+                                      {...field}
+                                      value={field.value ?? ''}
+                                      onChange={(e) =>
+                                        field.onChange(
+                                          e.target.value === ''
+                                            ? undefined
+                                            : parseInt(e.target.value, 10)
+                                        )
                                       }
-                                      min={0}
-                                      max={100}
-                                      step={1}
+                                      step='1'
+                                      onWheel={(e) =>
+                                        (
+                                          e.currentTarget as HTMLInputElement
+                                        ).blur()
+                                      }
                                     />
-                                    <div className='flex justify-between text-xs text-muted-foreground'>
-                                      <span>
-                                        Carbs:{' '}
-                                        {formatNumber(currentCarbPct, {
-                                          maximumFractionDigits: 0,
-                                        })}
-                                        %
-                                      </span>
-                                      <span>
-                                        Fat:{' '}
-                                        {formatNumber(currentFatPct, {
-                                          maximumFractionDigits: 0,
-                                        })}
-                                        %
-                                      </span>
-                                    </div>
                                   </div>
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
-                            );
-                          }}
-                        />
-                      </div>
-                      <div className='mt-2 flex justify-end'>
+                            )}
+                          />
+                                    <FormField
+            control={smartPlannerForm.control}
+            name='custom_protein_per_kg'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className='flex items-center'>
+                  Custom Protein (g/kg)
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
                         <Button
-                          type='button'
                           variant='ghost'
-                          onClick={handleCustomPlanReset}
-                          size='sm'
+                          size='icon'
+                          className='h-5 w-5 ml-1 p-0'
                         >
-                          <RefreshCcw className='mr-2 h-3 w-3' /> Reset Custom
-                          Inputs
+                          <Info className='h-3 w-3' />
                         </Button>
-                      </div>
-                      {customPlanResults && (
-                        <div className='mt-6'>
-                          <h4 className='text-xl font-semibold mb-2 text-primary'>
-                            Your Custom Plan Breakdown
-                          </h4>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                {/* */}
-                                <TableHead>Macronutrient</TableHead>
-                                {/* */}
-                                <TableHead className='text-right'>
-                                  % of Daily Calories
-                                </TableHead>
-                                {/* */}
-                                <TableHead className='text-right'>
-                                  Grams per Day
-                                </TableHead>
-                                {/* */}
-                                <TableHead className='text-right'>
-                                  Calories per Day
-                                </TableHead>
-                                {/* */}
-                              </TableRow>
-                              {/* */}
-                            </TableHeader>
-                            <TableBody>
-                              <TableRow>
-                                {/* */}
-                                <TableCell className='font-medium'>
-                                  Protein
-                                </TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>
-                                  {customPlanResults.proteinTargetPct
-                                    ? formatNumber(
-                                        customPlanResults.proteinTargetPct
-                                      )
-                                    : 'N/A'}
-                                  %
-                                </TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>
-                                  {customPlanResults.proteinGrams
-                                    ? formatNumber(
-                                        customPlanResults.proteinGrams
-                                      )
-                                    : 'N/A'}{' '}
-                                  g
-                                </TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>
-                                  {customPlanResults.proteinCalories
-                                    ? formatNumber(
-                                        customPlanResults.proteinCalories
-                                      )
-                                    : 'N/A'}{' '}
-                                  kcal
-                                </TableCell>
-                                {/* */}
-                              </TableRow>
-                              {/* */}
-                              <TableRow>
-                                {/* */}
-                                <TableCell className='font-medium'>
-                                  Carbohydrates
-                                </TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>
-                                  {customPlanResults.carbTargetPct
-                                    ? formatNumber(
-                                        customPlanResults.carbTargetPct
-                                      )
-                                    : 'N/A'}
-                                  %
-                                </TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>
-                                  {customPlanResults.carbGrams
-                                    ? formatNumber(customPlanResults.carbGrams)
-                                    : 'N/A'}{' '}
-                                  g
-                                </TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>
-                                  {customPlanResults.carbCalories
-                                    ? formatNumber(
-                                        customPlanResults.carbCalories
-                                      )
-                                    : 'N/A'}{' '}
-                                  kcal
-                                </TableCell>
-                                {/* */}
-                              </TableRow>
-                              {/* */}
-                              <TableRow>
-                                {/* */}
-                                <TableCell className='font-medium'>
-                                  Fat
-                                </TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>
-                                  {customPlanResults.fatTargetPct
-                                    ? formatNumber(
-                                        customPlanResults.fatTargetPct
-                                      )
-                                    : 'N/A'}
-                                  %
-                                </TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>
-                                  {customPlanResults.fatGrams
-                                    ? formatNumber(customPlanResults.fatGrams)
-                                    : 'N/A'}{' '}
-                                  g
-                                </TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>
-                                  {customPlanResults.fatCalories
-                                    ? formatNumber(
-                                        customPlanResults.fatCalories
-                                      )
-                                    : 'N/A'}{' '}
-                                  kcal
-                                </TableCell>
-                                {/* */}
-                              </TableRow>
-                              {/* */}
-                              <TableRow className='font-semibold bg-muted/50'>
-                                {/* */}
-                                <TableCell>Total</TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>
-                                  100%
-                                </TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>-</TableCell>
-                                {/* */}
-                                <TableCell className='text-right'>
-                                  {customPlanResults.finalTargetCalories
-                                    ? formatNumber(
-                                        customPlanResults.finalTargetCalories
-                                      )
-                                    : 'N/A'}{' '}
-                                  kcal
-                                </TableCell>
-                                {/* */}
-                              </TableRow>
-                              {/* */}
-                            </TableBody>
-                          </Table>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className='w-64'>
+                      <p>
+                        Set your desired protein intake in grams per kg of your current body weight (
+                        {results.current_weight_for_custom_calc
+                          ? formatNumber(results.current_weight_for_custom_calc, {
+                              maximumFractionDigits: 1,
+                            })
+                          : smartPlannerForm.getValues('current_weight') !== undefined
+                          ? formatNumber(smartPlannerForm.getValues('current_weight')!, {
+                              maximumFractionDigits: 1,
+                            })
+                          : 'N/A'}{' '}
+                        kg). Affects protein, carbs, and fat distribution. Original estimate:{' '}
+                        {results.current_weight_for_custom_calc &&
+                        results.current_weight_for_custom_calc > 0 &&
+                        results.proteinGrams
+                          ? formatNumber(
+                              results.proteinGrams / results.current_weight_for_custom_calc,
+                              { maximumFractionDigits: 1 }
+                            )
+                          : 'N/A'}{' '}
+                        g/kg.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </FormLabel>
+                <FormControl>
+                  <div>
+                    <Input
+                      type='number'
+                      placeholder={`e.g., ${
+                        results.current_weight_for_custom_calc &&
+                        results.current_weight_for_custom_calc > 0 &&
+                        results.proteinGrams
+                          ? formatNumber(
+                              results.proteinGrams / results.current_weight_for_custom_calc,
+                              { maximumFractionDigits: 1 }
+                            )
+                          : '1.6'
+                      }`}
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === '' ? undefined : parseFloat(e.target.value)
+                        )
+                      }
+                      step='0.1'
+                      onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                    />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+                          <FormField
+                            control={smartPlannerForm.control}
+                            name='remaining_calories_carb_pct'
+                            render={({ field }) => {
+                              const currentCarbPct = field.value;
+                              const currentFatPct = 100 - currentCarbPct;
+                              return (
+                                <FormItem className='md:col-span-2'>
+                                  <FormLabel className='flex items-center'>
+                                    Remaining Calories from Carbs (%)
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span>
+                                          <Button
+                                            variant='ghost'
+                                            size='icon'
+                                            className='h-5 w-5 ml-1 p-0'
+                                          >
+                                            <Info className='h-3 w-3' />
+                                          </Button>
+                                        </span>
+                                      </TooltipTrigger>
+                                      <TooltipContent className='w-64'>
+                                        <p>
+                                          After protein is set, this slider
+                                          determines how the remaining calories
+                                          are split between carbohydrates and fat.
+                                          Slide to adjust the carbohydrate
+                                          percentage; fat will be the remainder.
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </FormLabel>
+                                  <FormControl>
+                                    <div className='flex flex-col space-y-2 pt-1'>
+                                      <Slider
+                                        value={[currentCarbPct]}
+                                        onValueChange={(value: number[]) =>
+                                          field.onChange(value[0])
+                                        }
+                                        min={0}
+                                        max={100}
+                                        step={1}
+                                      />
+                                      <div className='flex justify-between text-xs text-muted-foreground'>
+                                        <span>
+                                          Carbs:{' '}
+                                          {formatNumber(currentCarbPct, {
+                                            maximumFractionDigits: 0,
+                                          })}
+                                          %
+                                        </span>
+                                        <span>
+                                          Fat:{' '}
+                                          {formatNumber(currentFatPct, {
+                                            maximumFractionDigits: 0,
+                                          })}
+                                          %
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              );
+                            }}
+                          />
+                        </div>
+                        <div className='mt-2 flex justify-end'>
                           <Button
                             type='button'
-                            onClick={handleSaveCustomPlan}
-                            className='w-full mt-4'
-                            disabled={!customPlanResults}
+                            variant='ghost'
+                            onClick={handleCustomPlanReset}
+                            size='sm'
                           >
-                            <Save className='mr-2 h-4 w-4' />
-                            Save Custom Plan as Main Target
+                            <RefreshCcw className='mr-2 h-3 w-3' /> Reset Custom
+                            Inputs
                           </Button>
                         </div>
-                      )}
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
-            )}
+                        {customPlanResults && (
+                          <div className='mt-6'>
+                            <h4 className='text-xl font-semibold mb-2 text-primary'>
+                              Your Custom Plan Breakdown
+                            </h4>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Macronutrient</TableHead>
+                                  <TableHead className='text-right'>
+                                    % of Daily Calories
+                                  </TableHead>
+                                  <TableHead className='text-right'>
+                                    Grams per Day
+                                  </TableHead>
+                                  <TableHead className='text-right'>
+                                    Calories per Day
+                                  </TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                <TableRow>
+                                  <TableCell className='font-medium'>
+                                    Protein
+                                  </TableCell>
+                                  <TableCell className='text-right'>
+                                    {customPlanResults.proteinTargetPct
+                                      ? formatNumber(
+                                          customPlanResults.proteinTargetPct
+                                        )
+                                      : 'N/A'}
+                                    %
+                                  </TableCell>
+                                  <TableCell className='text-right'>
+                                    {customPlanResults.proteinGrams
+                                      ? formatNumber(
+                                          customPlanResults.proteinGrams
+                                        )
+                                      : 'N/A'}{' '}
+                                    g
+                                  </TableCell>
+                                  <TableCell className='text-right'>
+                                    {customPlanResults.proteinCalories
+                                      ? formatNumber(
+                                          customPlanResults.proteinCalories
+                                        )
+                                      : 'N/A'}{' '}
+                                    kcal
+                                  </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                  <TableCell className='font-medium'>
+                                    Carbohydrates
+                                  </TableCell>
+                                  <TableCell className='text-right'>
+                                    {customPlanResults.carbTargetPct
+                                      ? formatNumber(
+                                          customPlanResults.carbTargetPct
+                                        )
+                                      : 'N/A'}
+                                    %
+                                  </TableCell>
+                                  <TableCell className='text-right'>
+                                    {customPlanResults.carbGrams
+                                      ? formatNumber(customPlanResults.carbGrams)
+                                      : 'N/A'}{' '}
+                                    g
+                                  </TableCell>
+                                  <TableCell className='text-right'>
+                                    {customPlanResults.carbCalories
+                                      ? formatNumber(
+                                          customPlanResults.carbCalories
+                                        )
+                                      : 'N/A'}{' '}
+                                    kcal
+                                  </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                  <TableCell className='font-medium'>
+                                    Fat
+                                  </TableCell>
+                                  <TableCell className='text-right'>
+                                    {customPlanResults.fatTargetPct
+                                      ? formatNumber(
+                                          customPlanResults.fatTargetPct
+                                        )
+                                      : 'N/A'}
+                                    %
+                                  </TableCell>
+                                  <TableCell className='text-right'>
+                                    {customPlanResults.fatGrams
+                                      ? formatNumber(customPlanResults.fatGrams)
+                                      : 'N/A'}{' '}
+                                    g
+                                  </TableCell>
+                                  <TableCell className='text-right'>
+                                    {customPlanResults.fatCalories
+                                      ? formatNumber(
+                                          customPlanResults.fatCalories
+                                        )
+                                      : 'N/A'}{' '}
+                                    kcal
+                                  </TableCell>
+                                </TableRow>
+                                <TableRow className='font-semibold bg-muted/50'>
+                                  <TableCell>Total</TableCell>
+                                  <TableCell className='text-right'>
+                                    100%
+                                  </TableCell>
+                                  <TableCell className='text-right'>-</TableCell>
+                                  <TableCell className='text-right'>
+                                    {customPlanResults.finalTargetCalories
+                                      ? formatNumber(
+                                          customPlanResults.finalTargetCalories
+                                        )
+                                      : 'N/A'}{' '}
+                                    kcal
+                                  </TableCell>
+                                </TableRow>
+                              </TableBody>
+                            </Table>
+                            <Button
+                              type='button'
+                              onClick={handleSaveCustomPlan}
+                              className='w-full mt-4'
+                              disabled={!customPlanResults}
+                            >
+                              <Save className='mr-2 h-4 w-4' />
+                              Save Custom Plan as Main Target
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </form>
+            </Form>
           </CardContent>
         </Card>
       </div>
