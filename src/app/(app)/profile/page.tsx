@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -50,9 +49,8 @@ import {
   exerciseIntensities,
 } from '@/lib/constants';
 import { AlertTriangle, RefreshCcw, Loader2 } from 'lucide-react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, DocumentSnapshot, DocumentData } from '@firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
-
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -82,31 +80,32 @@ export default function ProfilePage() {
       // Client-side fetch
       const userDocRef = doc(db, 'users', user.uid);
       getDoc(userDocRef)
-        .then((docSnap) => {
+        .then((docSnap: DocumentSnapshot<DocumentData>) => {
           if (docSnap.exists()) {
             const profileData = docSnap.data() as FullProfileType;
             // Map the full profile to the form values
             const profileDataSubset = {
-                name: profileData.name ?? undefined,
-                subscriptionStatus: profileData.subscriptionStatus ?? undefined,
-                goalWeight: profileData.goalWeight ?? undefined,
-                painMobilityIssues: profileData.painMobilityIssues ?? undefined,
-                injuries: profileData.injuries || [],
-                surgeries: profileData.surgeries || [],
-                exerciseGoals: profileData.exerciseGoals || [],
-                exercisePreferences: profileData.exercisePreferences || [],
-                exerciseFrequency: profileData.exerciseFrequency ?? undefined,
-                exerciseIntensity: profileData.exerciseIntensity ?? undefined,
-                equipmentAccess: profileData.equipmentAccess || [],
+              name: profileData.name ?? undefined,
+              subscriptionStatus: profileData.subscriptionStatus ?? undefined,
+              goalWeight: profileData.goalWeight ?? undefined,
+              painMobilityIssues: profileData.painMobilityIssues ?? undefined,
+              injuries: profileData.injuries || [],
+              surgeries: profileData.surgeries || [],
+              exerciseGoals: profileData.exerciseGoals || [],
+              exercisePreferences: profileData.exercisePreferences || [],
+              exerciseFrequency: profileData.exerciseFrequency ?? undefined,
+              exerciseIntensity: profileData.exerciseIntensity ?? undefined,
+              equipmentAccess: profileData.equipmentAccess || [],
             };
             form.reset(profileDataSubset);
           }
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           console.error('Error loading profile data:', error);
+          const typedError = error as Error;
           toast({
             title: 'Error',
-            description: 'Could not load profile data.',
+            description: typedError.message || 'Could not load profile data.',
             variant: 'destructive',
           });
         })
@@ -149,10 +148,10 @@ export default function ProfilePage() {
   function onError(error: any) {
     console.error("Form validation error:", error);
     toast({
-        title: 'Validation Error',
-        description: 'Please check the form for invalid fields.',
-        variant: 'destructive',
-      });
+      title: 'Validation Error',
+      description: 'Please check the form for invalid fields.',
+      variant: 'destructive',
+    });
   }
 
   const renderCommaSeparatedInput = (
@@ -211,11 +210,12 @@ export default function ProfilePage() {
       });
       // Force a reload to trigger AuthContext to re-evaluate onboarding status
       window.location.reload();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error resetting onboarding status:', error);
+      const typedError = error as Error;
       toast({
         title: 'Reset Failed',
-        description: 'Could not reset onboarding status.',
+        description: typedError.message || 'Could not reset onboarding status.',
         variant: 'destructive',
       });
     }
