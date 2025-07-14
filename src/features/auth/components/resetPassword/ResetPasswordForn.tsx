@@ -60,14 +60,14 @@ function ResetPasswordForn() {
     function () {
       const { confirmNewPassword, newPassword } = formState.errors;
 
-      if (confirmNewPassword)
+      if (confirmNewPassword && typeof confirmNewPassword.message === 'string')
         toast({
           title: 'Error',
           description: confirmNewPassword.message,
           variant: 'destructive',
         });
 
-      if (newPassword)
+      if (newPassword && typeof newPassword.message === 'string')
         toast({
           title: 'Error',
           description: newPassword.message,
