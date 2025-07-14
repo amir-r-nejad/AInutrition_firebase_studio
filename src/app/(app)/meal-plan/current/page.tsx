@@ -1,5 +1,5 @@
 'use client';
-import { DocumentSnapshot, FirebaseError } from 'firebase/firestore';
+import { type DocumentSnapshot, FirebaseError } from 'firebase/firestore';
 import { adjustMealIngredients } from '@/ai/flows/adjust-meal-ingredients';
 import { Button } from '@/components/ui/button';
 import {
