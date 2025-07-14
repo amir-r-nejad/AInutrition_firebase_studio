@@ -39,7 +39,8 @@ import type {
 } from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
 import { getAIApiErrorMessage } from '@/lib/utils';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from '@firebase/firestore';
+import * as firestore from '@firebase/firestore';
 import {
   AlertTriangle,
   BarChart3,
@@ -85,7 +86,7 @@ export default function OptimizedMealPlanPage() {
       setIsLoadingProfile(true);
       const userDocRef = doc(db, 'users', user.uid);
       getDoc(userDocRef)
-        .then((docSnap) => {
+              .then((docSnap: firestore.DocumentSnapshot<firestore.DocumentData>) => {
           if (docSnap.exists()) {
             const data = docSnap.data() as FullProfileType;
             setProfileData(data);
@@ -93,8 +94,8 @@ export default function OptimizedMealPlanPage() {
               setMealPlan(
                 data.aiGeneratedMealPlan as GeneratePersonalizedMealPlanOutput
               );
-            }
-          }
+                }
+          } else {} // Added an else block to satisfy the DocumentSnapshot type
         })
         .catch((err) => {
           console.error('Failed to load profile for AI meal plan', err);
