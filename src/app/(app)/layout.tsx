@@ -103,14 +103,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               } else {
                 // This guard ensures that 'item' has the properties of a nav link, satisfying TypeScript.
                 if (!item.href || !item.icon) {
-                  return null;
+                  return null; 
                 }
                 const IconComponent = item.icon;
                 return (
                   <SidebarMenuItem key={item.label}>
                     <Link href={item.href} legacyBehavior passHref>
                       <SidebarMenuButton
-                        isActive={false} // This needs to be dynamic based on current path
+                        isActive={false} // This needs to be dynamic based on current path 
                         tooltip={item.label}
                       >
                         <IconComponent className='h-5 w-5' />{' '}
