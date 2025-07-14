@@ -45,12 +45,13 @@ function ForgotPasswordForm() {
   //Toasts for validation errors
   useEffect(
     function () {
-      if (formState.errors.email)
+      if (formState.errors.email && typeof formState.errors.email.message === 'string') {
         toast({
           title: 'Email Required',
           description: formState.errors.email.message,
           variant: 'destructive',
         });
+      }
     },
     [formState.errors]
   );
