@@ -1,5 +1,6 @@
-
 'use client';
+import { User } from '../types/globalTypes';
+
 import {
   onAuthStateChanged as _onAuthStateChanged,
   onIdTokenChanged as _onIdTokenChanged,
@@ -7,52 +8,46 @@ import {
   createUserWithEmailAndPassword as firebaseCreateUserWithEmailAndPassword,
   sendPasswordResetEmail,
   GoogleAuthProvider,
-  NextOrObserver,
   sendEmailVerification as sendEmailVerificationAPI,
   signInWithEmailAndPassword,
   signInWithPopup,
-  User,
   verifyPasswordResetCode,
 } from 'firebase/auth';
 import { auth } from './clientApp';
 
-export function onAuthStateChanged(cb: NextOrObserver<User>) {
+export function onAuthStateChanged(cb: (user: User | null) => void) {
   return _onAuthStateChanged(auth, cb);
 }
 
-export function onIdTokenChanged(cb: NextOrObserver<User>) {
+export function onIdTokenChanged(cb: (user: User | null) => void) {
   return _onIdTokenChanged(auth, cb);
 }
 
 export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
-
   try {
     await signInWithPopup(auth, provider);
   } catch (error) {
     console.error('Error signing in with Google', error);
+    throw error;
   }
 }
 
-export function signOut() {
+export async function signOut() {
   try {
-    return auth.signOut();
+    await auth.signOut();
   } catch (error) {
-    console.error('Error signing out with Google', error);
+    console.error('Error signing out', error);
+    throw error;
   }
 }
+
 export async function login(email: string, password: string) {
   try {
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential;
   } catch (error: any) {
-    const errorCode = error.code;
-    const errorMessage = error.message;
+    console.error('Error signing in with email', error);
     throw error;
   }
 }
@@ -74,28 +69,17 @@ export async function verifyOob(code: string) {
     throw error;
   }
 }
+
 export async function confirmPassword(oob: string, reset: string) {
   try {
-    return await confirmPasswordReset(auth, oob, reset);
+    await confirmPasswordReset(auth, oob, reset);
   } catch (error) {
     console.error('Error confirming password', error);
     throw error;
   }
 }
 
-export async function signIn(email: string, password: string) {
-  try {
-    const creds = await signInWithEmailAndPassword(auth, email, password);
-  } catch (error) {
-    console.error('Error signing in with Email', error);
-    throw error;
-  }
-}
-
-export async function createUserWithEmailAndPassword(
-  email: string,
-  password: string
-) {
+export async function createUserWithEmailAndPassword(email: string, password: string) {
   try {
     return await firebaseCreateUserWithEmailAndPassword(auth, email, password);
   } catch (error) {
@@ -106,9 +90,9 @@ export async function createUserWithEmailAndPassword(
 
 export async function sendEmailVerification(user: User) {
   try {
-    return await sendEmailVerificationAPI(user);
+    await sendEmailVerificationAPI(user);
   } catch (error) {
-    console.error('Error sending email verification');
+    console.error('Error sending email verification', error);
     throw error;
   }
 }
