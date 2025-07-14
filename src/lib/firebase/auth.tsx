@@ -1,5 +1,5 @@
 'use client';
-import { User } from '../types/globalTypes';
+import { User } from '../types/globalTypes'; //it works well
 import {
   onAuthStateChanged as _onAuthStateChanged,
   onIdTokenChanged as _onIdTokenChanged,
