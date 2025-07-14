@@ -1,5 +1,6 @@
 'use client';
-import { type DocumentSnapshot, FirebaseError } from 'firebase/firestore';
+import React from 'react';
+import { DocumentSnapshot, FirebaseError, doc, getDoc, setDoc } from 'firebase/firestore';
 import { adjustMealIngredients } from '@/ai/flows/adjust-meal-ingredients';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,7 +41,6 @@ import type {
 } from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
 import { getAIApiErrorMessage } from '@/lib/utils';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Loader2, Pencil, PlusCircle, Trash2, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -106,7 +106,7 @@ export default function CurrentMealPlanPage() {
     getDoc(userDocRef)
       .then((docSnap: DocumentSnapshot<FullProfileType>) => {
         if (docSnap.exists()) {
-          const fullProfile = docSnap.data() as FullProfileType;
+          const fullProfile = docSnap.data();
           setProfileData(fullProfile);
           if (fullProfile.currentWeeklyPlan) {
             setWeeklyPlan(fullProfile.currentWeeklyPlan);
@@ -118,10 +118,11 @@ export default function CurrentMealPlanPage() {
           setWeeklyPlan(generateInitialWeeklyPlan());
         }
       })
-      .catch((error: FirebaseError) => {
+      .catch((error) => {
+        const typedError = error as FirebaseError;
         toast({
           title: 'Error Loading Data',
-          description: error.message || 'Could not load your data.',
+          description: typedError.message || 'Could not load your data.',
           variant: 'destructive',
         });
         setWeeklyPlan(generateInitialWeeklyPlan());
@@ -159,10 +160,11 @@ export default function CurrentMealPlanPage() {
           updatedMeal.customName || updatedMeal.name
         } has been updated.`,
       });
-    } catch (error: FirebaseError) {
+    } catch (error) {
+      const typedError = error as FirebaseError;
       toast({
         title: 'Save Error',
-        description: error.message || 'Could not save meal plan.',
+        description: typedError.message || 'Could not save meal plan.',
         variant: 'destructive',
       });
     }
@@ -371,9 +373,10 @@ export default function CurrentMealPlanPage() {
           'AI did not return an adjusted meal or an unexpected format was received.'
         );
       }
-    } catch (error: FirebaseError) {
+    } catch (error) {
       console.error('Error optimizing meal:', error);
-      const errorMessage = getAIApiErrorMessage(error);
+      const typedError = error as FirebaseError;
+      const errorMessage = getAIApiErrorMessage(typedError);
       toast({
         title: 'Optimization Failed',
         description: errorMessage,
