@@ -1,7 +1,8 @@
 'use client';
 import React from 'react';
-import { DocumentSnapshot, FirestoreError, doc, getDoc, setDoc } from '@firebase/firestore';
 import { adjustMealIngredients } from '@/ai/flows/adjust-meal-ingredients';
+import { doc, getDoc, DocumentSnapshot, DocumentData, FirestoreError, setDoc } from '@firebase/firestore';
+import * as firestore from '@firebase/firestore'; // Import the whole module as 'firestore'
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -103,9 +104,8 @@ export default function CurrentMealPlanPage() {
     setIsLoadingProfile(true);
 
     const userDocRef = doc(db, 'users', user.uid);
-    getDoc(userDocRef)
-      .then((docSnap) => {
-        const typedDocSnap = docSnap as DocumentSnapshot<FullProfileType>;
+    getDoc(userDocRef).then((docSnap: firestore.DocumentSnapshot<firestore.DocumentData>) => {
+        const typedDocSnap = docSnap as firestore.DocumentSnapshot<FullProfileType>;
         if (typedDocSnap.exists()) {
           const fullProfile = typedDocSnap.data();
           setProfileData(fullProfile);
@@ -119,7 +119,7 @@ export default function CurrentMealPlanPage() {
           setWeeklyPlan(generateInitialWeeklyPlan());
         }
       })
-      .catch((error) => {
+      .catch((error: firestore.FirestoreError) => {
         const typedError = error as FirestoreError;
         toast({
           title: 'Error Loading Data',
