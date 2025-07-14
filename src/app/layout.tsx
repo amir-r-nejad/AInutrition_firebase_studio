@@ -1,8 +1,8 @@
+import { Toaster } from '@/components/ui/toaster';
+import { AuthProvider } from '@/features/auth/contexts/AuthContext';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/features/auth/contexts/AuthContext';
 
 const inter = Inter({
   variable: '--font-sans',

@@ -1,5 +1,7 @@
+
+'use client';
 import { useToast } from '@/hooks/use-toast';
-import { applyActionCodeForVerification, auth } from '@/lib/firebase/firebase';
+import { applyActionCode, getAuth } from 'firebase/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -23,8 +25,9 @@ export function useEmailVerificationFlow() {
 
     const verifyEmail = async () => {
       setStatus('verifying');
+      const auth = getAuth();
       try {
-        await applyActionCodeForVerification(oobCode);
+        await applyActionCode(auth, oobCode);
 
         if (auth.currentUser) await auth.currentUser.reload();
 
