@@ -27,13 +27,13 @@ export default function DailyTargetsPageRemoved() {
             Please ensure your profile information (age, weight, height, activity level, diet goal) is up-to-date for accurate calculations.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/profile" passHref>
+            <Link href="/profile" passHref legacyBehavior>
               <Button>
                 <Settings className="mr-2 h-4 w-4" />
                 Go to Profile
               </Button>
             </Link>
-            <Link href="/dashboard" passHref>
+            <Link href="/dashboard" passHref legacyBehavior>
               <Button variant="outline">Back to Dashboard</Button>
             </Link>
           </div>

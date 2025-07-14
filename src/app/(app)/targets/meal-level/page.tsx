@@ -24,10 +24,10 @@ export default function MealLevelTargetsPageRemoved() {
             The functionality for splitting macros across meals is now handled by the <strong>Macro Splitter</strong> tool.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/tools/macro-splitter" passHref>
+            <Link href="/tools/macro-splitter" passHref legacyBehavior>
               <Button>Go to Macro Splitter</Button>
             </Link>
-            <Link href="/dashboard" passHref>
+            <Link href="/dashboard" passHref legacyBehavior>
               <Button variant="outline">Back to Dashboard</Button>
             </Link>
           </div>

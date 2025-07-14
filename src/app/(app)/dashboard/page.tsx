@@ -71,7 +71,7 @@ export default function DashboardPage() {
                 Your journey to personalized nutrition starts here. Let's achieve your goals together.
                 </p>
                 <div className="mt-6">
-                <Link href="/meal-plan/optimized" passHref>
+                <Link href="/meal-plan/optimized" passHref legacyBehavior>
                     <Button size="lg" className="text-lg py-7 px-8">
                         Generate Your AI Meal Plan
                         <ArrowRight className="ml-2 h-5 w-5" />
@@ -90,7 +90,6 @@ export default function DashboardPage() {
             </div>
         </div>
       </Card>
-
       {/* Primary Features Grid */}
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold tracking-tight text-center">Your Nutrition Hub</h2>
@@ -106,7 +105,7 @@ export default function DashboardPage() {
                 <CardDescription>{feature.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href={feature.href} passHref>
+                <Link href={feature.href} passHref legacyBehavior>
                   <Button className="w-full" variant={feature.variant}>
                     {feature.cta}
                   </Button>
@@ -116,33 +115,31 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
-
-       {/* Additional Tools Section */}
-       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold tracking-tight text-center">More Tools</h2>
-         <p className="text-center text-muted-foreground">
-          Fine-tune your plan with these specialized tools.
-        </p>
-        <div className="grid grid-cols-1 gap-6 pt-4 md:grid-cols-2">
-            {toolFeatures.map((tool) => (
-                <Card key={tool.title} className="shadow-md hover:shadow-lg transition-shadow duration-300 flex items-center p-6">
-                    <div className="mr-6">
-                        <tool.icon className="h-12 w-12 text-primary" />
-                    </div>
-                    <div className="flex-grow">
-                        <CardTitle className="text-xl mb-1">{tool.title}</CardTitle>
-                        <CardDescription className="mb-4">{tool.description}</CardDescription>
-                         <Link href={tool.href} passHref>
-                            <Button variant="secondary">
-                                Open Tool <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
-                        </Link>
-                    </div>
-                </Card>
-            ))}
-        </div>
+      {/* Additional Tools Section */}
+      <div className="space-y-4">
+       <h2 className="text-2xl font-semibold tracking-tight text-center">More Tools</h2>
+        <p className="text-center text-muted-foreground">
+         Fine-tune your plan with these specialized tools.
+       </p>
+       <div className="grid grid-cols-1 gap-6 pt-4 md:grid-cols-2">
+           {toolFeatures.map((tool) => (
+               <Card key={tool.title} className="shadow-md hover:shadow-lg transition-shadow duration-300 flex items-center p-6">
+                   <div className="mr-6">
+                       <tool.icon className="h-12 w-12 text-primary" />
+                   </div>
+                   <div className="flex-grow">
+                       <CardTitle className="text-xl mb-1">{tool.title}</CardTitle>
+                       <CardDescription className="mb-4">{tool.description}</CardDescription>
+                        <Link href={tool.href} passHref legacyBehavior>
+                           <Button variant="secondary">
+                               Open Tool <ArrowRight className="ml-2 h-4 w-4" />
+                           </Button>
+                       </Link>
+                   </div>
+               </Card>
+           ))}
        </div>
-
+      </div>
     </div>
   );
 }

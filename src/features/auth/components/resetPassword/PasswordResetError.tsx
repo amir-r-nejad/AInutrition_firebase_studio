@@ -26,7 +26,7 @@ function PasswordResetError({ errorMessage }: { errorMessage: string | null }) {
         </p>
       </CardContent>
       <CardFooter>
-        <Link href='/forgot-password' passHref className='w-full'>
+        <Link href='/forgot-password' passHref className='w-full' legacyBehavior>
           <Button className='w-full'>Request New Reset Link</Button>
         </Link>
       </CardFooter>

@@ -24,13 +24,13 @@ export default function CalorieCalculatorPageRemoved() {
             Its functionality is now part of the more comprehensive <strong>Smart Calorie Planner</strong>.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/tools/smart-calorie-planner" passHref>
+            <Link href="/tools/smart-calorie-planner" passHref legacyBehavior>
               <Button>
                 <BrainCircuit className="mr-2 h-4 w-4" />
                 Go to Smart Calorie Planner
               </Button>
             </Link>
-            <Link href="/dashboard" passHref>
+            <Link href="/dashboard" passHref legacyBehavior>
               <Button variant="outline">Back to Dashboard</Button>
             </Link>
           </div>

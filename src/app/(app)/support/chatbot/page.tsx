@@ -24,13 +24,13 @@ export default function ChatbotPageRemoved() {
             Its functionality is now available on the more comprehensive <strong>FAQ &amp; Chatbot</strong> page.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/support/faq" passHref>
+            <Link href="/support/faq" passHref legacyBehavior>
               <Button>
                 <HelpCircle className="mr-2 h-4 w-4" />
                 Go to FAQ &amp; Chatbot
               </Button>
             </Link>
-            <Link href="/dashboard" passHref>
+            <Link href="/dashboard" passHref legacyBehavior>
               <Button variant="outline">Back to Dashboard</Button>
             </Link>
           </div>

@@ -464,7 +464,6 @@ export default function MacroSplitterPage() {
           </CardContent>
         )}
       </Card>
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
           <Card className='shadow-lg'>
@@ -704,7 +703,6 @@ export default function MacroSplitterPage() {
           </div>
         </form>
       </Form>
-
       {calculatedSplit && (
         <Card className='shadow-lg mt-8'>
           <CardHeader>
