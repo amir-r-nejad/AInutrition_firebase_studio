@@ -6,13 +6,15 @@ import {
   GeneratePersonalizedMealPlanOutputSchema,
   AIDailyPlanOutputSchema,
   type GeneratePersonalizedMealPlanOutput,
-  type DayPlan,
   type AIGeneratedMeal,
   type GeneratePersonalizedMealPlanInput,
+  DayPlan,
 } from '@/lib/schemas';
 import { daysOfWeek } from '@/lib/constants';
 import { z } from 'zod';
 import { getAIApiErrorMessage } from '@/lib/utils';
+
+export type { GeneratePersonalizedMealPlanOutput };
 
 export async function generatePersonalizedMealPlan(
   input: GeneratePersonalizedMealPlanInput
@@ -103,7 +105,7 @@ const generatePersonalizedMealPlanFlow = ai.defineFlow(
     input: GeneratePersonalizedMealPlanInput
   ): Promise<GeneratePersonalizedMealPlanOutput> => {
     const processedWeeklyPlan: DayPlan[] = [];
-    let weeklySummary = {
+    const weeklySummary = {
       totalCalories: 0,
       totalProtein: 0,
       totalCarbs: 0,
