@@ -3,7 +3,7 @@ import { applyActionCode, getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyBJQkR3v-DtLo7bRZ3nhENneMeT54OLkKA",
   authDomain: "project2-52c08.firebaseapp.com",
   projectId: "project2-52c08",
@@ -14,12 +14,12 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-export { app, auth, db, storage };
+export { auth, db, storage };
 
 export const applyActionCodeForVerification = (oobCode: string) => {
   return applyActionCode(auth, oobCode);
