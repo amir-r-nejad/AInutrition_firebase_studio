@@ -1,5 +1,5 @@
 // @/lib/firebase/config.ts
-import { FirebaseOptions } from 'firebase/app';
+import { FirebaseOptions } from '@firebase/app';
 
 // This configuration is used to connect to your Firebase project.
 // It's sourced from your project's Firebase settings.
