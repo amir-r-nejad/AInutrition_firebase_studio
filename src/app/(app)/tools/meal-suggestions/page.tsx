@@ -1,4 +1,3 @@
-
 'use client';
 
 import { suggestMealsForMacros } from '@/ai/flows/suggest-meals-for-macros';
@@ -63,7 +62,7 @@ import {
 } from '@/lib/schemas';
 import { getAIApiErrorMessage } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, DocumentSnapshot, DocumentData } from '@firebase/firestore';
 import {
   AlertTriangle,
   ChefHat,
@@ -168,7 +167,7 @@ function MealSuggestionsContent() {
       setIsLoadingProfile(true);
       const userDocRef = doc(db, 'users', user.uid);
       getDoc(userDocRef)
-        .then((docSnap) => {
+        .then((docSnap: DocumentSnapshot<DocumentData>) => {
           if (docSnap.exists()) {
             const data = docSnap.data() as FullProfileType;
             setFullProfileData(data);
@@ -187,16 +186,15 @@ function MealSuggestionsContent() {
             }
           }
         })
-        .catch((err) =>
+        .catch((err: unknown) => {
+          const typedError = err as Error;
           toast({
             title: 'Error Loading Profile',
             description:
-              err instanceof Error
-                ? err.message
-                : 'Could not load your profile preferences.',
+              typedError.message || 'Could not load your profile preferences.',
             variant: 'destructive',
-          })
-        )
+          });
+        })
         .finally(() => setIsLoadingProfile(false));
     } else {
       setIsLoadingProfile(false);
@@ -217,45 +215,44 @@ function MealSuggestionsContent() {
     let dailyTotals: { calories: number; protein: number; carbs: number; fat: number } | null = null;
 
     if (profileToUse?.smartPlannerData?.results?.finalTargetCalories) {
-        const smartResults = profileToUse.smartPlannerData.results;
-        dailyTotals = {
-            calories: smartResults.finalTargetCalories || 0,
-            protein: smartResults.proteinGrams || 0,
-            carbs: smartResults.carbGrams || 0,
-            fat: smartResults.fatGrams || 0,
-        };
-    } 
-    else if (
-        profileToUse?.age &&
-        profileToUse?.gender &&
-        profileToUse?.current_weight &&
-        profileToUse?.height_cm &&
-        profileToUse?.activityLevel &&
-        profileToUse?.dietGoalOnboarding
+      const smartResults = profileToUse.smartPlannerData.results;
+      dailyTotals = {
+        calories: smartResults.finalTargetCalories || 0,
+        protein: smartResults.proteinGrams || 0,
+        carbs: smartResults.carbGrams || 0,
+        fat: smartResults.fatGrams || 0,
+      };
+    } else if (
+      profileToUse?.age &&
+      profileToUse?.gender &&
+      profileToUse?.current_weight &&
+      profileToUse?.height_cm &&
+      profileToUse?.activityLevel &&
+      profileToUse?.dietGoalOnboarding
     ) {
-        const estimatedTargets = calculateEstimatedDailyTargets({
-            age: profileToUse.age,
-            gender: profileToUse.gender,
-            currentWeight: profileToUse.current_weight,
-            height: profileToUse.height_cm,
-            activityLevel: profileToUse.activityLevel,
-            dietGoal: profileToUse.dietGoalOnboarding,
-        });
+      const estimatedTargets = calculateEstimatedDailyTargets({
+        age: profileToUse.age,
+        gender: profileToUse.gender,
+        currentWeight: profileToUse.current_weight,
+        height: profileToUse.height_cm,
+        activityLevel: profileToUse.activityLevel,
+        dietGoal: profileToUse.dietGoalOnboarding,
+      });
 
-        if (estimatedTargets.finalTargetCalories) {
-            dailyTotals = {
-                calories: estimatedTargets.finalTargetCalories,
-                protein: estimatedTargets.proteinGrams || 0,
-                carbs: estimatedTargets.carbGrams || 0,
-                fat: estimatedTargets.fatGrams || 0,
-            };
-        }
+      if (estimatedTargets.finalTargetCalories) {
+        dailyTotals = {
+          calories: estimatedTargets.finalTargetCalories,
+          protein: estimatedTargets.proteinGrams || 0,
+          carbs: estimatedTargets.carbGrams || 0,
+          fat: estimatedTargets.fatGrams || 0,
+        };
+      }
     }
 
     if (dailyTotals && selectedMealName) {
       const customDistributions = profileToUse?.mealDistributions;
-      const mealDistribution = 
-        customDistributions?.find((d) => d.mealName === selectedMealName) || 
+      const mealDistribution =
+        customDistributions?.find((d) => d.mealName === selectedMealName) ||
         defaultMacroPercentages[selectedMealName];
 
       if (mealDistribution) {
@@ -270,7 +267,7 @@ function MealSuggestionsContent() {
         return;
       }
     }
-    
+
     const exampleTargets = {
       mealName: selectedMealName,
       calories: 500,
@@ -310,22 +307,23 @@ function MealSuggestionsContent() {
 
   const handleSavePreferences = async () => {
     if (!user?.uid) {
-        toast({ title: 'Error', description: 'You must be logged in to save preferences.', variant: 'destructive' });
-        return;
+      toast({ title: 'Error', description: 'You must be logged in to save preferences.', variant: 'destructive' });
+      return;
     }
     setIsSavingPreferences(true);
     try {
-        const currentPreferences = preferenceForm.getValues();
-        const userProfileRef = doc(db, 'users', user.uid);
-        
-        await setDoc(userProfileRef, preprocessDataForFirestore(currentPreferences), { merge: true });
+      const currentPreferences = preferenceForm.getValues();
+      const userProfileRef = doc(db, 'users', user.uid);
+      
+      await setDoc(userProfileRef, preprocessDataForFirestore(currentPreferences), { merge: true });
 
-        toast({ title: 'Success', description: 'Your preferences have been saved.' });
-    } catch (error) {
-        toast({ title: 'Save Failed', description: "Could not save your preferences.", variant: 'destructive' });
-        console.error("Error saving preferences:", error);
+      toast({ title: 'Success', description: 'Your preferences have been saved.' });
+    } catch (error: unknown) {
+      const typedError = error as Error;
+      toast({ title: 'Save Failed', description: typedError.message || 'Could not save your preferences.', variant: 'destructive' });
+      console.error("Error saving preferences:", error);
     } finally {
-        setIsSavingPreferences(false);
+      setIsSavingPreferences(false);
     }
   };
 
@@ -388,13 +386,13 @@ function MealSuggestionsContent() {
       if (result && result.suggestions) {
         setSuggestions(result.suggestions);
         try {
-            sessionStorage.setItem('mealSuggestionsCache', JSON.stringify({
-                mealName: targetMacros.mealName,
-                suggestions: result.suggestions,
-                targetMacros: targetMacros
-            }));
+          sessionStorage.setItem('mealSuggestionsCache', JSON.stringify({
+            mealName: targetMacros.mealName,
+            suggestions: result.suggestions,
+            targetMacros: targetMacros
+          }));
         } catch (e) {
-            console.error("Could not save suggestions to session storage", e);
+          console.error("Could not save suggestions to session storage", e);
         }
       } else {
         setError('AI did not return valid suggestions.');
@@ -404,8 +402,9 @@ function MealSuggestionsContent() {
           variant: 'destructive',
         });
       }
-    } catch (err: any) {
-      const errorMessage = getAIApiErrorMessage(err);
+    } catch (err: unknown) {
+      const typedError = err as Error;
+      const errorMessage = getAIApiErrorMessage(typedError);
       setError(errorMessage);
       toast({
         title: 'AI Error',
@@ -568,11 +567,11 @@ function MealSuggestionsContent() {
                     </Card>
                   </form>
                 </Form>
-                 <div className="mt-4 flex justify-end">
-                    <Button onClick={handleSavePreferences} disabled={isSavingPreferences}>
-                        {isSavingPreferences ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        Save Preferences
-                    </Button>
+                <div className="mt-4 flex justify-end">
+                  <Button onClick={handleSavePreferences} disabled={isSavingPreferences}>
+                    {isSavingPreferences ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Save Preferences
+                  </Button>
                 </div>
               </AccordionContent>
             </AccordionItem>
