@@ -46,19 +46,20 @@ function LoginForm() {
 
   useEffect(
     function () {
-      const { email, password } = formState.errors;
+      const emailError = formState.errors.email;
+      const passwordError = formState.errors.password;
 
-      if (email)
+      if (emailError && typeof emailError.message === 'string')
         toast({
           title: 'Login Failed',
-          description: email.message,
+          description: emailError.message,
           variant: 'destructive',
         });
 
-      if (password)
+      if (passwordError && typeof passwordError.message === 'string')
         toast({
           title: 'Login Failed',
-          description: password.message,
+          description: passwordError.message,
           variant: 'destructive',
         });
     },
