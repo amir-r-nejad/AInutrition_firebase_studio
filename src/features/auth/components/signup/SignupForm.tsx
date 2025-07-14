@@ -34,25 +34,30 @@ function SignupForm() {
   useEffect(
     function () {
       const { password, confirmPassword, email } = formState.errors;
-
       if (password)
-        toast({
-          title: 'Signup Failed',
-          description: password.message,
-          variant: 'destructive',
-        });
+ if (typeof password.message === 'string') {
+ toast({
+ title: 'Signup Failed',
+ description: password.message,
+ variant: 'destructive',
+ });
+ }
       if (email)
-        toast({
-          title: 'Signup Failed',
-          description: email.message,
-          variant: 'destructive',
-        });
+ if (typeof email.message === 'string') {
+ toast({
+ title: 'Signup Failed',
+ description: email.message,
+ variant: 'destructive',
+ });
+ }
       if (confirmPassword)
-        toast({
-          title: 'Signup Failed',
-          description: confirmPassword.message,
-          variant: 'destructive',
-        });
+ if (typeof confirmPassword.message === 'string') {
+ toast({
+ title: 'Signup Failed',
+ description: confirmPassword.message,
+ variant: 'destructive',
+ });
+ }
     },
     [formState.errors]
   );
