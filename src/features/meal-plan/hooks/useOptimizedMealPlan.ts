@@ -21,23 +21,8 @@ export function useOptimizedMealPlan() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    function setMeal(data: any) {
-      if (data.aiGeneratedMealPlan)
-        setMealPlan(
-          data.aiGeneratedMealPlan as GeneratePersonalizedMealPlanOutput
-        );
-    }
-
-    function toastError() {
-      toast({
-        title: 'Error',
-        description: 'Could not load your profile data.',
-        variant: 'destructive',
-      });
-    }
-
-    fetchUserData(getFullProfileData, toastError, setMeal);
-  }, [user, toast, fetchUserData]);
+    fetchUserData(); // fetchUserData from useFetchProfile hook
+  }, [fetchUserData]); // Only re-run if fetchUserData changes
 
   const handleGeneratePlan = async () => {
     if (!user?.uid) {
