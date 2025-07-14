@@ -3,7 +3,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 // Assuming these types are defined in your project's schema file
-import { Partial, FullProfileType, GeneratePersonalizedMealPlanInput } from '@/src/lib/schemas';
+import { FullProfileType, GeneratePersonalizedMealPlanInput } from '@/lib/schemas';
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
