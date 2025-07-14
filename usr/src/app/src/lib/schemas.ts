@@ -1,5 +1,5 @@
 
-import { User } from 'firebase/auth';
+import { User } from '@/types/globalTypes';
 import * as z from 'zod';
 import {
   activityLevels as allActivityLevels,
