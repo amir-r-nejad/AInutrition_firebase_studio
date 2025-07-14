@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Logo } from '@/components/Logo';
@@ -26,12 +25,12 @@ import {
   HelpCircle,
   LayoutDashboard,
   LogOut,
-  MessageSquareQuote,
   NotebookText,
   SplitSquareHorizontal,
   User,
 } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import React from 'react';
 
 const navItems = [
@@ -43,7 +42,6 @@ const navItems = [
     label: 'Smart Calorie Planner',
     icon: BrainCircuit,
   },
-  // { href: '/tools/macro-calculator', label: 'Daily Macro Breakdown', icon: Scaling }, // Removed
   {
     href: '/tools/macro-splitter',
     label: 'Macro Splitter',
@@ -63,6 +61,7 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user: currentUser, isLoading } = useAuth();
+  const pathname = usePathname();
 
   if (isLoading) {
     return (
@@ -73,11 +72,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!currentUser) {
-    // AuthProvider should handle redirection.
-    // This is a fallback rendering if redirection hasn't happened yet.
     return (
       <div className='flex h-screen items-center justify-center'>
-        {/* You can put a more specific message or keep the spinner */}
         <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-primary'></div>
         <p className='ml-2'>Redirecting...</p>
       </div>
@@ -97,25 +93,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 return (
                   <React.Fragment key={`separator-${index}`}>
                     {index !== 0 && <SidebarSeparator className='my-2' />}
-                    {/* Removed the label for section as it's just a separator now based on previous styling */}
                   </React.Fragment>
                 );
               } else {
-                // This guard ensures that 'item' has the properties of a nav link, satisfying TypeScript.
                 if (!item.href || !item.icon) {
-                  return null; 
+                  return null;
                 }
                 const IconComponent = item.icon;
                 return (
                   <SidebarMenuItem key={item.label}>
-                    <Link href={item.href} legacyBehavior passHref>
+                    <Link href={item.href} passHref>
                       <SidebarMenuButton
-                        isActive={false} // This needs to be dynamic based on current path 
+                        asChild
+                        isActive={pathname === item.href}
                         tooltip={item.label}
                       >
-                        <IconComponent className='h-5 w-5' />{' '}
-                        {/* Render the icon component */}
-                        <span>{item.label}</span>
+                        <div>
+                          <IconComponent className='h-5 w-5' />
+                          <span>{item.label}</span>
+                        </div>
                       </SidebarMenuButton>
                     </Link>
                   </SidebarMenuItem>
