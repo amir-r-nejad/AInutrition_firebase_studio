@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Bot, Loader2, Send, UserIcon } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 
 interface Message {
   id: string;
