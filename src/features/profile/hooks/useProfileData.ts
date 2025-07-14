@@ -15,11 +15,11 @@ export function useProfileData(
     if (userId) {
       setIsLoading(true);
       getProfileData(userId)
-        .then((profileDataSubset) => {
+        .then((profileDataSubset: ProfileFormValues) => {
           form.reset(profileDataSubset);
           setIsLoading(false);
         })
-        .catch((error) => {
+        .catch((error: any) => {
           console.error('Error loading profile data:', error);
           toast({
             title: 'Error',
