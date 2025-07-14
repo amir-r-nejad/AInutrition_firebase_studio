@@ -217,12 +217,10 @@ function MealSuggestionsContent() {
 
     if (missingFields.length === 0 && profileToUse) {
       const dailyTotals = {
-        targetCalories:
-          fullProfileData.smartPlannerData?.formValues?.custom_total_calories,
-        targetProtein:
-          fullProfileData.smartPlannerData?.formValues?.proteinGrams,
-        targetCarbs: fullProfileData.smartPlannerData?.formValues?.carbGrams,
-        targetFat: fullProfileData.smartPlannerData?.formValues?.fatGrams,
+        targetCalories: fullProfileData.smartPlannerData?.results?.finalTargetCalories,
+        targetProtein: fullProfileData.smartPlannerData?.results?.proteinGrams,
+        targetCarbs: fullProfileData.smartPlannerData?.results?.carbGrams,
+        targetFat: fullProfileData.smartPlannerData?.results?.fatGrams,
       };
 
       let mealDistribution;
