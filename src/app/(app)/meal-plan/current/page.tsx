@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { DocumentSnapshot, FirebaseError, doc, getDoc, setDoc } from 'firebase/firestore';
+import { DocumentSnapshot, FirestoreError, doc, getDoc, setDoc } from '@firebase/firestore';
 import { adjustMealIngredients } from '@/ai/flows/adjust-meal-ingredients';
 import { Button } from '@/components/ui/button';
 import {
@@ -104,9 +104,10 @@ export default function CurrentMealPlanPage() {
 
     const userDocRef = doc(db, 'users', user.uid);
     getDoc(userDocRef)
-      .then((docSnap: DocumentSnapshot<FullProfileType>) => {
-        if (docSnap.exists()) {
-          const fullProfile = docSnap.data();
+      .then((docSnap) => {
+        const typedDocSnap = docSnap as DocumentSnapshot<FullProfileType>;
+        if (typedDocSnap.exists()) {
+          const fullProfile = typedDocSnap.data();
           setProfileData(fullProfile);
           if (fullProfile.currentWeeklyPlan) {
             setWeeklyPlan(fullProfile.currentWeeklyPlan);
@@ -119,7 +120,7 @@ export default function CurrentMealPlanPage() {
         }
       })
       .catch((error) => {
-        const typedError = error as FirebaseError;
+        const typedError = error as FirestoreError;
         toast({
           title: 'Error Loading Data',
           description: typedError.message || 'Could not load your data.',
@@ -161,7 +162,7 @@ export default function CurrentMealPlanPage() {
         } has been updated.`,
       });
     } catch (error) {
-      const typedError = error as FirebaseError;
+      const typedError = error as FirestoreError;
       toast({
         title: 'Save Error',
         description: typedError.message || 'Could not save meal plan.',
@@ -375,7 +376,7 @@ export default function CurrentMealPlanPage() {
       }
     } catch (error) {
       console.error('Error optimizing meal:', error);
-      const typedError = error as FirebaseError;
+      const typedError = error as FirestoreError;
       const errorMessage = getAIApiErrorMessage(typedError);
       toast({
         title: 'Optimization Failed',
@@ -630,7 +631,7 @@ function EditMealDialog({
   };
 
   return (
-    <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={true} onOpenChange={(isOpen: boolean) => !isOpen && onClose()}>
       <DialogContent className='sm:max-w-2xl'>
         <DialogHeader>
           <DialogTitle>
