@@ -122,8 +122,10 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
                     position='top'
                     offset={8}
                     className='fill-foreground text-xs'
-                    formatter={(value: number) =>
-                      `${formatNumber(value, { maximumFractionDigits: 0 })}g`
+                    formatter={(value: number | string) =>
+                      typeof value === 'number'
+                        ? `${formatNumber(value, { maximumFractionDigits: 0 })}g`
+                        : 'N/A' // Keep the 'N/A' for non-numeric values
                     }
                   />
                 </Bar>
@@ -171,12 +173,7 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
                       <Table className='min-w-[500px]'>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className='w-[40%]'>
-                              Ingredient
-                            </TableHead>
-                            <TableHead className='text-right w-[15%]'>
-                              Qty (g)
-                            </TableHead>
+                            <TableHead className='w-[40%]'>Ingredient</TableHead>
                             <TableHead className='text-right w-[15%]'>
                               Calories
                             </TableHead>
@@ -184,70 +181,68 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
                               Protein (g)
                             </TableHead>
                             <TableHead className='text-right w-[15%]'>
+                              Carbs (g)
+                            </TableHead>
+                            <TableHead className='text-right w-[15%]'>
                               Fat (g)
                             </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {meal.ingredients.map((ing, ingIndex) => {
-                            return (
-                              <TableRow key={ingIndex}>
-                                <TableCell className='font-medium py-1.5'>
-                                  {ing.ingredient_name}
-                                </TableCell>
-                                <TableCell className='text-right py-1.5'>
-                                  {formatNumber(ing.quantity_g, {
-                                    maximumFractionDigits: 0,
-                                  })}
-                                </TableCell>
-                                <TableCell className='text-right py-1.5'>
-                                  {ing.macros_per_100g.calories
-                                    ? formatNumber(
-                                        (ing.macros_per_100g.calories *
-                                          ing.quantity_g) /
-                                          100,
-                                        { maximumFractionDigits: 0 }
-                                      )
-                                    : 'N/A'}
-                                </TableCell>
-                                <TableCell className='text-right py-1.5'>
-                                  {ing.macros_per_100g.protein_g
-                                    ? formatNumber(
-                                        (ing.macros_per_100g.protein_g *
-                                          ing.quantity_g) /
-                                          100,
-                                        { maximumFractionDigits: 1 }
-                                      )
-                                    : 'N/A'}
-                                </TableCell>
-                                <TableCell className='text-right py-1.5'>
-                                  {ing.macros_per_100g.fat_g
-                                    ? formatNumber(
-                                        (ing.macros_per_100g.fat_g *
-                                          ing.quantity_g) /
-                                          100,
-                                        { maximumFractionDigits: 1 }
-                                      )
-                                    : 'N/A'}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
+                          {meal.ingredients.map((ing, ingIndex) => (
+                            <TableRow key={ingIndex}>
+                              <TableCell className='font-medium py-1.5'>
+                                {ing.name}
+                              </TableCell>
+                              <TableCell className='text-right py-1.5'>
+                                {typeof ing.calories === 'number'
+                                  ? formatNumber(ing.calories, {
+                                      maximumFractionDigits: 0,
+                                    })
+                                  : 'N/A'}
+                              </TableCell>
+                              <TableCell className='text-right py-1.5'>
+                                {typeof ing.protein === 'number'
+                                  ? formatNumber(ing.protein, {
+                                      maximumFractionDigits: 1,
+                                    })
+                                  : 'N/A'}
+                              </TableCell>
+                              <TableCell className='text-right py-1.5'>
+                                {typeof ing.carbs === 'number'
+                                  ? formatNumber(ing.carbs, {
+                                      maximumFractionDigits: 1,
+                                    })
+                                  : 'N/A'}
+                              </TableCell>
+                              <TableCell className='text-right py-1.5'>
+                                {typeof ing.fat === 'number'
+                                  ? formatNumber(ing.fat, {
+                                      maximumFractionDigits: 1,
+                                    })
+                                  : 'N/A'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
                         </TableBody>
                       </Table>
                       <ScrollBar orientation='horizontal' />
                     </ScrollArea>
                     <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
                       Total:{' '}
-                      {formatNumber(meal.total_calories, {
+                      {formatNumber(meal.total_calories || 0, {
                         maximumFractionDigits: 0,
                       })}{' '}
                       kcal | Protein:{' '}
-                      {formatNumber(meal.total_protein_g, {
+                      {formatNumber(meal.total_protein_g || 0, {
+                        maximumFractionDigits: 1,
+                      })}
+                      g | Carbs:{' '}
+                      {formatNumber(meal.total_carbs_g || 0, {
                         maximumFractionDigits: 1,
                       })}
                       g | Fat:{' '}
-                      {formatNumber(meal.total_fat_g, {
+                      {formatNumber(meal.total_fat_g || 0, {
                         maximumFractionDigits: 1,
                       })}
                       g
