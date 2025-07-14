@@ -1,7 +1,6 @@
 'use client';
 
 import { useAnalytics } from '@/features/providers/useAnalytics ';
-import { analytics } from '@/lib/firebase/firebase';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 
@@ -26,7 +25,7 @@ function AnalyticsProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(function () {
-    if (analytics) console.log('Analytics Provider Is Working ✅');
+    if (useAnalytics()) console.log('Analytics Provider Is Working ✅');
   }, []);
 
   return children;
