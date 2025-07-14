@@ -1,10 +1,12 @@
 'use client';
+import {
+  suggestMealsForMacros, // Keep this if you use the function
+} from '@/ai/flows/suggest-meals-for-macros';
 
 import {
-  suggestMealsForMacros,
   type SuggestMealsForMacrosInput,
   type SuggestMealsForMacrosOutput,
-} from '@/ai/flows/suggest-meals-for-macros';
+} from '@/lib/schemas';
 import {
   Accordion,
   AccordionContent,
