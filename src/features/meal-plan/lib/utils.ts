@@ -1,11 +1,14 @@
-import { type GeneratePersonalizedMealPlanInput } from '@/ai/flows/generate-meal-plan';
 import { defaultMacroPercentages } from '@/lib/constants';
-import { BaseProfileData } from '@/lib/schemas';
-import { DailyTargetsTypes, MealToOptimizeTypes } from '../types';
+import {
+  type FullProfileType,
+  type AIServiceMeal,
+  type GeneratePersonalizedMealPlanInput,
+} from '@/lib/schemas';
+import { type DailyTargetsTypes, type MealToOptimizeTypes } from '../types';
 import { requiredFields } from './config';
 
 export function mapProfileToMealPlanInput(
-  profile: Partial<BaseProfileData>
+  profile: Partial<FullProfileType>
 ): GeneratePersonalizedMealPlanInput {
   const input: GeneratePersonalizedMealPlanInput = {
     age: profile.age!,
@@ -55,6 +58,7 @@ export function mapProfileToMealPlanInput(
     medicalConditions: profile.medicalConditions ?? undefined,
     medications: profile.medications ?? undefined,
     typicalMealsDescription: profile.typicalMealsDescription ?? undefined,
+    mealTargets: [], // Explicitly include mealTargets as an empty array
   };
 
   Object.keys(input).forEach(
@@ -67,7 +71,7 @@ export function mapProfileToMealPlanInput(
 }
 
 export function getAdjustedMealInput(
-  profileData: Partial<BaseProfileData>,
+  profileData: Partial<FullProfileType>,
   dailyTargets: DailyTargetsTypes,
   mealToOptimize: MealToOptimizeTypes
 ) {
@@ -123,7 +127,7 @@ export function getAdjustedMealInput(
 }
 
 export function getMissingProfileFields(
-  profile: Partial<BaseProfileData>
-): (keyof Partial<BaseProfileData>)[] {
+  profile: Partial<FullProfileType>
+): (keyof Partial<FullProfileType>)[] {
   return requiredFields.filter((field) => !profile[field]);
 }
