@@ -1,6 +1,5 @@
-
 'use client';
-
+import { DocumentSnapshot, FirebaseError } from 'firebase/firestore';
 import { adjustMealIngredients } from '@/ai/flows/adjust-meal-ingredients';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -45,6 +44,13 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Loader2, Pencil, PlusCircle, Trash2, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+type WeeklyMealPlan = {
+  days: {
+    dayOfWeek: string;
+    meals: Meal[];
+  }[];
+};
+
 const generateInitialWeeklyPlan = (): WeeklyMealPlan => ({
   days: daysOfWeek.map((day) => ({
     dayOfWeek: day,
@@ -62,13 +68,12 @@ const generateInitialWeeklyPlan = (): WeeklyMealPlan => ({
 
 // Helper function to safely convert values to numbers or a fallback
 const safeConvertToNumber = (value: any, fallback: number | null = null) => {
-    if (value === null || value === undefined || value === '') {
-        return fallback;
-    }
-    const num = Number(value);
-    return isNaN(num) ? fallback : num;
+  if (value === null || value === undefined || value === '') {
+    return fallback;
+  }
+  const num = Number(value);
+  return isNaN(num) ? fallback : num;
 };
-
 
 export default function CurrentMealPlanPage() {
   const { user } = useAuth();
@@ -81,52 +86,50 @@ export default function CurrentMealPlanPage() {
     mealIndex: number;
     meal: Meal;
   } | null>(null);
-  const [profileData, setProfileData] =
-    useState<FullProfileType | null>(null);
+  const [profileData, setProfileData] = useState<FullProfileType | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingPlan, setIsLoadingPlan] = useState(true);
   const [isOptimizingMeal, setIsOptimizingMeal] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.uid) {
-      setIsLoadingPlan(true);
-      setIsLoadingProfile(true);
-
-      // Client-side fetch for both profile and meal plan
-      const userDocRef = doc(db, 'users', user.uid);
-      getDoc(userDocRef)
-        .then((docSnap) => {
-          if (docSnap.exists()) {
-            const fullProfile = docSnap.data() as FullProfileType;
-            setProfileData(fullProfile);
-            if (fullProfile.currentWeeklyPlan) {
-              setWeeklyPlan(fullProfile.currentWeeklyPlan);
-            } else {
-              setWeeklyPlan(generateInitialWeeklyPlan());
-            }
-          } else {
-            setProfileData(null);
-            setWeeklyPlan(generateInitialWeeklyPlan());
-          }
-        })
-        .catch((error) => {
-          toast({
-            title: 'Error Loading Data',
-            description: error instanceof Error ? error.message : 'Could not load your data.',
-            variant: 'destructive',
-          });
-          setWeeklyPlan(generateInitialWeeklyPlan());
-        })
-        .finally(() => {
-            setIsLoadingPlan(false);
-            setIsLoadingProfile(false);
-        });
-
-    } else {
+    if (!user?.uid) {
       setIsLoadingPlan(false);
       setIsLoadingProfile(false);
       setWeeklyPlan(generateInitialWeeklyPlan());
+      return;
     }
+
+    setIsLoadingPlan(true);
+    setIsLoadingProfile(true);
+
+    const userDocRef = doc(db, 'users', user.uid);
+    getDoc(userDocRef)
+      .then((docSnap: DocumentSnapshot<FullProfileType>) => {
+        if (docSnap.exists()) {
+          const fullProfile = docSnap.data() as FullProfileType;
+          setProfileData(fullProfile);
+          if (fullProfile.currentWeeklyPlan) {
+            setWeeklyPlan(fullProfile.currentWeeklyPlan);
+          } else {
+            setWeeklyPlan(generateInitialWeeklyPlan());
+          }
+        } else {
+          setProfileData(null);
+          setWeeklyPlan(generateInitialWeeklyPlan());
+        }
+      })
+      .catch((error: FirebaseError) => {
+        toast({
+          title: 'Error Loading Data',
+          description: error.message || 'Could not load your data.',
+          variant: 'destructive',
+        });
+        setWeeklyPlan(generateInitialWeeklyPlan());
+      })
+      .finally(() => {
+        setIsLoadingPlan(false);
+        setIsLoadingProfile(false);
+      });
   }, [user, toast]);
 
   const handleEditMeal = (dayIndex: number, mealIndex: number) => {
@@ -146,7 +149,6 @@ export default function CurrentMealPlanPage() {
     setWeeklyPlan(newWeeklyPlan);
     setEditingMeal(null);
     try {
-      // Client-side Firestore write
       const sanitizedPlan = preprocessDataForFirestore(newWeeklyPlan);
       const userDocRef = doc(db, 'users', user.uid);
       await setDoc(userDocRef, { currentWeeklyPlan: sanitizedPlan }, { merge: true });
@@ -157,11 +159,10 @@ export default function CurrentMealPlanPage() {
           updatedMeal.customName || updatedMeal.name
         } has been updated.`,
       });
-    } catch (error) {
-       const errorMessage = error instanceof Error ? error.message : 'Could not save meal plan.';
+    } catch (error: FirebaseError) {
       toast({
         title: 'Save Error',
-        description: errorMessage,
+        description: error.message || 'Could not save meal plan.',
         variant: 'destructive',
       });
     }
@@ -184,18 +185,23 @@ export default function CurrentMealPlanPage() {
     }
 
     if (mealToOptimize.ingredients.length === 0) {
-        toast({
-            title: 'No Ingredients',
-            description: 'Please add some ingredients to the meal before optimizing.',
-            variant: 'destructive',
-        });
-        setIsOptimizingMeal(null);
-        return;
+      toast({
+        title: 'No Ingredients',
+        description: 'Please add some ingredients to the meal before optimizing.',
+        variant: 'destructive',
+      });
+      setIsOptimizingMeal(null);
+      return;
     }
 
     const smartPlannerValues = profileData.smartPlannerData?.formValues;
     const requiredFields: (keyof SmartCaloriePlannerFormValues)[] = [
-      'age', 'gender', 'current_weight', 'height_cm', 'activity_factor_key', 'dietGoal',
+      'age',
+      'gender',
+      'current_weight',
+      'height_cm',
+      'activity_factor_key',
+      'dietGoal',
     ];
 
     if (!smartPlannerValues) {
@@ -231,28 +237,33 @@ export default function CurrentMealPlanPage() {
         carbGrams?: number | null;
         fatGrams?: number | null;
       } | null = null;
-      
+
       const smartResults = profileData.smartPlannerData?.results;
 
       if (smartResults && smartResults.finalTargetCalories) {
-          dailyTargets = {
-            finalTargetCalories: smartResults.finalTargetCalories,
-            proteinGrams: smartResults.proteinGrams,
-            carbGrams: smartResults.carbGrams,
-            fatGrams: smartResults.fatGrams,
-          };
+        dailyTargets = {
+          finalTargetCalories: smartResults.finalTargetCalories,
+          proteinGrams: smartResults.proteinGrams,
+          carbGrams: smartResults.carbGrams,
+          fatGrams: smartResults.fatGrams,
+        };
       } else {
-          dailyTargets = calculateEstimatedDailyTargets({
-            age: smartPlannerValues.age!,
-            gender: smartPlannerValues.gender!,
-            currentWeight: smartPlannerValues.current_weight!,
-            height: smartPlannerValues.height_cm!,
-            activityLevel: smartPlannerValues.activity_factor_key!,
-            dietGoal: smartPlannerValues.dietGoal!,
-          });
+        dailyTargets = calculateEstimatedDailyTargets({
+          age: smartPlannerValues.age!,
+          gender: smartPlannerValues.gender!,
+          currentWeight: smartPlannerValues.current_weight!,
+          height: smartPlannerValues.height_cm!,
+          activityLevel: smartPlannerValues.activity_factor_key!,
+          dietGoal: smartPlannerValues.dietGoal!,
+        });
       }
-      
-      if (!dailyTargets?.finalTargetCalories || !dailyTargets.proteinGrams || !dailyTargets.carbGrams || !dailyTargets.fatGrams) {
+
+      if (
+        !dailyTargets?.finalTargetCalories ||
+        !dailyTargets.proteinGrams ||
+        !dailyTargets.carbGrams ||
+        !dailyTargets.fatGrams
+      ) {
         toast({
           title: 'Calculation Error',
           description: 'Could not calculate daily targets from profile. Ensure profile is complete or use the Smart Calorie Planner.',
@@ -264,15 +275,25 @@ export default function CurrentMealPlanPage() {
 
       const customDistributions = profileData.mealDistributions;
       const mealDistribution =
-        (customDistributions && customDistributions.find((d) => d.mealName === mealToOptimize.name)) ||
+        (customDistributions &&
+          customDistributions.find((d) => d.mealName === mealToOptimize.name)) ||
         defaultMacroPercentages[mealToOptimize.name] || {
-          calories_pct: 0, protein_pct: 0, carbs_pct: 0, fat_pct: 0,
+          calories_pct: 0,
+          protein_pct: 0,
+          carbs_pct: 0,
+          fat_pct: 0,
         };
 
       const targetMacrosForMeal = {
-        calories: Math.round(dailyTargets.finalTargetCalories * (mealDistribution.calories_pct / 100)),
-        protein: Math.round(dailyTargets.proteinGrams * (mealDistribution.protein_pct / 100)),
-        carbs: Math.round(dailyTargets.carbGrams * (mealDistribution.carbs_pct / 100)),
+        calories: Math.round(
+          dailyTargets.finalTargetCalories * (mealDistribution.calories_pct / 100)
+        ),
+        protein: Math.round(
+          dailyTargets.proteinGrams * (mealDistribution.protein_pct / 100)
+        ),
+        carbs: Math.round(
+          dailyTargets.carbGrams * (mealDistribution.carbs_pct / 100)
+        ),
         fat: Math.round(dailyTargets.fatGrams * (mealDistribution.fat_pct / 100)),
       };
 
@@ -312,13 +333,13 @@ export default function CurrentMealPlanPage() {
       const result = await adjustMealIngredients(aiInput);
 
       if (result.adjustedMeal && user?.uid) {
-        const { ingredients, totalCalories, totalProtein, totalCarbs, totalFat } = result.adjustedMeal;
+        const { ingredients, totalCalories, totalProtein, totalCarbs, totalFat } =
+          result.adjustedMeal;
 
-        // Construct the updated meal safely, preserving original names
         const updatedMealData: Meal = {
-          name: mealToOptimize.name, // Always keep original name
-          customName: mealToOptimize.customName, // Always keep original custom name
-          id: mealToOptimize.id, // Preserve ID if it exists
+          name: mealToOptimize.name,
+          customName: mealToOptimize.customName,
+          id: mealToOptimize.id,
           ingredients: ingredients.map((ing) => ({
             ...ing,
             quantity: safeConvertToNumber(ing.quantity, 0),
@@ -332,7 +353,7 @@ export default function CurrentMealPlanPage() {
           totalCarbs: safeConvertToNumber(totalCarbs, 0),
           totalFat: safeConvertToNumber(totalFat, 0),
         };
-        
+
         const newWeeklyPlan = JSON.parse(JSON.stringify(weeklyPlan));
         newWeeklyPlan.days[dayIndex].meals[mealIndex] = updatedMealData;
         setWeeklyPlan(newWeeklyPlan);
@@ -346,9 +367,11 @@ export default function CurrentMealPlanPage() {
           description: result.explanation || 'AI has adjusted the ingredients.',
         });
       } else {
-        throw new Error('AI did not return an adjusted meal or an unexpected format was received.');
+        throw new Error(
+          'AI did not return an adjusted meal or an unexpected format was received.'
+        );
       }
-    } catch (error: any) {
+    } catch (error: FirebaseError) {
       console.error('Error optimizing meal:', error);
       const errorMessage = getAIApiErrorMessage(error);
       toast({
@@ -361,7 +384,6 @@ export default function CurrentMealPlanPage() {
       setIsOptimizingMeal(null);
     }
   };
-
 
   if (isLoadingPlan || (user && isLoadingProfile)) {
     return (
@@ -461,10 +483,10 @@ export default function CurrentMealPlanPage() {
                             onClick={() => handleOptimizeMeal(dayIndex, mealIndex)}
                             disabled={isOptimizingThis}
                           >
-                             {isOptimizingThis ? (
-                                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                            {isOptimizingThis ? (
+                              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                             ) : (
-                                <Wand2 className='mr-2 h-4 w-4' />
+                              <Wand2 className='mr-2 h-4 w-4' />
                             )}
                             {isOptimizingThis ? 'Optimizing...' : 'Optimize Meal'}
                           </Button>
@@ -645,8 +667,7 @@ function EditMealDialog({
                   onClick={() => removeIngredient(index)}
                   className='shrink-0'
                 >
-                  {' '}
-                  <Trash2 className='h-4 w-4 text-destructive' />{' '}
+                  <Trash2 className='h-4 w-4 text-destructive' />
                 </Button>
               </div>
               <div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
@@ -668,8 +689,7 @@ function EditMealDialog({
                   onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                 />
                 <div className='col-span-2 md:col-span-1 text-xs text-muted-foreground pt-2'>
-                  {' '}
-                  (Total for this quantity){' '}
+                  (Total for this quantity)
                 </div>
               </div>
               <div className='grid grid-cols-2 md:grid-cols-4 gap-2'>
@@ -713,8 +733,7 @@ function EditMealDialog({
             </Card>
           ))}
           <Button variant='outline' onClick={addIngredient} className='w-full'>
-            {' '}
-            <PlusCircle className='mr-2 h-4 w-4' /> Add Ingredient{' '}
+            <PlusCircle className='mr-2 h-4 w-4' /> Add Ingredient
           </Button>
           <div className='mt-4 p-3 border rounded-md bg-muted/50'>
             <h4 className='font-semibold mb-1'>Calculated Totals:</h4>
@@ -756,11 +775,3 @@ function EditMealDialog({
     </Dialog>
   );
 }
-
-// FIX: Added missing type definition for WeeklyMealPlan used in this component
-type WeeklyMealPlan = {
-  days: {
-    dayOfWeek: string;
-    meals: Meal[];
-  }[];
-};
