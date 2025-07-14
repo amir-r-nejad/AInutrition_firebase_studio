@@ -1,6 +1,6 @@
-
 'use client';
 
+import { DocumentSnapshot, FirestoreError, doc, getDoc, setDoc, DocumentData } from '@firebase/firestore';
 import { generatePersonalizedMealPlan } from '@/ai/flows/generate-meal-plan';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,7 +39,6 @@ import type {
 } from '@/lib/schemas';
 import { preprocessDataForFirestore } from '@/lib/schemas';
 import { getAIApiErrorMessage } from '@/lib/utils';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   AlertTriangle,
   BarChart3,
@@ -85,7 +84,7 @@ export default function OptimizedMealPlanPage() {
       setIsLoadingProfile(true);
       const userDocRef = doc(db, 'users', user.uid);
       getDoc(userDocRef)
-        .then((docSnap) => {
+        .then((docSnap: DocumentSnapshot<DocumentData>) => {
           if (docSnap.exists()) {
             const data = docSnap.data() as FullProfileType;
             setProfileData(data);
@@ -96,9 +95,9 @@ export default function OptimizedMealPlanPage() {
             }
           }
         })
-        .catch((err) => {
+        .catch((err: FirestoreError) => {
           console.error('Failed to load profile for AI meal plan', err);
-          const errorMessage = err instanceof Error ? err.message : 'Could not load your profile data.';
+          const errorMessage = err.message || 'Could not load your profile data.';
           toast({
             title: 'Error Loading Profile',
             description: errorMessage,
@@ -145,7 +144,6 @@ export default function OptimizedMealPlanPage() {
           dietGoal: profileData.dietGoalOnboarding,
         });
       }
-
 
       if (
         !dailyTargets?.finalTargetCalories ||
@@ -220,10 +218,9 @@ export default function OptimizedMealPlanPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // THIS IS THE FIX: Construct a clean input object that matches the new schema.
-      // It only sends preferences and the pre-calculated targets.
+      // Construct a clean input object that matches the schema
       const input: GeneratePersonalizedMealPlanInput = {
-        mealTargets, // Pass the calculated targets
+        mealTargets,
         preferredDiet: profileData.preferredDiet ?? undefined,
         allergies: profileData.allergies ?? undefined,
         dispreferredCuisines: profileData.dispreferredCuisines ?? undefined,
@@ -250,8 +247,9 @@ export default function OptimizedMealPlanPage() {
         title: 'Meal Plan Generated!',
         description: 'Your AI-optimized weekly meal plan is ready.',
       });
-    } catch (err: any) {
-      const errorMessage = getAIApiErrorMessage(err);
+    } catch (err: unknown) {
+      const typedError = err as FirestoreError;
+      const errorMessage = getAIApiErrorMessage(typedError);
       setError(errorMessage);
       toast({
         title: 'Generation Failed',
@@ -362,7 +360,7 @@ export default function OptimizedMealPlanPage() {
               </CardContent>
             </Card>
           ) : (
-             <div className='text-center py-10 text-muted-foreground border rounded-lg mb-6'>
+            <div className='text-center py-10 text-muted-foreground border rounded-lg mb-6'>
               <AlertTriangle className='mx-auto h-12 w-12 mb-4 text-amber-500' />
               <p className='text-lg font-semibold'>Cannot Calculate Targets</p>
               <p>Please complete your profile in the 'Smart Calorie Planner' to enable AI meal plan generation.</p>
@@ -513,78 +511,78 @@ export default function OptimizedMealPlanPage() {
                   >
                     <div className='space-y-6'>
                       {dayPlan.meals.map((meal, mealIndex) => {
-                          // Safeguard against rendering empty/invalid meal objects
-                          if (!meal.ingredients || meal.ingredients.length === 0) {
-                              return null;
-                          }
-                          return (
-                            <Card key={mealIndex} className='shadow-md'>
-                              <CardHeader>
-                                <CardTitle className='text-xl font-semibold flex items-center'>
-                                  <ChefHat className='mr-2 h-5 w-5 text-accent' />
-                                  {meal.meal_title}
-                                </CardTitle>
-                                <CardDescription>{meal.meal_name}</CardDescription>
-                              </CardHeader>
-                              <CardContent>
-                                <h4 className='font-medium text-md mb-2 text-primary'>
-                                  Ingredients:
-                                </h4>
-                                <ScrollArea className='w-full mb-4'>
-                                  <Table className='min-w-[500px]'>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead className='w-[40%]'>
-                                          Ingredient
-                                        </TableHead>
-                                        <TableHead className='text-right'>
-                                          Calories
-                                        </TableHead>
-                                        <TableHead className='text-right'>
-                                          Protein (g)
-                                        </TableHead>
-                                        <TableHead className='text-right'>
-                                          Carbs (g)
-                                        </TableHead>
-                                        <TableHead className='text-right'>
-                                          Fat (g)
-                                        </TableHead>
+                        // Safeguard against rendering empty/invalid meal objects
+                        if (!meal.ingredients || meal.ingredients.length === 0) {
+                          return null;
+                        }
+                        return (
+                          <Card key={mealIndex} className='shadow-md'>
+                            <CardHeader>
+                              <CardTitle className='text-xl font-semibold flex items-center'>
+                                <ChefHat className='mr-2 h-5 w-5 text-accent' />
+                                {meal.meal_title}
+                              </CardTitle>
+                              <CardDescription>{meal.meal_name}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <h4 className='font-medium text-md mb-2 text-primary'>
+                                Ingredients:
+                              </h4>
+                              <ScrollArea className='w-full mb-4'>
+                                <Table className='min-w-[500px]'>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead className='w-[40%]'>
+                                        Ingredient
+                                      </TableHead>
+                                      <TableHead className='text-right'>
+                                        Calories
+                                      </TableHead>
+                                      <TableHead className='text-right'>
+                                        Protein (g)
+                                      </TableHead>
+                                      <TableHead className='text-right'>
+                                        Carbs (g)
+                                      </TableHead>
+                                      <TableHead className='text-right'>
+                                        Fat (g)
+                                      </TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {meal.ingredients.map((ing: AIGeneratedIngredient, ingIndex) => (
+                                      <TableRow key={ingIndex}>
+                                        <TableCell className='font-medium py-1.5'>
+                                          {ing.name}
+                                        </TableCell>
+                                        <TableCell className='text-right py-1.5'>
+                                          {ing.calories?.toFixed(0) ?? 'N/A'}
+                                        </TableCell>
+                                        <TableCell className='text-right py-1.5'>
+                                          {ing.protein?.toFixed(1) ?? 'N/A'}
+                                        </TableCell>
+                                        <TableCell className='text-right py-1.5'>
+                                          {ing.carbs?.toFixed(1) ?? 'N/A'}
+                                        </TableCell>
+                                        <TableCell className='text-right py-1.5'>
+                                          {ing.fat?.toFixed(1) ?? 'N/A'}
+                                        </TableCell>
                                       </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {meal.ingredients.map((ing: AIGeneratedIngredient, ingIndex) => (
-                                          <TableRow key={ingIndex}>
-                                            <TableCell className='font-medium py-1.5'>
-                                              {ing.name}
-                                            </TableCell>
-                                            <TableCell className='text-right py-1.5'>
-                                              {ing.calories?.toFixed(0) ?? 'N/A'}
-                                            </TableCell>
-                                            <TableCell className='text-right py-1.5'>
-                                              {ing.protein?.toFixed(1) ?? 'N/A'}
-                                            </TableCell>
-                                            <TableCell className='text-right py-1.5'>
-                                              {ing.carbs?.toFixed(1) ?? 'N/A'}
-                                            </TableCell>
-                                            <TableCell className='text-right py-1.5'>
-                                              {ing.fat?.toFixed(1) ?? 'N/A'}
-                                            </TableCell>
-                                          </TableRow>
-                                        ))}
-                                    </TableBody>
-                                  </Table>
-                                  <ScrollBar orientation='horizontal' />
-                                </ScrollArea>
-                                <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
-                                  Total: {(meal.total_calories ?? 0).toFixed(0)} kcal |
-                                  Protein: {(meal.total_protein_g ?? 0).toFixed(1)}g |
-                                  Carbs: {(meal.total_carbs_g ?? 0).toFixed(1)}g | Fat:{' '}
-                                  {(meal.total_fat_g ?? 0).toFixed(1)}g
-                                </div>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                                <ScrollBar orientation='horizontal' />
+                              </ScrollArea>
+                              <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
+                                Total: {(meal.total_calories ?? 0).toFixed(0)} kcal |
+                                Protein: {(meal.total_protein_g ?? 0).toFixed(1)}g |
+                                Carbs: {(meal.total_carbs_g ?? 0).toFixed(1)}g | Fat:{' '}
+                                {(meal.total_fat_g ?? 0).toFixed(1)}g
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   </TabsContent>
                 ))}
