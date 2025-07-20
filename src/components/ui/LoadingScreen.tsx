@@ -1,3 +1,4 @@
+import { Card } from './card';
 import Spinner from './Spinner';
 
 function LoadingScreen({
@@ -6,10 +7,10 @@ function LoadingScreen({
   loadingLabel?: string;
 }) {
   return (
-    <div className='flex justify-center items-center h-dvh'>
+    <Card className='flex justify-center items-center h-dvh w-full col-span-full'>
       <Spinner className='size-12 text-primary' />
       <p className='ml-4 text-lg'>{loadingLabel}</p>
-    </div>
+    </Card>
   );
 }
 

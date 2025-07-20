@@ -1,5 +1,3 @@
-import { FirebaseOptions } from 'firebase/app';
-
 export const activityLevels = [
   {
     value: 'sedentary',
@@ -58,16 +56,6 @@ export const preferredDiets = [
   { value: 'high_protein', label: 'High Protein' },
 ];
 
-// mealsPerDayOptions is removed as the field is removed from onboarding
-// export const mealsPerDayOptions = [
-//   { value: 2, label: "2 meals per day" },
-//   { value: 3, label: "3 meals per day" },
-//   { value: 4, label: "4 meals per day" },
-//   { value: 5, label: "5 meals per day" },
-//   { value: 6, label: "6 meals per day" },
-//   { value: 7, label: "7 meals per day" },
-// ];
-
 export const genders = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
@@ -86,15 +74,6 @@ export const exerciseIntensities = [
   { value: 'moderate', label: 'Moderate' },
   { value: 'vigorous', label: 'Vigorous' },
 ];
-
-export const firebaseConfig: FirebaseOptions = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
 
 export const subscriptionStatuses = [
   { value: 'free', label: 'Free Tier' },
@@ -195,7 +174,7 @@ export const onboardingStepsData = [
   },
   {
     stepNumber: 3,
-    title: 'Step 7 – Smart Calculation & Macros',
+    title: 'Step 3 – Smart Calculation & Macros',
     explanation:
       'We’ll generate your personal targets using your data. We estimate your daily calories and macronutrients to support your weight or health goals — whether it’s fat loss, muscle gain, or maintenance.',
     tooltipText:
@@ -205,7 +184,7 @@ export const onboardingStepsData = [
   },
   {
     stepNumber: 4,
-    title: 'Step 8 – Customize Your Targets (Optional)',
+    title: 'Step 4 – Customize Your Targets (Optional)',
     explanation:
       'Want to fine-tune your plan? Adjust your total daily calories, protein intake, and how your remaining calories are split between carbs and fat.',
     tooltipText:
@@ -218,8 +197,8 @@ export const onboardingStepsData = [
     isOptional: true,
   },
   {
-    stepNumber: 5, // Was 12
-    title: 'Step 11 – Ready for Your AI Meal Plan!',
+    stepNumber: 5,
+    title: 'Step 5 – Ready for Your AI Meal Plan!',
     explanation:
       "You're all set! Your profile is complete. Click 'Finish Onboarding' to save your profile and proceed to the dashboard. You can then generate your first AI-powered meal plan.",
     tooltipText:

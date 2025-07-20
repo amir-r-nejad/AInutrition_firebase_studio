@@ -8,35 +8,31 @@ type TargetMacros = {
   fat: number;
 };
 
-const PARAMS_NAME = [
-  'mealName',
-  'calories',
-  'protein',
-  'carbs',
-  'fat',
-  'demo',
-] as const;
+const PARAMS_NAME = ['mealName', 'calories', 'protein', 'carbs', 'fat', 'demo'];
 
 export function useMealUrlParams() {
-  const { getQueryParams, updateQueryParams, removeQueryParams } =
+  const { getQueryParams, updateQueryParams, updateAndRemoveQueryParams } =
     useQueryParams();
 
   function updateUrlWithMeal(mealName: string) {
-    updateQueryParams('mealName', mealName);
+    const [, ...paramsToRemove] = PARAMS_NAME;
 
-    PARAMS_NAME.forEach((name) => {
-      if (name !== 'mealName') removeQueryParams(name);
-    });
+    updateAndRemoveQueryParams({ mealName: mealName }, paramsToRemove);
   }
 
   function updateUrlWithTargets(targets: TargetMacros) {
     if (!targets) return;
 
-    updateQueryParams('mealName', targets.mealName);
-    updateQueryParams('calories', targets.calories.toString());
-    updateQueryParams('protein', targets.protein.toString());
-    updateQueryParams('carbs', targets.carbs.toString());
-    updateQueryParams('fat', targets.fat.toString());
+    updateQueryParams(
+      ['mealName', 'calories', 'protein', 'carbs', 'fat'],
+      [
+        targets.mealName,
+        targets.calories.toString(),
+        targets.protein.toString(),
+        targets.carbs.toString(),
+        targets.fat.toString(),
+      ]
+    );
   }
 
   function getCurrentMealParams(selectedMealName: string | null) {
@@ -60,16 +56,10 @@ export function useMealUrlParams() {
     return null;
   }
 
-  function clearMealParams() {
-    PARAMS_NAME.forEach((name) => removeQueryParams(name));
-  }
-
   return {
     getQueryParams,
+    getCurrentMealParams,
     updateUrlWithMeal,
     updateUrlWithTargets,
-    getCurrentMealParams,
-    clearMealParams,
-    updateQueryParams,
   };
 }

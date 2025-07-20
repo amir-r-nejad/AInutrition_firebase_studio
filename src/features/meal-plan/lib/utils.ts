@@ -1,70 +1,22 @@
-import { type GeneratePersonalizedMealPlanInput } from '@/ai/flows/generate-meal-plan';
 import {
   daysOfWeek,
   defaultMacroPercentages,
   mealNames,
 } from '@/lib/constants';
-import { BaseProfileData, WeeklyMealPlan } from '@/lib/schemas';
+import {
+  BaseProfileData,
+  FullUserProfileType,
+  WeeklyMealPlan,
+} from '@/lib/schemas';
 import { DailyTargetsTypes, MealToOptimizeTypes } from '../types';
 import { requiredFields } from './config';
 
-export function mapProfileToMealPlanInput(
-  profile: Partial<BaseProfileData>
-): GeneratePersonalizedMealPlanInput {
-  const input: GeneratePersonalizedMealPlanInput = {
-    age: profile.age!,
-    gender: profile.gender!,
-    height_cm: profile.height_cm!,
-    current_weight: profile.current_weight!,
-    goal_weight_1m: profile.goal_weight_1m!,
-    activityLevel: profile.activityLevel!,
-    dietGoalOnboarding: profile.dietGoalOnboarding!,
-
-    // Optional fields
-    ideal_goal_weight: profile.ideal_goal_weight ?? undefined,
-    bf_current: profile.bf_current ?? undefined,
-    bf_target: profile.bf_target ?? undefined,
-    bf_ideal: profile.bf_ideal ?? undefined,
-    mm_current: profile.mm_current ?? undefined,
-    mm_target: profile.mm_target ?? undefined,
-    mm_ideal: profile.mm_ideal ?? undefined,
-    bw_current: profile.bw_current ?? undefined,
-    bw_target: profile.bw_target ?? undefined,
-    bw_ideal: profile.bw_ideal ?? undefined,
-    waist_current: profile.waist_current ?? undefined,
-    waist_goal_1m: profile.waist_goal_1m ?? undefined,
-    waist_ideal: profile.waist_ideal ?? undefined,
-    hips_current: profile.hips_current ?? undefined,
-    hips_goal_1m: profile.hips_goal_1m ?? undefined,
-    hips_ideal: profile.hips_ideal ?? undefined,
-    right_leg_current: profile.right_leg_current ?? undefined,
-    right_leg_goal_1m: profile.right_leg_goal_1m ?? undefined,
-    right_leg_ideal: profile.right_leg_ideal ?? undefined,
-    left_leg_current: profile.left_leg_current ?? undefined,
-    left_leg_goal_1m: profile.left_leg_goal_1m ?? undefined,
-    left_leg_ideal: profile.left_leg_ideal ?? undefined,
-    right_arm_current: profile.right_arm_current ?? undefined,
-    right_arm_goal_1m: profile.right_arm_goal_1m ?? undefined,
-    right_arm_ideal: profile.right_arm_ideal ?? undefined,
-    left_arm_current: profile.left_arm_current ?? undefined,
-    left_arm_goal_1m: profile.left_arm_goal_1m ?? undefined,
-    left_arm_ideal: profile.left_arm_ideal ?? undefined,
-    preferredDiet: profile.preferredDiet ?? undefined,
-    allergies: profile.allergies ?? undefined,
-    preferredCuisines: profile.preferredCuisines ?? undefined,
-    dispreferredCuisines: profile.dispreferredCuisines ?? undefined,
-    preferredIngredients: profile.preferredIngredients ?? undefined,
-    dispreferredIngredients: profile.dispreferredIngredients ?? undefined,
-    preferredMicronutrients: profile.preferredMicronutrients ?? undefined,
-    medicalConditions: profile.medicalConditions ?? undefined,
-    medications: profile.medications ?? undefined,
-    typicalMealsDescription: profile.typicalMealsDescription ?? undefined,
-  };
-
+export function mapProfileToMealPlanInput(profile: FullUserProfileType) {
+  const input = profile;
   Object.keys(input).forEach(
     (key) =>
-      input[key as keyof GeneratePersonalizedMealPlanInput] === undefined &&
-      delete input[key as keyof GeneratePersonalizedMealPlanInput]
+      !input[key as keyof BaseProfileData] &&
+      delete input[key as keyof BaseProfileData]
   );
 
   return input;
@@ -76,7 +28,7 @@ export function getAdjustedMealInput(
   mealToOptimize: MealToOptimizeTypes
 ) {
   let mealDistribution;
-  const userMealDistributions = profileData.mealDistributions;
+  const userMealDistributions = profileData.meal_distributions;
   if (!userMealDistributions)
     mealDistribution = defaultMacroPercentages[mealToOptimize.name];
   else
@@ -106,27 +58,26 @@ export function getAdjustedMealInput(
   return {
     originalMeal: {
       name: mealToOptimize.name,
-      customName: mealToOptimize.customName || '',
+      customName: mealToOptimize.custom_name || '',
       ingredients: preparedIngredients,
-      totalCalories: Number(mealToOptimize.totalCalories) || 0,
-      totalProtein: Number(mealToOptimize.totalProtein) || 0,
-      totalCarbs: Number(mealToOptimize.totalCarbs) || 0,
-      totalFat: Number(mealToOptimize.totalFat) || 0,
+      total_calories: Number(mealToOptimize.total_calories) || 0,
+      total_protein: Number(mealToOptimize.total_protein) || 0,
+      total_carbs: Number(mealToOptimize.total_carbs) || 0,
+      total_fat: Number(mealToOptimize.total_fat) || 0,
     },
     targetMacros: targetMacrosForMeal,
     userProfile: {
-      age: profileData.age,
-      gender: profileData.gender,
-      activityLevel: profileData.activityLevel,
-      dietGoal: profileData.dietGoalOnboarding,
-      preferredDiet: profileData.preferredDiet,
+      age: profileData.age ?? undefined,
+      biological_sex: profileData.biological_sex ?? undefined,
+      physical_activity_level: profileData.physical_activity_level ?? undefined,
+      primary_diet_goal: profileData.primary_diet_goal ?? undefined,
+      preferred_diet: profileData.preferred_diet ?? undefined,
       allergies: profileData.allergies ?? [],
-      dispreferredIngredients: profileData.dispreferredIngredients ?? [],
-      preferredIngredients: profileData.preferredIngredients ?? [],
+      dispreferrred_ingredients: profileData.dispreferrred_ingredients ?? [],
+      preferred_ingredients: profileData.preferred_ingredients ?? [],
     },
   };
 }
-
 export function getMissingProfileFields(
   profile: Partial<BaseProfileData>
 ): (keyof Partial<BaseProfileData>)[] {
@@ -136,15 +87,15 @@ export function getMissingProfileFields(
 export function generateInitialWeeklyPlan(): WeeklyMealPlan {
   return {
     days: daysOfWeek.map((day) => ({
-      dayOfWeek: day,
+      day_of_week: day,
       meals: mealNames.map((mealName) => ({
         name: mealName,
-        customName: '',
+        custom_name: '',
         ingredients: [],
-        totalCalories: null,
-        totalProtein: null,
-        totalCarbs: null,
-        totalFat: null,
+        total_calories: null,
+        total_protein: null,
+        total_carbs: null,
+        total_fat: null,
       })),
     })),
   };

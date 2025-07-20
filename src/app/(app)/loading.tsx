@@ -1,12 +1,7 @@
-import Spinner from '@/components/ui/Spinner';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 
 function DashboardLoading() {
-  return (
-    <div className='flex items-center justify-center h-dvh w-full'>
-      <Spinner />
-      <span className='ml-2 text-lg text-muted-foreground'>Loading...</span>
-    </div>
-  );
+  return <LoadingScreen loadingLabel='Loading your data...' />;
 }
 
 export default DashboardLoading;

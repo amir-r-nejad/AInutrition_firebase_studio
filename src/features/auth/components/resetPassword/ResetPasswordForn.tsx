@@ -8,7 +8,7 @@ import { KeyRound } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
-import { resetPasswordAction } from '../../actions/resetPasswordAction';
+import { resetPasswordAction } from '../../actions/resetPassword';
 import { newPasswordSchema } from '../../schemas/authSchema';
 import SubmitButton from '../../../../components/ui/SubmitButton';
 
@@ -21,11 +21,11 @@ function ResetPasswordForn() {
     resolver: zodResolver(newPasswordSchema),
   });
 
-  const oobCode = searchParams.get('oobCode');
+  const token = searchParams.get('token_hash');
   const isLoading = formState.isSubmitting;
 
   const onSubmit: SubmitHandler<FieldValues> = async (data) => {
-    if (!oobCode)
+    if (!token)
       return toast({
         title: 'Error',
         description: 'Password reset code is missing.',
@@ -33,10 +33,7 @@ function ResetPasswordForn() {
       });
 
     const { newPassword } = data;
-    const { isSuccess, userError } = await resetPasswordAction({
-      oobCode,
-      newPassword,
-    });
+    const { isSuccess, userError } = await resetPasswordAction(newPassword);
 
     if (isSuccess) {
       toast({
@@ -74,7 +71,7 @@ function ResetPasswordForn() {
           variant: 'destructive',
         });
     },
-    [formState.errors]
+    [formState.errors, toast]
   );
 
   return (

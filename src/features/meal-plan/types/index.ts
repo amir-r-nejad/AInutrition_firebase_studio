@@ -17,7 +17,7 @@ export type DailyTargetsTypes = {
 
 export type MealToOptimizeTypes = {
   name: string;
-  customName: string;
+  custom_name: string;
   ingredients: {
     name: string;
     quantity: number | null;
@@ -27,10 +27,10 @@ export type MealToOptimizeTypes = {
     carbs: number | null;
     fat: number | null;
   }[];
-  totalCalories: number | null;
-  totalProtein: number | null;
-  totalCarbs: number | null;
-  totalFat: number | null;
+  total_calories: number | null;
+  total_protein: number | null;
+  total_carbs: number | null;
+  total_fat: number | null;
   id?: string | undefined;
 };
 
@@ -44,13 +44,13 @@ export interface AdjustMealIngredientsInput {
   };
   userProfile: {
     age?: number | null;
-    gender?: string | null;
-    activityLevel?: string | null;
-    dietGoal?: string | null;
-    preferredDiet?: string | null;
-    allergies: string[] | null;
-    dispreferredIngredients: string[] | null;
-    preferredIngredients: string[] | null;
+    biological_sex?: string | null;
+    physical_activity_level?: string | null;
+    primary_diet_goal?: string | null;
+    preferred_diet?: string | null;
+    allergies?: string[];
+    dispreferrred_ingredients?: string[];
+    preferred_ingredients?: string[];
   };
 }
 
@@ -66,12 +66,12 @@ export type AIServiceIngredient = {
 
 export type AIServiceMeal = {
   name: string;
-  customName?: string;
+  custom_name?: string;
   ingredients: AIServiceIngredient[];
-  totalCalories: number;
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
+  total_calories: number;
+  total_protein: number;
+  total_carbs: number;
+  total_fat: number;
 };
 
 export type AdjustMealIngredientsOutput = {

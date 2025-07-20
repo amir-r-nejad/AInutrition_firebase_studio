@@ -96,7 +96,7 @@ export default function DashboardPage() {
                   Planner
                 </Button>
               </Link>
-              {/* Link to Daily Macro Breakdown removed as it's merged */}
+
               <Link href='/tools/macro-splitter' passHref>
                 <Button variant='secondary'>
                   <SplitSquareHorizontal className='mr-2 h-4 w-4' /> Macro

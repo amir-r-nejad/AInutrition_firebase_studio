@@ -10,7 +10,7 @@ import { Mail } from 'lucide-react';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 
 import { useToast } from '@/hooks/use-toast';
-import { forgotPasswordAction } from '../../actions/forgotPasswordAction';
+import { forgotPasswordAction } from '../../actions/forgotPassword';
 import { forgotPasswordSchema } from '../../schemas/authSchema';
 import SubmitButton from '../../../../components/ui/SubmitButton';
 
@@ -52,7 +52,7 @@ function ForgotPasswordForm() {
           variant: 'destructive',
         });
     },
-    [formState.errors]
+    [formState.errors, toast]
   );
 
   return (

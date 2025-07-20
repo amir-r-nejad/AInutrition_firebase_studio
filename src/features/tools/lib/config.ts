@@ -1,4 +1,5 @@
 import { MealMacroDistribution } from '@/lib/schemas';
+import { formatNumber } from '@/lib/utils';
 
 export const headerLabels = [
   {
@@ -17,3 +18,35 @@ export const headerLabels = [
 export const macroPctKeys: (keyof Omit<MealMacroDistribution, 'mealName'>)[] = [
   'calories_pct',
 ];
+
+export const macroColumns = [
+  {
+    key: 'name',
+    header: 'Macronutrient',
+    cellClassName: 'font-medium',
+  },
+  {
+    key: 'percentage',
+    header: '% of Daily Calories',
+    headerClassName: 'text-right',
+    cellClassName: 'text-right',
+    render: (row: any) =>
+      `${formatNumber(row.percentage, { maximumFractionDigits: 0 })}%`,
+  },
+  {
+    key: 'grams',
+    header: 'Grams per Day',
+    headerClassName: 'text-right',
+    cellClassName: 'text-right',
+    render: (row: any) =>
+      `${formatNumber(row.grams, { maximumFractionDigits: 1 })} g`,
+  },
+  {
+    key: 'calories',
+    header: 'Calories per Day',
+    headerClassName: 'text-right',
+    cellClassName: 'text-right',
+    render: (row: any) =>
+      `${formatNumber(row.calories, { maximumFractionDigits: 0 })} kcal`,
+  },
+] as const;

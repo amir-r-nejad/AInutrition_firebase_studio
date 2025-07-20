@@ -1,5 +1,3 @@
-'use client';
-
 import { Logo } from '@/components/Logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -16,21 +14,21 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/toaster';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { signOut } from '@/lib/firebase/auth';
+import SignoutButton from '@/features/auth/components/signup/SignoutButton';
+import { createClient } from '@/lib/supabase/server';
 import {
   Bot,
   BrainCircuit,
   ChefHat,
   HelpCircle,
   LayoutDashboard,
-  LogOut,
   MessageSquareQuote,
   NotebookText,
   SplitSquareHorizontal,
   User,
 } from 'lucide-react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import React from 'react';
 
 const navItems = [
@@ -65,25 +63,19 @@ const navItems = [
   { href: '/support/faq', label: 'FAQ & Chatbot', icon: HelpCircle },
 ];
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user: currentUser, isLoading } = useAuth();
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (isLoading) {
-    return (
-      <div className='flex h-screen items-center justify-center'>
-        <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-primary'></div>
-      </div>
-    );
-  }
-
-  if (!currentUser) {
-    return (
-      <div className='flex h-screen items-center justify-center'>
-        <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-primary'></div>
-        <p className='ml-2'>Redirecting...</p>
-      </div>
-    );
-  }
+  if (!user) redirect('/login');
+  if (error) redirect('/error');
 
   return (
     <SidebarProvider defaultOpen>
@@ -124,30 +116,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className='flex items-center gap-3 p-2 rounded-md border border-sidebar-border bg-sidebar-accent/50'>
             <Avatar className='h-9 w-9'>
               <AvatarImage
-                src={`https://placehold.co/100x100.png?text=${
-                  currentUser.email?.[0]?.toUpperCase() ?? 'U'
-                }`}
-                alt={currentUser.email ?? 'User Avatar'}
+                src={
+                  user?.user_metadata.picture
+                    ? user?.user_metadata.picture
+                    : `https://placehold.co/100x100.png?text=${
+                        user.email?.[0]?.toUpperCase() ?? 'U'
+                      }`
+                }
+                alt={user.email ?? 'User Avatar'}
                 data-ai-hint='avatar person'
               />
               <AvatarFallback>
-                {currentUser.email?.[0]?.toUpperCase() ?? 'U'}
+                {user.email?.[0]?.toUpperCase() ?? 'U'}
               </AvatarFallback>
             </Avatar>
             <div className='flex flex-col group-data-[collapsible=icon]:hidden'>
               <span className='text-sm font-medium text-sidebar-foreground truncate max-w-[120px]'>
-                {currentUser.email}
+                {user.email}
               </span>
             </div>
           </div>
-          <SidebarMenuButton
-            onClick={signOut}
-            tooltip='Logout'
-            className='w-full'
-          >
-            <LogOut className='h-5 w-5' />
-            <span>Logout</span>
-          </SidebarMenuButton>
+          <SignoutButton />
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>

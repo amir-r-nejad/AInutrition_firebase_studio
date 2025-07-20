@@ -8,60 +8,52 @@ export const customizePlanFormSchema = z.object({
       .number()
       .int('Custom calories must be a whole number if provided.')
       .positive('Custom calories must be positive if provided.')
-      .optional()
+      .nullable()
   ),
   custom_protein_per_kg: z.preprocess(
     preprocessOptionalNumber,
     z.coerce
       .number()
       .min(0, 'Protein per kg must be non-negative if provided.')
-      .optional()
+      .nullable()
   ),
-  remaining_calories_carb_pct: z.preprocess(
+  remaining_calories_carbs_percentage: z.preprocess(
     preprocessOptionalNumber,
     z.coerce
       .number()
       .int('Carb percentage must be a whole number.')
       .min(0, 'Carb percentage must be between 0 and 100.')
       .max(100, 'Carb percentage must be between 0 and 100.')
-      .optional()
       .default(50)
+      .nullable()
   ),
 
-  carbCalories: z.preprocess(
+  custom_carbs_g: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().int().optional()
+    z.coerce.number().int().optional().nullable()
   ),
-  carbGrams: z.preprocess(
+  custom_carbs_percentage: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().int().optional()
+    z.coerce.number().int().optional().nullable()
   ),
-  carbTargetPct: z.preprocess(
+  custom_fat_g: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().int().optional()
+    z.coerce.number().int().optional().nullable()
   ),
-  fatCalories: z.preprocess(
+  custom_fat_percentage: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().int().optional()
+    z.coerce.number().int().optional().nullable()
   ),
-  fatGrams: z.preprocess(
+  custom_protein_g: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().int().optional()
+    z.coerce.number().int().optional().nullable()
   ),
-  fatTargetPct: z.preprocess(
+  custom_protein_percentage: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().int().optional()
+    z.coerce.number().int().optional().nullable()
   ),
-  proteinCalories: z.preprocess(
+  custom_total_calories_final: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().int().optional()
-  ),
-  proteinGrams: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().int().optional()
-  ),
-  proteinTargetPct: z.preprocess(
-    preprocessOptionalNumber,
-    z.coerce.number().int().optional()
+    z.coerce.number().int().optional().nullable()
   ),
 });

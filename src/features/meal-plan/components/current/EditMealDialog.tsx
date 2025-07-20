@@ -12,26 +12,26 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { Ingredient, Meal } from '@/lib/schemas';
+import { useToast } from '@/hooks/use-toast';
+import { useQueryParams } from '@/hooks/useQueryParams';
+import type { Ingredient, Meal, MealPlans } from '@/lib/schemas';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { EditMealDialogProps } from '../../types';
+import { editMealPlan } from '../../lib/data-service';
 
-function EditMealDialog({
-  meal: initialMeal,
-  onSave,
-  onClose,
-}: EditMealDialogProps) {
-  const [meal, setMeal] = useState<Meal>(
-    JSON.parse(JSON.stringify(initialMeal))
-  );
+function EditMealDialog({ mealPlan }: { mealPlan: MealPlans }) {
+  const { toast } = useToast();
 
-  const handleIngredientChange = (
+  const { getQueryParams, removeQueryParams } = useQueryParams();
+
+  const [meal, setMeal] = useState<Meal | null>(null);
+
+  function handleIngredientChange(
     index: number,
     field: keyof Ingredient,
     value: string | number
-  ) => {
-    console.log(index, field, value);
+  ) {
+    if (!meal) return null;
 
     const newIngredients = [...meal.ingredients];
     const targetIngredient = { ...newIngredients[index] };
@@ -52,14 +52,14 @@ function EditMealDialog({
       (targetIngredient as any)[field] = value;
     }
     newIngredients[index] = targetIngredient;
-    setMeal((prev) => ({ ...prev, ingredients: newIngredients }));
-  };
+    setMeal((prev) => ({ ...prev!, ingredients: newIngredients }));
+  }
 
-  const addIngredient = () => {
+  function addIngredient() {
     setMeal((prev) => ({
-      ...prev,
+      ...prev!,
       ingredients: [
-        ...prev.ingredients,
+        ...(prev?.ingredients ?? []),
         {
           name: '',
           quantity: null,
@@ -71,41 +71,18 @@ function EditMealDialog({
         },
       ],
     }));
-  };
+  }
 
-  const removeIngredient = (index: number) => {
+  function removeIngredient(index: number) {
     setMeal((prev) => ({
-      ...prev,
-      ingredients: prev.ingredients.filter((_, i) => i !== index),
+      ...prev!,
+      ingredients: prev ? prev.ingredients.filter((_, i) => i !== index) : [],
     }));
-  };
+  }
 
-  const calculateTotals = useCallback(() => {
-    let totalCalories = 0;
-    let totalProtein = 0;
-    let totalCarbs = 0;
-    let totalFat = 0;
+  async function handleSubmit() {
+    if (!meal) return null;
 
-    meal.ingredients.forEach((ing) => {
-      totalCalories += Number(ing.calories) || 0;
-      totalProtein += Number(ing.protein) || 0;
-      totalCarbs += Number(ing.carbs) || 0;
-      totalFat += Number(ing.fat) || 0;
-    });
-    setMeal((prev) => ({
-      ...prev,
-      totalCalories,
-      totalProtein,
-      totalCarbs,
-      totalFat,
-    }));
-  }, [meal.ingredients]);
-
-  useEffect(() => {
-    calculateTotals();
-  }, [meal.ingredients, calculateTotals]);
-
-  const handleSubmit = () => {
     let finalTotalCalories = 0,
       finalTotalProtein = 0,
       finalTotalCarbs = 0,
@@ -119,21 +96,97 @@ function EditMealDialog({
 
     const mealToSave: Meal = {
       ...meal,
-      totalCalories: finalTotalCalories,
-      totalProtein: finalTotalProtein,
-      totalCarbs: finalTotalCarbs,
-      totalFat: finalTotalFat,
+      total_calories: finalTotalCalories,
+      total_protein: finalTotalProtein,
+      total_carbs: finalTotalCarbs,
+      total_fat: finalTotalFat,
     };
-    onSave(mealToSave);
-  };
+
+    const { meal_data } = mealPlan;
+
+    const selectedDay = mealPlan.meal_data.days
+      .filter((plan) => plan.day_of_week === getQueryParams('selected_day'))
+      .at(0);
+
+    const dayIndex = mealPlan?.meal_data.days.findIndex(
+      (plan) => plan.day_of_week === getQueryParams('selected_day')
+    );
+
+    const mealIndex = selectedDay?.meals.findIndex(
+      (meal) => meal.name === getQueryParams('selected_meal')
+    ) as number;
+
+    const newWeeklyPlan = meal_data;
+    newWeeklyPlan.days[dayIndex].meals[mealIndex] = mealToSave;
+
+    try {
+      await editMealPlan({ meal_data: newWeeklyPlan });
+      toast({
+        title: 'Meal Saved',
+        description: `${meal.custom_name || meal.name} has been updated.`,
+      });
+      removeQueryParams(['selected_meal', 'is_edit']);
+    } catch {
+      toast({
+        title: 'Save Error',
+        description: 'Could not save meal plan.',
+        variant: 'destructive',
+      });
+    }
+  }
+
+  const calculateTotals = useCallback(() => {
+    const totalMacros = meal?.ingredients.reduce(
+      function (acc, ing) {
+        return {
+          total_calories: (acc.total_protein += Number(ing.calories) || 0),
+          total_protein: (acc.total_protein += Number(ing.protein) || 0),
+          total_carbs: (acc.total_carbs += Number(ing.carbs) || 0),
+          total_fat: (acc.total_fat += Number(ing.fat) || 0),
+        };
+      },
+      {
+        total_calories: 0,
+        total_protein: 0,
+        total_carbs: 0,
+        total_fat: 0,
+      }
+    );
+
+    setMeal((prev) => ({ ...prev!, ...totalMacros }));
+  }, [meal?.ingredients]);
+
+  useEffect(function () {
+    const selectedDay = mealPlan.meal_data.days
+      .filter((plan) => plan.day_of_week === getQueryParams('selected_day'))
+      .at(0);
+    const selectedMeal = selectedDay?.meals
+      .filter((meal) => meal.name === getQueryParams('selected_meal'))
+      .at(0);
+
+    if (!selectedMeal) return;
+    setMeal(selectedMeal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    calculateTotals();
+  }, [calculateTotals]);
+
+  if (!meal) return;
 
   return (
-    <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog
+      open={true}
+      onOpenChange={(isOpen) =>
+        !isOpen && removeQueryParams(['selected_meal', 'is_edit'])
+      }
+    >
       <DialogContent className='sm:max-w-2xl'>
         <DialogHeader>
           <DialogTitle>
-            Edit {initialMeal.name}
-            {initialMeal.customName ? ` - ${initialMeal.customName}` : ''}
+            Edit {meal.name}
+            {meal.custom_name ? ` - ${meal.custom_name}` : ''}
           </DialogTitle>
         </DialogHeader>
         <div className='space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2'>
@@ -143,14 +196,16 @@ function EditMealDialog({
             </Label>
             <Input
               id='customMealName'
-              value={meal.customName || ''}
-              onChange={(e) => setMeal({ ...meal, customName: e.target.value })}
+              value={meal.custom_name || ''}
+              onChange={(e) =>
+                setMeal({ ...meal, custom_name: e.target.value })
+              }
               placeholder='Optional: e.g., Greek Yogurt with Berries'
               onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
             />
           </div>
           <Label>Ingredients</Label>
-          {meal.ingredients.map((ing, index) => (
+          {meal?.ingredients.map((ing, index) => (
             <Card key={index} className='p-3 space-y-2'>
               <div className='flex justify-between items-center gap-2'>
                 <Input
@@ -178,7 +233,7 @@ function EditMealDialog({
                   placeholder='Qty'
                   value={ing.quantity ?? ''}
                   onChange={(e) =>
-                    handleIngredientChange(index, 'quantity', e.target.value)
+                    handleIngredientChange(index, 'quantity', +e.target.value)
                   }
                   onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                 />
@@ -200,7 +255,7 @@ function EditMealDialog({
                   placeholder='Cals'
                   value={ing.calories ?? ''}
                   onChange={(e) =>
-                    handleIngredientChange(index, 'calories', e.target.value)
+                    handleIngredientChange(index, 'calories', +e.target.value)
                   }
                   onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                 />
@@ -209,7 +264,7 @@ function EditMealDialog({
                   placeholder='Protein (g)'
                   value={ing.protein ?? ''}
                   onChange={(e) =>
-                    handleIngredientChange(index, 'protein', e.target.value)
+                    handleIngredientChange(index, 'protein', +e.target.value)
                   }
                   onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                 />
@@ -218,7 +273,7 @@ function EditMealDialog({
                   placeholder='Carbs (g)'
                   value={ing.carbs ?? ''}
                   onChange={(e) =>
-                    handleIngredientChange(index, 'carbs', e.target.value)
+                    handleIngredientChange(index, 'carbs', +e.target.value)
                   }
                   onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                 />
@@ -227,7 +282,7 @@ function EditMealDialog({
                   placeholder='Fat (g)'
                   value={ing.fat ?? ''}
                   onChange={(e) =>
-                    handleIngredientChange(index, 'fat', e.target.value)
+                    handleIngredientChange(index, 'fat', +e.target.value)
                   }
                   onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                 />
@@ -240,16 +295,16 @@ function EditMealDialog({
           <div className='mt-4 p-3 border rounded-md bg-muted/50'>
             <h4 className='font-semibold mb-1'>Calculated Totals:</h4>
             <p className='text-sm'>
-              Calories: {meal.totalCalories?.toFixed(0) ?? '0'}
+              Calories: {meal.total_calories?.toFixed(0) ?? '0'}
             </p>
             <p className='text-sm'>
-              Protein: {meal.totalProtein?.toFixed(1) ?? '0.0'}g
+              Protein: {meal.total_protein?.toFixed(1) ?? '0.0'}g
             </p>
             <p className='text-sm'>
-              Carbs: {meal.totalCarbs?.toFixed(1) ?? '0.0'}g
+              Carbs: {meal.total_carbs?.toFixed(1) ?? '0.0'}g
             </p>
             <p className='text-sm'>
-              Fat: {meal.totalFat?.toFixed(1) ?? '0.0'}g
+              Fat: {meal.total_fat?.toFixed(1) ?? '0.0'}g
             </p>
             <Button
               onClick={calculateTotals}
@@ -263,7 +318,11 @@ function EditMealDialog({
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type='button' variant='outline' onClick={onClose}>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => removeQueryParams(['selected_meal', 'is_edit'])}
+            >
               Cancel
             </Button>
           </DialogClose>

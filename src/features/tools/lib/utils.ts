@@ -1,5 +1,6 @@
 import {
   MealMacroDistribution,
+  SuggestMealsForMacrosInput,
   type MacroSplitterFormValues,
 } from '@/lib/schemas';
 import {
@@ -9,38 +10,37 @@ import {
 } from '../types/toolsGlobalTypes';
 import { UseFormReturn } from 'react-hook-form';
 import { defaultMacroPercentages } from '@/lib/constants';
-import { SuggestMealsForMacrosInput } from '@/ai/flows/suggest-meals-for-macros';
 
 export function customMacroSplit(
   totalMacros: TotalMacros,
-  mealMacroDistribution: MacroSplitterFormValues['mealDistributions']
+  mealMacroDistribution: MacroSplitterFormValues['meal_distributions']
 ): CalculatedMealMacros[] {
   return mealMacroDistribution.map((mealPct) => ({
     mealName: mealPct.mealName,
-    Calories: Math.round(
-      totalMacros.calories * ((mealPct.calories_pct || 0) / 100)
+    Calories: Number(
+      (totalMacros.calories * ((mealPct.calories_pct || 0) / 100)).toFixed(1)
     ),
-    'Protein (g)': Math.round(
-      totalMacros.protein_g * ((mealPct.calories_pct || 0) / 100)
+    'Protein (g)': Number(
+      (totalMacros.protein_g * ((mealPct.calories_pct || 0) / 100)).toFixed(1)
     ),
-    'Carbs (g)': Math.round(
-      totalMacros.carbs_g * ((mealPct.calories_pct || 0) / 100)
+    'Carbs (g)': Number(
+      (totalMacros.carbs_g * ((mealPct.calories_pct || 0) / 100)).toFixed(1)
     ),
-    'Fat (g)': Math.round(
-      totalMacros.fat_g * ((mealPct.calories_pct || 0) / 100)
+    'Fat (g)': Number(
+      (totalMacros.fat_g * ((mealPct.calories_pct || 0) / 100)).toFixed(1)
     ),
   }));
 }
 
 export function getMealMacroStats(
   form: UseFormReturn<{
-    mealDistributions: {
+    meal_distributions: {
       mealName: string;
       calories_pct: number;
     }[];
   }>
 ) {
-  const watchedMealDistributions = form.watch('mealDistributions');
+  const watchedMealDistributions = form.watch('meal_distributions');
   const calculateColumnSum = (
     macroKey: keyof Omit<MealMacroDistribution, 'mealName'>
   ) => {
@@ -86,25 +86,24 @@ export function getExampleTargetsForMeal(mealName: string) {
 
 export function prepareAiMealInput({
   targetMacros,
-  profileData,
-  currentPreferences,
+  profile,
 }: AiMealInputTypes): SuggestMealsForMacrosInput {
-  const aiInput = {
-    mealName: targetMacros.mealName,
-    targetCalories: targetMacros.calories,
-    targetProteinGrams: targetMacros.protein,
-    targetCarbsGrams: targetMacros.carbs,
-    targetFatGrams: targetMacros.fat,
-    age: profileData?.age ?? undefined,
-    gender: profileData?.gender ?? undefined,
-    activityLevel: profileData?.activityLevel ?? undefined,
-    dietGoal: profileData?.dietGoalOnboarding ?? undefined,
-    preferredDiet: currentPreferences.preferredDiet,
-    preferredCuisines: currentPreferences.preferredCuisines,
-    dispreferredCuisines: currentPreferences.dispreferredCuisines,
-    preferredIngredients: currentPreferences.preferredIngredients,
-    dispreferredIngredients: currentPreferences.dispreferredIngredients,
-    allergies: currentPreferences.allergies,
+  const aiInput: SuggestMealsForMacrosInput = {
+    meal_name: targetMacros.mealName,
+    target_calories: targetMacros.calories,
+    target_protein_grams: targetMacros.protein,
+    target_carbs_grams: targetMacros.carbs,
+    target_fat_grams: targetMacros.fat,
+    age: profile.age ?? undefined,
+    gender: profile.biological_sex ?? undefined,
+    activity_level: profile.physical_activity_level ?? undefined,
+    diet_goal: profile.primary_diet_goal ?? undefined,
+    preferred_diet: profile.preferred_diet ?? undefined,
+    preferred_cuisines: profile.preferred_cuisines ?? undefined,
+    dispreferrred_cuisines: profile.dispreferrred_cuisines ?? undefined,
+    preferred_ingredients: profile.preferred_ingredients ?? undefined,
+    dispreferrred_ingredients: profile.dispreferrred_ingredients ?? undefined,
+    allergies: profile.allergies ?? undefined,
   };
 
   Object.keys(aiInput).forEach(

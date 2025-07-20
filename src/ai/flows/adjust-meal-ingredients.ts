@@ -1,10 +1,13 @@
 'use server';
 
-import { ai, geminiModel } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
+
 import {
-  AdjustMealIngredientsInput,
-  AdjustMealIngredientsOutput,
-} from '@/features/meal-plan/types';
+  AdjustMealIngredientsInputSchema,
+  AdjustMealIngredientsOutputSchema,
+  type AdjustMealIngredientsInput,
+  type AdjustMealIngredientsOutput,
+} from '@/lib/schemas';
 
 export async function adjustMealIngredients(
   input: AdjustMealIngredientsInput
@@ -13,162 +16,86 @@ export async function adjustMealIngredients(
 }
 
 const prompt = ai.definePrompt({
-  model: geminiModel,
-  name: 'strictMealAdjustmentPrompt',
-  input: { type: 'json' },
-  output: { type: 'json' },
-  prompt: `You are a **precision meal optimization specialist** who transforms existing meals to meet exact nutritional targets while preserving the meal's identity and maximizing user satisfaction.
+  name: 'adjustMealIngredientsPrompt',
+  input: { schema: AdjustMealIngredientsInputSchema },
+  output: { schema: AdjustMealIngredientsOutputSchema },
+  prompt: `You are an expert nutritionist. Your task is to adjust the quantities of the **existing ingredients** for a given meal to precisely match target macronutrients.
 
-**MEAL OPTIMIZATION TASK:**
+**-- ABSOLUTELY CRITICAL RULES --**
+1.  **YOU MUST NOT ADD NEW INGREDIENTS.** The output ingredient list must be identical to the input ingredient list.
+2.  **YOU MUST NOT REMOVE EXISTING INGREDIENTS.** The output ingredient list must be identical to the input ingredient list.
+3.  **YOU MUST NOT CHANGE OR SWAP ANY INGREDIENTS.**
+4.  Your **ONLY** allowed action is to modify the \`quantity\` value for each ingredient provided.
+5.  After adjusting quantities, you MUST accurately recalculate the \`calories\`, \`protein\`, \`carbs\`, and \`fat\` for each ingredient, as well as the \`total_calories\`, \`total_protein\`, \`total_carbs\`, and \`total_fat\` for the entire meal.
+6.  The \`name\` of the meal in the output JSON **MUST** exactly match the "Original Meal Type" provided in the input.
+7.  The \`customName\` of the meal in the output JSON **MUST** exactly match the "Original Custom Meal Name" provided in the input. If no custom name was provided, this field should be omitted or be an empty string.
 
-**ORIGINAL MEAL DATA:**
-- Meal Name: {{{originalMeal.name}}}
-- Meal Concept: {{{originalMeal.customName}}}
-- Current Ingredients: {{{originalMeal.ingredients}}}
-- Current Totals: {{{originalMeal.totalCalories}}} cal, {{{originalMeal.totalProtein}}}g protein, {{{originalMeal.totalCarbs}}}g carbs, {{{originalMeal.totalFat}}}g fat
 
-**PRECISE TARGET REQUIREMENTS (ABSOLUTE PRIORITY):**
-🎯 **EXACT MACRO TARGETS - NON-NEGOTIABLE:**
-- Calories: {{{targetMacros.calories}}} (±5 calories maximum)
-- Protein: {{{targetMacros.protein}}}g (±1g maximum)
-- Carbs: {{{targetMacros.carbs}}}g (±2g maximum)
-- Fat: {{{targetMacros.fat}}}g (±1g maximum)
+User Profile:
+{{#if userProfile.age}}Age: {{userProfile.age}}{{/if}}
+{{#if userProfile.biological_sex}}Gender: {{userProfile.biological_sex}}{{/if}}
+{{#if userProfile.physical_activity_level}}Activity Level: {{userProfile.physical_activity_level}}{{/if}}
+{{#if userProfile.primary_diet_goal}}Diet Goal: {{userProfile.primary_diet_goal}}{{/if}}
+{{#if userProfile.preferred_diet}}Preferred Diet: {{userProfile.preferred_diet}}{{/if}}
+{{#if userProfile.allergies.length}}Allergies: {{#each userProfile.allergies}}{{{this}}}{{/each}}{{/if}}
+{{#if userProfile.dispreferrred_ingredients.length}}Dislikes: {{#each userProfile.dispreferrred_ingredients}}{{{this}}}{{/each}}{{/if}}
+{{#if userProfile.preferred_ingredients.length}}Preferred Ingredients: {{#each userProfile.preferred_ingredients}}{{{this}}}{{/each}}{{/if}}
 
-**USER PROFILE CONSTRAINTS:**
-- Age: {{{userProfile.age}}}, Gender: {{{userProfile.gender}}}, Activity: {{{userProfile.activityLevel}}}
-- Diet Goal: {{{userProfile.dietGoal}}}
-- Diet Type: {{{userProfile.preferredDiet}}}
-- **STRICT EXCLUSIONS**: {{{userProfile.allergies}}} and {{{userProfile.dispreferredIngredients}}} - NEVER INCLUDE
-- **PREFERRED ELEMENTS**: {{{userProfile.preferredIngredients}}} - MAINTAIN/ENHANCE
+Original Meal Type: {{originalMeal.name}}
+{{#if originalMeal.customName}}Original Custom Meal Name: {{originalMeal.customName}}{{/if}}
+Ingredients:
+{{#each originalMeal.ingredients}}
+- {{this.name}}: {{this.quantity}} {{this.unit}} (Calories: {{this.calories}}, Protein: {{this.protein}}g, Carbs: {{this.carbs}}g, Fat: {{this.fat}}g)
+{{/each}}
+Current Totals:
+- Calories: {{originalMeal.total_calories}}
+- Protein: {{originalMeal.total_protein}}g
+- Carbs: {{originalMeal.total_carbs}}g
+- Fat: {{originalMeal.total_fat}}g
 
-**OPTIMIZATION STRATEGY:**
+Target Macros for "{{originalMeal.name}}":
+- Calories: {{targetMacros.calories}}
+- Protein: {{targetMacros.protein}}g
+- Carbs: {{targetMacros.carbs}}g
+- Fat: {{targetMacros.fat}}g
 
-**PHASE 1: MACRO GAP ANALYSIS**
-Calculate exact differences:
-- Calorie gap: {{{targetMacros.calories}}} - {{{originalMeal.totalCalories}}} = X calories
-- Protein gap: {{{targetMacros.protein}}} - {{{originalMeal.totalProtein}}} = X grams
-- Carbs gap: {{{targetMacros.carbs}}} - {{{originalMeal.totalCarbs}}} = X grams
-- Fat gap: {{{targetMacros.fat}}} - {{{originalMeal.totalFat}}} = X grams
-
-**PHASE 2: INTELLIGENT INGREDIENT OPTIMIZATION**
-Use this prioritized approach:
-
-1. **PRESERVE CORE IDENTITY**: Keep the meal's essential character and preferred ingredients
-2. **SMART QUANTITY ADJUSTMENTS**: Modify existing ingredient portions for the biggest macro impact
-3. **STRATEGIC SUBSTITUTIONS**: Replace ingredients only if necessary for targets or restrictions
-4. **PRECISION ADDITIONS**: Add minimal new ingredients to close remaining macro gaps
-5. **MICRO-ADJUSTMENTS**: Fine-tune quantities to hit exact targets
-
-**OPTIMIZATION PRINCIPLES:**
-- **CALORIE PRECISION**: Calories are the #1 priority - must be within ±5 of target
-- **MEAL INTEGRITY**: Preserve the meal's name, concept, and core ingredients
-- **USER SATISFACTION**: Maintain preferred ingredients and avoid dislikes
-- **PRACTICAL PORTIONS**: Use realistic, measurable quantities
-- **NUTRITIONAL ACCURACY**: Account for cooking methods and nutrient interactions
-
-**ADVANCED OPTIMIZATION TECHNIQUES:**
-- **INGREDIENT SYNERGY**: Choose ingredients that complement each other nutritionally
-- **COOKING METHOD OPTIMIZATION**: Adjust preparation methods to alter macro profiles
-- **PORTION SCALING**: Proportionally adjust multiple ingredients to maintain flavor balance
-- **STRATEGIC ADDITIONS**: Add nutrient-dense ingredients to fill specific macro gaps
-- **SMART SUBSTITUTIONS**: Replace similar ingredients with better macro profiles
-
-**RESPONSE FORMAT:**
-Return ONLY a JSON object with this exact structure:
-
-{
-  "adjustedMeal": {
-    "name": "{{{originalMeal.name}}}",
-    "customName": "Optimized {{{originalMeal.customName}}}",
-    "ingredients": [
-      {
-        "name": "Precise ingredient name",
-        "quantity": number,
-        "unit": "string",
-        "calories": number,
-        "protein": number,
-        "carbs": number,
-        "fat": number,
-        "changeType": "modified/added/substituted/unchanged",
-        "optimizationNote": "Brief note on why this change was made"
-      }
-    ],
-    "totalCalories": number,
-    "totalProtein": number,
-    "totalCarbs": number,
-    "totalFat": number,
-    "targetAccuracy": {
-      "caloriesDifference": number,
-      "proteinDifference": number,
-      "carbsDifference": number,
-      "fatDifference": number,
-      "accuracyScore": "percentage of how close to targets"
-    }
-  },
-  "optimizationSummary": {
-    "primaryChanges": "Main adjustments made to hit targets",
-    "macroStrategy": "How each macro gap was addressed",
-    "userPreferenceAlignment": "How user preferences were maintained/enhanced",
-    "practicalImpact": "How changes affect meal preparation and taste"
-  },
-  "alternativeOptions": [
-    {
-      "changeDescription": "Alternative modification approach",
-      "impact": "Different way to achieve similar macro targets"
-    }
-  ]
-}
-
-**CALCULATION METHODOLOGY:**
-1. **START WITH GAPS**: Calculate exact macro differences from current to target
-2. **PRIORITIZE CALORIES**: Address calorie gap first through portion adjustments
-3. **BALANCE REMAINING MACROS**: Fine-tune protein, carbs, fat in that order
-4. **VERIFY RESTRICTIONS**: Ensure no allergies or dislikes are introduced
-5. **OPTIMIZE PORTIONS**: Adjust quantities to the gram/ml for precision
-6. **VALIDATE TOTALS**: Double-check that all ingredients sum to exact targets
-
-**CRITICAL SUCCESS CRITERIA:**
-✅ Total calories within {{{targetMacros.calories}}} ±3
-✅ Each macro within specified tolerance ranges
-✅ No allergies or disliked ingredients included
-✅ Meal identity and preferred ingredients preserved
-✅ Practical, realistic ingredient quantities
-✅ Enhanced user satisfaction while meeting targets
-
-**FAILURE CONDITIONS TO AVOID:**
-❌ Exceeding calorie tolerance (±10 calories)
-❌ Including any allergies or disliked ingredients
-❌ Completely changing the meal's core identity
-❌ Using unrealistic ingredient quantities
-❌ Ignoring user's preferred ingredients
-
-**EXAMPLE OPTIMIZATION APPROACH:**
-If meal is 50 calories under target:
-1. Increase calorie-dense ingredients (nuts, oils, grains) by small amounts
-2. Add nutrient-dense ingredients that align with user preferences
-3. Adjust cooking methods to increase caloric density
-4. Fine-tune portions to hit exact calorie target
-5. Verify all other macros still align with targets
-
-Transform this meal into its optimized version that perfectly meets the user's nutritional targets while maintaining maximum satisfaction and meal identity.`,
+Strict Instructions for Output:
+- Your response MUST be a JSON object with ONLY these exact two top-level properties: "adjustedMeal" and "explanation".
+- The \`adjustedMeal\` object MUST represent the modified meal and contain ONLY these properties: "name", "customName", "ingredients", "total_calories", "total_protein", "total_carbs", "total_fat".
+- The \`ingredients\` array objects MUST contain ONLY these properties: "name", "quantity", "unit", "calories", "protein", "carbs", "fat".
+- DO NOT add any extra fields, properties, keys, or markdown formatting (like \`\`\`json) to the response.
+- Respond ONLY with the pure JSON object that strictly matches the following TypeScript type:
+{ adjustedMeal: { name: string; customName?: string; ingredients: { name: string; quantity: number; unit: string; calories: number; protein: number; carbs: number; fat: number; }[]; total_calories: number; total_protein: number; total_carbs: number; total_fat: number; }; explanation: string; }
+`,
 });
 
 const adjustMealIngredientsFlow = ai.defineFlow(
   {
     name: 'adjustMealIngredientsFlow',
-    inputSchema: undefined,
-    outputSchema: undefined,
+    inputSchema: AdjustMealIngredientsInputSchema,
+    outputSchema: AdjustMealIngredientsOutputSchema,
   },
   async (
     input: AdjustMealIngredientsInput
   ): Promise<AdjustMealIngredientsOutput> => {
-    console.log('INPUT:', input);
+    try {
+      const { output } = await prompt(input);
 
-    const { output } = await prompt(input);
-    if (!output) {
-      console.log('11');
-      // throw new Error('AI did not return an output for meal adjustment.');
+      if (!output)
+        throw new Error('AI did not return an output for meal adjustment.');
+
+      const validationResult =
+        AdjustMealIngredientsOutputSchema.safeParse(output);
+      if (!validationResult.success) {
+        throw new Error(
+          `AI returned data in an unexpected format. Details: ${validationResult.error.message}`
+        );
+      }
+
+      return validationResult.data;
+    } catch (error: any) {
+      console.error('Error in adjustMealIngredientsFlow:', error);
+      throw new Error(error);
     }
-    return output as AdjustMealIngredientsOutput;
   }
 );

@@ -1,5 +1,3 @@
-'use client';
-
 import { GeneratePersonalizedMealPlanOutput } from '@/ai/flows/generate-meal-plan';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -39,7 +37,7 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
 
   return (
     <div className='space-y-8 mt-6'>
-      {mealPlan.weeklySummary && (
+      {mealPlan.weekly_summary && (
         <Card>
           <CardHeader>
             <CardTitle className='text-2xl flex items-center'>
@@ -52,7 +50,7 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
               <div>
                 <p className='text-sm text-muted-foreground'>Total Calories</p>
                 <p className='text-xl font-bold'>
-                  {formatNumber(mealPlan.weeklySummary.totalCalories, {
+                  {formatNumber(mealPlan.weekly_summary.total_calories, {
                     maximumFractionDigits: 0,
                   })}{' '}
                   kcal
@@ -61,7 +59,7 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
               <div>
                 <p className='text-sm text-muted-foreground'>Total Protein</p>
                 <p className='text-xl font-bold'>
-                  {formatNumber(mealPlan.weeklySummary.totalProtein, {
+                  {formatNumber(mealPlan.weekly_summary.total_protein, {
                     maximumFractionDigits: 1,
                   })}{' '}
                   g
@@ -70,7 +68,7 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
               <div>
                 <p className='text-sm text-muted-foreground'>Total Carbs</p>
                 <p className='text-xl font-bold'>
-                  {formatNumber(mealPlan.weeklySummary.totalCarbs, {
+                  {formatNumber(mealPlan.weekly_summary.total_carbs, {
                     maximumFractionDigits: 1,
                   })}{' '}
                   g
@@ -79,7 +77,7 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
               <div>
                 <p className='text-sm text-muted-foreground'>Total Fat</p>
                 <p className='text-xl font-bold'>
-                  {formatNumber(mealPlan.weeklySummary.totalFat, {
+                  {formatNumber(mealPlan.weekly_summary.total_fat, {
                     maximumFractionDigits: 1,
                   })}{' '}
                   g
@@ -92,17 +90,17 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
                 data={[
                   {
                     name: 'Protein',
-                    value: mealPlan.weeklySummary.totalProtein,
+                    value: mealPlan.weekly_summary.total_protein,
                     fill: 'var(--color-protein)',
                   },
                   {
                     name: 'Carbs',
-                    value: mealPlan.weeklySummary.totalCarbs,
+                    value: mealPlan.weekly_summary.total_carbs,
                     fill: 'var(--color-carbs)',
                   },
                   {
                     name: 'Fat',
-                    value: mealPlan.weeklySummary.totalFat,
+                    value: mealPlan.weekly_summary.total_fat,
                     fill: 'var(--color-fat)',
                   },
                 ]}
@@ -134,33 +132,37 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
       )}
 
       <Tabs
-        defaultValue={mealPlan.weeklyMealPlan[0]?.day || daysOfWeek[0]}
+        defaultValue={mealPlan.days[0]?.day_of_week || daysOfWeek[0]}
         className='w-full'
       >
         <ScrollArea className='w-full whitespace-nowrap rounded-md border'>
           <TabsList className='inline-flex h-auto bg-muted p-1'>
-            {mealPlan.weeklyMealPlan.map((dayPlan) => (
+            {mealPlan.days.map((dayPlan) => (
               <TabsTrigger
-                key={dayPlan.day}
-                value={dayPlan.day}
+                key={dayPlan.day_of_week}
+                value={dayPlan.day_of_week}
                 className='px-4 py-2 text-base data-[state=active]:bg-background data-[state=active]:shadow-sm'
               >
-                {dayPlan.day}
+                {dayPlan.day_of_week}
               </TabsTrigger>
             ))}
           </TabsList>
           <ScrollBar orientation='horizontal' />
         </ScrollArea>
 
-        {mealPlan.weeklyMealPlan.map((dayPlan) => (
-          <TabsContent key={dayPlan.day} value={dayPlan.day} className='mt-6'>
+        {mealPlan.days.map((dayPlan) => (
+          <TabsContent
+            key={dayPlan.day_of_week}
+            value={dayPlan.day_of_week}
+            className='mt-6'
+          >
             <div className='space-y-6'>
               {dayPlan.meals.map((meal, mealIndex) => (
                 <Card key={mealIndex} className='shadow-md'>
                   <CardHeader>
                     <CardTitle className='text-xl font-semibold flex items-center'>
                       <ChefHat className='mr-2 h-5 w-5 text-accent' />
-                      {meal.meal_name}
+                      {meal.name}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -193,40 +195,42 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
                             return (
                               <TableRow key={ingIndex}>
                                 <TableCell className='font-medium py-1.5'>
-                                  {ing.ingredient_name}
+                                  {ing.name}
                                 </TableCell>
                                 <TableCell className='text-right py-1.5'>
-                                  {formatNumber(ing.quantity_g, {
-                                    maximumFractionDigits: 0,
-                                  })}
+                                  {ing.quantity
+                                    ? formatNumber(ing.quantity, {
+                                        maximumFractionDigits: 0,
+                                      })
+                                    : 'N/A'}
                                 </TableCell>
                                 <TableCell className='text-right py-1.5'>
-                                  {ing.macros_per_100g.calories
+                                  {ing.calories && ing.quantity
                                     ? formatNumber(
-                                        (ing.macros_per_100g.calories *
-                                          ing.quantity_g) /
-                                          100,
-                                        { maximumFractionDigits: 0 }
+                                        (ing.calories * ing.quantity) / 100,
+                                        {
+                                          maximumFractionDigits: 0,
+                                        }
                                       )
                                     : 'N/A'}
                                 </TableCell>
                                 <TableCell className='text-right py-1.5'>
-                                  {ing.macros_per_100g.protein_g
+                                  {ing.protein && ing.quantity
                                     ? formatNumber(
-                                        (ing.macros_per_100g.protein_g *
-                                          ing.quantity_g) /
-                                          100,
-                                        { maximumFractionDigits: 1 }
+                                        (ing.protein * ing.quantity) / 100,
+                                        {
+                                          maximumFractionDigits: 1,
+                                        }
                                       )
                                     : 'N/A'}
                                 </TableCell>
                                 <TableCell className='text-right py-1.5'>
-                                  {ing.macros_per_100g.fat_g
+                                  {ing.fat && ing.quantity
                                     ? formatNumber(
-                                        (ing.macros_per_100g.fat_g *
-                                          ing.quantity_g) /
-                                          100,
-                                        { maximumFractionDigits: 1 }
+                                        (ing.fat * ing.quantity) / 100,
+                                        {
+                                          maximumFractionDigits: 1,
+                                        }
                                       )
                                     : 'N/A'}
                                 </TableCell>
@@ -239,17 +243,23 @@ function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
                     </ScrollArea>
                     <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
                       Total:{' '}
-                      {formatNumber(meal.total_calories, {
-                        maximumFractionDigits: 0,
-                      })}{' '}
+                      {meal.total_calories
+                        ? formatNumber(meal.total_calories, {
+                            maximumFractionDigits: 0,
+                          })
+                        : 'N/A'}{' '}
                       kcal | Protein:{' '}
-                      {formatNumber(meal.total_protein_g, {
-                        maximumFractionDigits: 1,
-                      })}
+                      {meal.total_protein
+                        ? formatNumber(meal.total_protein, {
+                            maximumFractionDigits: 1,
+                          })
+                        : 'N/A'}
                       g | Fat:{' '}
-                      {formatNumber(meal.total_fat_g, {
-                        maximumFractionDigits: 1,
-                      })}
+                      {meal.total_fat
+                        ? formatNumber(meal.total_fat, {
+                            maximumFractionDigits: 1,
+                          })
+                        : 'N/A'}
                       g
                     </div>
                   </CardContent>
