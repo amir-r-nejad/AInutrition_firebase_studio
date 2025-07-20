@@ -19,53 +19,58 @@ const prompt = ai.definePrompt({
   name: 'adjustMealIngredientsPrompt',
   input: { schema: AdjustMealIngredientsInputSchema },
   output: { schema: AdjustMealIngredientsOutputSchema },
-  prompt: `You are an expert nutritionist. Your task is to adjust the quantities of the **existing ingredients** for a given meal to precisely match target macronutrients.
+  prompt: `You are an expert nutritionist and a creative personal chef. Your primary goal is to help a user create a delicious, complete, and nutritionally perfect meal that matches their targets. You will either **complete and optimize** an existing meal idea or **generate a new one from scratch**.
 
-**-- ABSOLUTELY CRITICAL RULES --**
-1.  **YOU MUST NOT ADD NEW INGREDIENTS.** The output ingredient list must be identical to the input ingredient list.
-2.  **YOU MUST NOT REMOVE EXISTING INGREDIENTS.** The output ingredient list must be identical to the input ingredient list.
-3.  **YOU MUST NOT CHANGE OR SWAP ANY INGREDIENTS.**
-4.  Your **ONLY** allowed action is to modify the \`quantity\` value for each ingredient provided.
-5.  After adjusting quantities, you MUST accurately recalculate the \`calories\`, \`protein\`, \`carbs\`, and \`fat\` for each ingredient, as well as the \`total_calories\`, \`total_protein\`, \`total_carbs\`, and \`total_fat\` for the entire meal.
-6.  The \`name\` of the meal in the output JSON **MUST** exactly match the "Original Meal Type" provided in the input.
-7.  The \`customName\` of the meal in the output JSON **MUST** exactly match the "Original Custom Meal Name" provided in the input. If no custom name was provided, this field should be omitted or be an empty string.
+**User Profile for Context:**
+- Age: {{userProfile.age}}
+- Diet Goal: {{userProfile.primary_diet_goal}}
+- Dietary Preference: {{#if userProfile.preferred_diet}}{{userProfile.preferred_diet}}{{else}}None specified{{/if}}
+- Allergies (Critical to Avoid): {{#if userProfile.allergies.length}}{{#each userProfile.allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{else}}None{{/if}}
+- Disliked Ingredients: {{#if userProfile.dispreferrred_ingredients.length}}{{#each userProfile.dispreferrred_ingredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{else}}None{{/if}}
+- Favorite Ingredients: {{#if userProfile.preferred_ingredients.length}}{{#each userProfile.preferred_ingredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{else}}None{{/if}}
 
-
-User Profile:
-{{#if userProfile.age}}Age: {{userProfile.age}}{{/if}}
-{{#if userProfile.biological_sex}}Gender: {{userProfile.biological_sex}}{{/if}}
-{{#if userProfile.physical_activity_level}}Activity Level: {{userProfile.physical_activity_level}}{{/if}}
-{{#if userProfile.primary_diet_goal}}Diet Goal: {{userProfile.primary_diet_goal}}{{/if}}
-{{#if userProfile.preferred_diet}}Preferred Diet: {{userProfile.preferred_diet}}{{/if}}
-{{#if userProfile.allergies.length}}Allergies: {{#each userProfile.allergies}}{{{this}}}{{/each}}{{/if}}
-{{#if userProfile.dispreferrred_ingredients.length}}Dislikes: {{#each userProfile.dispreferrred_ingredients}}{{{this}}}{{/each}}{{/if}}
-{{#if userProfile.preferred_ingredients.length}}Preferred Ingredients: {{#each userProfile.preferred_ingredients}}{{{this}}}{{/each}}{{/if}}
-
-Original Meal Type: {{originalMeal.name}}
-{{#if originalMeal.customName}}Original Custom Meal Name: {{originalMeal.customName}}{{/if}}
-Ingredients:
-{{#each originalMeal.ingredients}}
-- {{this.name}}: {{this.quantity}} {{this.unit}} (Calories: {{this.calories}}, Protein: {{this.protein}}g, Carbs: {{this.carbs}}g, Fat: {{this.fat}}g)
-{{/each}}
-Current Totals:
-- Calories: {{originalMeal.total_calories}}
-- Protein: {{originalMeal.total_protein}}g
-- Carbs: {{originalMeal.total_carbs}}g
-- Fat: {{originalMeal.total_fat}}g
-
-Target Macros for "{{originalMeal.name}}":
-- Calories: {{targetMacros.calories}}
+**Target Macros for "{{originalMeal.name}}":**
+- Calories: {{targetMacros.calories}} kcal
 - Protein: {{targetMacros.protein}}g
-- Carbs: {{targetMacros.carbs}}g
+- Carbohydrates: {{targetMacros.carbs}}g
 - Fat: {{targetMacros.fat}}g
 
-Strict Instructions for Output:
-- Your response MUST be a JSON object with ONLY these exact two top-level properties: "adjustedMeal" and "explanation".
-- The \`adjustedMeal\` object MUST represent the modified meal and contain ONLY these properties: "name", "customName", "ingredients", "total_calories", "total_protein", "total_carbs", "total_fat".
-- The \`ingredients\` array objects MUST contain ONLY these properties: "name", "quantity", "unit", "calories", "protein", "carbs", "fat".
-- DO NOT add any extra fields, properties, keys, or markdown formatting (like \`\`\`json) to the response.
-- Respond ONLY with the pure JSON object that strictly matches the following TypeScript type:
-{ adjustedMeal: { name: string; customName?: string; ingredients: { name: string; quantity: number; unit: string; calories: number; protein: number; carbs: number; fat: number; }[]; total_calories: number; total_protein: number; total_carbs: number; total_fat: number; }; explanation: string; }
+**--- Your Task: Choose a Scenario ---**
+
+**Scenario 1: User provided ingredients (Meal Optimization & Completion)**
+*This scenario applies if the 'Ingredients' list below is NOT empty.*
+1.  **Identify the Intended Meal:** Look at the user's ingredients (e.g., 'Pizza Dough', 'Mozzarella Cheese'). What are they trying to make?
+2.  **Make it a Complete Meal:** Determine what's missing. A pizza needs sauce, maybe some vegetables or a protein source. **You MUST add the necessary ingredients** to make the meal realistic, balanced, and appetizing.
+3.  **Optimize All Ingredients:** Adjust the quantities of **ALL** ingredients—both the user's original ones and the ones you added—to precisely meet the target macros within a 3-5% tolerance.
+4.  **Explain Your Actions:** In the 'explanation' field, describe how you completed their meal idea.
+
+**Original Meal Data:**
+- Meal Type: {{originalMeal.name}}
+- Ingredients:
+{{#if originalMeal.ingredients.length}}
+{{#each originalMeal.ingredients}}
+- {{this.name}}: {{this.quantity}} {{this.unit}}
+{{/each}}
+{{else}}
+- (No ingredients provided)
+{{/if}}
+
+**Scenario 2: User did not provide ingredients (Meal Generation from Scratch)**
+*This scenario applies if the 'Ingredients' list above is empty.*
+1.  **Analyze the Context:** Note the meal type (e.g., 'Breakfast', 'Lunch') and the user's profile (preferences, dislikes, goals).
+2.  **Generate a New, Appropriate Meal:** Create a complete, suitable meal from scratch that the user would likely enjoy and that fits the meal type. (e.g., suggest a 'Chicken and Quinoa Bowl' for lunch, not for breakfast).
+3.  **Set Ingredient Quantities:** Select all ingredients and set their quantities to precisely meet the target macros.
+4.  **Explain Your Actions:** In the 'explanation' field, state that you've generated a new meal suggestion since none was provided.
+
+**--- CRITICAL Output Instructions ---**
+- Your entire response MUST be a single, valid JSON object. Do not include notes or markdown like \`\`\`json.
+- The JSON object must have exactly two top-level properties: "adjustedMeal" and "explanation".
+- The \`adjustedMeal\` object represents the final, complete meal. Its \`ingredients\` array should include ALL final ingredients with their optimized quantities and recalculated nutritional values.
+- The \`name\` and \`customName\` of the meal in the output must match the original input.
+- Your response must strictly match this TypeScript type:
+  \`{ adjustedMeal: { name: string; customName?: string; ingredients: { name: string; quantity: number; unit: string; calories: number; protein: number; carbs: number; fat: number; }[]; total_calories: number; total_protein: number; total_carbs: number; total_fat: number; }; explanation: string; }\`
+
+Begin JSON response now.
 `,
 });
 
