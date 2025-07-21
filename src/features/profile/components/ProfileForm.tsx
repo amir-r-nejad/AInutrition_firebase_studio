@@ -34,7 +34,6 @@ import {
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { User } from '@supabase/supabase-js';
-import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { editProfile } from '../actions/apiUserProfile';
 
@@ -50,23 +49,8 @@ function ProfileForm({
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(ProfileFormSchema),
     defaultValues: {
-      name: undefined,
-      long_term_goal_weight_kg: 0,
-      subscription_status: undefined,
-      pain_mobility_issues: [],
-      injuries: [],
-      surgeries: [],
-      exercise_goals: [],
-      preferred_exercise_types: [],
-      exercise_frequency: undefined,
-      typical_exercise_intensity: undefined,
-      equipment_access: [],
-      biological_sex: undefined,
-      current_weight_kg: undefined,
-      height_cm: undefined,
-      age: undefined,
-      physical_activity_level: undefined,
-      primary_diet_goal: undefined,
+      ...profile,
+      name: user.user_metadata.name,
     },
   });
 
@@ -88,13 +72,6 @@ function ProfileForm({
       });
     }
   }
-
-  useEffect(
-    function () {
-      form.reset({ ...profile!, name: user.user_metadata.name });
-    },
-    [form, user.user_metadata, profile]
-  );
 
   return (
     <Form {...form}>

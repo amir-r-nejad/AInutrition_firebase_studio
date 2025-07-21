@@ -43,7 +43,7 @@ import {
   RefreshCw,
   SplitSquareHorizontal,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 function MacroForm({
@@ -61,10 +61,14 @@ function MacroForm({
   const form = useForm<MacroSplitterFormValues>({
     resolver: zodResolver(MacroSplitterFormSchema),
     defaultValues: {
-      meal_distributions: defaultMealNames.map((name) => ({
-        mealName: name,
-        calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
-      })),
+      ...{
+        meal_distributions:
+          profile.meal_distributions ??
+          defaultMealNames.map((name) => ({
+            mealName: name,
+            calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
+          })),
+      },
     },
   });
   const { columnSums, watchedMealDistributions } = getMealMacroStats(form);
@@ -137,16 +141,6 @@ function MacroForm({
       });
     }
   }
-
-  useEffect(
-    function () {
-      if (profile.meal_distributions)
-        form.reset({
-          meal_distributions: profile.meal_distributions,
-        });
-    },
-    [profile.meal_distributions, form]
-  );
 
   return (
     <>

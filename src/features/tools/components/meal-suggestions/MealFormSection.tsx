@@ -15,8 +15,6 @@ async function MealFormSection() {
           error?.message ||
           "We couldn't load your profile data. Please ensure you're logged in and your profile is set up."
         }
-        showRetry={true}
-        onRetry={() => window.location.reload()}
       />
     );
   }

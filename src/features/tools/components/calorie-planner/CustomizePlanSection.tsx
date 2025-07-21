@@ -16,8 +16,6 @@ async function CustomizePlanSection() {
           error?.message ||
           "We couldn't load your nutrition plan data. Please check your profile settings and try again."
         }
-        showRetry={true}
-        onRetry={() => window.location.reload()}
       />
     );
   }

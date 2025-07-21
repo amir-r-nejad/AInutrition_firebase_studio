@@ -16,8 +16,6 @@ async function AIMealSuggestionSection() {
           error?.message ||
           "We couldn't load your profile data for AI meal suggestions. Please check your settings and try again."
         }
-        showRetry={true}
-        onRetry={() => window.location.reload()}
       />
     );
   }

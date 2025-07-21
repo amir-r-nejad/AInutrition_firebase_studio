@@ -16,8 +16,6 @@ async function PlannerSection() {
           error?.message ||
           "We couldn't load your planner data. Please ensure your profile is complete and try again."
         }
-        showRetry={true}
-        onRetry={() => window.location.reload()}
       />
     );
   }

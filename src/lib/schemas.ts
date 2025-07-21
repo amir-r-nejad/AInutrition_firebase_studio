@@ -778,6 +778,7 @@ export const MealSuggestionSchema = z.object({
   totalFat: z.number(),
   instructions: z.string().optional(),
 });
+
 export const SuggestMealsForMacrosOutputSchema = z.object({
   suggestions: z.array(MealSuggestionSchema),
 });
@@ -1049,8 +1050,6 @@ export const GeneratePersonalizedMealPlanInputSchema = z.object({
   medical_conditions: z.array(z.string()).optional(),
   medications: z.array(z.string()).optional(),
 
-  //  meal_data: WeeklyMealPlan;
-  // Meal targets
   meal_data: WeeklyMealPlanSchema,
 });
 
@@ -1095,7 +1094,7 @@ export const GeneratePersonalizedMealPlanOutputSchema = z.object({
       total_carbs: z.number(),
       total_fat: z.number(),
     })
-    .optional(), // matches your WeeklyMealPlanSchema
+    .optional(),
 });
 export type GeneratePersonalizedMealPlanOutput = z.infer<
   typeof GeneratePersonalizedMealPlanOutputSchema

@@ -58,46 +58,7 @@ function PlannerForm({
 
   const form = useForm<SmartCaloriePlannerFormValues>({
     resolver: zodResolver(SmartCaloriePlannerFormSchema),
-    defaultValues: {
-      age: undefined,
-      biological_sex: undefined,
-      height_cm: undefined,
-      current_weight_kg: undefined,
-      target_weight_1month_kg: undefined,
-      long_term_goal_weight_kg: undefined,
-      physical_activity_level: 'sedentary',
-      primary_diet_goal: 'muscle_gain',
-      bf_current: undefined,
-      bf_target: undefined,
-      bf_ideal: undefined,
-      mm_current: undefined,
-      mm_target: undefined,
-      mm_ideal: undefined,
-      bw_current: undefined,
-      bw_target: undefined,
-      bw_ideal: undefined,
-      waist_current: undefined,
-      waist_goal_1m: undefined,
-      waist_ideal: undefined,
-      hips_current: undefined,
-      hips_goal_1m: undefined,
-      hips_ideal: undefined,
-      right_leg_current: undefined,
-      right_leg_goal_1m: undefined,
-      right_leg_ideal: undefined,
-      left_leg_current: undefined,
-      left_leg_goal_1m: undefined,
-      left_leg_ideal: undefined,
-      right_arm_current: undefined,
-      right_arm_goal_1m: undefined,
-      right_arm_ideal: undefined,
-      left_arm_current: undefined,
-      left_arm_goal_1m: undefined,
-      left_arm_ideal: undefined,
-      custom_total_calories: undefined,
-      custom_protein_per_kg: undefined,
-      remaining_calories_carb_pct: 50,
-    },
+    defaultValues: profile,
   });
 
   async function handleSmartPlannerReset() {
@@ -351,10 +312,6 @@ function PlannerForm({
       });
     }
   }
-
-  useEffect(() => {
-    if (!form.formState.isDirty) form.reset(profile);
-  }, [profile, form]);
 
   useEffect(
     function () {

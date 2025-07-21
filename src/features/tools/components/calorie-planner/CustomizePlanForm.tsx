@@ -21,7 +21,7 @@ import {
 import { formatNumber } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { RefreshCcw, Save } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { customizePlanFormSchema } from '../../lib/schema';
 import { customizePlanFormValues } from '../../types/toolsGlobalTypes';
@@ -41,14 +41,18 @@ function CustomizePlanForm({
   const form = useForm<customizePlanFormValues>({
     resolver: zodResolver(customizePlanFormSchema),
     defaultValues: {
-      custom_total_calories: undefined,
-      custom_protein_per_kg: undefined,
-      remaining_calories_carbs_percentage: 50,
+      ...plan,
+      ...{
+        remaining_calories_carbs_percentage:
+          plan.remaining_calories_carbs_percentage ?? 50,
+      },
     },
   });
 
   const [customPlanResults, setCustomPlanResults] =
     useState<GlobalCalculatedTargets | null>(null);
+
+  const [isResetting, startResetting] = useTransition();
 
   const isLoading = form.formState.isSubmitting;
   const watchedCustomInputs = form.watch([
@@ -58,40 +62,42 @@ function CustomizePlanForm({
   ]);
 
   async function handleResetForm() {
-    form.reset({
-      ...form.getValues(),
-      custom_total_calories: null,
-      custom_protein_per_kg: null,
-      remaining_calories_carbs_percentage: 50,
+    startResetting(async () => {
+      form.reset({
+        ...form.getValues(),
+        custom_total_calories: null,
+        custom_protein_per_kg: null,
+        remaining_calories_carbs_percentage: 50,
+      });
+      setCustomPlanResults(null);
+
+      const planToResest = {
+        ...form.getValues(),
+
+        custom_carbs_g: null,
+        custom_carbs_percentage: null,
+        custom_fat_g: null,
+        custom_fat_percentage: null,
+        custom_protein_g: null,
+        custom_protein_percentage: null,
+        custom_total_calories_final: null,
+      };
+
+      try {
+        await editPlan(planToResest);
+
+        toast({
+          title: 'Custom Plan Reset',
+          description: 'Custom plan inputs have been reset.',
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Reset Error',
+          description: error,
+          variant: 'destructive',
+        });
+      }
     });
-    setCustomPlanResults(null);
-
-    const planToResest = {
-      ...form.getValues(),
-
-      custom_carbs_g: null,
-      custom_carbs_percentage: null,
-      custom_fat_g: null,
-      custom_fat_percentage: null,
-      custom_protein_g: null,
-      custom_protein_percentage: null,
-      custom_total_calories_final: null,
-    };
-
-    try {
-      await editPlan(planToResest);
-
-      toast({
-        title: 'Custom Plan Reset',
-        description: 'Custom plan inputs have been reset.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Reset Error',
-        description: error,
-        variant: 'destructive',
-      });
-    }
   }
 
   async function onSubmit(formData: customizePlanFormValues) {
@@ -130,13 +136,6 @@ function CustomizePlanForm({
       });
     }
   }
-
-  useEffect(
-    function () {
-      form.reset(plan);
-    },
-    [form, plan, profile]
-  );
 
   useEffect(() => {
     const [customTotalCalories, customProteinPerKg, remainingCarbPct] =
@@ -408,7 +407,7 @@ function CustomizePlanForm({
 
         <div className='mt-6 flex justify-end gap-1'>
           <Button
-            disabled={isLoading}
+            disabled={isLoading || isResetting}
             type='button'
             variant='destructive'
             onClick={handleResetForm}

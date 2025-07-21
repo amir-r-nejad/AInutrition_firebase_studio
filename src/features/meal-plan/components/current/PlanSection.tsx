@@ -34,8 +34,6 @@ async function PlanSection({
           error?.message ||
           "We couldn't load your meal plan. Please check your connection and try again."
         }
-        showRetry={true}
-        onRetry={() => window.location.reload()}
       />
     );
   }

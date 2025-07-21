@@ -16,7 +16,6 @@ async function MacroSection() {
           error?.message ||
           "We couldn't load your macro targets. Please ensure your profile is complete."
         }
-        showRetry={false}
         showHomeLink={false}
       />
     );

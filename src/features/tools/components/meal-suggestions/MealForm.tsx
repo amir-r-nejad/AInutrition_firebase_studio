@@ -28,7 +28,6 @@ import {
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save } from 'lucide-react';
-import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import PreferenceTextarea from './PreferenceTextarea';
 
@@ -37,17 +36,7 @@ function MealForm({ profile }: { profile: BaseProfileData }) {
 
   const form = useForm<MealSuggestionPreferencesValues>({
     resolver: zodResolver(MealSuggestionPreferencesSchema),
-    defaultValues: {
-      preferred_diet: undefined,
-      preferred_cuisines: [],
-      dispreferrred_cuisines: [],
-      preferred_ingredients: [],
-      dispreferrred_ingredients: [],
-      allergies: [],
-      preferred_micronutrients: [],
-      medical_conditions: [],
-      medications: [],
-    },
+    defaultValues: profile,
   });
 
   async function handleSavePreferences() {
@@ -67,13 +56,6 @@ function MealForm({ profile }: { profile: BaseProfileData }) {
       });
     }
   }
-
-  useEffect(
-    function () {
-      form.reset(profile);
-    },
-    [form, profile]
-  );
 
   return (
     <Form {...form}>
