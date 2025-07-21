@@ -1,8 +1,6 @@
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // output: 'export', // Removed for serverless deployment
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -14,7 +12,6 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'placehold.co',
-        port: '',
         pathname: '/**',
       },
     ],

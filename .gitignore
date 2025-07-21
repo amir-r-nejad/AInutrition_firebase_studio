@@ -43,7 +43,6 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+*firebase.json
 certificates
 next.config.ts
-node_modules
-node_modules

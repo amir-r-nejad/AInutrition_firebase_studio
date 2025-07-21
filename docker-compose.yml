@@ -1,0 +1,31 @@
+services:
+  nextjs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nextjs-dev
+    ports:
+      - '3000:3000'
+
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - node_modules/
+            - .next/
+            - .git/
+            - .env
+
+        - action: rebuild
+          path: package.json
+        - action: rebuild
+          path: yarn.lock
+        - action: rebuild
+          path: pnpm-lock.yaml
+
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    restart: unless-stopped
