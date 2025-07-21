@@ -1,3 +1,7 @@
+import { BaseProfileData } from '@/lib/schemas';
+import { z } from 'zod';
+import { customizePlanFormSchema } from '../lib/schema';
+
 export type MealInputTypes = {
   preferredDiet?: string | undefined;
   allergies?: string[] | undefined;
@@ -25,3 +29,16 @@ export type CalculatedMealMacros = {
   'Carbs (g)': number;
   'Fat (g)': number;
 };
+
+export type AiMealInputTypes = {
+  targetMacros: {
+    mealName: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  profile: Partial<BaseProfileData>;
+};
+
+export type customizePlanFormValues = z.infer<typeof customizePlanFormSchema>;

@@ -11,6 +11,7 @@ type ButtonProps = {
   loadingLabel: string;
   label: string;
   className?: string;
+  size?: 'icon' | 'default' | 'sm' | 'lg';
 };
 
 function SubmitButton({
@@ -19,14 +20,16 @@ function SubmitButton({
   loadingLabel,
   label,
   className,
+  size,
 }: ButtonProps) {
   return (
     <Button
       type='submit'
       className={cn('w-full', className)}
       disabled={isLoading}
+      size={size || 'default'}
     >
-      {isLoading ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : icon}
+      {isLoading ? <Loader2 className='size-3 animate-spin' /> : icon}
       {isLoading ? loadingLabel : label}
     </Button>
   );

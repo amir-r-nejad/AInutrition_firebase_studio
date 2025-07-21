@@ -10,10 +10,10 @@ import { useEffect } from 'react';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 
 import { useRouter } from 'next/navigation';
-import { loginAction } from '../../actions/LoginAction';
 import { loginSchema } from '../../schemas/authSchema';
 import LoginWithGoogleButton from '../shared/LoginWithGoogleButton';
-import SubmitButton from '../shared/SubmitButton';
+import SubmitButton from '@/components/ui/SubmitButton';
+import { loginAction } from '../../actions/login';
 
 function LoginForm() {
   const router = useRouter();
@@ -26,87 +26,88 @@ function LoginForm() {
   const onSubmit: SubmitHandler<FieldValues> = async (data) => {
     const { email, password } = data;
 
-    const { isSuccess, userError } = await loginAction({
+    const { isSuccess, error } = await loginAction({
       email,
       password,
     });
 
     if (isSuccess) {
-      toast({ title: 'Login Successful', description: `Welcome back!` });
+      toast({ title: 'Login Successful', description: `Welcome back!!!` });
       return router.push('/dashboard');
     }
 
     if (!isSuccess)
       return toast({
         title: 'Login Failed',
-        description: userError,
+        description: error,
         variant: 'destructive',
       });
   };
 
   useEffect(
     function () {
-      const emailError = formState.errors.email;
-      const passwordError = formState.errors.password;
+      const { email, password } = formState.errors;
 
-      if (emailError && typeof emailError.message === 'string')
+      if (email)
         toast({
           title: 'Login Failed',
-          description: emailError.message,
+          description: email.message,
           variant: 'destructive',
         });
 
-      if (passwordError && typeof passwordError.message === 'string')
+      if (password)
         toast({
           title: 'Login Failed',
-          description: passwordError.message,
+          description: password.message,
           variant: 'destructive',
         });
     },
-    [formState.errors]
+    [formState.errors, toast]
   );
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
-      <div className='space-y-2'>
-        <Label htmlFor='email'>Email</Label>
-        <Input
-          {...register('email')}
-          id='email'
-          type='email'
-          required
-          placeholder='m@example.com'
-          disabled={isLoading}
-        />
-      </div>
-      <div className='space-y-2'>
-        <div className='flex items-center justify-between'>
-          <Label htmlFor='password'>Password</Label>
-          <Link
-            href='/forgot-password'
-            className='text-xs text-primary hover:underline'
-          >
-            Forgot password?
-          </Link>
+    <>
+      <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+        <div className='space-y-2'>
+          <Label htmlFor='email'>Email</Label>
+          <Input
+            {...register('email')}
+            id='email'
+            type='email'
+            required
+            placeholder='m@example.com'
+            disabled={isLoading}
+          />
         </div>
-        <Input
-          {...register('password')}
-          id='password'
-          type='password'
-          required
-          disabled={isLoading}
+        <div className='space-y-2'>
+          <div className='flex items-center justify-between'>
+            <Label htmlFor='password'>Password</Label>
+            <Link
+              href='/forgot-password'
+              className='text-xs text-primary hover:underline'
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <Input
+            {...register('password')}
+            id='password'
+            type='password'
+            required
+            disabled={isLoading}
+          />
+        </div>
+
+        <SubmitButton
+          isLoading={isLoading}
+          icon={<LogIn className='mr-2 h-4 w-4' />}
+          loadingLabel='Logging in...'
+          label='Login'
         />
-      </div>
 
-      <SubmitButton
-        isLoading={isLoading}
-        icon={<LogIn className='mr-2 h-4 w-4' />}
-        loadingLabel='Logging in...'
-        label='Login'
-      />
-
-      <LoginWithGoogleButton disabled={isLoading} />
-    </form>
+        <LoginWithGoogleButton disabled={isLoading} />
+      </form>
+    </>
   );
 }
 

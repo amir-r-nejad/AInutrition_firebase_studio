@@ -1,4 +1,5 @@
 import { MealMacroDistribution } from '@/lib/schemas';
+import { formatNumber } from '@/lib/utils';
 
 export const headerLabels = [
   {
@@ -7,13 +8,7 @@ export const headerLabels = [
     className: 'sticky left-0 bg-card z-10 w-[120px] text-left font-medium',
   },
   { key: 'cal_pct', label: '%Cal', className: 'text-right min-w-[70px]' },
-  { key: 'p_pct', label: '%P', className: 'text-right min-w-[70px]' },
-  { key: 'c_pct', label: '%C', className: 'text-right min-w-[70px]' },
-  {
-    key: 'f_pct',
-    label: '%F',
-    className: 'text-right min-w-[70px] border-r',
-  },
+
   { key: 'kcal', label: 'kcal', className: 'text-right min-w-[60px]' },
   { key: 'p_g', label: 'P(g)', className: 'text-right min-w-[60px]' },
   { key: 'c_g', label: 'C(g)', className: 'text-right min-w-[60px]' },
@@ -22,7 +17,36 @@ export const headerLabels = [
 
 export const macroPctKeys: (keyof Omit<MealMacroDistribution, 'mealName'>)[] = [
   'calories_pct',
-  'protein_pct',
-  'carbs_pct',
-  'fat_pct',
 ];
+
+export const macroColumns = [
+  {
+    key: 'name',
+    header: 'Macronutrient',
+    cellClassName: 'font-medium',
+  },
+  {
+    key: 'percentage',
+    header: '% of Daily Calories',
+    headerClassName: 'text-right',
+    cellClassName: 'text-right',
+    render: (row: any) =>
+      `${formatNumber(row.percentage, { maximumFractionDigits: 0 })}%`,
+  },
+  {
+    key: 'grams',
+    header: 'Grams per Day',
+    headerClassName: 'text-right',
+    cellClassName: 'text-right',
+    render: (row: any) =>
+      `${formatNumber(row.grams, { maximumFractionDigits: 1 })} g`,
+  },
+  {
+    key: 'calories',
+    header: 'Calories per Day',
+    headerClassName: 'text-right',
+    cellClassName: 'text-right',
+    render: (row: any) =>
+      `${formatNumber(row.calories, { maximumFractionDigits: 0 })} kcal`,
+  },
+] as const;

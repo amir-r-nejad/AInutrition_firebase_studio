@@ -10,9 +10,9 @@ import { Mail } from 'lucide-react';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 
 import { useToast } from '@/hooks/use-toast';
-import { forgotPasswordAction } from '../../actions/forgotPasswordAction';
+import { forgotPasswordAction } from '../../actions/forgotPassword';
 import { forgotPasswordSchema } from '../../schemas/authSchema';
-import SubmitButton from '../shared/SubmitButton';
+import SubmitButton from '../../../../components/ui/SubmitButton';
 
 function ForgotPasswordForm() {
   const [message, setMessage] = useState<string>('');
@@ -45,15 +45,14 @@ function ForgotPasswordForm() {
   //Toasts for validation errors
   useEffect(
     function () {
-      if (formState.errors.email && typeof formState.errors.email.message === 'string') {
+      if (formState.errors.email)
         toast({
           title: 'Email Required',
           description: formState.errors.email.message,
           variant: 'destructive',
         });
-      }
     },
-    [formState.errors]
+    [formState.errors, toast]
   );
 
   return (

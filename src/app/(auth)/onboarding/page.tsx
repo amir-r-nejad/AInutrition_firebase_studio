@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -18,15 +17,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 import { Progress } from '@/components/ui/progress';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import {
   Tooltip,
@@ -34,36 +26,32 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import NumberField from '@/features/auth/components/shared/NumberField';
+import { default as SelectField } from '@/features/auth/components/shared/SelectField';
+import { editPlan } from '@/features/profile/actions/apiUserPlan';
+import { editProfile } from '@/features/profile/actions/apiUserProfile';
 import { useToast } from '@/hooks/use-toast';
 import {
   activityLevels,
   genders,
   onboardingStepsData,
   smartPlannerDietGoals,
-  mealNames,
-  defaultMacroPercentages,
 } from '@/lib/constants';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import {
   type GlobalCalculatedTargets,
   OnboardingFormSchema,
   type OnboardingFormValues,
-  type FullProfileType,
-  preprocessDataForFirestore,
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, CheckCircle, Leaf, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Leaf } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
-import { getAuth } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
 
 export default function OnboardingPage() {
-  const { user } = useAuth();
   const router = useRouter();
+
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -72,25 +60,23 @@ export default function OnboardingPage() {
   const [customCalculatedTargets, setCustomCalculatedTargets] =
     useState<GlobalCalculatedTargets | null>(null);
 
-  const form = useForm<OnboardingFormValues>({
+  const form = useForm<any>({
     resolver: zodResolver(OnboardingFormSchema),
     mode: 'onChange',
     defaultValues: {
       age: undefined,
-      gender: undefined,
+      biological_sex: undefined,
       height_cm: undefined,
-      current_weight: undefined,
-      goal_weight_1m: undefined,
-      ideal_goal_weight: undefined,
-      activityLevel: 'moderate',
-      dietGoalOnboarding: 'fat_loss',
+      current_weight_kg: undefined,
+      target_weight_1month_kg: undefined,
+      long_term_goal_weight_kg: undefined,
+      physical_activity_level: undefined,
+      primary_diet_goal: 'fat_loss',
       custom_total_calories: undefined,
       custom_protein_per_kg: undefined,
-      remaining_calories_carb_pct: 50,
+      remaining_calories_carbs_percentage: 50,
     },
   });
-
-  const { isSubmitting } = form.formState;
 
   const activeStepData = onboardingStepsData.find(
     (s) => s.stepNumber === currentStep
@@ -100,58 +86,58 @@ export default function OnboardingPage() {
     const data = form.getValues();
     if (
       data.age &&
-      data.gender &&
+      data.biological_sex &&
       data.height_cm &&
-      data.current_weight &&
-      data.activityLevel &&
-      data.dietGoalOnboarding
+      data.current_weight_kg &&
+      data.physical_activity_level &&
+      data.primary_diet_goal
     ) {
       const estimated = calculateEstimatedDailyTargets({
         age: data.age,
-        gender: data.gender,
-        currentWeight: data.current_weight,
-        height: data.height_cm,
-        activityLevel: data.activityLevel,
-        dietGoal: data.dietGoalOnboarding,
-        goalWeight: data.goal_weight_1m,
+        biological_sex: data.biological_sex,
+        current_weight_kg: data.current_weight_kg,
+        height_cm: data.height_cm,
+        physical_activity_level: data.physical_activity_level,
+        primary_diet_goal: data.primary_diet_goal,
+        long_term_goal_weight_kg: data.target_weight_1month_kg,
       });
 
       if (
-        estimated.finalTargetCalories &&
-        estimated.proteinGrams &&
-        estimated.carbGrams &&
-        estimated.fatGrams
+        estimated.target_daily_calories &&
+        estimated.target_protein_g &&
+        estimated.target_carbs_g &&
+        estimated.target_fat_g
       ) {
-        const proteinCals = estimated.proteinGrams * 4;
-        const carbCals = estimated.carbGrams * 4;
-        const fatCals = estimated.fatGrams * 9;
-        const totalCalculatedCals = proteinCals + carbCals + fatCals;
-
+        const proteinCals = estimated.target_protein_g! * 4;
+        const carbCals = estimated.target_carbs_g! * 4;
+        const fatCals = estimated.target_fat_g! * 9;
         const newTargets: GlobalCalculatedTargets = {
-          bmr: Math.round(estimated.bmr || 0),
-          tdee: Math.round(estimated.tdee || 0),
-          finalTargetCalories: Math.round(estimated.finalTargetCalories),
-          proteinGrams: Math.round(estimated.proteinGrams),
-          proteinCalories: Math.round(proteinCals),
-          proteinTargetPct:
-            totalCalculatedCals > 0
-              ? Math.round((proteinCals / totalCalculatedCals) * 100)
-              : undefined,
-          carbGrams: Math.round(estimated.carbGrams),
-          carbCalories: Math.round(carbCals),
-          carbTargetPct:
-            totalCalculatedCals > 0
-              ? Math.round((carbCals / totalCalculatedCals) * 100)
-              : undefined,
-          fatGrams: Math.round(estimated.fatGrams),
-          fatCalories: Math.round(fatCals),
-          fatTargetPct:
-            totalCalculatedCals > 0
-              ? Math.round((fatCals / totalCalculatedCals) * 100)
-              : undefined,
-          current_weight_for_custom_calc: data.current_weight,
-          estimatedWeeklyWeightChangeKg: estimated.tdee
-            ? ((estimated.tdee - estimated.finalTargetCalories) * 7) / 7700
+          bmr_kcal: Math.round(estimated.bmr_kcal || 0),
+          maintenance_calories_tdee: Math.round(
+            estimated.maintenance_calories_tdee || 0
+          ),
+          target_daily_calories: Math.round(estimated.target_daily_calories),
+          target_protein_g: Math.round(estimated.target_protein_g),
+          protein_calories: Math.round(proteinCals),
+          target_protein_percentage: Math.round(
+            (proteinCals / estimated.target_daily_calories) * 100
+          ),
+          target_carbs_g: Math.round(estimated.target_carbs_g),
+          carb_calories: Math.round(carbCals),
+          target_carbs_percentage: Math.round(
+            (carbCals / estimated.target_daily_calories) * 100
+          ),
+          target_fat_g: Math.round(estimated.target_fat_g),
+          fat_calories: Math.round(fatCals),
+          target_fat_percentage: Math.round(
+            (fatCals / estimated.target_daily_calories) * 100
+          ),
+          current_weight_for_custom_calc: data.current_weight_kg,
+          estimated_weekly_weight_change_kg: estimated.maintenance_calories_tdee
+            ? ((estimated.maintenance_calories_tdee -
+                estimated.target_daily_calories) *
+                7) /
+              7700
             : undefined,
         };
         setCalculatedTargets(newTargets);
@@ -163,34 +149,47 @@ export default function OnboardingPage() {
     }
   }, [form]);
 
+  // Update calculated targets when we reach step 3 (after basic info collected)
   useEffect(() => {
     if (currentStep === 3) {
       updateCalculatedTargetsForStep3();
     }
   }, [currentStep, updateCalculatedTargetsForStep3]);
 
+  // remaining_calories_carbs_percentage
   const watchedCustomInputs = form.watch([
     'custom_total_calories',
     'custom_protein_per_kg',
-    'remaining_calories_carb_pct',
-    'current_weight',
+    'remaining_calories_carbs_percentage',
+    'current_weight_kg',
   ]);
 
+  // Handle custom calculations for step 4 (custom targets step)
   useEffect(() => {
-    if (currentStep !== 4 || !calculatedTargets) {
+    if ((currentStep !== 4 && currentStep !== 5) || !calculatedTargets) {
       if (customCalculatedTargets !== null) setCustomCalculatedTargets(null);
       return;
     }
 
     const [
-      customTotalCaloriesInput,
-      customProteinPerKgInput,
-      remainingCarbPctInput,
-      formCurrentWeight,
+      custom_total_calories,
+      custom_protein_per_kg,
+      remaining_calories_carbs_percentage,
+      current_weight_kg,
     ] = watchedCustomInputs;
 
+    const effectiveCustomTotalCalories =
+      custom_total_calories && custom_total_calories > 0
+        ? custom_total_calories
+        : null;
+
+    const effectiveCustomProteinPerKg =
+      custom_protein_per_kg && custom_protein_per_kg >= 0
+        ? custom_protein_per_kg
+        : null;
+
     const baseWeight =
-      formCurrentWeight || calculatedTargets?.current_weight_for_custom_calc;
+      current_weight_kg || calculatedTargets?.current_weight_for_custom_calc;
 
     if (!baseWeight || baseWeight <= 0) {
       if (customCalculatedTargets !== null) setCustomCalculatedTargets(null);
@@ -198,22 +197,20 @@ export default function OnboardingPage() {
     }
 
     const effectiveTotalCalories =
-      customTotalCaloriesInput !== undefined && customTotalCaloriesInput > 0
-        ? customTotalCaloriesInput
-        : calculatedTargets?.finalTargetCalories || 0;
+      effectiveCustomTotalCalories ||
+      calculatedTargets?.target_daily_calories ||
+      0;
 
     const defaultProteinPerKg =
-      calculatedTargets?.proteinGrams &&
+      calculatedTargets?.target_protein_g &&
       calculatedTargets?.current_weight_for_custom_calc &&
       calculatedTargets.current_weight_for_custom_calc > 0
-        ? calculatedTargets.proteinGrams /
+        ? calculatedTargets.target_protein_g /
           calculatedTargets.current_weight_for_custom_calc
         : 1.6;
 
     const effectiveProteinPerKg =
-      customProteinPerKgInput !== undefined && customProteinPerKgInput >= 0
-        ? customProteinPerKgInput
-        : defaultProteinPerKg;
+      effectiveCustomProteinPerKg || defaultProteinPerKg;
 
     const calculatedProteinGrams = baseWeight * effectiveProteinPerKg;
     const calculatedProteinCalories = calculatedProteinGrams * 4;
@@ -226,7 +223,7 @@ export default function OnboardingPage() {
       calculatedFatCalories = 0;
 
     if (remainingCaloriesForCustom > 0) {
-      const carbRatio = (remainingCarbPctInput ?? 50) / 100;
+      const carbRatio = (remaining_calories_carbs_percentage ?? 50) / 100;
       const fatRatio = 1 - carbRatio;
       calculatedCarbCalories = remainingCaloriesForCustom * carbRatio;
       calculatedFatCalories = remainingCaloriesForCustom * fatRatio;
@@ -242,49 +239,67 @@ export default function OnboardingPage() {
       Math.max(0, calculatedFatCalories);
 
     const newCustomPlan: GlobalCalculatedTargets = {
-      finalTargetCalories: Math.round(finalCustomTotalCalories),
-      proteinGrams: Math.round(calculatedProteinGrams),
-      proteinCalories: Math.round(calculatedProteinCalories),
-      proteinTargetPct:
-        finalCustomTotalCalories > 0
+      custom_total_calories_final: effectiveCustomTotalCalories
+        ? Math.round(finalCustomTotalCalories)
+        : null,
+      custom_protein_g: effectiveCustomProteinPerKg
+        ? Math.round(calculatedProteinGrams)
+        : null,
+      protein_calories: effectiveCustomProteinPerKg
+        ? Math.round(calculatedProteinCalories)
+        : null,
+      custom_protein_percentage:
+        effectiveCustomProteinPerKg && finalCustomTotalCalories > 0
           ? Math.round(
               (calculatedProteinCalories / finalCustomTotalCalories) * 100
             )
-          : calculatedProteinGrams > 0
+          : effectiveCustomProteinPerKg && calculatedProteinGrams > 0
           ? 100
-          : 0,
-      carbGrams: Math.round(Math.max(0, calculatedCarbGrams)),
-      carbCalories: Math.round(Math.max(0, calculatedCarbCalories)),
-      carbTargetPct:
-        finalCustomTotalCalories > 0
+          : null,
+      custom_carbs_g: effectiveCustomTotalCalories
+        ? Math.round(Math.max(0, calculatedCarbGrams))
+        : null,
+      carb_calories: effectiveCustomTotalCalories
+        ? Math.round(Math.max(0, calculatedCarbCalories))
+        : null,
+      custom_carbs_percentage:
+        effectiveCustomTotalCalories && finalCustomTotalCalories > 0
           ? Math.round(
               (Math.max(0, calculatedCarbCalories) / finalCustomTotalCalories) *
                 100
             )
-          : 0,
-      fatGrams: Math.round(Math.max(0, calculatedFatGrams)),
-      fatCalories: Math.round(Math.max(0, calculatedFatCalories)),
-      fatTargetPct:
-        finalCustomTotalCalories > 0
+          : null,
+      custom_fat_g: effectiveCustomTotalCalories
+        ? Math.round(Math.max(0, calculatedFatGrams))
+        : null,
+      fat_calories: effectiveCustomTotalCalories
+        ? Math.round(Math.max(0, calculatedFatCalories))
+        : null,
+      custom_fat_percentage:
+        effectiveCustomTotalCalories && finalCustomTotalCalories > 0
           ? Math.round(
               (Math.max(0, calculatedFatCalories) / finalCustomTotalCalories) *
                 100
             )
-          : 0,
-      bmr: calculatedTargets?.bmr,
-      tdee: calculatedTargets?.tdee,
+          : null,
+      bmr_kcal: calculatedTargets?.bmr_kcal,
+      maintenance_calories_tdee: calculatedTargets?.maintenance_calories_tdee,
       current_weight_for_custom_calc: baseWeight,
-      estimatedWeeklyWeightChangeKg:
-        calculatedTargets?.tdee && finalCustomTotalCalories
-          ? ((calculatedTargets.tdee - finalCustomTotalCalories) * 7) / 7700
+      estimated_weekly_weight_change_kg:
+        calculatedTargets?.maintenance_calories_tdee && finalCustomTotalCalories
+          ? ((calculatedTargets.maintenance_calories_tdee -
+              finalCustomTotalCalories) *
+              7) /
+            7700
           : undefined,
-    };
 
+      custom_total_calories: effectiveCustomTotalCalories,
+      custom_protein_per_kg: effectiveCustomProteinPerKg,
+    };
     if (
       JSON.stringify(customCalculatedTargets) !== JSON.stringify(newCustomPlan)
-    ) {
+    )
       setCustomCalculatedTargets(newCustomPlan);
-    }
   }, [
     currentStep,
     watchedCustomInputs,
@@ -300,6 +315,7 @@ export default function OnboardingPage() {
       const result = await form.trigger(
         activeStepData.fieldsToValidate as FieldPath<OnboardingFormValues>[]
       );
+
       if (!result) {
         let firstErrorField: FieldPath<OnboardingFormValues> | undefined =
           undefined;
@@ -325,205 +341,126 @@ export default function OnboardingPage() {
       }
     }
 
+    // Calculate targets after completing step 2 (basic info)
     if (currentStep === 2) {
       updateCalculatedTargetsForStep3();
     }
 
-    if (currentStep === 3 && !customCalculatedTargets && calculatedTargets) {
-      setCustomCalculatedTargets(calculatedTargets);
-    }
-    
+    // Move to next step if not at the end
     if (currentStep < 5) {
+      // Changed from onboardingStepsData.length to 5
       setCurrentStep((prev) => prev + 1);
     }
   };
 
   const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
-    }
+    if (currentStep > 1) setCurrentStep((prev) => prev - 1);
   };
 
   const handleSkip = () => {
-    if (
-      activeStepData?.isOptional &&
-      currentStep < 5
-    ) {
+    if (activeStepData?.isOptional && currentStep < 5)
       setCurrentStep((prev) => prev + 1);
-    }
   };
 
   const processAndSaveData = async (data: OnboardingFormValues) => {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
+    const processedData: Record<string, any> = { ...data };
 
-    if (!currentUser) {
-      toast({
-        title: 'Error',
-        description: 'User not authenticated. Please log in again to continue.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    const arrayLikeFields: (keyof OnboardingFormValues)[] = [
+      'allergies',
+      'preferred_cuisines',
+      'dispreferrred_cuisines',
+      'preferred_ingredients',
+      'dispreferrred_ingredients',
+      'preferred_micronutrients',
+      'medical_conditions',
+      'medications',
+    ];
 
-    const finalResults = customCalculatedTargets ?? calculatedTargets ?? null;
+    arrayLikeFields.forEach((field) => {
+      if (
+        typeof processedData[field] === 'string' &&
+        (processedData[field] as string).trim() !== ''
+      ) {
+        processedData[field] = (processedData[field] as string)
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s);
+      } else if (
+        typeof processedData[field] === 'string' &&
+        (processedData[field] as string).trim() === ''
+      ) {
+        processedData[field] = [];
+      } else if (
+        processedData[field] === undefined ||
+        processedData[field] === null
+      ) {
+        processedData[field] = [];
+      }
+    });
 
-    const profileDataToSave: Partial<FullProfileType> = {
-      age: data.age,
-      gender: data.gender,
-      height_cm: data.height_cm,
-      current_weight: data.current_weight,
-      goal_weight_1m: data.goal_weight_1m,
-      ideal_goal_weight: data.ideal_goal_weight,
-      activityLevel: data.activityLevel,
-      dietGoalOnboarding: data.dietGoalOnboarding,
-      smartPlannerData: {
-        formValues: {
-          age: data.age,
-          gender: data.gender,
-          height_cm: data.height_cm,
-          current_weight: data.current_weight,
-          goal_weight_1m: data.goal_weight_1m,
-          ideal_goal_weight: data.ideal_goal_weight,
-          activity_factor_key: data.activityLevel,
-          dietGoal: data.dietGoalOnboarding,
-          custom_total_calories: data.custom_total_calories,
-          custom_protein_per_kg: data.custom_protein_per_kg,
-          remaining_calories_carb_pct: data.remaining_calories_carb_pct,
-        },
-        results: finalResults,
-      },
-      mealDistributions: mealNames.map((name) => ({
-        mealName: name,
-        calories_pct: defaultMacroPercentages[name]?.calories_pct || 0,
-        protein_pct: defaultMacroPercentages[name]?.protein_pct || 0,
-        carbs_pct: defaultMacroPercentages[name]?.carbs_pct || 0,
-        fat_pct: defaultMacroPercentages[name]?.fat_pct || 0,
-      })),
-      onboardingComplete: true,
+    const profileToEdit = {
+      is_onboarding_complete: true,
+      age: processedData.age,
+      biological_sex: processedData.biological_sex,
+      height_cm: processedData.height_cm,
+      current_weight_kg: processedData.current_weight_kg,
+      target_weight_1month_kg: processedData.target_weight_1month_kg,
+      long_term_goal_weight_kg: processedData.long_term_goal_weight_kg,
+      physical_activity_level: processedData.physical_activity_level,
+      primary_diet_goal: processedData.primary_diet_goal,
+    };
+
+    const planToEdit = {
+      bmr_kcal: calculatedTargets?.bmr_kcal ?? null,
+      maintenance_calories_tdee:
+        calculatedTargets?.maintenance_calories_tdee ?? null,
+      target_daily_calories: calculatedTargets?.target_daily_calories ?? null,
+      target_protein_g: calculatedTargets?.target_protein_g ?? null,
+      target_protein_percentage:
+        calculatedTargets?.target_protein_percentage ?? null,
+      target_carbs_g: calculatedTargets?.target_carbs_g ?? null,
+      target_carbs_percentage:
+        calculatedTargets?.target_carbs_percentage ?? null,
+      target_fat_g: calculatedTargets?.target_fat_g ?? null,
+      target_fat_percentage: calculatedTargets?.target_fat_percentage ?? null,
+
+      custom_total_calories: processedData.custom_total_calories ?? null,
+      custom_protein_per_kg: processedData.custom_protein_per_kg ?? null,
+      remaining_calories_carbs_percentage:
+        processedData.remaining_calories_carbs_percentage ?? null,
+
+      custom_total_calories_final:
+        customCalculatedTargets?.custom_total_calories_final ?? null,
+      custom_protein_g: customCalculatedTargets?.custom_protein_g ?? null,
+      custom_protein_percentage:
+        customCalculatedTargets?.custom_protein_percentage ?? null,
+      custom_carbs_g: customCalculatedTargets?.custom_carbs_g ?? null,
+      custom_carbs_percentage:
+        customCalculatedTargets?.custom_carbs_percentage ?? null,
+      custom_fat_g: customCalculatedTargets?.custom_fat_g ?? null,
+      custom_fat_percentage:
+        customCalculatedTargets?.custom_fat_percentage ?? null,
     };
 
     try {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      await setDoc(userDocRef, preprocessDataForFirestore(profileDataToSave), {
-        merge: true,
-      });
+      await editPlan(planToEdit);
+      await editProfile(profileToEdit);
 
       toast({
         title: 'Onboarding Complete!',
-        description: 'Your profile is saved. Redirecting to your dashboard...',
+        description: 'Your profile has been saved. Welcome to NutriPlan!',
       });
-
       router.push('/dashboard');
     } catch (error: any) {
-      console.error("Onboarding save error:", error.code, error.message, error);
       toast({
-        title: 'Onboarding Error',
-        description: `Failed to save onboarding data: ${error.message || 'Please check your connection and try again.'}`,
+        title: 'Error Saving Profile',
+        description: error,
         variant: 'destructive',
       });
     }
   };
 
-  const renderNumberField = (
-    name: FieldPath<OnboardingFormValues>,
-    label: string,
-    placeholder: string,
-    description?: string,
-    step: string = '1'
-  ) => (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>{label}</FormLabel>
-          <FormControl>
-            <div>
-              <Input
-                type='number'
-                placeholder={placeholder}
-                {...field}
-                value={
-                  field.value === undefined ||
-                  field.value === null ||
-                  isNaN(Number(field.value))
-                    ? ''
-                    : String(field.value)
-                }
-                onChange={(e) =>
-                  field.onChange(
-                    e.target.value === ''
-                      ? undefined
-                      : parseFloat(e.target.value)
-                  )
-                }
-                step={step}
-                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
-              />
-            </div>
-          </FormControl>
-          {description && <FormDescription>{description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-
-  const renderSelectField = (
-    name: FieldPath<OnboardingFormValues>,
-    label: string,
-    placeholder: string,
-    options: { value: string | number; label: string }[],
-    description?: string
-  ) => (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>{label}</FormLabel>
-          <Select
-            onValueChange={field.onChange}
-            value={String(field.value || '')}
-          >
-            <FormControl>
-              <div>
-                <SelectTrigger>
-                  <SelectValue placeholder={placeholder} />
-                </SelectTrigger>
-              </div>
-            </FormControl>
-            <SelectContent>
-              {options.map((opt) => (
-                <SelectItem key={String(opt.value)} value={String(opt.value)}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {description && <FormDescription>{description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-
-  if (!activeStepData)
-    return (
-      <div className='flex justify-center items-center h-screen'>
-        <p>Loading step...</p>
-      </div>
-    );
-  if (!user)
-    return (
-      <div className='flex justify-center items-center h-screen'>
-        <div className='flex justify-center items-center'>
-          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-          <p>Loading user information...</p>
-        </div>
-      </div>
-    );
+  if (!activeStepData) return <LoadingScreen loadingLabel='Loading step...' />;
 
   const progressValue = (currentStep / onboardingStepsData.length) * 100;
 
@@ -555,7 +492,7 @@ export default function OnboardingPage() {
         <CardContent>
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(processAndSaveData)}
+              onSubmit={form.handleSubmit((data) => processAndSaveData(data))}
               className='space-y-8'
             >
               {currentStep === 1 && (
@@ -566,59 +503,69 @@ export default function OnboardingPage() {
 
               {currentStep === 2 && (
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                  {renderNumberField(
-                    'age',
-                    'Age (Years)',
-                    'e.g., 30',
-                    undefined,
-                    '1'
-                  )}
-                  {renderSelectField(
-                    'gender',
-                    'Biological Sex',
-                    'Select sex',
-                    genders
-                  )}
-                  {renderNumberField(
-                    'height_cm',
-                    'Height (cm)',
-                    'e.g., 175',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderNumberField(
-                    'current_weight',
-                    'Current Weight (kg)',
-                    'e.g., 70',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderNumberField(
-                    'goal_weight_1m',
-                    'Target Weight After 1 Month (kg)',
-                    'e.g., 68',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderNumberField(
-                    'ideal_goal_weight',
-                    'Long-Term Goal Weight (kg, Optional)',
-                    'e.g., 65',
-                    undefined,
-                    '0.1'
-                  )}
-                  {renderSelectField(
-                    'activityLevel',
-                    'Physical Activity Level',
-                    'Select activity level',
-                    activityLevels
-                  )}
-                  {renderSelectField(
-                    'dietGoalOnboarding',
-                    'Primary Diet Goal',
-                    'Select your diet goal',
-                    smartPlannerDietGoals
-                  )}
+                  <NumberField
+                    name='age'
+                    label='Age (Years)'
+                    placeholder='e.g., 30'
+                    step='1'
+                    control={form.control}
+                  />
+
+                  <SelectField
+                    name='biological_sex'
+                    label='Biological Sex'
+                    placeholder='Select sex'
+                    options={genders}
+                    control={form.control}
+                  />
+
+                  <NumberField
+                    name='height_cm'
+                    label='Height (cm)'
+                    placeholder='e.g., 175'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <NumberField
+                    name='current_weight_kg'
+                    label='Current Weight (kg)'
+                    placeholder='e.g., 70'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <NumberField
+                    name='target_weight_1month_kg'
+                    label='Target Weight After 1 Month (kg)'
+                    placeholder='e.g., 68'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <NumberField
+                    name='long_term_goal_weight_kg'
+                    label='Long-Term Goal Weight (kg, Optional)'
+                    placeholder='e.g., 65'
+                    step='0.1'
+                    control={form.control}
+                  />
+
+                  <SelectField
+                    name='physical_activity_level'
+                    label='Physical Activity Level'
+                    placeholder='Select activity level'
+                    options={activityLevels}
+                    control={form.control}
+                  />
+
+                  <SelectField
+                    name='primary_diet_goal'
+                    label='Primary Diet Goal'
+                    placeholder='Select your diet goal'
+                    options={smartPlannerDietGoals}
+                    control={form.control}
+                  />
                 </div>
               )}
 
@@ -631,46 +578,58 @@ export default function OnboardingPage() {
                     <>
                       <p>
                         <strong>Basal Metabolic Rate (BMR):</strong>{' '}
-                        {calculatedTargets.bmr?.toFixed(0) ?? 'N/A'} kcal
+                        {calculatedTargets.bmr_kcal?.toFixed(0) ?? 'N/A'} kcal
                       </p>
                       <p>
                         <strong>Maintenance Calories (TDEE):</strong>{' '}
-                        {calculatedTargets.tdee?.toFixed(0) ?? 'N/A'} kcal
+                        {calculatedTargets.maintenance_calories_tdee?.toFixed(
+                          0
+                        ) ?? 'N/A'}{' '}
+                        kcal
                       </p>
                       <p className='font-bold text-primary mt-2'>
                         Target Daily Calories:{' '}
-                        {calculatedTargets.finalTargetCalories?.toFixed(0) ??
+                        {calculatedTargets.target_daily_calories?.toFixed(0) ??
                           'N/A'}{' '}
                         kcal
                       </p>
                       <p>
                         Target Protein:{' '}
-                        {calculatedTargets.proteinGrams?.toFixed(1) ?? 'N/A'} g
-                        (
-                        {calculatedTargets.proteinTargetPct?.toFixed(0) ??
-                          'N/A'}
+                        {calculatedTargets.target_protein_g?.toFixed(1) ??
+                          'N/A'}{' '}
+                        g (
+                        {calculatedTargets.target_protein_percentage?.toFixed(
+                          0
+                        ) ?? 'N/A'}
                         %)
                       </p>
                       <p>
                         Target Carbs:{' '}
-                        {calculatedTargets.carbGrams?.toFixed(1) ?? 'N/A'} g (
-                        {calculatedTargets.carbTargetPct?.toFixed(0) ?? 'N/A'}%)
+                        {calculatedTargets.target_carbs_g?.toFixed(1) ?? 'N/A'}{' '}
+                        g (
+                        {calculatedTargets.target_carbs_percentage?.toFixed(
+                          0
+                        ) ?? 'N/A'}
+                        %)
                       </p>
                       <p>
                         Target Fat:{' '}
-                        {calculatedTargets.fatGrams?.toFixed(1) ?? 'N/A'} g (
-                        {calculatedTargets.fatTargetPct?.toFixed(0) ?? 'N/A'}%)
+                        {calculatedTargets.target_fat_g?.toFixed(1) ?? 'N/A'} g
+                        (
+                        {calculatedTargets.target_fat_percentage?.toFixed(0) ??
+                          'N/A'}
+                        %)
                       </p>
                       <p className='text-sm'>
                         Estimated Weekly Progress:{' '}
-                        {calculatedTargets.estimatedWeeklyWeightChangeKg &&
-                        calculatedTargets.estimatedWeeklyWeightChangeKg <= 0
+                        {calculatedTargets.estimated_weekly_weight_change_kg &&
+                        calculatedTargets.estimated_weekly_weight_change_kg <= 0
                           ? `${Math.abs(
-                              calculatedTargets.estimatedWeeklyWeightChangeKg ??
+                              calculatedTargets.estimated_weekly_weight_change_kg ??
                                 0
                             ).toFixed(2)} kg deficit/week (Potential Loss)`
                           : `${(
-                              calculatedTargets.estimatedWeeklyWeightChangeKg ??
+                              calculatedTargets.estimated_weekly_weight_change_kg ??
                               0
                             )?.toFixed(2)} kg surplus/week (Potential Gain)`}
                       </p>
@@ -684,7 +643,7 @@ export default function OnboardingPage() {
                   )}
                   <FormDescription className='text-xs mt-2'>
                     These are estimates. You can fine-tune these in the next
-                    step or later in the app's tools.
+                    step or later in the app&apos;s tools.
                   </FormDescription>
                 </div>
               )}
@@ -694,34 +653,36 @@ export default function OnboardingPage() {
                   <h3 className='text-lg font-semibold text-primary mb-3'>
                     Customize Your Daily Targets
                   </h3>
-                  {renderNumberField(
-                    'custom_total_calories',
-                    'Custom Total Calories (Optional)',
-                    `e.g., ${
-                      calculatedTargets?.finalTargetCalories?.toFixed(0) ||
+                  <NumberField
+                    name='custom_total_calories'
+                    label='Custom Total Calories (Optional)'
+                    placeholder={`e.g., ${
+                      calculatedTargets?.target_daily_calories?.toFixed(0) ||
                       '2000'
-                    }`,
-                    'Overrides system-calculated total daily calories.',
-                    '1'
-                  )}
-                  {renderNumberField(
-                    'custom_protein_per_kg',
-                    'Custom Protein (g/kg body weight) (Optional)',
-                    `e.g., ${
-                      calculatedTargets?.proteinGrams &&
+                    }`}
+                    description='Overrides system-calculated total daily calories.'
+                    step='1'
+                    control={form.control}
+                  />
+                  <NumberField
+                    name='custom_protein_per_kg'
+                    label='Custom Protein (g/kg body weight) (Optional)'
+                    placeholder={`e.g., ${
+                      calculatedTargets?.target_protein_g &&
                       calculatedTargets?.current_weight_for_custom_calc
                         ? (
-                            calculatedTargets.proteinGrams /
+                            calculatedTargets.target_protein_g /
                             calculatedTargets.current_weight_for_custom_calc
                           ).toFixed(1)
                         : '1.6'
-                    }`,
-                    'Sets your protein intake in grams per kg of your current body weight.',
-                    '0.1'
-                  )}
+                    }`}
+                    description='Sets your protein intake in grams per kg of your current body weight.'
+                    step='0.1'
+                    control={form.control}
+                  />
                   <FormField
                     control={form.control}
-                    name='remaining_calories_carb_pct'
+                    name='remaining_calories_carbs_percentage'
                     render={({ field }) => {
                       const carbPct = field.value ?? 50;
                       const fatPct = 100 - carbPct;
@@ -759,47 +720,52 @@ export default function OnboardingPage() {
                       </h4>
                       <p className='text-sm'>
                         Total Calories:{' '}
-                        {customCalculatedTargets.finalTargetCalories?.toFixed(
+                        {customCalculatedTargets.custom_total_calories_final?.toFixed(
                           0
                         ) ?? 'N/A'}{' '}
                         kcal
                       </p>
                       <p className='text-sm'>
                         Protein:{' '}
-                        {customCalculatedTargets.proteinGrams?.toFixed(1) ??
+                        {customCalculatedTargets.custom_protein_g?.toFixed(1) ??
                           'N/A'}
                         g (
-                        {customCalculatedTargets.proteinTargetPct?.toFixed(0) ??
-                          'N/A'}
+                        {customCalculatedTargets.custom_protein_percentage?.toFixed(
+                          0
+                        ) ?? 'N/A'}
                         %)
                       </p>
                       <p className='text-sm'>
                         Carbs:{' '}
-                        {customCalculatedTargets.carbGrams?.toFixed(1) ?? 'N/A'}
-                        g (
-                        {customCalculatedTargets.carbTargetPct?.toFixed(0) ??
+                        {customCalculatedTargets.custom_carbs_g?.toFixed(1) ??
                           'N/A'}
+                        g (
+                        {customCalculatedTargets.custom_carbs_percentage?.toFixed(
+                          0
+                        ) ?? 'N/A'}
                         %)
                       </p>
                       <p className='text-sm'>
                         Fat:{' '}
-                        {customCalculatedTargets.fatGrams?.toFixed(1) ?? 'N/A'}g
-                        (
-                        {customCalculatedTargets.fatTargetPct?.toFixed(0) ??
+                        {customCalculatedTargets.custom_fat_g?.toFixed(1) ??
                           'N/A'}
+                        g (
+                        {customCalculatedTargets.custom_fat_percentage?.toFixed(
+                          0
+                        ) ?? 'N/A'}
                         %)
                       </p>
                       <p className='text-sm'>
                         Estimated Weekly Progress:{' '}
-                        {customCalculatedTargets.estimatedWeeklyWeightChangeKg &&
-                        customCalculatedTargets.estimatedWeeklyWeightChangeKg <=
+                        {customCalculatedTargets.estimated_weekly_weight_change_kg &&
+                        customCalculatedTargets.estimated_weekly_weight_change_kg <=
                           0
                           ? `${Math.abs(
-                              customCalculatedTargets.estimatedWeeklyWeightChangeKg ??
+                              customCalculatedTargets.estimated_weekly_weight_change_kg ??
                                 0
                             ).toFixed(2)} kg deficit/week (Potential Loss)`
                           : `${(
-                              customCalculatedTargets.estimatedWeeklyWeightChangeKg ??
+                              customCalculatedTargets.estimated_weekly_weight_change_kg ??
                               0
                             )?.toFixed(2)} kg surplus/week (Potential Gain)`}
                       </p>
@@ -812,11 +778,11 @@ export default function OnboardingPage() {
                 <div className='text-center space-y-4'>
                   <CheckCircle className='h-16 w-16 text-green-500 mx-auto' />
                   <p className='text-lg'>
-                    You're all set! Your profile is complete.
+                    You&apos;re all set! Your profile is complete.
                   </p>
                   <p className='text-muted-foreground'>
-                    Click "Finish Onboarding" to save your profile and proceed
-                    to the dashboard. You can then generate your first
+                    Click &quot;Finish Onboarding&quot; to save your profile and
+                    proceed to the dashboard. You can then generate your first
                     AI-powered meal plan.
                   </p>
                 </div>
@@ -827,26 +793,26 @@ export default function OnboardingPage() {
                   type='button'
                   variant='outline'
                   onClick={handlePrevious}
-                  disabled={currentStep === 1 || isSubmitting}
+                  disabled={currentStep === 1}
                 >
                   Previous
                 </Button>
                 <div className='space-x-2'>
                   {activeStepData.isOptional && currentStep < 5 && (
-                    <Button type='button' variant='ghost' onClick={handleSkip} disabled={isSubmitting}>
+                    <Button type='button' variant='ghost' onClick={handleSkip}>
                       Skip
                     </Button>
                   )}
                   {currentStep < 5 ? (
-                    <Button type='button' onClick={handleNext} disabled={isSubmitting}>
+                    <Button type='button' onClick={handleNext}>
                       Next
                     </Button>
                   ) : (
-                    <Button type='submit' disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                      ) : null}
-                      {isSubmitting ? 'Finishing...' : 'Finish Onboarding'}
+                    <Button
+                      onClick={() => processAndSaveData(form.getValues())}
+                      type='submit'
+                    >
+                      Finish Onboarding
                     </Button>
                   )}
                 </div>

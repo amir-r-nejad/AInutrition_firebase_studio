@@ -1,5 +1,3 @@
-'use client';
-
 import {
   Card,
   CardContent,
@@ -9,20 +7,25 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import PasswordResetError from '@/features/auth/components/resetPassword/PasswordResetError';
-import PasswordResetVerifying from '@/features/auth/components/resetPassword/PasswordResetVerifying';
 import ResetPasswordForn from '@/features/auth/components/resetPassword/ResetPasswordForn';
 import { ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import { usePasswordResetVerification } from '../../hooks/usePasswordResetVerification';
+import { isNotValidURL } from '../../lib/authUtils';
 
-function ResetPasswordContent() {
-  const { isValidCode, isVerifying, verificationError } =
-    usePasswordResetVerification();
+async function ResetPasswordContent({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}) {
+  const params = await searchParams;
+  const token = params.token_hash ?? null;
+  const type = params.type ?? null;
+  const next = params.next ?? null;
 
-  if (isVerifying) return <PasswordResetVerifying />;
-
-  if (!isValidCode || verificationError)
-    return <PasswordResetError errorMessage={verificationError} />;
+  if (isNotValidURL(next, token, type))
+    return (
+      <PasswordResetError errorMessage='Invalid or expired password reset link. Please request a new one.' />
+    );
 
   return (
     <Card className='w-full max-w-sm shadow-xl'>

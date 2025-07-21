@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -9,46 +8,36 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase/clientApp';
-import { User } from '@/types/globalTypes';
-import { doc, setDoc } from 'firebase/firestore';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
+import { useTransition } from 'react';
+import { resetProfile } from '../actions/apiUserProfile';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
-function ResetOnboarding({ user }: { user: User | null }) {
+function ResetOnboarding() {
   const { toast } = useToast();
+  const router = useRouter();
 
-  async function handleResetOnboarding() {
-    if (!user?.uid) {
-      toast({
-        title: 'Error',
-        description: 'User not found.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      const userProfileRef = doc(db, 'users', user.uid);
-      await setDoc(
-        userProfileRef,
-        { onboardingComplete: false },
-        { merge: true }
-      );
-      toast({
-        title: 'Onboarding Reset',
-        description:
-          'Your onboarding status has been reset. The app will now reload.',
-      });
+  const [isLoading, startTransition] = useTransition();
 
-      window.location.reload();
-    } catch (error) {
-      console.error('Error resetting onboarding status:', error);
-      toast({
-        title: 'Reset Failed',
-        description: 'Could not reset onboarding status.',
-        variant: 'destructive',
-      });
-    }
+  async function handleReset() {
+    startTransition(async () => {
+      try {
+        await resetProfile();
+        toast({
+          title: 'Profile Reset',
+          description: 'Your profile has been reset successfully.',
+          variant: 'default',
+        });
+        router.push('/onboarding');
+      } catch (error: any) {
+        toast({
+          title: 'Reset Failed',
+          description: error,
+          variant: 'destructive',
+        });
+      }
+    });
   }
 
   return (
@@ -63,11 +52,15 @@ function ResetOnboarding({ user }: { user: User | null }) {
       </CardHeader>
       <CardContent>
         <Button
+          disabled={isLoading}
           variant='destructive'
-          onClick={handleResetOnboarding}
+          onClick={handleReset}
           className='w-full'
         >
-          <RefreshCcw className='mr-2 h-4 w-4' /> Reset Onboarding Status
+          <RefreshCcw
+            className={`${isLoading ? 'animate-spin' : ''} mr-2 h-4 w-4`}
+          />
+          {isLoading ? 'Reset...' : 'Reset Onboarding Status'}
         </Button>
         <p className='text-xs text-muted-foreground mt-2'>
           This will set your onboarding status to incomplete, allowing you to go

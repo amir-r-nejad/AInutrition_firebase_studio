@@ -3,7 +3,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { ReactElement, ReactNode } from 'react';
+import { ReactNode } from 'react';
 
 type ItemProps = {
   value: string;

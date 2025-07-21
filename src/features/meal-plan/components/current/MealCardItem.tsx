@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { useQueryParams } from '@/hooks/useQueryParams';
 import { Meal } from '@/lib/schemas';
 import { Loader2, Pencil, Wand2 } from 'lucide-react';
 
@@ -18,8 +19,6 @@ type MealCardItemProps = {
   dayIndex: number;
   mealIndex: number;
   optimizingKey: string | null;
-  disabled: boolean;
-  onEditMeal: (dayIndex: number, mealIndex: number) => void;
   onOptimizeMeal: (dayIndex: number, mealIndex: number) => Promise<void>;
 };
 
@@ -28,20 +27,20 @@ function MealCardItem({
   dayPlan,
   dayIndex,
   mealIndex,
-  onEditMeal,
   optimizingKey,
   onOptimizeMeal,
-  disabled,
 }: MealCardItemProps) {
-  const mealKey = `${dayPlan.dayOfWeek}-${meal.name}-${mealIndex}`;
+  const { updateQueryParams } = useQueryParams();
+
+  const mealKey = `${dayPlan.day_of_week}-${meal.name}-${mealIndex}`;
   const isOptimizing = optimizingKey === mealKey;
 
   return (
     <Card className='flex flex-col'>
       <CardHeader>
         <CardTitle className='text-xl'>{meal.name}</CardTitle>
-        {meal.customName && (
-          <CardDescription>{meal.customName}</CardDescription>
+        {meal.custom_name && (
+          <CardDescription>{meal.custom_name}</CardDescription>
         )}
       </CardHeader>
       <CardContent className='flex-grow'>
@@ -49,7 +48,7 @@ function MealCardItem({
           <ul className='space-y-1 text-sm text-muted-foreground'>
             {meal.ingredients.map((ing, ingIndex) => (
               <li key={ingIndex}>
-                {ing.name} - {ing.quantity}
+                {ing.name} - {ing.quantity?.toFixed(2)}
                 {ing.unit}
               </li>
             ))}
@@ -60,17 +59,22 @@ function MealCardItem({
           </p>
         )}
         <div className='mt-2 text-xs space-y-0.5'>
-          <p>Calories: {meal.totalCalories?.toFixed(0) ?? 'N/A'}</p>
-          <p>Protein: {meal.totalProtein?.toFixed(1) ?? 'N/A'}g</p>
-          <p>Carbs: {meal.totalCarbs?.toFixed(1) ?? 'N/A'}g</p>
-          <p>Fat: {meal.totalFat?.toFixed(1) ?? 'N/A'}g</p>
+          <p>Calories: {meal.total_calories?.toFixed(0) ?? 'N/A'}</p>
+          <p>Protein: {meal.total_protein?.toFixed(1) ?? 'N/A'}g</p>
+          <p>Carbs: {meal.total_carbs?.toFixed(1) ?? 'N/A'}g</p>
+          <p>Fat: {meal.total_fat?.toFixed(1) ?? 'N/A'}g</p>
         </div>
       </CardContent>
       <CardFooter className='border-t pt-4 flex-wrap gap-2'>
         <Button
           variant='outline'
           size='sm'
-          onClick={() => onEditMeal(dayIndex, mealIndex)}
+          onClick={() =>
+            updateQueryParams(
+              ['selected_day', 'selected_meal', 'is_edit'],
+              [dayPlan.day_of_week, meal.name, 'true']
+            )
+          }
           disabled={isOptimizing}
         >
           <Pencil className='mr-2 h-4 w-4' /> Edit Meal
@@ -79,7 +83,7 @@ function MealCardItem({
           variant='default'
           size='sm'
           onClick={() => onOptimizeMeal(dayIndex, mealIndex)}
-          disabled={isOptimizing || disabled}
+          disabled={isOptimizing}
         >
           {isOptimizing ? (
             <Loader2 className='mr-2 h-4 w-4 animate-spin' />

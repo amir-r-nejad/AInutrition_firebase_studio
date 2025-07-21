@@ -1,24 +1,35 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { signInWithGoogle } from '@/lib/firebase/auth';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { MouseEvent, useState } from 'react';
 import Google from '../../../../public/google.svg';
+import { useTransition } from 'react';
+import { loginWithGoogle } from '../../actions/loginWithOAuth';
+import { useToast } from '@/hooks/use-toast';
 
-type PropsType = {
-  disabled: boolean;
-};
+function LoginWithGoogleButton({ disabled }: { disabled: boolean }) {
+  const { toast } = useToast();
+  const [isLoggingIn, startLoginWithGoogle] = useTransition();
 
-function LoginWithGoogleButton({ disabled }: PropsType) {
-  const [loading, setIsLoading] = useState<boolean>(false);
+  async function handleClick() {
+    startLoginWithGoogle(async () => {
+      try {
+        await loginWithGoogle();
 
-  function handleClick(e: MouseEvent<HTMLButtonElement>) {
-    e.preventDefault();
-
-    signInWithGoogle();
-    setIsLoading(true);
+        toast({
+          title: 'Success',
+          description: 'You have successfully logged in with Google.',
+          variant: 'default',
+        });
+      } catch {
+        toast({
+          title: 'Error',
+          description: 'Failed to log in with Google. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    });
   }
 
   return (
@@ -26,9 +37,9 @@ function LoginWithGoogleButton({ disabled }: PropsType) {
       onClick={handleClick}
       type='button'
       className='w-full'
-      disabled={disabled}
+      disabled={disabled || isLoggingIn}
     >
-      {loading ? (
+      {isLoggingIn ? (
         <Loader2 className='mr-2 h-4 w-4 animate-spin' />
       ) : (
         <Image src={Google} alt='google' />

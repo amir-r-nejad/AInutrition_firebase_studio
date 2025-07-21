@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Bot, Loader2, Send, UserIcon } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Message {
   id: string;
@@ -63,12 +63,14 @@ export function SupportChat() {
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error: any) {
-      console.error("Error fetching bot response:", error);
-      console.error("Full AI error object (SupportChat):", error); // Log the full error object
+      console.error('Error fetching bot response:', error);
+      console.error('Full AI error object (SupportChat):', error); // Log the full error object
       const errorMessage: Message = {
         id: Date.now().toString() + '-error',
         sender: 'bot',
-        text: `Sorry, I encountered an error: ${error.message || "Please try again later."}`,
+        text: `Sorry, I encountered an error: ${
+          error.message || 'Please try again later.'
+        }`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);

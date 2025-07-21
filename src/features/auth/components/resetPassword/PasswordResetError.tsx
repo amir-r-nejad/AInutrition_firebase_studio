@@ -1,5 +1,3 @@
-'use client';
-
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -26,7 +24,7 @@ function PasswordResetError({ errorMessage }: { errorMessage: string | null }) {
         </p>
       </CardContent>
       <CardFooter>
-        <Link href='/forgot-password' passHref className='w-full' legacyBehavior>
+        <Link href='/forgot-password' passHref className='w-full'>
           <Button className='w-full'>Request New Reset Link</Button>
         </Link>
       </CardFooter>

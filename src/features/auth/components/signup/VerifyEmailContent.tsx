@@ -52,20 +52,20 @@ function VerifyEmailContent() {
       </CardContent>
       <CardFooter className='flex flex-col items-center space-y-3'>
         {status === 'success' && (
-          <Link href='/login' passHref className='w-full' legacyBehavior>
+          <Link href='/login' passHref className='w-full'>
             <Button className='w-full'>
               <MailCheck className='mr-2 h-4 w-4' /> Proceed to Login
             </Button>
           </Link>
         )}
         {status === 'error' && (
-          <Link href='/signup' passHref className='w-full' legacyBehavior>
+          <Link href='/signup' passHref className='w-full'>
             <Button variant='outline' className='w-full'>
               Try Signing Up Again
             </Button>
           </Link>
         )}
-        <Link href='/' passHref className='w-full text-sm' legacyBehavior>
+        <Link href='/' passHref className='w-full text-sm'>
           <Button variant='link' className='w-full text-primary'>
             <Home className='mr-2 h-4 w-4' /> Go to Homepage
           </Button>

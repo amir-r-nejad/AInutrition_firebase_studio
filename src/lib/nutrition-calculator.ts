@@ -1,5 +1,3 @@
-
-import type { FullProfileType, ProfileFormValues } from './schemas';
 import { activityLevels } from './constants';
 
 /**
@@ -60,104 +58,103 @@ export function calculateRecommendedProtein(
  * @param dietGoal - User's diet goal.
  * @returns Adjusted TDEE (target calories).
  */
-function adjustTDEEForDietGoal(tdee: number, dietGoal: string): number {
-  // FIX: Using correct diet goal values from constants
-  if (dietGoal === 'fat_loss') {
-    return tdee - 500; // Typical 500 kcal deficit for weight loss
-  } else if (dietGoal === 'muscle_gain') {
-    return tdee + 300; // Typical 300-500 kcal surplus for muscle gain
-  }
-  // 'recomp' and 'maintain_weight' will fall through to return tdee
-  return tdee; // Maintain weight
-}
+// function adjustTDEEForDietGoal(tdee: number, dietGoal: string): number {
+//   // FIX: Using correct diet goal values from constants
+//   if (dietGoal === 'fat_loss') {
+//     return tdee - 500; // Typical 500 kcal deficit for weight loss
+//   } else if (dietGoal === 'muscle_gain') {
+//     return tdee + 300; // Typical 300-500 kcal surplus for muscle gain
+//   }
+//   // 'recomp' and 'maintain_weight' will fall through to return tdee
+//   return tdee; // Maintain weight
+// }
 
 /**
  * Calculates estimated daily targets based on profile.
  * FIX: This function now returns keys that match what the rest of the app expects.
  */
 export function calculateEstimatedDailyTargets(profile: {
-  gender?: string | null;
-  currentWeight?: number | null;
-  height?: number | null;
+  biological_sex?: string | null;
+  current_weight_kg?: number | null;
+  height_cm?: number | null;
   age?: number | null;
-  activityLevel?: string | null;
-  dietGoal?: string | null;
-  goalWeight?: number | null;
+  physical_activity_level?: string | null;
+  primary_diet_goal?: string | null;
+  long_term_goal_weight_kg?: number | null;
   bf_current?: number | null;
   bf_target?: number | null;
   waist_current?: number | null;
   waist_goal_1m?: number | null;
 }): {
-  finalTargetCalories?: number;
-  proteinGrams?: number;
-  carbGrams?: number;
-  fatGrams?: number;
-  bmr?: number;
-  tdee?: number;
+  target_daily_calories?: number;
+  target_protein_g?: number;
+  target_carbs_g?: number;
+  target_fat_g?: number;
+  bmr_kcal?: number;
+  maintenance_calories_tdee?: number;
 } {
   if (
-    !profile.gender ||
-    profile.currentWeight === undefined ||
-    profile.currentWeight === null ||
-    profile.height === undefined ||
-    profile.height === null ||
+    !profile.biological_sex ||
+    profile.current_weight_kg === undefined ||
+    profile.current_weight_kg === null ||
+    profile.height_cm === undefined ||
+    profile.height_cm === null ||
     profile.age === undefined ||
     profile.age === null ||
-    !profile.activityLevel ||
-    !profile.dietGoal
+    !profile.physical_activity_level ||
+    !profile.primary_diet_goal
   ) {
     return {}; // Not enough data
   }
 
   const bmr = calculateBMR(
-    profile.gender,
-    profile.currentWeight,
-    profile.height,
+    profile.biological_sex,
+    profile.current_weight_kg,
+    profile.height_cm,
     profile.age
   );
-  let tdee = calculateTDEE(bmr, profile.activityLevel);
+  const tdee = calculateTDEE(bmr, profile.physical_activity_level);
 
   // This logic is now aligned with the Smart Calorie Planner for consistency.
   let targetCalories = tdee; // Start with maintenance
-  if (profile.dietGoal === 'fat_loss') {
-      targetCalories = tdee - 500;
-  } else if (profile.dietGoal === 'muscle_gain') {
-      targetCalories = tdee + 300;
-  } else if (profile.dietGoal === 'recomp') {
-      targetCalories = tdee - 200; // Slight deficit for recomp
+  if (profile.primary_diet_goal === 'fat_loss') {
+    targetCalories = tdee - 500;
+  } else if (profile.primary_diet_goal === 'muscle_gain') {
+    targetCalories = tdee + 300;
+  } else if (profile.primary_diet_goal === 'recomp') {
+    targetCalories = tdee - 200; // Slight deficit for recomp
   }
 
   // Define macro splits based on goal
   let proteinTargetPct = 0.25,
-      carbTargetPct = 0.50,
-      fatTargetPct = 0.25; // Default for maintenance
+    carbTargetPct = 0.5,
+    fatTargetPct = 0.25; // Default for maintenance
 
-  if (profile.dietGoal === 'fat_loss') {
-      proteinTargetPct = 0.35;
-      carbTargetPct = 0.35;
-      fatTargetPct = 0.3;
-  } else if (profile.dietGoal === 'muscle_gain') {
-      proteinTargetPct = 0.3;
-      carbTargetPct = 0.5;
-      fatTargetPct = 0.2;
-  } else if (profile.dietGoal === 'recomp') {
-      proteinTargetPct = 0.4;
-      carbTargetPct = 0.35;
-      fatTargetPct = 0.25;
+  if (profile.primary_diet_goal === 'fat_loss') {
+    proteinTargetPct = 0.35;
+    carbTargetPct = 0.35;
+    fatTargetPct = 0.3;
+  } else if (profile.primary_diet_goal === 'muscle_gain') {
+    proteinTargetPct = 0.3;
+    carbTargetPct = 0.5;
+    fatTargetPct = 0.2;
+  } else if (profile.primary_diet_goal === 'recomp') {
+    proteinTargetPct = 0.4;
+    carbTargetPct = 0.35;
+    fatTargetPct = 0.25;
   }
 
   const proteinGrams = Math.round((targetCalories * proteinTargetPct) / 4);
   const carbGrams = Math.round((targetCalories * carbTargetPct) / 4);
   const fatGrams = Math.round((targetCalories * fatTargetPct) / 9);
 
-
   // FIX: Return object with keys that match what the application expects
   return {
-    finalTargetCalories: targetCalories,
-    proteinGrams: proteinGrams,
-    fatGrams: fatGrams,
-    carbGrams: carbGrams,
-    bmr: bmr,
-    tdee: tdee,
+    target_daily_calories: targetCalories,
+    target_protein_g: proteinGrams,
+    target_fat_g: fatGrams,
+    target_carbs_g: carbGrams,
+    bmr_kcal: bmr,
+    maintenance_calories_tdee: tdee,
   };
 }
