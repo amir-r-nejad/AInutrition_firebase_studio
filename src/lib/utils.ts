@@ -59,3 +59,14 @@ export function getAIApiErrorMessage(error: any): string {
     message.length > 150 ? '...' : ''
   }`;
 }
+
+export const formatValue = (value: any, unit = '', fallback = 'Not set') =>
+  !value || value === '' ? fallback : `${value}${unit}`;
+
+export function calculateProgress(
+  current: number | undefined,
+  target: number | undefined
+) {
+  if (!current || !target) return 0;
+  return Math.min((current / target) * 100, 100);
+}

@@ -1,120 +1,309 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import SectionHeader from '@/components/ui/SectionHeader';
 import {
-  ArrowRight,
-  Bot,
-  BrainCircuit,
-  NotebookText,
-  SplitSquareHorizontal,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import SectionHeader from '@/components/ui/SectionHeader';
+import { getUserPlan, getUserProfile } from '@/lib/supabase/data-service';
+import { createClient } from '@/lib/supabase/server';
+import { calculateProgress, formatValue } from '@/lib/utils';
+import {
+  Activity,
+  Calendar,
+  Download,
+  FileText,
   Target,
+  TrendingUp,
   User,
 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect('/login');
+  if (error) redirect('/error');
+
+  const profile = await getUserProfile();
+  const plan = await getUserPlan();
+
   return (
-    <div className='container mx-auto py-8'>
-      <div className='mb-12 text-center'>
-        <h1 className='text-4xl font-bold tracking-tight text-primary sm:text-5xl'>
-          Welcome to NutriPlan!
-        </h1>
-        <p className='mt-4 text-lg leading-8 text-foreground/80'>
-          Your personalized guide to healthier eating and achieving your fitness
-          goals.
-        </p>
+    <div className='space-y-6'>
+      <div className='flex items-center justify-between'>
+        <SectionHeader
+          className='text-2xl'
+          title='Dashboard'
+          description='Overview of your nutrition journey and progress'
+        />
+        <Link href='/pdf'>
+          <Button className='bg-primary hover:bg-primary/90 text-primary-foreground'>
+            <Download className='h-4 w-4 mr-2' />
+            Download PDF Report
+          </Button>
+        </Link>
       </div>
 
-      <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3'>
-        <Card className='shadow-lg hover:shadow-xl transition-shadow duration-300'>
-          <SectionHeader
-            icon={<User className='h-10 w-10 text-accent mb-3' />}
-            className='text-2xl'
-            title='Your Profile'
-            description='Keep your health data and preferences up to date for the best recommendations.'
-          />
+      {/* Welcome Section */}
+      <Card className='border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5'>
+        <SectionHeader
+          icon={<User className='h-5 w-5' />}
+          className='text-xl flex items-center gap-2 text-primary'
+          title={` Welcome back, ${user?.user_metadata.name || 'User'}!`}
+          description="Here's your nutrition overview and progress towards your goals."
+        />
+      </Card>
 
+      {/* Quick Stats Grid */}
+      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
+        <Card>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+            <CardTitle className='text-sm font-medium'>
+              Current Weight
+            </CardTitle>
+            <TrendingUp className='h-4 w-4 text-muted-foreground' />
+          </CardHeader>
           <CardContent>
-            <Link href='/profile' passHref>
-              <Button className='w-full' variant='outline'>
-                Go to Profile <ArrowRight className='ml-2 h-4 w-4' />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className='shadow-lg hover:shadow-xl transition-shadow duration-300'>
-          <SectionHeader
-            icon={<NotebookText className='h-10 w-10 text-accent mb-3' />}
-            className='text-2xl'
-            title='Current Meal Plan'
-            description='View and manage your ongoing weekly meal schedule and track your progress.'
-          />
-
-          <CardContent>
-            <Link href='/meal-plan/current' passHref>
-              <Button className='w-full' variant='outline'>
-                View Current Plan <ArrowRight className='ml-2 h-4 w-4' />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className='shadow-lg hover:shadow-xl transition-shadow duration-300'>
-          <SectionHeader
-            icon={<Bot className='h-10 w-10 text-accent mb-3' />}
-            className='text-2xl'
-            title='AI-Optimized Plan'
-            description=' Let our AI generate a personalized meal plan tailored to your needs and goals.'
-          />
-          <CardContent>
-            <Link href='/meal-plan/optimized' passHref>
-              <Button className='w-full'>
-                Generate AI Plan <ArrowRight className='ml-2 h-4 w-4' />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className='mt-12 shadow-lg overflow-hidden'>
-        <div className='grid md:grid-cols-2 items-center'>
-          <div className='p-8'>
-            <Target className='h-10 w-10 text-primary mb-4' />
-            <h2 className='text-3xl font-semibold text-primary mb-3'>
-              Nutrition Tools
-            </h2>
-            <p className='text-foreground/80 mb-6'>
-              Utilize our advanced planners and splitters to fine-tune your
-              nutritional intake and match your fitness ambitions.
+            <div className='text-2xl font-bold text-primary'>
+              {formatValue(profile?.current_weight_kg, ' kg')}
+            </div>
+            <p className='text-xs text-muted-foreground'>
+              Target: {formatValue(profile?.target_weight_1month_kg, ' kg')}
             </p>
-            <div className='flex flex-wrap gap-4'>
-              <Link href='/tools/smart-calorie-planner' passHref>
-                <Button variant='secondary'>
-                  <BrainCircuit className='mr-2 h-4 w-4' /> Smart Calorie
-                  Planner
-                </Button>
-              </Link>
+          </CardContent>
+        </Card>
 
-              <Link href='/tools/macro-splitter' passHref>
-                <Button variant='secondary'>
-                  <SplitSquareHorizontal className='mr-2 h-4 w-4' /> Macro
-                  Splitter
-                </Button>
-              </Link>
+        <Card>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+            <CardTitle className='text-sm font-medium'>
+              Daily Calories
+            </CardTitle>
+            <Target className='h-4 w-4 text-muted-foreground' />
+          </CardHeader>
+          <CardContent>
+            <div className='text-2xl font-bold text-primary'>
+              {formatValue(plan?.target_daily_calories, ' kcal')}
+            </div>
+            <p className='text-xs text-muted-foreground'>
+              TDEE: {formatValue(plan?.maintenance_calories_tdee, ' kcal')}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+            <CardTitle className='text-sm font-medium'>Body Fat %</CardTitle>
+            <Activity className='h-4 w-4 text-muted-foreground' />
+          </CardHeader>
+          <CardContent>
+            <div className='text-2xl font-bold text-primary'>
+              {formatValue(profile?.bf_current, '%')}
+            </div>
+            <p className='text-xs text-muted-foreground'>
+              Target: {formatValue(profile?.bf_target, '%')}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+            <CardTitle className='text-sm font-medium'>
+              Activity Level
+            </CardTitle>
+            <Calendar className='h-4 w-4 text-muted-foreground' />
+          </CardHeader>
+          <CardContent>
+            <div className='text-2xl font-bold text-primary'>
+              {profile?.physical_activity_level || 'Not set'}
+            </div>
+            <p className='text-xs text-muted-foreground'>
+              Goal: {profile?.primary_diet_goal || 'Not set'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Progress Section */}
+      <div className='grid gap-4 md:grid-cols-2'>
+        <Card>
+          <CardHeader>
+            <CardTitle className='text-primary'>Weight Progress</CardTitle>
+            <CardDescription>
+              Progress towards your 1-month goal
+            </CardDescription>
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            <div className='space-y-2'>
+              <div className='flex justify-between text-sm'>
+                <span>
+                  Current: {formatValue(profile?.current_weight_kg, ' kg')}
+                </span>
+                <span>
+                  Target: {formatValue(profile?.target_weight_1month_kg, ' kg')}
+                </span>
+              </div>
+              <Progress
+                value={calculateProgress(
+                  profile?.current_weight_kg,
+                  profile?.target_weight_1month_kg
+                )}
+                className='h-2'
+              />
+            </div>
+            <p className='text-xs text-muted-foreground'>
+              Long-term goal:{' '}
+              {formatValue(profile?.long_term_goal_weight_kg, ' kg')}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className='text-primary'>Body Composition</CardTitle>
+            <CardDescription>Body fat and muscle mass targets</CardDescription>
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            <div className='space-y-2'>
+              <div className='flex justify-between text-sm'>
+                <span>Body Fat</span>
+                <span>
+                  {formatValue(profile?.bf_current, '%')} /{' '}
+                  {formatValue(profile?.bf_target, '%')}
+                </span>
+              </div>
+              <Progress
+                value={
+                  profile?.bf_current && profile?.bf_target
+                    ? Math.max(
+                        0,
+                        100 - (profile.bf_current / profile.bf_target) * 100
+                      )
+                    : 0
+                }
+                className='h-2'
+              />
+            </div>
+            <div className='space-y-2'>
+              <div className='flex justify-between text-sm'>
+                <span>Muscle Mass</span>
+                <span>
+                  {formatValue(profile?.mm_current, '%')} /{' '}
+                  {formatValue(profile?.mm_target, '%')}
+                </span>
+              </div>
+              <Progress
+                value={calculateProgress(
+                  profile?.mm_current,
+                  profile?.mm_target
+                )}
+                className='h-2'
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Macronutrient Targets */}
+      <Card>
+        <CardHeader>
+          <CardTitle className='text-primary'>
+            Daily Macronutrient Targets
+          </CardTitle>
+          <CardDescription>Your personalized macro breakdown</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className='grid gap-4 lg:grid-cols-3'>
+            <div className='space-y-2'>
+              <div className='flex justify-between text-sm'>
+                <span className='font-medium'>Protein</span>
+                <span>
+                  {formatValue(plan?.target_protein_g.toFixed(2), 'g')} (
+                  {formatValue(plan?.target_protein_percentage.toFixed(2), '%')}
+                  )
+                </span>
+              </div>
+              <Progress
+                value={plan?.target_protein_percentage || 0}
+                className='h-2'
+              />
+            </div>
+            <div className='space-y-2'>
+              <div className='flex justify-between text-sm'>
+                <span className='font-medium'>Carbohydrates</span>
+                <span>
+                  {formatValue(plan?.target_carbs_g.toFixed(2), 'g')} (
+                  {formatValue(plan?.target_carbs_percentage.toFixed(2), '%')})
+                </span>
+              </div>
+              <Progress
+                value={plan?.target_carbs_percentage || 0}
+                className='h-2'
+              />
+            </div>
+            <div className='space-y-2'>
+              <div className='flex justify-between text-sm'>
+                <span className='font-medium'>Fat</span>
+                <span>
+                  {formatValue(plan?.target_fat_g.toFixed(2), 'g')} (
+                  {formatValue(plan?.target_fat_percentage.toFixed(2), '%')})
+                </span>
+              </div>
+              <Progress
+                value={plan?.target_fat_percentage || 0}
+                className='h-2'
+              />
             </div>
           </div>
-          <div className='relative h-64 md:h-full'>
-            <Image
-              src='https://placehold.co/600x400.png'
-              alt='Healthy food'
-              layout='fill'
-              objectFit='cover'
-              data-ai-hint='healthy food nutrition'
-            />
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className='text-primary'>Quick Actions</CardTitle>
+          <CardDescription>
+            Jump to your most used tools and features
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className='grid gap-3 md:grid-cols-2 lg:grid-cols-4'>
+            <Link href='/profile'>
+              <Button variant='outline' className='w-full justify-start'>
+                <User className='h-4 w-4 mr-2' />
+                Update Profile
+              </Button>
+            </Link>
+            <Link href='/tools/smart-calorie-planner'>
+              <Button variant='outline' className='w-full justify-start'>
+                <Target className='h-4 w-4 mr-2' />
+                Calorie Planner
+              </Button>
+            </Link>
+            <Link href='/meal-plan/current'>
+              <Button variant='outline' className='w-full justify-start'>
+                <Calendar className='h-4 w-4 mr-2' />
+                Meal Plan
+              </Button>
+            </Link>
+            <Link href='/pdf'>
+              <Button
+                variant='outline'
+                className='w-full justify-start border-primary/50 hover:bg-primary/5 hover:text-primary'
+              >
+                <FileText className='h-4 w-4 mr-2' />
+                View Full Report
+              </Button>
+            </Link>
           </div>
-        </div>
+        </CardContent>
       </Card>
     </div>
   );
