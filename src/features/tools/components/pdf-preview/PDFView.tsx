@@ -17,13 +17,10 @@ import {
 } from '@react-pdf/renderer';
 import dynamic from 'next/dynamic';
 
-const PDFViewer = dynamic(
-  () => import('@react-pdf/renderer').then((mod) => mod.PDFViewer),
-  {
-    ssr: false,
-    loading: () => <LoadingScreen />,
-  }
-);
+const PDFViewer = dynamic(() => import('./pdfViewer'), {
+  ssr: false,
+  loading: () => <LoadingScreen />,
+});
 
 type PDFViewProps = {
   profile: BaseProfileData;
