@@ -39,6 +39,12 @@ export function preprocessDataForFirestore(
 
 export const ProfileFormSchema = z.object({
   name: z.string().min(1, 'Name is required.').optional(),
+  user_role: z
+    .enum(['client', 'coach'], {
+      required_error: 'User role is required.',
+    })
+    .nullable()
+    .optional(),
   subscription_status: z.string().nullable().optional(),
   long_term_goal_weight_kg: z
     .union([z.string(), z.number()])
@@ -135,6 +141,7 @@ export interface GlobalCalculatedTargets {
 // Base fields for onboarding/profile data used by tools
 export interface BaseProfileData {
   name: string;
+  user_role?: string;
   age?: number;
   biological_sex?: string;
   height_cm?: number;
@@ -242,6 +249,11 @@ export const MacroSplitterFormSchema = z
 export type MacroSplitterFormValues = z.infer<typeof MacroSplitterFormSchema>;
 
 export const SmartCaloriePlannerFormSchema = z.object({
+  user_role: z
+    .enum(['client', 'coach'], {
+      required_error: 'User role is required.',
+    })
+    .nullable(),
   age: z.coerce
     .number()
     .int('Age must be a whole number (e.g., 30, not 30.5).')
@@ -528,6 +540,9 @@ type CustomCalculatedTargets = z.infer<typeof CustomCalculatedTargetsSchema>;
 
 // Onboarding Schema
 export const OnboardingFormSchema = z.object({
+  user_role: z.enum(['client', 'coach'], {
+    required_error: 'User role is required.',
+  }),
   age: z.coerce
     .number()
     .int('Age must be a whole number.')

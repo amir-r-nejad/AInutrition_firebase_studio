@@ -36,6 +36,7 @@ import {
   genders,
   onboardingStepsData,
   smartPlannerDietGoals,
+  userRoles,
 } from '@/lib/constants';
 import { calculateEstimatedDailyTargets } from '@/lib/nutrition-calculator';
 import {
@@ -47,7 +48,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle, Leaf } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { FieldPath, useForm } from 'react-hook-form';
+import { type FieldPath, useForm } from 'react-hook-form';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -75,6 +76,7 @@ export default function OnboardingPage() {
       custom_total_calories: undefined,
       custom_protein_per_kg: undefined,
       remaining_calories_carbs_percentage: 50,
+      user_role: undefined,
     },
   });
 
@@ -400,6 +402,7 @@ export default function OnboardingPage() {
 
     const profileToEdit = {
       is_onboarding_complete: true,
+      user_role: processedData.user_role,
       age: processedData.age,
       biological_sex: processedData.biological_sex,
       height_cm: processedData.height_cm,
@@ -496,8 +499,28 @@ export default function OnboardingPage() {
               className='space-y-8'
             >
               {currentStep === 1 && (
-                <div className='text-center p-4'>
-                  {/* Welcome/Introduction content for step 1 */}
+                <div className='text-center p-4 space-y-6'>
+                  <div className='space-y-4'>
+                    <h3 className='text-xl font-semibold text-primary'>
+                      Welcome to Your Nutrition Journey!
+                    </h3>
+                    <p className='text-muted-foreground'>
+                      Let&apos;s personalize your experience. We&apos;ll ask a
+                      few questions about your health and preferences to
+                      generate your ideal meal plan. It only takes 3–5 minutes.
+                    </p>
+                  </div>
+
+                  <div className='max-w-md mx-auto'>
+                    <SelectField
+                      name='user_role'
+                      label='I am joining as a...'
+                      placeholder='Select your role'
+                      options={userRoles}
+                      description='This helps us customize your experience and available features.'
+                      control={form.control}
+                    />
+                  </div>
                 </div>
               )}
 

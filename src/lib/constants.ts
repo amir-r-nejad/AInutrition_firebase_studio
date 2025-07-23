@@ -1,3 +1,8 @@
+export const userRoles = [
+  { value: 'client', label: 'Client - Looking for nutrition guidance' },
+  { value: 'coach', label: 'Coach - Helping others with nutrition' },
+];
+
 export const activityLevels = [
   {
     value: 'sedentary',
