@@ -933,7 +933,7 @@ function PDFView({ profile, plan, mealPlan }: PDFViewProps) {
         </View>
 
         <View style={styles.content}>
-          {!mealPlan.ai_plan.days || mealPlan.ai_plan.days.length === 0 ? (
+          {!mealPlan.ai_plan?.days || mealPlan.ai_plan?.days?.length === 0 ? (
             <View style={styles.warningBox}>
               <Text style={styles.warningText}>
                 ⚠️ No AI-generated meal plan found. Generate an AI meal plan to
