@@ -33,10 +33,18 @@ function CustomizePlanForm({
   plan,
   profile,
 }: {
-  plan: UserPlanType;
+  plan: UserPlanType | null;
   profile: BaseProfileData;
 }) {
   const { toast } = useToast();
+
+  if (!plan) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        No plan data available. Please complete your profile setup first.
+      </div>
+    );
+  }
 
   const form = useForm<customizePlanFormValues>({
     resolver: zodResolver(customizePlanFormSchema),
