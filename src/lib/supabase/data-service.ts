@@ -29,15 +29,30 @@ export async function getUserProfile(): Promise<BaseProfileData | null> {
 
 export async function getUserPlan(): Promise<UserPlanType | null> {
   const supabase = await createClient();
-  const user = await getUser();
 
-  const { data } = await supabase
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw new Error(`Authentication error: ${authError.message}`);
+  if (!user) throw new Error('Unauthorized access!');
+
+  const { data, error } = await supabase
     .from('smart_plan')
     .select('*')
     .eq('user_id', user.id)
     .single();
 
-  return data as UserPlanType | null;
+  if (error) {
+    // If no rows found, return null instead of throwing error
+    if (error.code === 'PGRST116') {
+      return null;
+    }
+    throw new Error(`Failed to get user plan: ${error.message}`);
+  }
+
+  return data as UserPlanType;
 }
 
 export async function getMealPlan(): Promise<MealPlans> {

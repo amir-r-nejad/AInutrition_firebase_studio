@@ -50,7 +50,7 @@ function PlannerForm({
   plan,
   profile,
 }: {
-  plan: UserPlanType;
+  plan: UserPlanType | null;
   profile: BaseProfileData;
 }) {
   const { toast } = useToast();
@@ -315,8 +315,13 @@ function PlannerForm({
 
   useEffect(
     function () {
+      if (!plan || !plan.maintenance_calories_tdee || !plan.target_daily_calories) {
+        setResults(null);
+        return;
+      }
+
       const estimated_weekly_weight_change_kg =
-        ((plan.maintenance_calories_tdee! - plan.target_daily_calories) * 7) /
+        ((plan.maintenance_calories_tdee - plan.target_daily_calories) * 7) /
         7700;
 
       const proteinCalories =
