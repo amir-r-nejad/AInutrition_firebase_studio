@@ -1,0 +1,66 @@
+Objective: Design and develop a complete front-end overhaul for the "NutriPlan" website (based on the provided screenshot) to include both nutrition planning and workout planning features. The goal is to create a fully functional, responsive web application that mirrors the nutrition plan structure for the workout plan section and enhances the profile section. The final product should be production-ready with HTML, CSS (using Tailwind CSS), and JavaScript.
+
+#### Requirements
+
+1. **Dashboard Structure**:
+   - Split the dashboard into two main sections:
+     - **Nutrition Plan Section**: Retain the existing layout and functionality from the screenshot (e.g., Current Weight, Daily Calories, Body Fat %, Activity Level, Weight Progress, Body Composition, Daily Macronutrient Targets). Use the same visual style (green progress bars, light yellow background, etc.).
+     - **Workout Plan Section**: Create a parallel structure to the nutrition section with the following fields:
+       - **Current Fitness Level**: (e.g., Beginner, Intermediate, Advanced) with a target field.
+       - **Daily Activity**: (e.g., minutes of exercise) with a goal field.
+       - **Fitness Composition**: (e.g., Strength level, Endurance level) with target fields.
+       - **Workout Days/Week**: (e.g., 1-7 days) with a goal field.
+       - **Workout Progress**: A progress bar similar to Weight Progress, showing progress toward a 1-month fitness goal.
+       - **Fitness Composition**: A progress bar for strength and endurance targets.
+       - **Weekly Workout Targets**: A breakdown similar to Macronutrient Targets, including Cardio, Strength, and Flexibility with target values.
+
+2. **Enhanced Profile Section**:
+   - Add the following editable fields to the profile (accessible via a "Profile" link in the sidebar):
+     - Age (number input)
+     - Gender (dropdown: Male, Female, Other)
+     - Height (cm, number input)
+     - Fitness History (text area for years of experience or past activities)
+     - Injuries/Limitations (text area for conditions like back pain)
+     - Activity Level (dropdown: Sedentary, Moderate, Active)
+   - Include a "Save Profile" button to update the dashboard with the new data.
+   - Display a summary of all profile data on the dashboard (e.g., "Profile: 30y, Male, 170cm, Beginner, Active").
+
+3. **Interactive Features**:
+   - Add a "Generate Plan" button for both Nutrition and Workout sections.
+     - When clicked, it should:
+       - Collect input data from profile and section-specific fields.
+       - Generate a plan based on simple logic (e.g., for nutrition: calculate calories based on weight and activity; for workouts: suggest 3-5 exercises based on fitness level and days/week).
+       - Display the generated plan below the button (e.g., a table for workouts with days, exercises, sets, reps; a list for macronutrients).
+   - Include form validation to ensure required fields (e.g., weight, fitness level) are filled before generating a plan.
+   - Use local storage to save user inputs and generated plans.
+
+4. **UI/UX Design**:
+   - Use Tailwind CSS for styling with a modern, clean design.
+   - Maintain the existing color scheme (green #10B981, white, light yellow #FEFCE8, gray accents).
+   - Ensure a responsive layout that works on desktop, tablet, and mobile (use Tailwind’s grid and flex utilities).
+   - Add tooltips or help icons (e.g., "?" next to fields) with brief explanations (e.g., "Fitness Level: Your current exercise experience").
+   - Keep the "Download PDF Report" button, extending it to include both nutrition and workout plans in a single PDF.
+
+5. **Sidebar Navigation**:
+   - Retain the existing sidebar with links: Dashboard, Profile, Smart Calorie Planner, Macro Splitter, Meal Suggestions, Current Meal Plan, All Meal Plan, Chatbot Support.
+   - Add a logout button at the bottom with the user email (e.g., "parsamx24@gmail.com").
+
+6. **Sample Logic for Plan Generation** (to guide JavaScript):
+   - **Nutrition Plan**: If weight is 64 kg and activity is "Moderate", suggest ~2000 kcal, with 25% protein, 50% carbs, 25% fat.
+   - **Workout Plan**: If fitness level is "Beginner" and 3 days/week, suggest 3 exercises (e.g., squats 3x10, push-ups 3x8, planks 3x30s) per day.
+
+#### Technical Specifications
+- **Technologies**: HTML, CSS (Tailwind CSS), JavaScript (vanilla, no frameworks).
+- **File Structure**: Single `index.html` file with embedded CSS and JS (for simplicity).
+- **Performance**: Optimize for fast loading and smooth interactions.
+- **Testing**: Ensure the design works across Chrome, Firefox, and Safari on various screen sizes.
+
+#### Deliverables
+- A complete `index.html` file with all features implemented.
+- Comments in the code explaining key sections and logic.
+- A brief README in the HTML comments explaining how to use the application.
+
+#### Constraints
+- Do not use external libraries beyond Tailwind CSS.
+- Avoid complex backend integration; use client-side logic only.
+- Ensure all data is stored locally (no server-side storage).
