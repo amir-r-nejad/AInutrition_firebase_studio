@@ -14,7 +14,7 @@ export async function getUser(): Promise<User> {
   return user;
 }
 
-export async function getUserProfile(): Promise<BaseProfileData> {
+export async function getUserProfile(): Promise<BaseProfileData | null> {
   const supabase = await createClient();
   const user = await getUser();
 
@@ -24,12 +24,10 @@ export async function getUserProfile(): Promise<BaseProfileData> {
     .eq('user_id', user.id)
     .single();
 
-  if (!data) throw new Error('User profile not found');
-
-  return data as BaseProfileData;
+  return data as BaseProfileData | null;
 }
 
-export async function getUserPlan(): Promise<UserPlanType> {
+export async function getUserPlan(): Promise<UserPlanType | null> {
   const supabase = await createClient();
   const user = await getUser();
 
@@ -39,9 +37,7 @@ export async function getUserPlan(): Promise<UserPlanType> {
     .eq('user_id', user.id)
     .single();
 
-  if (!data) throw new Error('User plan not found');
-
-  return data as UserPlanType;
+  return data as UserPlanType | null;
 }
 
 export async function getMealPlan(): Promise<MealPlans> {

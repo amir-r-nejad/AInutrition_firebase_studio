@@ -36,6 +36,11 @@ export default async function DashboardPage() {
   const profile = await getUserProfile();
   const plan = await getUserPlan();
 
+  // If no profile exists, redirect to onboarding
+  if (!profile) {
+    redirect('/onboarding');
+  }
+
   return (
     <div className='space-y-6'>
       <div className='flex items-center justify-between'>
@@ -225,8 +230,8 @@ export default async function DashboardPage() {
               <div className='flex justify-between text-sm'>
                 <span className='font-medium'>Protein</span>
                 <span>
-                  {formatValue(plan?.target_protein_g.toFixed(2), 'g')} (
-                  {formatValue(plan?.target_protein_percentage.toFixed(2), '%')}
+                  {formatValue(plan?.target_protein_g?.toFixed(2), 'g')} (
+                  {formatValue(plan?.target_protein_percentage?.toFixed(2), '%')}
                   )
                 </span>
               </div>
@@ -239,8 +244,8 @@ export default async function DashboardPage() {
               <div className='flex justify-between text-sm'>
                 <span className='font-medium'>Carbohydrates</span>
                 <span>
-                  {formatValue(plan?.target_carbs_g.toFixed(2), 'g')} (
-                  {formatValue(plan?.target_carbs_percentage.toFixed(2), '%')})
+                  {formatValue(plan?.target_carbs_g?.toFixed(2), 'g')} (
+                  {formatValue(plan?.target_carbs_percentage?.toFixed(2), '%')})
                 </span>
               </div>
               <Progress
@@ -252,8 +257,8 @@ export default async function DashboardPage() {
               <div className='flex justify-between text-sm'>
                 <span className='font-medium'>Fat</span>
                 <span>
-                  {formatValue(plan?.target_fat_g.toFixed(2), 'g')} (
-                  {formatValue(plan?.target_fat_percentage.toFixed(2), '%')})
+                  {formatValue(plan?.target_fat_g?.toFixed(2), 'g')} (
+                  {formatValue(plan?.target_fat_percentage?.toFixed(2), '%')})
                 </span>
               </div>
               <Progress
