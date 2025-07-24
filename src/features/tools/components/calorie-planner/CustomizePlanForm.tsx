@@ -38,6 +38,16 @@ function CustomizePlanForm({
 }) {
   const { toast } = useToast();
 
+  const form = useForm<customizePlanFormValues>({
+    resolver: zodResolver(customizePlanFormSchema),
+    defaultValues: {
+      custom_total_calories: plan?.custom_total_calories ?? null,
+      custom_protein_per_kg: plan?.custom_protein_per_kg ?? null,
+      remaining_calories_carbs_percentage:
+        plan?.remaining_calories_carbs_percentage ?? 50,
+    },
+  });
+
   if (!plan) {
     return (
       <div className="p-4 text-center text-muted-foreground">
@@ -45,17 +55,6 @@ function CustomizePlanForm({
       </div>
     );
   }
-
-  const form = useForm<customizePlanFormValues>({
-    resolver: zodResolver(customizePlanFormSchema),
-    defaultValues: {
-      ...plan,
-      ...{
-        remaining_calories_carbs_percentage:
-          plan.remaining_calories_carbs_percentage ?? 50,
-      },
-    },
-  });
 
   const [customPlanResults, setCustomPlanResults] =
     useState<GlobalCalculatedTargets | null>(null);

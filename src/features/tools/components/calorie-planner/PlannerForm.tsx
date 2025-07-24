@@ -315,21 +315,21 @@ function PlannerForm({
 
   useEffect(
     function () {
-      if (!plan || !plan.maintenance_calories_tdee || !plan.target_daily_calories) {
+      if (!plan || !plan?.maintenance_calories_tdee || !plan?.target_daily_calories) {
         setResults(null);
         return;
       }
 
       const estimated_weekly_weight_change_kg =
-        ((plan.maintenance_calories_tdee - plan.target_daily_calories) * 7) /
+        ((plan.maintenance_calories_tdee! - plan.target_daily_calories!) * 7) /
         7700;
 
       const proteinCalories =
-        (plan.target_protein_percentage * plan.target_daily_calories) / 100;
+        (plan.target_protein_percentage! * plan.target_daily_calories!) / 100;
       const carbCalories =
-        (plan.target_carbs_percentage * plan.target_daily_calories) / 100;
+        (plan.target_carbs_percentage! * plan.target_daily_calories!) / 100;
       const fatCalories =
-        (plan.target_fat_percentage * plan.target_daily_calories) / 100;
+        (plan.target_fat_percentage! * plan.target_daily_calories!) / 100;
 
       setResults({
         ...plan,
