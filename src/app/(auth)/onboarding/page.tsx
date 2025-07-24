@@ -410,6 +410,15 @@ export default function OnboardingPage() {
       primary_diet_goal: processedData.primary_diet_goal,
     };
 
+    // Filter out null, undefined, and empty values
+    Object.keys(profileToEdit).forEach(key => {
+      if (profileToEdit[key as keyof typeof profileToEdit] === null || 
+          profileToEdit[key as keyof typeof profileToEdit] === undefined || 
+          profileToEdit[key as keyof typeof profileToEdit] === '') {
+        delete profileToEdit[key as keyof typeof profileToEdit];
+      }
+    });
+
     const planToEdit = {
       bmr_kcal: calculatedTargets?.bmr_kcal ?? null,
       maintenance_calories_tdee:

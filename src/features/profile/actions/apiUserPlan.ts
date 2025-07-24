@@ -26,11 +26,18 @@ export async function editPlan(newPlan: any) {
       throw new Error('Profile must be created before saving plan');
     }
 
-    // Use upsert to handle both insert and update cases
+    // Filter out null, undefined, and empty string values
+    const filteredPlan = Object.entries(newPlan).reduce((acc, [key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, any>);
+
     const { error } = await supabase
       .from('smart_plan')
       .upsert(
-        { user_id: user.id, ...newPlan },
+        { user_id: user.id, ...filteredPlan },
         { onConflict: 'user_id' }
       );
 

@@ -17,10 +17,18 @@ export async function editProfile(newProfile: any, newUser?: UserAttributes) {
       throw new Error(`Authentication error: ${authError.message}`);
     if (!user) throw new Error('Unauthorized access!');
 
+    // Filter out null, undefined, and empty string values to prevent enum validation errors
+    const filteredProfile = Object.entries(newProfile).reduce((acc, [key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, any>);
+
     const { error } = await supabase
       .from('profile')
       .upsert(
-        { user_id: user.id, ...newProfile },
+        { user_id: user.id, ...filteredProfile },
         { onConflict: 'user_id' }
       );
 
@@ -93,7 +101,7 @@ export async function resetProfile() {
 
     updatePlan.updated_at = new Date().toISOString();
 
-    // // Reset profile
+    // Reset profile
     await editProfile({ ...updateProfile, is_onboarding_complete: false });
 
     // Reset plan
