@@ -27,6 +27,29 @@ export const BaseProfileSchema = z.object({
 
 export type BaseProfileData = z.infer<typeof BaseProfileSchema>;
 
+// Profile Form Schema for editing
+export const ProfileFormSchema = z.object({
+  full_name: z.string().nullable(),
+  age: z.number().nullable(),
+  gender: z.enum(['Male', 'Female', 'Other']).nullable(),
+  height_cm: z.number().nullable(),
+  current_weight: z.number().nullable(),
+  target_weight: z.number().nullable(),
+  body_fat_percentage: z.number().nullable(),
+  target_body_fat: z.number().nullable(),
+  activity_level: z.enum(['Sedentary', 'Moderate', 'Active', 'Very Active']).nullable(),
+  dietary_preferences: z.string().nullable(),
+  allergies: z.string().nullable(),
+  medical_conditions: z.string().nullable(),
+  fitness_history: z.string().nullable(),
+  injuries_limitations: z.string().nullable(),
+  fitness_goals: z.string().nullable(),
+  preferred_workout_type: z.enum(['Cardio', 'Strength', 'Mixed', 'Flexibility']).nullable(),
+  workout_experience: z.enum(['Beginner', 'Intermediate', 'Advanced']).nullable(),
+});
+
+export type ProfileFormValues = z.infer<typeof ProfileFormSchema>;
+
 // User Plan Schema
 export const UserPlanSchema = z.object({
   user_id: z.string(),
@@ -239,3 +262,61 @@ export interface MealSuggestion {
   prepTime: number;
   servings: number;
 }
+
+// Onboarding Schemas
+export const OnboardingFormSchema = z.object({
+  age: z.number().int().positive().nullable(),
+  biological_sex: z.enum(['male', 'female']).nullable(),
+  height_cm: z.number().positive().nullable(),
+  current_weight_kg: z.number().positive().nullable(),
+  target_weight_1month_kg: z.number().positive().nullable(),
+  long_term_goal_weight_kg: z.number().positive().nullable(),
+  physical_activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']).nullable(),
+  primary_diet_goal: z.enum(['fat_loss', 'muscle_gain', 'maintenance']).nullable(),
+  custom_total_calories: z.number().int().positive().nullable(),
+  custom_protein_per_kg: z.number().min(0).nullable(),
+  remaining_calories_carbs_percentage: z.number().int().min(0).max(100).default(50).nullable(),
+  allergies: z.union([z.string(), z.array(z.string())]).optional(),
+  preferred_cuisines: z.union([z.string(), z.array(z.string())]).optional(),
+  dispreferrred_cuisines: z.union([z.string(), z.array(z.string())]).optional(),
+  preferred_ingredients: z.union([z.string(), z.array(z.string())]).optional(),
+  dispreferrred_ingredients: z.union([z.string(), z.array(z.string())]).optional(),
+  preferred_micronutrients: z.union([z.string(), z.array(z.string())]).optional(),
+  medical_conditions: z.union([z.string(), z.array(z.string())]).optional(),
+  medications: z.union([z.string(), z.array(z.string())]).optional(),
+});
+
+export type OnboardingFormValues = z.infer<typeof OnboardingFormSchema>;
+
+// Global Calculated Targets Type
+export interface GlobalCalculatedTargets {
+  bmr_kcal?: number;
+  maintenance_calories_tdee?: number;
+  target_daily_calories?: number;
+  target_protein_g?: number;
+  protein_calories?: number;
+  target_protein_percentage?: number;
+  target_carbs_g?: number;
+  carb_calories?: number;
+  target_carbs_percentage?: number;
+  target_fat_g?: number;
+  fat_calories?: number;
+  target_fat_percentage?: number;
+  current_weight_for_custom_calc?: number;
+  estimated_weekly_weight_change_kg?: number;
+  custom_total_calories_final?: number | null;
+  custom_protein_g?: number | null;
+  custom_protein_percentage?: number | null;
+  custom_carbs_g?: number | null;
+  custom_carbs_percentage?: number | null;
+  custom_fat_g?: number | null;
+  custom_fat_percentage?: number | null;
+  custom_total_calories?: number | null;
+  custom_protein_per_kg?: number | null;
+}
+
+// Helper function for preprocessing optional numbers
+export const preprocessOptionalNumber = (val: any) => {
+  if (val === '' || val === null || val === undefined) return null;
+  return val;
+};
