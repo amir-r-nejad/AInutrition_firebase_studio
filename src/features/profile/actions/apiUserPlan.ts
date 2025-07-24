@@ -15,6 +15,17 @@ export async function editPlan(newPlan: any) {
       throw new Error(`Authentication error: ${authError.message}`);
     if (!user) throw new Error('Unauthorized access!');
 
+    // First check if profile exists
+    const { data: profileExists } = await supabase
+      .from('profile')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profileExists) {
+      throw new Error('Profile must be created before saving plan');
+    }
+
     // Use upsert to handle both insert and update cases
     const { error } = await supabase
       .from('smart_plan')

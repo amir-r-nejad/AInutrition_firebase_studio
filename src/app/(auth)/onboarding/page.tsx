@@ -443,13 +443,17 @@ export default function OnboardingPage() {
     };
 
     try {
-      await editPlan(planToEdit);
+      // Save profile first
       await editProfile(profileToEdit);
 
-      toast({
-        title: 'Onboarding Complete!',
-        description: 'Your profile has been saved. Welcome to NutriPlan!',
-      });
+      // Small delay to ensure profile is committed
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Save plan if targets exist
+      if (calculatedTargets) {
+        await editPlan(planToEdit);
+      }
+
       router.push('/dashboard');
     } catch (error: any) {
       toast({
