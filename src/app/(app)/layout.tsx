@@ -32,6 +32,7 @@ import { redirect } from 'next/navigation';
 import React from 'react';
 import {
   Calculator,
+  ChefHat,
   CircleUser,
   Dumbbell,
   House,
