@@ -19,9 +19,10 @@ export async function editProfile(newProfile: any, newUser?: UserAttributes) {
 
     const { error } = await supabase
       .from('profile')
-      .update(newProfile)
-      .eq('user_id', user.id)
-      .single();
+      .upsert(
+        { user_id: user.id, ...newProfile },
+        { onConflict: 'user_id' }
+      );
 
     if (error)
       throw new Error(
