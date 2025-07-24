@@ -15,11 +15,13 @@ export async function editPlan(newPlan: any) {
       throw new Error(`Authentication error: ${authError.message}`);
     if (!user) throw new Error('Unauthorized access!');
 
+    // Use upsert to handle both insert and update cases
     const { error } = await supabase
       .from('smart_plan')
-      .update(newPlan)
-      .eq('user_id', user.id)
-      .single();
+      .upsert(
+        { user_id: user.id, ...newPlan },
+        { onConflict: 'user_id' }
+      );
 
     if (error) throw new Error(`Plan update failed: ${error.message}`);
 
