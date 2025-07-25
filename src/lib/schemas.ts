@@ -320,3 +320,25 @@ export const preprocessOptionalNumber = (val: any) => {
   if (val === '' || val === null || val === undefined) return null;
   return val;
 };
+
+export const MealSuggestionPreferencesSchema = z.object({
+  dietary_preferences: z.string().optional(),
+  allergies: z.string().optional(),
+  preferred_cooking_time: z.string().optional(),
+  budget_preference: z.string().optional(),
+  ingredient_preferences: z.string().optional(),
+  cultural_cuisine_preferences: z.string().optional(),
+});
+
+export type MealSuggestionPreferencesValues = z.infer<typeof MealSuggestionPreferencesSchema>;
+
+export const MacroSplitterFormSchema = z.object({
+  total_calories: z.number().min(1000).max(5000),
+  protein_percentage: z.number().min(10).max(50),
+  fat_percentage: z.number().min(15).max(45),
+  carb_percentage: z.number().min(20).max(70),
+  meal_count: z.number().min(1).max(8),
+  meal_names: z.array(z.string()).optional(),
+});
+
+export type MacroSplitterFormValues = z.infer<typeof MacroSplitterFormSchema>;
