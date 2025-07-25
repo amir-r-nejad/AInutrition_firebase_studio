@@ -19,7 +19,6 @@ export async function editPlan(newPlan: any) {
       .from('smart_plan')
       .update(newPlan)
       .eq('user_id', user.id)
-      .single();
 
     if (error) throw new Error(`Plan update failed: ${error.message}`);
 
