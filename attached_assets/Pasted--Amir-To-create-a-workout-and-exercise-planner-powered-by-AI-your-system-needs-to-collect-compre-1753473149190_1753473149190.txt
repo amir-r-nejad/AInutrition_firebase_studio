@@ -1,0 +1,109 @@
+> Amir:
+To create a workout and exercise planner powered by AI, your system needs to collect comprehensive user data that allows for highly personalized recommendations. Below is a complete list of recommended input fields, grouped by category:
+
+---
+
+### ✅ 1. User Profile
+
+| Field                 | Type                                                     | Notes                                      |
+| --------------------- | -------------------------------------------------------- | ------------------------------------------ |
+| full_name           | Text                                                     | Optional if you're using usernames         |
+| age                 | Integer                                                  | Crucial for safe intensity recommendations |
+| gender              | Dropdown (Male, Female, Other, Prefer not to say)        | Useful for tailored workouts               |
+| height_cm           | Numeric                                                  | For BMI and caloric needs                  |
+| weight_kg           | Numeric                                                  | Used for caloric needs, tracking           |
+| body_fat_percentage | Optional Numeric                                         | Enhances precision                         |
+| fitness_level       | Dropdown (Beginner, Intermediate, Advanced)              | Influences intensity & complexity          |
+| workout_experience  | Dropdown or checkbox (e.g., Weightlifting, Cardio, HIIT) | Helps avoid mismatch                       |
+
+---
+
+### ✅ 2. Health & Medical
+
+| Field                         | Type                                                   | Notes                                  |
+| ----------------------------- | ------------------------------------------------------ | -------------------------------------- |
+| existing_medical_conditions | Multiselect (Asthma, Hypertension, Joint Issues, etc.) | Flags exercises to avoid               |
+| injuries_or_limitations     | Text                                                   | AI can modify or skip movements        |
+| current_medications         | Optional                                               | Some meds affect heart rate, endurance |
+| doctor_clearance            | Boolean                                                | "Do you have clearance to exercise?"   |
+
+---
+
+### ✅ 3. Goals
+
+| Field                 | Type                                                                     | Notes                          |
+| --------------------- | ------------------------------------------------------------------------ | ------------------------------ |
+| primary_goal        | Dropdown (Lose fat, Build muscle, Increase endurance, Flexibility, etc.) | Guides plan structure          |
+| secondary_goal      | Optional Dropdown                                                        | Allows hybrid planning         |
+| goal_timeline_weeks | Integer                                                                  | Used for periodization         |
+| target_weight_kg    | Optional                                                                 | For fat loss/muscle gain plans |
+| muscle_groups_focus | Multiselect (Chest, Legs, Back, Core...)                                 | For physique sculpting goals   |
+
+---
+
+### ✅ 4. Lifestyle & Schedule
+
+> Amir:
+| Field                        | Type                                   | Notes                                     |
+| ---------------------------- | -------------------------------------- | ----------------------------------------- |
+| workout_days_per_week      | Integer (1–7)                          | For weekly volume calculation             |
+| available_time_per_session | Integer (minutes)                      | Used for time-boxed plans                 |
+| preferred_time_of_day      | Dropdown (Morning, Afternoon, Evening) | Useful for scheduling & energy matching   |
+| workout_location           | Dropdown (Home, Gym, Outdoor)          | Dictates equipment availability           |
+| daily_step_count_avg       | Optional Numeric                       | Useful for non-exercise activity tracking |
+| job_type                   | Dropdown (Desk job, Active job, etc.)  | Affects baseline activity level           |
+
+---
+
+### ✅ 5. Equipment Access
+
+| Field                 | Type                                                                  | Notes                                |
+| --------------------- | --------------------------------------------------------------------- | ------------------------------------ |
+| available_equipment | Multiselect (Dumbbells, Resistance Bands, Barbell, Yoga Mat, None...) | Allows equipment-specific plans      |
+| machines_access     | Optional (if gym selected)                                            | For hypertrophy plans                |
+| space_availability  | Dropdown (Small room, Open area, Gym space)                           | For mobility or bodyweight exercises |
+
+---
+
+### ✅ 6. Diet & Energy
+
+| Field                     | Type                                               | Notes                                |
+| ------------------------- | -------------------------------------------------- | ------------------------------------ |
+| current_diet_type       | Dropdown (Omnivore, Vegetarian, Vegan, Keto, etc.) | If you plan to pair meal suggestions |
+| caloric_intake_estimate | Optional                                           | To align workout with energy needs   |
+| fasting                 | Boolean (e.g., Intermittent Fasting)               | Useful for workout timing            |
+
+---
+
+### ✅ 7. Tracking Preferences
+
+| Field                       | Type                                                            | Notes                            |
+| --------------------------- | --------------------------------------------------------------- | -------------------------------- |
+| want_to_track_progress    | Boolean                                                         | Whether to enable tracking tools |
+| preferred_tracking_method | Dropdown (Weight, Photos, Strength levels, Performance metrics) | For motivation & goal alignment  |
+| weekly_checkins_enabled   | Boolean                                                         | Whether to prompt check-ins      |
+
+---
+
+### ✅ 8. Behavioral & Motivation Insights
+
+| Field                    | Type                                                                   | Notes                                     |
+| ------------------------ | ---------------------------------------------------------------------- | ----------------------------------------- |
+| motivational_style     | Dropdown (Strict plan, Flexible plan, Habit-building, Challenge-based) | For AI coaching tone                      |
+| accountability_support | Boolean                                                                | "Would you like weekly nudges/reminders?" |
+| stress_level           | Dropdown (Low/Med/High)                                                | Helps balance load with recovery          |
+| sleep_quality          | Dropdown (Poor/Avg/Good)                                               | Optional but insightful                   |
+
+---
+
+### Bonus: Optional Media Input
+
+> Amir:
+| Field                        | Type         | Notes                                              |
+| ---------------------------- | ------------ | -------------------------------------------------- |
+| body_photo_front/side/back | Image upload | (If relevant for AI body assessment)               |
+| video_form_analysis        | Video upload | For form correction suggestions (CV-based AI only) |
+
+---
+
+Would you like a JSON schema, a form UI mockup, or a Colab integration for collecting and storing this data next?
