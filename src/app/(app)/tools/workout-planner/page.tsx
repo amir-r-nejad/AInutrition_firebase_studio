@@ -13,21 +13,17 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Dumbbell, User, Heart, Target, Clock, MapPin, Utensils, TrendingUp } from 'lucide-react';
+import { Dumbbell, Heart, Target, Clock, MapPin, Utensils, TrendingUp } from 'lucide-react';
 
 const workoutPlannerSchema = z.object({
-  // User Profile
-  full_name: z.string().min(1, 'Full name is required'),
-  age: z.number().min(10).max(120),
-  gender: z.enum(['Male', 'Female', 'Other', 'Prefer not to say']),
-  height_cm: z.number().min(100).max(250),
-  weight_kg: z.number().min(30).max(300),
-  body_fat_percentage: z.number().min(5).max(50).optional(),
+  // Basic Info (from profile)
   fitness_level: z.enum(['Beginner', 'Intermediate', 'Advanced']),
   workout_experience: z.array(z.string()).optional(),
+  workout_experience_other: z.string().optional(),
 
   // Health & Medical
   existing_medical_conditions: z.array(z.string()).optional(),
+  existing_medical_conditions_other: z.string().optional(),
   injuries_or_limitations: z.string().optional(),
   current_medications: z.string().optional(),
   doctor_clearance: z.boolean(),
@@ -49,6 +45,7 @@ const workoutPlannerSchema = z.object({
 
   // Equipment Access
   available_equipment: z.array(z.string()).optional(),
+  available_equipment_other: z.string().optional(),
   machines_access: z.boolean().optional(),
   space_availability: z.enum(['Small room', 'Open area', 'Gym space']),
 
@@ -72,11 +69,11 @@ const workoutPlannerSchema = z.object({
 type WorkoutPlannerFormData = z.infer<typeof workoutPlannerSchema>;
 
 const medicalConditions = [
-  'Asthma', 'Hypertension', 'Joint Issues', 'Heart Disease', 'Diabetes', 'Arthritis', 'Back Problems', 'None'
+  'Asthma', 'Hypertension', 'Joint Issues', 'Heart Disease', 'Diabetes', 'Arthritis', 'Back Problems', 'None', 'Other'
 ];
 
 const workoutExperiences = [
-  'Weightlifting', 'Cardio', 'HIIT', 'Yoga', 'Pilates', 'Running', 'Swimming', 'Cycling', 'None'
+  'Weightlifting', 'Cardio', 'HIIT', 'Yoga', 'Pilates', 'Running', 'Swimming', 'Cycling', 'None', 'Other'
 ];
 
 const muscleGroups = [
@@ -84,7 +81,7 @@ const muscleGroups = [
 ];
 
 const equipmentOptions = [
-  'Dumbbells', 'Resistance Bands', 'Barbell', 'Yoga Mat', 'Pull-up Bar', 'Kettlebells', 'Treadmill', 'None'
+  'Dumbbells', 'Resistance Bands', 'Barbell', 'Yoga Mat', 'Pull-up Bar', 'Kettlebells', 'Treadmill', 'None', 'Other'
 ];
 
 export default function WorkoutPlannerPage() {
@@ -101,6 +98,10 @@ export default function WorkoutPlannerPage() {
       machines_access: false,
     },
   });
+
+  const selectedWorkoutExperience = form.watch('workout_experience') || [];
+  const selectedMedicalConditions = form.watch('existing_medical_conditions') || [];
+  const selectedEquipment = form.watch('available_equipment') || [];
 
   const onSubmit = async (data: WorkoutPlannerFormData) => {
     setIsGenerating(true);
@@ -125,136 +126,20 @@ export default function WorkoutPlannerPage() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Accordion type="multiple" defaultValue={['profile']} className="space-y-4">
+            <Accordion type="multiple" defaultValue={['basic']} className="space-y-4">
               
-              {/* User Profile */}
-              <AccordionItem value="profile">
+              {/* Basic Information */}
+              <AccordionItem value="basic">
                 <AccordionTrigger className="text-lg font-semibold text-green-800">
                   <div className="flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    User Profile
+                    <Dumbbell className="w-5 h-5" />
+                    Basic Fitness Information
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <Card>
                     <CardContent className="pt-6 space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="full_name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Full Name *</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter your full name" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="age"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Age *</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  placeholder="Enter your age"
-                                  {...field}
-                                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="gender"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Gender *</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select gender" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="Male">Male</SelectItem>
-                                  <SelectItem value="Female">Female</SelectItem>
-                                  <SelectItem value="Other">Other</SelectItem>
-                                  <SelectItem value="Prefer not to say">Prefer not to say</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="height_cm"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Height (cm) *</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  placeholder="Enter height in cm"
-                                  {...field}
-                                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="weight_kg"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Weight (kg) *</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  step="0.1"
-                                  placeholder="Enter weight in kg"
-                                  {...field}
-                                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="body_fat_percentage"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Body Fat % (Optional)</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  step="0.1"
-                                  placeholder="Enter body fat percentage"
-                                  {...field}
-                                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
                         <FormField
                           control={form.control}
                           name="fitness_level"
@@ -324,6 +209,25 @@ export default function WorkoutPlannerPage() {
                           </FormItem>
                         )}
                       />
+
+                      {selectedWorkoutExperience.includes('Other') && (
+                        <FormField
+                          control={form.control}
+                          name="workout_experience_other"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Other Workout Experience</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="Please specify your other workout experience..."
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
                     </CardContent>
                   </Card>
                 </AccordionContent>
@@ -385,6 +289,25 @@ export default function WorkoutPlannerPage() {
                           </FormItem>
                         )}
                       />
+
+                      {selectedMedicalConditions.includes('Other') && (
+                        <FormField
+                          control={form.control}
+                          name="existing_medical_conditions_other"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Other Medical Conditions</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="Please specify your other medical conditions..."
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
 
                       <FormField
                         control={form.control}
@@ -799,6 +722,25 @@ export default function WorkoutPlannerPage() {
                         )}
                       />
 
+                      {selectedEquipment.includes('Other') && (
+                        <FormField
+                          control={form.control}
+                          name="available_equipment_other"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Other Available Equipment</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="Please specify your other available equipment..."
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -843,6 +785,88 @@ export default function WorkoutPlannerPage() {
                           )}
                         />
                       </div>
+                    </CardContent>
+                  </Card>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Diet & Energy */}
+              <AccordionItem value="diet">
+                <AccordionTrigger className="text-lg font-semibold text-green-800">
+                  <div className="flex items-center gap-2">
+                    <Utensils className="w-5 h-5" />
+                    Diet & Energy
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Card>
+                    <CardContent className="pt-6 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="current_diet_type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Current Diet Type (Optional)</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select diet type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Omnivore">Omnivore</SelectItem>
+                                  <SelectItem value="Vegetarian">Vegetarian</SelectItem>
+                                  <SelectItem value="Vegan">Vegan</SelectItem>
+                                  <SelectItem value="Keto">Keto</SelectItem>
+                                  <SelectItem value="Paleo">Paleo</SelectItem>
+                                  <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="caloric_intake_estimate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Daily Caloric Intake (Optional)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  placeholder="e.g., 2000"
+                                  {...field}
+                                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="fasting"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                I practice intermittent fasting
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
                     </CardContent>
                   </Card>
                 </AccordionContent>
