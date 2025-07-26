@@ -107,10 +107,28 @@ export default function ExercisePlannerPage() {
     try {
       const data = form.getValues();
       console.log('Saving preferences:', data);
-      // TODO: Save to Supabase
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      
+      // Save to Supabase
+      const response = await fetch('/api/exercise-planner/save-preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save preferences');
+      }
+
+      const result = await response.json();
+      console.log('Preferences saved successfully:', result);
+      
+      // Show success message
+      alert('تنظیمات با موفقیت ذخیره شد!');
     } catch (error) {
       console.error('Error saving preferences:', error);
+      alert('خطا در ذخیره تنظیمات. لطفاً دوباره تلاش کنید.');
     } finally {
       setIsSaving(false);
     }
@@ -137,13 +155,35 @@ export default function ExercisePlannerPage() {
       Job Type: ${data.job_type}
       Preferred Difficulty: ${data.preferred_difficulty_level}
       
-      Please create a detailed weekly exercise plan with specific exercises, sets, reps, and rest periods.`;
+      Please create a detailed weekly exercise plan with specific exercises, sets, reps, and rest periods. Format the response as a structured JSON with days, exercises, sets, reps, and descriptions.`;
       
       console.log('Generating exercise plan with prompt:', prompt);
-      // TODO: Send to Gemini API
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+      
+      // Send to Gemini API
+      const response = await fetch('/api/exercise-planner/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          preferences: data
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate exercise plan');
+      }
+
+      const result = await response.json();
+      console.log('Exercise plan generated:', result);
+      
+      // Show success message and redirect or display plan
+      alert('برنامه ورزشی با موفقیت ایجاد شد!');
+      
     } catch (error) {
       console.error('Error generating exercise plan:', error);
+      alert('خطا در ایجاد برنامه ورزشی. لطفاً دوباره تلاش کنید.');
     } finally {
       setIsGenerating(false);
     }
@@ -998,21 +1038,45 @@ export default function ExercisePlannerPage() {
               </AccordionItem>
             </Accordion>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
               <Button
                 type="button"
                 onClick={savePreferences}
                 disabled={isSaving}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border border-blue-400"
               >
-                {isSaving ? 'Saving...' : 'Save Preferences'}
+                {isSaving ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    در حال ذخیره...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    ذخیره تنظیمات
+                  </div>
+                )}
               </Button>
               <Button
                 type="submit"
                 disabled={isGenerating}
-                className="bg-green-600 hover:bg-green-700 text-white px-12 py-3 text-lg"
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-12 py-3 text-lg rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border border-green-400"
               >
-                {isGenerating ? 'Generating Exercise Plan...' : 'Generate AI Exercise Plan'}
+                {isGenerating ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    در حال ایجاد برنامه ورزشی...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    ایجاد برنامه ورزشی هوشمند
+                  </div>
+                )}
               </Button>
             </div>
           </form>
