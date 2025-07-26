@@ -118,6 +118,7 @@ export default function ExercisePlannerPage() {
       preferred_difficulty_level: '',
       sleep_quality: '',
     },
+    mode: 'onChange'
   });
 
   const selectedExerciseExperience = form.watch('exercise_experience') || [];
@@ -155,10 +156,12 @@ export default function ExercisePlannerPage() {
       });
 
       const result = await response.json();
+      console.log('Response status:', response.status, 'Response data:', result);
       
       if (!response.ok) {
         console.error('Server error response:', result);
-        throw new Error(result.error || 'Failed to save preferences');
+        const errorMessage = result.details || result.error || 'Failed to save preferences';
+        throw new Error(errorMessage);
       }
 
       console.log('Preferences saved successfully:', result);

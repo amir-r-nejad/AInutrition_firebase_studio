@@ -13,6 +13,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('User authenticated:', user.id);
+
     const preferences = await request.json();
     console.log('Received preferences:', preferences);
 
@@ -61,32 +63,61 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (updateError && updateError.code === 'PGRST116') {
-      // No existing record, insert new one
-      const { data: insertData, error: insertError } = await supabase
-        .from('exercise_planner_data')
-        .insert(dbData)
-        .select()
-        .single();
+    console.log('Update operation result:', { updateData, updateError });
 
-      if (insertError) {
-        console.error('Database insert error:', insertError);
+    if (updateError) {
+      console.error('Database update error details:', {
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint,
+        code: updateError.code
+      });
+
+      if (updateError.code === 'PGRST116') {
+        // No existing record found, insert new one
+        console.log('No existing record found, attempting insert...');
+        const { data: insertData, error: insertError } = await supabase
+          .from('exercise_planner_data')
+          .insert(dbData)
+          .select()
+          .single();
+
+        console.log('Insert operation result:', { insertData, insertError });
+
+        if (insertError) {
+          console.error('Database insert error details:', {
+            message: insertError.message,
+            details: insertError.details,
+            hint: insertError.hint,
+            code: insertError.code
+          });
+          return NextResponse.json({ 
+            error: 'Failed to save preferences', 
+            details: insertError.message,
+            code: insertError.code
+          }, { status: 500 });
+        }
+
         return NextResponse.json({ 
-          error: 'Failed to save preferences', 
-          details: insertError.message 
+          success: true, 
+          data: insertData,
+          message: 'Preferences saved successfully' 
+        });
+      } else {
+        // Other update error
+        return NextResponse.json({ 
+          error: 'Failed to update preferences', 
+          details: updateError.message,
+          code: updateError.code
         }, { status: 500 });
       }
+    }
 
+    if (!updateData) {
+      console.error('Update succeeded but no data returned');
       return NextResponse.json({ 
-        success: true, 
-        data: insertData,
-        message: 'Preferences saved successfully' 
-      });
-    } else if (updateError) {
-      console.error('Database update error:', updateError);
-      return NextResponse.json({ 
-        error: 'Failed to update preferences', 
-        details: updateError.message 
+        error: 'Update operation completed but no data was returned',
+        details: 'This might indicate a database constraint issue'
       }, { status: 500 });
     }
 
