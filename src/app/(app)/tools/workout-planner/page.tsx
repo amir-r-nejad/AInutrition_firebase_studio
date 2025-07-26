@@ -125,10 +125,10 @@ export default function ExercisePlannerPage() {
       console.log('Preferences saved successfully:', result);
       
       // Show success message
-      alert('تنظیمات با موفقیت ذخیره شد!');
+      alert('Preferences saved successfully!');
     } catch (error) {
       console.error('Error saving preferences:', error);
-      alert('خطا در ذخیره تنظیمات. لطفاً دوباره تلاش کنید.');
+      alert('Error saving preferences. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -179,11 +179,11 @@ export default function ExercisePlannerPage() {
       console.log('Exercise plan generated:', result);
       
       // Show success message and redirect or display plan
-      alert('برنامه ورزشی با موفقیت ایجاد شد!');
+      alert('Exercise plan generated successfully!');
       
     } catch (error) {
       console.error('Error generating exercise plan:', error);
-      alert('خطا در ایجاد برنامه ورزشی. لطفاً دوباره تلاش کنید.');
+      alert('Error generating exercise plan. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -1048,14 +1048,14 @@ export default function ExercisePlannerPage() {
                 {isSaving ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    در حال ذخیره...
+                    Saving...
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
-                    ذخیره تنظیمات
+                    Save Preferences
                   </div>
                 )}
               </Button>
@@ -1067,14 +1067,14 @@ export default function ExercisePlannerPage() {
                 {isGenerating ? (
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    در حال ایجاد برنامه ورزشی...
+                    Generating Exercise Plan...
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    ایجاد برنامه ورزشی هوشمند
+                    Generate AI Exercise Plan
                   </div>
                 )}
               </Button>
