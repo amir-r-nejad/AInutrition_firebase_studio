@@ -1,23 +1,17 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { mockCoachProfile } from '@/features/coach/lib/mockData';
-import { getUser } from '@/lib/supabase/data-service';
+import { getCoachProfile } from '../../lib/data-service';
 
 export async function CoachDashboardHeader() {
-  const user = await getUser();
-  if (!user) return;
+  const coach = await getCoachProfile();
 
-  console.log(user.user_metadata?.full_name);
-  // const [firstName, lastName] = user.user_metadata?.full_name?.split(' ');
-  const [firstName, lastName] = 'test tets'.split(' ');
+  const [firstName, lastName] = coach.full_name.split(' ');
 
   return (
     <div className='flex items-center justify-between'>
       <div className='flex items-center gap-4'>
         <Avatar className='h-16 w-16'>
-          <AvatarImage
-            src={user.user_metadata?.picture || '/placeholder.svg'}
-          />
+          <AvatarImage src={coach.avatar_url || '/placeholder.svg'} />
           <AvatarFallback className='bg-primary/10 text-primary font-medium text-lg'>
             {firstName[0]} {lastName[0]}
           </AvatarFallback>
@@ -34,7 +28,7 @@ export async function CoachDashboardHeader() {
       </div>
 
       <Badge variant='default' className='text-sm hidden lg:block'>
-        {mockCoachProfile.certification}
+        {coach.certification}
       </Badge>
     </div>
   );

@@ -1,63 +1,61 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MessageSquare, TrendingUp, UserPlus, Calendar } from "lucide-react"
-import { mockRecentActivity } from "@/features/coach/lib/mockData"
+import { Avatar, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AvatarFallback } from '@radix-ui/react-avatar';
+import { getRecentCoachClientRequests } from '../../lib/data-service';
+import { getTimeAgo } from '@/lib/utils';
 
-export function RecentActivitySection() {
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case "message":
-        return MessageSquare
-      case "progress":
-        return TrendingUp
-      case "new_client":
-        return UserPlus
-      case "session":
-        return Calendar
-      default:
-        return MessageSquare
-    }
-  }
-
-  const getActivityColor = (type: string) => {
-    switch (type) {
-      case "message":
-        return "text-blue-600"
-      case "progress":
-        return "text-green-600"
-      case "new_client":
-        return "text-purple-600"
-      case "session":
-        return "text-orange-600"
-      default:
-        return "text-gray-600"
-    }
-  }
+export async function RecentActivitySection() {
+  const recentRequests = await getRecentCoachClientRequests();
+  if (!recentRequests) return <p>No requests</p>;
 
   return (
-    <Card className="border border-border/50">
+    <Card className='border border-border/50'>
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
+        <CardTitle className='text-lg font-semibold'>Recent Requests</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {mockRecentActivity.map((activity) => {
-            const Icon = getActivityIcon(activity.type)
+        <ul className='space-y-4'>
+          {recentRequests.map((request) => {
             return (
-              <div key={activity.id} className="flex items-start gap-4">
-                <div className={`p-2 rounded-full bg-background border ${getActivityColor(activity.type)}`}>
-                  <Icon className="h-4 w-4" />
-                </div>
+              <li
+                key={request.id}
+                className='flex items-center justify-between p-4 rounded-lg border border-border/30 hover:border-border/60 transition-colors duration-200'
+              >
+                <div className='flex items-center gap-4 w-full'>
+                  <Avatar className='h-12 w-12 bg-primary/10 items-center justify-center'>
+                    <AvatarImage src={'/placeholder.svg'} />
+                    <AvatarFallback className='text-primary font-medium'>
+                      {request.client_email[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
 
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium text-foreground">{activity.title}</p>
-                  <p className="text-sm text-muted-foreground">{activity.description}</p>
-                  <p className="text-xs text-muted-foreground">{activity.time}</p>
+                  <div className='space-y-1 w-full'>
+                    <div className='flex w-full justify-between'>
+                      <p className='text-sm text-muted-foreground'>
+                        {request.client_email}
+                      </p>
+                      <Badge
+                        className='capitalize'
+                        variant={
+                          request.status === 'accepted'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                      >
+                        {request.status}
+                      </Badge>
+                    </div>
+                    <p className='text-xs text-muted-foreground capitalize'>
+                      {getTimeAgo({ startDate: request.requested_at })}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )
+              </li>
+            );
           })}
-        </div>
+        </ul>
       </CardContent>
     </Card>
-  )
+  );
 }

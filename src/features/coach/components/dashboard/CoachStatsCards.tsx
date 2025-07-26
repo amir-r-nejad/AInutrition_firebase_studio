@@ -1,18 +1,27 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { mockDashboardStats } from '@/features/coach/lib/mockData';
 import { UserCheck, Users } from 'lucide-react';
+import {
+  getAcceptedClientRequests,
+  getPendingClientRequests,
+} from '../../lib/data-service';
 
-export function CoachStatsCards() {
+export async function CoachStatsCards() {
+  const accpetedRequests = await getAcceptedClientRequests();
+  const pendingRequests = await getPendingClientRequests();
+
+  if (!accpetedRequests || !pendingRequests) return <p>No client</p>;
+
   const stats = [
     {
       title: 'Total Clients',
-      value: mockDashboardStats.total_clients,
+      value: accpetedRequests.length,
       icon: Users,
       description: `${mockDashboardStats.active_clients} active`,
     },
     {
       title: 'Pending Requests',
-      value: mockDashboardStats.pending_requests,
+      value: pendingRequests.length,
       icon: UserCheck,
       description: 'Awaiting client response',
     },

@@ -19,30 +19,31 @@ import { mockCoachProfile } from '@/features/coach/lib/mockData';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { svaeCoachProfile } from '../../actions/coachProfile';
 import {
   CoachProfileFormSchema,
   CoachProfileFormValues,
 } from '../../schemas/coachSchemas';
 
-export function CoachProfileForm() {
+export function CoachProfileForm({ coach }: { coach: any }) {
   const { toast } = useToast();
 
+  const [firstName, lastName] = coach.full_name.split(' ');
   const form = useForm<CoachProfileFormValues>({
     resolver: zodResolver(CoachProfileFormSchema),
     defaultValues: {
-      first_name: mockCoachProfile.first_name,
-      last_name: mockCoachProfile.last_name,
-      age: mockCoachProfile.age,
-      description: mockCoachProfile.description,
-      certification: mockCoachProfile.certification,
-      years_experience: mockCoachProfile.years_experience,
+      first_name: firstName,
+      last_name: lastName,
+      age: coach.age,
+      description: coach.description,
+      certification: coach.certification,
+      years_experience: coach.years_experience,
     },
   });
 
   async function handleSubmit(data: CoachProfileFormValues) {
     try {
-      //TODO: SAVE PROFILE
-      console.log(data);
+      await svaeCoachProfile(data);
 
       toast({
         title: 'Profile Updated',
@@ -172,8 +173,11 @@ export function CoachProfileForm() {
                   <FormLabel>Certification</FormLabel>
                   <FormControl>
                     <Input
+                      value={field.value}
+                      onChange={(e) =>
+                        field.onChange(e.currentTarget.value.trim().split(','))
+                      }
                       placeholder='Enter your professional certification'
-                      {...field}
                     />
                   </FormControl>
                   <FormMessage />

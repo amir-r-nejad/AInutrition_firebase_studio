@@ -33,10 +33,8 @@ export async function saveCoachOnboarding(
       },
     });
 
-    if (updateError) {
-      console.error('Auth update error:', updateError);
+    if (updateError)
       throw new Error(`Failed to update user: ${updateError.message}`);
-    }
 
     // Upsert coach data (insert or update)
     const { error: coachError } = await supabase
@@ -47,16 +45,61 @@ export async function saveCoachOnboarding(
       .eq('user_id', user.id)
       .single();
 
-    if (coachError) {
-      console.error('Coach upsert error:', coachError);
+    if (coachError)
       throw new Error(`Failed to save coach data: ${coachError.message}`);
-    }
 
     revalidatePath('/', 'layout');
     return { success: true };
   } catch (error) {
     console.error('saveCoachOnboarding error:', error);
-    // Re-throw the original error instead of masking it
+    throw error;
+  }
+}
+
+export async function svaeCoachProfile(profileData: CoachProfileFormValues) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError)
+      throw new Error(`Authentication error: ${authError.message}`);
+
+    if (!user) throw new Error('Unauthorized access!');
+
+    const { age, first_name, last_name, ...coachInfo } = profileData;
+
+    // Update profile
+    await editProfile({ age });
+
+    // Update user data
+    const { error: updateError } = await supabase.auth.updateUser({
+      data: {
+        full_name: `${first_name} ${last_name}`,
+      },
+    });
+
+    if (updateError)
+      throw new Error(`Failed to update user: ${updateError.message}`);
+
+    // Upsert coach data (insert or update)
+    const { error: coachError } = await supabase
+      .from('coaches')
+      .update({
+        ...coachInfo,
+      })
+      .eq('user_id', user.id)
+      .single();
+
+    if (coachError)
+      throw new Error(`Failed to save coach data: ${coachError.message}`);
+
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (error) {
+    console.error('saveCoachOnboarding error:', error);
     throw error;
   }
 }

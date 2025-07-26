@@ -66,3 +66,16 @@ export const CoachOnboardingFormSchema = z.object({
 export type CoachOnboardingFormValues = z.infer<
   typeof CoachOnboardingFormSchema
 >;
+
+export const SendClientRequestSchema = z.object({
+  approver_email: z
+    .string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
+  request_message: z
+    .string()
+    .min(10, 'Request message must be at least 10 characters')
+    .max(500, 'Request message must be less than 500 characters'),
+});
+
+export type SendClientRequestValues = z.infer<typeof SendClientRequestSchema>;
