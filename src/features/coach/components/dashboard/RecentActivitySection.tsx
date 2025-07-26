@@ -16,44 +16,47 @@ export async function RecentActivitySection() {
       </CardHeader>
       <CardContent>
         <ul className='space-y-4'>
-          {recentRequests.map((request) => {
-            return (
-              <li
-                key={request.id}
-                className='flex items-center justify-between p-4 rounded-lg border border-border/30 hover:border-border/60 transition-colors duration-200'
-              >
-                <div className='flex items-center gap-4 w-full'>
-                  <Avatar className='h-12 w-12 bg-primary/10 items-center justify-center'>
-                    <AvatarImage src={'/placeholder.svg'} />
-                    <AvatarFallback className='text-primary font-medium'>
-                      {request.client_email[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+          {recentRequests.length <= 0 && <p>No requests found</p>}
 
-                  <div className='space-y-1 w-full'>
-                    <div className='flex w-full justify-between'>
-                      <p className='text-sm text-muted-foreground'>
-                        {request.client_email}
+          {recentRequests.length > 0 &&
+            recentRequests.map((request) => {
+              return (
+                <li
+                  key={request.id}
+                  className='flex items-center justify-between p-4 rounded-lg border border-border/30 hover:border-border/60 transition-colors duration-200'
+                >
+                  <div className='flex items-center gap-4 w-full'>
+                    <Avatar className='h-12 w-12 bg-primary/10 items-center justify-center'>
+                      <AvatarImage src={'/placeholder.svg'} />
+                      <AvatarFallback className='text-primary font-medium'>
+                        {request.client_email[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className='space-y-1 w-full'>
+                      <div className='flex w-full justify-between'>
+                        <p className='text-sm text-muted-foreground'>
+                          {request.client_email}
+                        </p>
+                        <Badge
+                          className='capitalize'
+                          variant={
+                            request.status === 'accepted'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
+                          {request.status}
+                        </Badge>
+                      </div>
+                      <p className='text-xs text-muted-foreground capitalize'>
+                        {getTimeAgo({ startDate: request.requested_at })}
                       </p>
-                      <Badge
-                        className='capitalize'
-                        variant={
-                          request.status === 'accepted'
-                            ? 'default'
-                            : 'secondary'
-                        }
-                      >
-                        {request.status}
-                      </Badge>
                     </div>
-                    <p className='text-xs text-muted-foreground capitalize'>
-                      {getTimeAgo({ startDate: request.requested_at })}
-                    </p>
                   </div>
-                </div>
-              </li>
-            );
-          })}
+                </li>
+              );
+            })}
         </ul>
       </CardContent>
     </Card>

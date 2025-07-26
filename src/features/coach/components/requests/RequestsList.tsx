@@ -29,7 +29,7 @@ function RequestsList({ requests }: RequestType) {
 
   return (
     <ul className='space-y-4'>
-      {requests.map((request) => {
+      {searchedReq.map((request) => {
         return (
           <li
             key={request.id}

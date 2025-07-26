@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockDashboardStats } from '@/features/coach/lib/mockData';
 import { UserCheck, Users } from 'lucide-react';
 import {
   getAcceptedClientRequests,
@@ -17,7 +16,6 @@ export async function CoachStatsCards() {
       title: 'Total Clients',
       value: accpetedRequests.length,
       icon: Users,
-      description: `${mockDashboardStats.active_clients} active`,
     },
     {
       title: 'Pending Requests',
