@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = createClient();
     
     // Get user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -16,45 +16,45 @@ export async function POST(request: NextRequest) {
     const preferences = await request.json();
     console.log('Received preferences:', preferences);
 
-    // Clean and prepare data for database
+    // Clean and prepare data for database with proper validation
     const dbData = {
       user_id: user.id,
-      fitness_level: preferences.fitness_level || null,
-      exercise_experience: preferences.exercise_experience || [],
+      fitness_level: preferences.fitness_level && preferences.fitness_level !== '' ? preferences.fitness_level : null,
+      exercise_experience: Array.isArray(preferences.exercise_experience) ? preferences.exercise_experience : [],
       exercise_experience_other: preferences.exercise_experience_other || null,
-      existing_medical_conditions: preferences.existing_medical_conditions || [],
+      existing_medical_conditions: Array.isArray(preferences.existing_medical_conditions) ? preferences.existing_medical_conditions : [],
       existing_medical_conditions_other: preferences.existing_medical_conditions_other || null,
       injuries_or_limitations: preferences.injuries_or_limitations || null,
-      current_medications: preferences.current_medications || [],
+      current_medications: Array.isArray(preferences.current_medications) ? preferences.current_medications : [],
       current_medications_other: preferences.current_medications_other || null,
-      doctor_clearance: preferences.doctor_clearance || false,
-      primary_goal: preferences.primary_goal || null,
-      secondary_goal: preferences.secondary_goal || null,
-      goal_timeline_weeks: preferences.goal_timeline_weeks || null,
-      target_weight_kg: preferences.target_weight_kg || null,
-      muscle_groups_focus: preferences.muscle_groups_focus || [],
-      exercise_days_per_week: preferences.exercise_days_per_week || null,
-      available_time_per_session: preferences.available_time_per_session || null,
-      preferred_time_of_day: preferences.preferred_time_of_day || null,
-      exercise_location: preferences.exercise_location || null,
-      daily_step_count_avg: preferences.daily_step_count_avg || null,
-      job_type: preferences.job_type || null,
-      available_equipment: preferences.available_equipment || [],
+      doctor_clearance: Boolean(preferences.doctor_clearance),
+      primary_goal: preferences.primary_goal && preferences.primary_goal !== '' ? preferences.primary_goal : null,
+      secondary_goal: preferences.secondary_goal && preferences.secondary_goal !== '' ? preferences.secondary_goal : null,
+      goal_timeline_weeks: preferences.goal_timeline_weeks && preferences.goal_timeline_weeks > 0 ? preferences.goal_timeline_weeks : null,
+      target_weight_kg: preferences.target_weight_kg && preferences.target_weight_kg > 0 ? preferences.target_weight_kg : null,
+      muscle_groups_focus: Array.isArray(preferences.muscle_groups_focus) ? preferences.muscle_groups_focus : [],
+      exercise_days_per_week: preferences.exercise_days_per_week && preferences.exercise_days_per_week > 0 ? preferences.exercise_days_per_week : null,
+      available_time_per_session: preferences.available_time_per_session && preferences.available_time_per_session > 0 ? preferences.available_time_per_session : null,
+      preferred_time_of_day: preferences.preferred_time_of_day && preferences.preferred_time_of_day !== '' ? preferences.preferred_time_of_day : null,
+      exercise_location: preferences.exercise_location && preferences.exercise_location !== '' ? preferences.exercise_location : null,
+      daily_step_count_avg: preferences.daily_step_count_avg && preferences.daily_step_count_avg > 0 ? preferences.daily_step_count_avg : null,
+      job_type: preferences.job_type && preferences.job_type !== '' ? preferences.job_type : null,
+      available_equipment: Array.isArray(preferences.available_equipment) ? preferences.available_equipment : [],
       available_equipment_other: preferences.available_equipment_other || null,
-      machines_access: preferences.machines_access || false,
-      space_availability: preferences.space_availability || null,
-      want_to_track_progress: preferences.want_to_track_progress !== undefined ? preferences.want_to_track_progress : true,
-      weekly_checkins_enabled: preferences.weekly_checkins_enabled !== undefined ? preferences.weekly_checkins_enabled : true,
-      accountability_support: preferences.accountability_support !== undefined ? preferences.accountability_support : true,
-      preferred_difficulty_level: preferences.preferred_difficulty_level || null,
-      sleep_quality: preferences.sleep_quality || null,
+      machines_access: Boolean(preferences.machines_access),
+      space_availability: preferences.space_availability && preferences.space_availability !== '' ? preferences.space_availability : null,
+      want_to_track_progress: Boolean(preferences.want_to_track_progress),
+      weekly_checkins_enabled: Boolean(preferences.weekly_checkins_enabled),
+      accountability_support: Boolean(preferences.accountability_support),
+      preferred_difficulty_level: preferences.preferred_difficulty_level && preferences.preferred_difficulty_level !== '' ? preferences.preferred_difficulty_level : null,
+      sleep_quality: preferences.sleep_quality && preferences.sleep_quality !== '' ? preferences.sleep_quality : null,
       updated_at: new Date().toISOString()
     };
 
     console.log('Prepared data for database:', dbData);
 
     // First try to update existing record
-    const { data: updateData, error: updateError } = await supabase
+    const { data: updateData, error: updateError } = await (await supabase)
       .from('exercise_planner_data')
       .update(dbData)
       .eq('user_id', user.id)
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError && updateError.code === 'PGRST116') {
       // No existing record, insert new one
-      const { data: insertData, error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await (await supabase)
         .from('exercise_planner_data')
         .insert(dbData)
         .select()
