@@ -583,7 +583,7 @@ export default function ExercisePlannerPage() {
                                 <Input 
                                   type="number" 
                                   placeholder="e.g., 12"
-                                  {...field}
+                                  value={field.value || ''}
                                   onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                                 />
                               </FormControl>
@@ -603,7 +603,7 @@ export default function ExercisePlannerPage() {
                                   type="number" 
                                   step="0.1"
                                   placeholder="Enter target weight"
-                                  {...field}
+                                  value={field.value || ''}
                                   onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                                 />
                               </FormControl>
@@ -687,7 +687,7 @@ export default function ExercisePlannerPage() {
                                   min="1" 
                                   max="7"
                                   placeholder="e.g., 3"
-                                  {...field}
+                                  value={field.value || ''}
                                   onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                                 />
                               </FormControl>
@@ -706,7 +706,7 @@ export default function ExercisePlannerPage() {
                                 <Input 
                                   type="number" 
                                   placeholder="e.g., 60"
-                                  {...field}
+                                  value={field.value || ''}
                                   onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                                 />
                               </FormControl>
@@ -771,7 +771,7 @@ export default function ExercisePlannerPage() {
                                 <Input 
                                   type="number" 
                                   placeholder="e.g., 8000"
-                                  {...field}
+                                  value={field.value || ''}
                                   onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                                 />
                               </FormControl>
