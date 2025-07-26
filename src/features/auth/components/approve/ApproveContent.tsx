@@ -85,7 +85,7 @@ async function ApproveContent({
 
   return (
     <CardContent>
-      <p className='mb-6 text-muted-foreground text-center'>
+      <p className='my-6 text-muted-foreground text-center'>
         Are you sure you want to grant access to your dashboard?
       </p>
 

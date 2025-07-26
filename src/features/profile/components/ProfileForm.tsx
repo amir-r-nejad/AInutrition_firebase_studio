@@ -44,12 +44,15 @@ function ProfileForm({
   user: User;
   profile: BaseProfileData;
 }) {
+  const { user_role, ...formData } = profile;
+  console.log(user_role);
+
   const { toast } = useToast();
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(ProfileFormSchema),
     defaultValues: {
-      ...profile,
+      ...formData,
       name: user.user_metadata.name,
     },
   });
