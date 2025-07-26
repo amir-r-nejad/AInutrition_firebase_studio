@@ -99,14 +99,14 @@ export default function ExercisePlannerPage() {
       doctor_clearance: false,
       primary_goal: '',
       secondary_goal: '',
-      goal_timeline_weeks: 0,
-      target_weight_kg: 0,
+      goal_timeline_weeks: 1,
+      target_weight_kg: undefined,
       muscle_groups_focus: [],
-      exercise_days_per_week: 0,
-      available_time_per_session: 0,
+      exercise_days_per_week: 1,
+      available_time_per_session: 15,
       preferred_time_of_day: '',
       exercise_location: '',
-      daily_step_count_avg: 0,
+      daily_step_count_avg: undefined,
       job_type: '',
       available_equipment: [],
       available_equipment_other: '',
@@ -129,7 +129,21 @@ export default function ExercisePlannerPage() {
     setIsSaving(true);
     try {
       const data = form.getValues();
-      console.log('Saving preferences:', data);
+      
+      // Clean up the data before sending
+      const cleanedData = {
+        ...data,
+        target_weight_kg: data.target_weight_kg || null,
+        daily_step_count_avg: data.daily_step_count_avg || null,
+        secondary_goal: data.secondary_goal || null,
+        exercise_experience_other: data.exercise_experience_other || null,
+        existing_medical_conditions_other: data.existing_medical_conditions_other || null,
+        injuries_or_limitations: data.injuries_or_limitations || null,
+        current_medications_other: data.current_medications_other || null,
+        available_equipment_other: data.available_equipment_other || null,
+      };
+      
+      console.log('Saving preferences:', cleanedData);
 
       // Save to Supabase
       const response = await fetch('/api/exercise-planner/save-preferences', {
@@ -137,21 +151,23 @@ export default function ExercisePlannerPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(cleanedData),
       });
 
+      const result = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to save preferences');
+        console.error('Server error response:', result);
+        throw new Error(result.error || 'Failed to save preferences');
       }
 
-      const result = await response.json();
       console.log('Preferences saved successfully:', result);
 
       // Show success message
       alert('Preferences saved successfully!');
     } catch (error) {
       console.error('Error saving preferences:', error);
-      alert('Error saving preferences. Please try again.');
+      alert(`Error saving preferences: ${error instanceof Error ? error.message : 'Please try again.'}`);
     } finally {
       setIsSaving(false);
     }
