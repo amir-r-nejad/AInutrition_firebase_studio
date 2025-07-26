@@ -15,17 +15,18 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dumbbell, Heart, Target, Clock, MapPin, Utensils, TrendingUp } from 'lucide-react';
 
-const workoutPlannerSchema = z.object({
+const exercisePlannerSchema = z.object({
   // Basic Info (from profile)
   fitness_level: z.enum(['Beginner', 'Intermediate', 'Advanced']),
-  workout_experience: z.array(z.string()).optional(),
-  workout_experience_other: z.string().optional(),
+  exercise_experience: z.array(z.string()).optional(),
+  exercise_experience_other: z.string().optional(),
 
   // Health & Medical
   existing_medical_conditions: z.array(z.string()).optional(),
   existing_medical_conditions_other: z.string().optional(),
   injuries_or_limitations: z.string().optional(),
-  current_medications: z.string().optional(),
+  current_medications: z.array(z.string()).optional(),
+  current_medications_other: z.string().optional(),
   doctor_clearance: z.boolean(),
 
   // Goals
@@ -36,12 +37,12 @@ const workoutPlannerSchema = z.object({
   muscle_groups_focus: z.array(z.string()).optional(),
 
   // Lifestyle & Schedule
-  workout_days_per_week: z.number().min(1).max(7),
+  exercise_days_per_week: z.number().min(1).max(7),
   available_time_per_session: z.number().min(15).max(180),
   preferred_time_of_day: z.enum(['Morning', 'Afternoon', 'Evening']),
-  workout_location: z.enum(['Home', 'Gym', 'Outdoor']),
+  exercise_location: z.enum(['Home', 'Gym', 'Outdoor']),
   daily_step_count_avg: z.number().min(0).max(30000).optional(),
-  job_type: z.enum(['Desk job', 'Active job', 'Standing job', 'Physical job']),
+  job_type: z.enum(['Desk job', 'Active job', 'Standing job']),
 
   // Equipment Access
   available_equipment: z.array(z.string()).optional(),
@@ -49,31 +50,28 @@ const workoutPlannerSchema = z.object({
   machines_access: z.boolean().optional(),
   space_availability: z.enum(['Small room', 'Open area', 'Gym space']),
 
-  // Diet & Energy
-  current_diet_type: z.enum(['Omnivore', 'Vegetarian', 'Vegan', 'Keto', 'Paleo', 'Other']).optional(),
-  caloric_intake_estimate: z.number().min(1000).max(4000).optional(),
-  fasting: z.boolean().optional(),
-
   // Tracking Preferences
   want_to_track_progress: z.boolean(),
-  preferred_tracking_method: z.enum(['Weight', 'Photos', 'Strength levels', 'Performance metrics']).optional(),
   weekly_checkins_enabled: z.boolean(),
 
   // Behavioral & Motivation
-  motivational_style: z.enum(['Strict plan', 'Flexible plan', 'Habit-building', 'Challenge-based']),
   accountability_support: z.boolean(),
-  stress_level: z.enum(['Low', 'Medium', 'High']),
+  preferred_difficulty_level: z.enum(['Low', 'Medium', 'High']),
   sleep_quality: z.enum(['Poor', 'Average', 'Good']),
 });
 
-type WorkoutPlannerFormData = z.infer<typeof workoutPlannerSchema>;
+type ExercisePlannerFormData = z.infer<typeof exercisePlannerSchema>;
 
 const medicalConditions = [
   'Asthma', 'Hypertension', 'Joint Issues', 'Heart Disease', 'Diabetes', 'Arthritis', 'Back Problems', 'None', 'Other'
 ];
 
-const workoutExperiences = [
+const exerciseExperiences = [
   'Weightlifting', 'Cardio', 'HIIT', 'Yoga', 'Pilates', 'Running', 'Swimming', 'Cycling', 'None', 'Other'
+];
+
+const commonMedications = [
+  'Blood Pressure Medications', 'Diabetes Medications', 'Heart Medications', 'Asthma Inhalers', 'Pain Relievers', 'Anti-inflammatories', 'Antidepressants', 'Thyroid Medications', 'None', 'Other'
 ];
 
 const muscleGroups = [
@@ -84,33 +82,68 @@ const equipmentOptions = [
   'Dumbbells', 'Resistance Bands', 'Barbell', 'Yoga Mat', 'Pull-up Bar', 'Kettlebells', 'Treadmill', 'None', 'Other'
 ];
 
-export default function WorkoutPlannerPage() {
+export default function ExercisePlannerPage() {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const form = useForm<WorkoutPlannerFormData>({
-    resolver: zodResolver(workoutPlannerSchema),
+  const form = useForm<ExercisePlannerFormData>({
+    resolver: zodResolver(exercisePlannerSchema),
     defaultValues: {
       doctor_clearance: false,
       want_to_track_progress: true,
       weekly_checkins_enabled: true,
       accountability_support: true,
-      fasting: false,
       machines_access: false,
     },
   });
 
-  const selectedWorkoutExperience = form.watch('workout_experience') || [];
+  const selectedExerciseExperience = form.watch('exercise_experience') || [];
   const selectedMedicalConditions = form.watch('existing_medical_conditions') || [];
   const selectedEquipment = form.watch('available_equipment') || [];
+  const selectedMedications = form.watch('current_medications') || [];
 
-  const onSubmit = async (data: WorkoutPlannerFormData) => {
+  const savePreferences = async () => {
+    setIsSaving(true);
+    try {
+      const data = form.getValues();
+      console.log('Saving preferences:', data);
+      // TODO: Save to Supabase
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const onSubmit = async (data: ExercisePlannerFormData) => {
     setIsGenerating(true);
     try {
-      // TODO: Implement AI workout plan generation
-      console.log('Generating workout plan with data:', data);
+      // Save preferences first
+      await savePreferences();
+      
+      // Generate AI exercise plan using Gemini
+      const prompt = `Generate a personalized exercise plan based on these details:
+      
+      Fitness Level: ${data.fitness_level}
+      Exercise Experience: ${data.exercise_experience?.join(', ') || 'None'}
+      Primary Goal: ${data.primary_goal}
+      Exercise Days per Week: ${data.exercise_days_per_week}
+      Available Time per Session: ${data.available_time_per_session} minutes
+      Exercise Location: ${data.exercise_location}
+      Available Equipment: ${data.available_equipment?.join(', ') || 'None'}
+      Medical Conditions: ${data.existing_medical_conditions?.join(', ') || 'None'}
+      Injuries/Limitations: ${data.injuries_or_limitations || 'None'}
+      Job Type: ${data.job_type}
+      Preferred Difficulty: ${data.preferred_difficulty_level}
+      
+      Please create a detailed weekly exercise plan with specific exercises, sets, reps, and rest periods.`;
+      
+      console.log('Generating exercise plan with prompt:', prompt);
+      // TODO: Send to Gemini API
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
     } catch (error) {
-      console.error('Error generating workout plan:', error);
+      console.error('Error generating exercise plan:', error);
     } finally {
       setIsGenerating(false);
     }
@@ -120,8 +153,8 @@ export default function WorkoutPlannerPage() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-yellow-50">
       <div className="max-w-4xl mx-auto p-6 space-y-8">
         <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold text-green-800">AI Workout Planner</h1>
-          <p className="text-green-600">Create personalized workout plans powered by AI</p>
+          <h1 className="text-3xl font-bold text-green-800">AI Exercise Planner</h1>
+          <p className="text-green-600">Create personalized exercise plans powered by AI</p>
         </div>
 
         <Form {...form}>
@@ -166,16 +199,16 @@ export default function WorkoutPlannerPage() {
 
                       <FormField
                         control={form.control}
-                        name="workout_experience"
+                        name="exercise_experience"
                         render={() => (
                           <FormItem>
-                            <FormLabel>Workout Experience (Select all that apply)</FormLabel>
+                            <FormLabel>Exercise Experience (Select all that apply)</FormLabel>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                              {workoutExperiences.map((experience) => (
+                              {exerciseExperiences.map((experience) => (
                                 <FormField
                                   key={experience}
                                   control={form.control}
-                                  name="workout_experience"
+                                  name="exercise_experience"
                                   render={({ field }) => {
                                     return (
                                       <FormItem
@@ -210,16 +243,16 @@ export default function WorkoutPlannerPage() {
                         )}
                       />
 
-                      {selectedWorkoutExperience.includes('Other') && (
+                      {selectedExerciseExperience.includes('Other') && (
                         <FormField
                           control={form.control}
-                          name="workout_experience_other"
+                          name="exercise_experience_other"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Other Workout Experience</FormLabel>
+                              <FormLabel>Other Exercise Experience</FormLabel>
                               <FormControl>
                                 <Input 
-                                  placeholder="Please specify your other workout experience..."
+                                  placeholder="Please specify your other exercise experience..."
                                   {...field}
                                 />
                               </FormControl>
@@ -329,19 +362,67 @@ export default function WorkoutPlannerPage() {
                       <FormField
                         control={form.control}
                         name="current_medications"
-                        render={({ field }) => (
+                        render={() => (
                           <FormItem>
                             <FormLabel>Current Medications (Optional)</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="List any medications that might affect exercise..."
-                                {...field}
-                              />
-                            </FormControl>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {commonMedications.map((medication) => (
+                                <FormField
+                                  key={medication}
+                                  control={form.control}
+                                  name="current_medications"
+                                  render={({ field }) => {
+                                    return (
+                                      <FormItem
+                                        key={medication}
+                                        className="flex flex-row items-start space-x-3 space-y-0"
+                                      >
+                                        <FormControl>
+                                          <Checkbox
+                                            checked={field.value?.includes(medication)}
+                                            onCheckedChange={(checked) => {
+                                              return checked
+                                                ? field.onChange([...(field.value || []), medication])
+                                                : field.onChange(
+                                                    field.value?.filter(
+                                                      (value) => value !== medication
+                                                    )
+                                                  )
+                                            }}
+                                          />
+                                        </FormControl>
+                                        <FormLabel className="text-sm font-normal">
+                                          {medication}
+                                        </FormLabel>
+                                      </FormItem>
+                                    )
+                                  }}
+                                />
+                              ))}
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+
+                      {selectedMedications.includes('Other') && (
+                        <FormField
+                          control={form.control}
+                          name="current_medications_other"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Other Current Medications</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="Please specify your other medications..."
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
 
                       <FormField
                         control={form.control}
@@ -533,10 +614,10 @@ export default function WorkoutPlannerPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
-                          name="workout_days_per_week"
+                          name="exercise_days_per_week"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Workout Days per Week *</FormLabel>
+                              <FormLabel>Exercise Days per Week *</FormLabel>
                               <FormControl>
                                 <Input 
                                   type="number" 
@@ -596,14 +677,14 @@ export default function WorkoutPlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="workout_location"
+                          name="exercise_location"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Workout Location *</FormLabel>
+                              <FormLabel>Exercise Location *</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select workout location" />
+                                    <SelectValue placeholder="Select exercise location" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -649,10 +730,9 @@ export default function WorkoutPlannerPage() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="Desk job">Desk Job</SelectItem>
-                                  <SelectItem value="Active job">Active Job</SelectItem>
-                                  <SelectItem value="Standing job">Standing Job</SelectItem>
-                                  <SelectItem value="Physical job">Physical Job</SelectItem>
+                                  <SelectItem value="Desk job" title="Office work, computer work, administrative roles">Desk Job</SelectItem>
+                                  <SelectItem value="Active job" title="Teaching, nursing, retail, walking/moving throughout the day">Active Job</SelectItem>
+                                  <SelectItem value="Standing job" title="Cashier, security guard, factory work, standing most of the day">Standing Job</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -790,87 +870,7 @@ export default function WorkoutPlannerPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              {/* Diet & Energy */}
-              <AccordionItem value="diet">
-                <AccordionTrigger className="text-lg font-semibold text-green-800">
-                  <div className="flex items-center gap-2">
-                    <Utensils className="w-5 h-5" />
-                    Diet & Energy
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <Card>
-                    <CardContent className="pt-6 space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="current_diet_type"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Current Diet Type (Optional)</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select diet type" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="Omnivore">Omnivore</SelectItem>
-                                  <SelectItem value="Vegetarian">Vegetarian</SelectItem>
-                                  <SelectItem value="Vegan">Vegan</SelectItem>
-                                  <SelectItem value="Keto">Keto</SelectItem>
-                                  <SelectItem value="Paleo">Paleo</SelectItem>
-                                  <SelectItem value="Other">Other</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="caloric_intake_estimate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Daily Caloric Intake (Optional)</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  placeholder="e.g., 2000"
-                                  {...field}
-                                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <FormField
-                        control={form.control}
-                        name="fasting"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                I practice intermittent fasting
-                              </FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
-                </AccordionContent>
-              </AccordionItem>
+              
 
               {/* Additional Preferences */}
               <AccordionItem value="preferences">
@@ -886,38 +886,14 @@ export default function WorkoutPlannerPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
-                          name="motivational_style"
+                          name="preferred_difficulty_level"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Motivational Style *</FormLabel>
+                              <FormLabel>Preferred Difficulty Level *</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select style" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="Strict plan">Strict Plan</SelectItem>
-                                  <SelectItem value="Flexible plan">Flexible Plan</SelectItem>
-                                  <SelectItem value="Habit-building">Habit-building</SelectItem>
-                                  <SelectItem value="Challenge-based">Challenge-based</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="stress_level"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Current Stress Level *</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select stress level" />
+                                    <SelectValue placeholder="Select difficulty level" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -947,30 +923,6 @@ export default function WorkoutPlannerPage() {
                                   <SelectItem value="Poor">Poor</SelectItem>
                                   <SelectItem value="Average">Average</SelectItem>
                                   <SelectItem value="Good">Good</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="preferred_tracking_method"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Preferred Tracking Method</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select tracking method" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="Weight">Weight</SelectItem>
-                                  <SelectItem value="Photos">Photos</SelectItem>
-                                  <SelectItem value="Strength levels">Strength Levels</SelectItem>
-                                  <SelectItem value="Performance metrics">Performance Metrics</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -1046,13 +998,21 @@ export default function WorkoutPlannerPage() {
               </AccordionItem>
             </Accordion>
 
-            <div className="flex justify-center pt-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
+              <Button
+                type="button"
+                onClick={savePreferences}
+                disabled={isSaving}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
+              >
+                {isSaving ? 'Saving...' : 'Save Preferences'}
+              </Button>
               <Button
                 type="submit"
                 disabled={isGenerating}
                 className="bg-green-600 hover:bg-green-700 text-white px-12 py-3 text-lg"
               >
-                {isGenerating ? 'Generating Workout Plan...' : 'Generate AI Workout Plan'}
+                {isGenerating ? 'Generating Exercise Plan...' : 'Generate AI Exercise Plan'}
               </Button>
             </div>
           </form>
