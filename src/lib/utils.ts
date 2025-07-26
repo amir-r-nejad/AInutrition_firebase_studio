@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from 'clsx';
+import { formatDistance } from 'date-fns';
 import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
@@ -13,6 +14,20 @@ export function formatNumber(
     style: 'decimal',
     ...options,
   }).format(value);
+}
+
+export function getTimeAgo({
+  startDate,
+  endDate,
+  addSuffix = false,
+}: {
+  startDate: string | number | Date;
+  endDate?: string | number | Date;
+  addSuffix?: boolean;
+}) {
+  return formatDistance(startDate, endDate || Date.now(), {
+    addSuffix,
+  });
 }
 
 export function getURL() {
