@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -89,11 +88,35 @@ export default function ExercisePlannerPage() {
   const form = useForm<ExercisePlannerFormData>({
     resolver: zodResolver(exercisePlannerSchema),
     defaultValues: {
+      fitness_level: undefined,
+      exercise_experience: [],
+      exercise_experience_other: '',
+      existing_medical_conditions: [],
+      existing_medical_conditions_other: '',
+      injuries_or_limitations: '',
+      current_medications: [],
+      current_medications_other: '',
       doctor_clearance: false,
+      primary_goal: undefined,
+      secondary_goal: undefined,
+      goal_timeline_weeks: undefined,
+      target_weight_kg: undefined,
+      muscle_groups_focus: [],
+      exercise_days_per_week: undefined,
+      available_time_per_session: undefined,
+      preferred_time_of_day: undefined,
+      exercise_location: undefined,
+      daily_step_count_avg: undefined,
+      job_type: undefined,
+      available_equipment: [],
+      available_equipment_other: '',
+      machines_access: false,
+      space_availability: undefined,
       want_to_track_progress: true,
       weekly_checkins_enabled: true,
       accountability_support: true,
-      machines_access: false,
+      preferred_difficulty_level: undefined,
+      sleep_quality: undefined,
     },
   });
 
@@ -107,7 +130,7 @@ export default function ExercisePlannerPage() {
     try {
       const data = form.getValues();
       console.log('Saving preferences:', data);
-      
+
       // Save to Supabase
       const response = await fetch('/api/exercise-planner/save-preferences', {
         method: 'POST',
@@ -123,7 +146,7 @@ export default function ExercisePlannerPage() {
 
       const result = await response.json();
       console.log('Preferences saved successfully:', result);
-      
+
       // Show success message
       alert('Preferences saved successfully!');
     } catch (error) {
@@ -139,10 +162,10 @@ export default function ExercisePlannerPage() {
     try {
       // Save preferences first
       await savePreferences();
-      
+
       // Generate AI exercise plan using Gemini
       const prompt = `Generate a personalized exercise plan based on these details:
-      
+
       Fitness Level: ${data.fitness_level}
       Exercise Experience: ${data.exercise_experience?.join(', ') || 'None'}
       Primary Goal: ${data.primary_goal}
@@ -154,11 +177,11 @@ export default function ExercisePlannerPage() {
       Injuries/Limitations: ${data.injuries_or_limitations || 'None'}
       Job Type: ${data.job_type}
       Preferred Difficulty: ${data.preferred_difficulty_level}
-      
+
       Please create a detailed weekly exercise plan with specific exercises, sets, reps, and rest periods. Format the response as a structured JSON with days, exercises, sets, reps, and descriptions.`;
-      
+
       console.log('Generating exercise plan with prompt:', prompt);
-      
+
       // Send to Gemini API
       const response = await fetch('/api/exercise-planner/generate', {
         method: 'POST',
@@ -177,10 +200,10 @@ export default function ExercisePlannerPage() {
 
       const result = await response.json();
       console.log('Exercise plan generated:', result);
-      
+
       // Show success message and redirect or display plan
       alert('Exercise plan generated successfully!');
-      
+
     } catch (error) {
       console.error('Error generating exercise plan:', error);
       alert('Error generating exercise plan. Please try again.');
@@ -200,7 +223,7 @@ export default function ExercisePlannerPage() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Accordion type="multiple" defaultValue={['basic']} className="space-y-4">
-              
+
               {/* Basic Information */}
               <AccordionItem value="basic">
                 <AccordionTrigger className="text-lg font-semibold text-green-800">
@@ -910,7 +933,7 @@ export default function ExercisePlannerPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              
+
 
               {/* Additional Preferences */}
               <AccordionItem value="preferences">
@@ -940,7 +963,7 @@ export default function ExercisePlannerPage() {
                                   <SelectItem value="Low">Low</SelectItem>
                                   <SelectItem value="Medium">Medium</SelectItem>
                                   <SelectItem value="High">High</SelectItem>
-                                </SelectContent>
+                                                               </SelectContent>
                               </Select>
                               <FormMessage />
                             </FormItem>
