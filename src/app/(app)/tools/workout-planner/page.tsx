@@ -16,7 +16,7 @@ import { Dumbbell, Heart, Target, Clock, MapPin, Utensils, TrendingUp } from 'lu
 
 const exercisePlannerSchema = z.object({
   // Basic Info (from profile)
-  fitness_level: z.enum(['Beginner', 'Intermediate', 'Advanced']),
+  fitness_level: z.enum(['Beginner', 'Intermediate', 'Advanced', '']).refine(val => val !== '', { message: "Please select a fitness level" }),
   exercise_experience: z.array(z.string()).optional(),
   exercise_experience_other: z.string().optional(),
 
@@ -29,25 +29,25 @@ const exercisePlannerSchema = z.object({
   doctor_clearance: z.boolean(),
 
   // Goals
-  primary_goal: z.enum(['Lose fat', 'Build muscle', 'Increase endurance', 'Flexibility', 'General fitness']),
-  secondary_goal: z.enum(['Lose fat', 'Build muscle', 'Increase endurance', 'Flexibility', 'General fitness']).optional(),
-  goal_timeline_weeks: z.number().min(1).max(52),
-  target_weight_kg: z.number().min(30).max(300).optional(),
+  primary_goal: z.enum(['Lose fat', 'Build muscle', 'Increase endurance', 'Flexibility', 'General fitness', '']).refine(val => val !== '', { message: "Please select a primary goal" }),
+  secondary_goal: z.enum(['Lose fat', 'Build muscle', 'Increase endurance', 'Flexibility', 'General fitness', '']).optional(),
+  goal_timeline_weeks: z.number().min(1, { message: "Timeline must be at least 1 week" }).max(52),
+  target_weight_kg: z.number().min(30).max(300).or(z.literal(0)).optional(),
   muscle_groups_focus: z.array(z.string()).optional(),
 
   // Lifestyle & Schedule
-  exercise_days_per_week: z.number().min(1).max(7),
-  available_time_per_session: z.number().min(15).max(180),
-  preferred_time_of_day: z.enum(['Morning', 'Afternoon', 'Evening']),
-  exercise_location: z.enum(['Home', 'Gym', 'Outdoor']),
-  daily_step_count_avg: z.number().min(0).max(30000).optional(),
-  job_type: z.enum(['Desk job', 'Active job', 'Standing job']),
+  exercise_days_per_week: z.number().min(1, { message: "Must exercise at least 1 day per week" }).max(7),
+  available_time_per_session: z.number().min(15, { message: "Session must be at least 15 minutes" }).max(180),
+  preferred_time_of_day: z.enum(['Morning', 'Afternoon', 'Evening', '']).refine(val => val !== '', { message: "Please select preferred time" }),
+  exercise_location: z.enum(['Home', 'Gym', 'Outdoor', '']).refine(val => val !== '', { message: "Please select exercise location" }),
+  daily_step_count_avg: z.number().min(0).max(30000).or(z.literal(0)).optional(),
+  job_type: z.enum(['Desk job', 'Active job', 'Standing job', '']).refine(val => val !== '', { message: "Please select job type" }),
 
   // Equipment Access
   available_equipment: z.array(z.string()).optional(),
   available_equipment_other: z.string().optional(),
   machines_access: z.boolean().optional(),
-  space_availability: z.enum(['Small room', 'Open area', 'Gym space']),
+  space_availability: z.enum(['Small room', 'Open area', 'Gym space', '']).refine(val => val !== '', { message: "Please select space availability" }),
 
   // Tracking Preferences
   want_to_track_progress: z.boolean(),
@@ -55,8 +55,8 @@ const exercisePlannerSchema = z.object({
 
   // Behavioral & Motivation
   accountability_support: z.boolean(),
-  preferred_difficulty_level: z.enum(['Low', 'Medium', 'High']),
-  sleep_quality: z.enum(['Poor', 'Average', 'Good']),
+  preferred_difficulty_level: z.enum(['Low', 'Medium', 'High', '']).refine(val => val !== '', { message: "Please select difficulty level" }),
+  sleep_quality: z.enum(['Poor', 'Average', 'Good', '']).refine(val => val !== '', { message: "Please select sleep quality" }),
 });
 
 type ExercisePlannerFormData = z.infer<typeof exercisePlannerSchema>;
@@ -88,7 +88,7 @@ export default function ExercisePlannerPage() {
   const form = useForm<ExercisePlannerFormData>({
     resolver: zodResolver(exercisePlannerSchema),
     defaultValues: {
-      fitness_level: undefined,
+      fitness_level: '',
       exercise_experience: [],
       exercise_experience_other: '',
       existing_medical_conditions: [],
@@ -97,26 +97,26 @@ export default function ExercisePlannerPage() {
       current_medications: [],
       current_medications_other: '',
       doctor_clearance: false,
-      primary_goal: undefined,
-      secondary_goal: undefined,
-      goal_timeline_weeks: undefined,
-      target_weight_kg: undefined,
+      primary_goal: '',
+      secondary_goal: '',
+      goal_timeline_weeks: 0,
+      target_weight_kg: 0,
       muscle_groups_focus: [],
-      exercise_days_per_week: undefined,
-      available_time_per_session: undefined,
-      preferred_time_of_day: undefined,
-      exercise_location: undefined,
-      daily_step_count_avg: undefined,
-      job_type: undefined,
+      exercise_days_per_week: 0,
+      available_time_per_session: 0,
+      preferred_time_of_day: '',
+      exercise_location: '',
+      daily_step_count_avg: 0,
+      job_type: '',
       available_equipment: [],
       available_equipment_other: '',
       machines_access: false,
-      space_availability: undefined,
+      space_availability: '',
       want_to_track_progress: true,
       weekly_checkins_enabled: true,
       accountability_support: true,
-      preferred_difficulty_level: undefined,
-      sleep_quality: undefined,
+      preferred_difficulty_level: '',
+      sleep_quality: '',
     },
   });
 
