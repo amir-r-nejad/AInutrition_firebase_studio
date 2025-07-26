@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -84,6 +84,7 @@ const equipmentOptions = [
 export default function ExercisePlannerPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const form = useForm<ExercisePlannerFormData>({
     resolver: zodResolver(exercisePlannerSchema),
@@ -120,6 +121,70 @@ export default function ExercisePlannerPage() {
     },
     mode: 'onChange'
   });
+
+  // Load saved preferences on component mount
+  const loadSavedPreferences = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/exercise-planner/get-preferences', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          const savedData = result.data;
+          
+          // Update form with saved preferences
+          form.reset({
+            fitness_level: savedData.fitness_level || '',
+            exercise_experience: savedData.exercise_experience || [],
+            exercise_experience_other: savedData.exercise_experience_other || '',
+            existing_medical_conditions: savedData.existing_medical_conditions || [],
+            existing_medical_conditions_other: savedData.existing_medical_conditions_other || '',
+            injuries_or_limitations: savedData.injuries_or_limitations || '',
+            current_medications: savedData.current_medications || [],
+            current_medications_other: savedData.current_medications_other || '',
+            doctor_clearance: savedData.doctor_clearance || false,
+            primary_goal: savedData.primary_goal || '',
+            secondary_goal: savedData.secondary_goal || '',
+            goal_timeline_weeks: savedData.goal_timeline_weeks || 1,
+            target_weight_kg: savedData.target_weight_kg || 0,
+            muscle_groups_focus: savedData.muscle_groups_focus || [],
+            exercise_days_per_week: savedData.exercise_days_per_week || 1,
+            available_time_per_session: savedData.available_time_per_session || 15,
+            preferred_time_of_day: savedData.preferred_time_of_day || '',
+            exercise_location: savedData.exercise_location || '',
+            daily_step_count_avg: savedData.daily_step_count_avg || 0,
+            job_type: savedData.job_type || '',
+            available_equipment: savedData.available_equipment || [],
+            available_equipment_other: savedData.available_equipment_other || '',
+            machines_access: savedData.machines_access || false,
+            space_availability: savedData.space_availability || '',
+            want_to_track_progress: savedData.want_to_track_progress ?? true,
+            weekly_checkins_enabled: savedData.weekly_checkins_enabled ?? true,
+            accountability_support: savedData.accountability_support ?? true,
+            preferred_difficulty_level: savedData.preferred_difficulty_level || '',
+            sleep_quality: savedData.sleep_quality || '',
+          });
+
+          console.log('Loaded saved preferences:', savedData);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved preferences:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load preferences when component mounts
+  useEffect(() => {
+    loadSavedPreferences();
+  }, []);
 
   const selectedExerciseExperience = form.watch('exercise_experience') || [];
   const selectedMedicalConditions = form.watch('existing_medical_conditions') || [];
@@ -230,6 +295,22 @@ export default function ExercisePlannerPage() {
       setIsGenerating(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-yellow-50">
+        <div className="max-w-4xl mx-auto p-6 space-y-8">
+          <div className="text-center space-y-4">
+            <h1 className="text-3xl font-bold text-green-800">AI Exercise Planner</h1>
+            <p className="text-green-600">Loading your saved preferences...</p>
+            <div className="flex justify-center">
+              <div className="w-8 h-8 border-4 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-yellow-50">
