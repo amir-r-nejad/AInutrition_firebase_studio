@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Get user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     console.log('Prepared data for database:', dbData);
 
     // First try to update existing record
-    const { data: updateData, error: updateError } = await (await supabase)
+    const { data: updateData, error: updateError } = await supabase
       .from('exercise_planner_data')
       .update(dbData)
       .eq('user_id', user.id)
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError && updateError.code === 'PGRST116') {
       // No existing record, insert new one
-      const { data: insertData, error: insertError } = await (await supabase)
+      const { data: insertData, error: insertError } = await supabase
         .from('exercise_planner_data')
         .insert(dbData)
         .select()
