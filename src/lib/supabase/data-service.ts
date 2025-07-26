@@ -65,3 +65,40 @@ export async function getMealPlan(): Promise<MealPlans> {
 
   return data as MealPlans;
 }
+
+export async function getProfileById(
+  userId: string,
+  userRole: 'client' | 'coach' = 'client',
+  select: string = '*'
+) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('profile')
+    .select(select)
+    .eq('user_id', userId)
+    .eq('user_role', userRole)
+    .single();
+
+  if (!data) throw new Error('User profile not found');
+
+  return data;
+}
+
+export async function getUserDataById(userId: string) {
+  const supabase = await createClient();
+  try {
+    const {
+      data: { user: userData },
+      error,
+    } = await supabase.auth.admin.getUserById(userId);
+
+    if (error) throw new Error(`Failed to fetch user data: ${error.message}`);
+
+    if (!userData) throw new Error(`User with ID ${userId} not found`);
+
+    return userData.user_metadata;
+  } catch (error) {
+    console.error('Error in getPrefix:', error);
+    throw error;
+  }
+}
