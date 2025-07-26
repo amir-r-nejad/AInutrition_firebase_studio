@@ -85,6 +85,7 @@ export default function ExercisePlannerPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [generatedPlan, setGeneratedPlan] = useState<any>(null);
 
   const form = useForm<ExercisePlannerFormData>({
     resolver: zodResolver(exercisePlannerSchema),
@@ -285,8 +286,13 @@ export default function ExercisePlannerPage() {
       const result = await response.json();
       console.log('Exercise plan generated:', result);
 
-      // Show success message and redirect or display plan
-      alert('Exercise plan generated successfully!');
+      // Set the generated plan to display it
+      if (result.success && result.plan) {
+        setGeneratedPlan(result.plan);
+        alert('Exercise plan generated successfully!');
+      } else {
+        alert('Error: Plan generation failed');
+      }
 
     } catch (error) {
       console.error('Error generating exercise plan:', error);
@@ -1204,6 +1210,55 @@ export default function ExercisePlannerPage() {
             </div>
           </form>
         </Form>
+
+        {/* Generated Exercise Plan Display */}
+        {generatedPlan && (
+          <Card className="mt-8 bg-white border-green-200">
+            <CardHeader>
+              <CardTitle className="text-green-800 text-center">
+                🎯 Your Personalized Exercise Plan
+              </CardTitle>
+              <p className="text-green-600 text-center">{generatedPlan.plan_description}</p>
+            </CardHeader>
+            <CardContent>
+              {generatedPlan.weekly_plan?.gemini_response && (
+                <div className="space-y-4">
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-green-800 mb-2">Exercise Plan Details:</h3>
+                    <div className="text-sm text-green-700 whitespace-pre-wrap">
+                      {generatedPlan.weekly_plan.gemini_response.replace(/```json|```/g, '')}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-center space-x-4 pt-4">
+                    <Button 
+                      onClick={() => setGeneratedPlan(null)}
+                      variant="outline"
+                      className="border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      Generate New Plan
+                    </Button>
+                    <Button 
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => {
+                        const planText = generatedPlan.weekly_plan.gemini_response;
+                        const blob = new Blob([planText], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'my-exercise-plan.txt';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                    >
+                      Download Plan
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
