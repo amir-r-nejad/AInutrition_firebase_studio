@@ -15,6 +15,23 @@ export async function POST(request: NextRequest) {
 
     console.log('User authenticated:', user.id);
 
+    // Test database connection
+    const { data: connectionTest, error: connectionError } = await supabase
+      .from('exercise_planner_data')
+      .select('count')
+      .limit(1);
+    
+    if (connectionError) {
+      console.error('Database connection test failed:', connectionError);
+      if (connectionError.code === '42P01') {
+        return NextResponse.json({ 
+          error: 'Database table does not exist', 
+          details: 'The exercise_planner_data table has not been created. Please run the database migration.',
+          code: 'TABLE_NOT_FOUND'
+        }, { status: 500 });
+      }
+    }
+
     const preferences = await request.json();
     console.log('Received preferences:', preferences);
 
@@ -70,8 +87,18 @@ export async function POST(request: NextRequest) {
         message: updateError.message,
         details: updateError.details,
         hint: updateError.hint,
-        code: updateError.code
+        code: updateError.code,
+        fullError: JSON.stringify(updateError)
       });
+
+      // Check if it's an empty error object (connection issue)
+      if (!updateError.message && !updateError.code && Object.keys(updateError).length === 0) {
+        return NextResponse.json({ 
+          error: 'Database connection error', 
+          details: 'Unable to connect to the database. Please check your connection.',
+          code: 'CONNECTION_ERROR'
+        }, { status: 500 });
+      }
 
       if (updateError.code === 'PGRST116') {
         // No existing record found, insert new one
