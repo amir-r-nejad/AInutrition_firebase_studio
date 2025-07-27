@@ -84,19 +84,19 @@ export async function POST(request: NextRequest) {
                   "youtubeSearchTerm": "push ups proper form tutorial beginner",
                   "alternatives": [
                     {
-                      "name": "Incline Push-ups",
-                      "instructions": "Place your hands on an elevated surface like a bench, step, or wall. The higher the surface, the easier the exercise. Position hands shoulder-width apart and step back so your body forms a straight line. Perform the push-up motion with the same form as regular push-ups.",
-                      "youtubeSearchTerm": "incline push ups tutorial proper form"
+                      name: "Incline Push-ups",
+                      instructions: "Place your hands on an elevated surface like a bench, step, or wall. The higher the surface, the easier the exercise. Position hands shoulder-width apart and step back so your body forms a straight line. Perform the push-up motion with the same form as regular push-ups.",
+                      youtubeSearchTerm: "incline push ups tutorial proper form"
                     },
                     {
-                      "name": "Wall Push-ups",
-                      "instructions": "Stand arm's length from a wall with feet hip-width apart. Place palms flat against the wall at shoulder height and shoulder-width apart. Lean in toward the wall by bending your elbows, keeping your body straight. Push back to starting position.",
-                      "youtubeSearchTerm": "wall push ups beginner tutorial"
+                      name: "Wall Push-ups",
+                      instructions: "Stand arm's length from a wall with feet hip-width apart. Place palms flat against the wall at shoulder height and shoulder-width apart. Lean in toward the wall by bending your elbows, keeping your body straight. Push back to starting position.",
+                      youtubeSearchTerm: "wall push ups beginner tutorial"
                     },
                     {
-                      "name": "Knee Push-ups",
-                      "instructions": "Start in a plank position but drop your knees to the ground, creating a straight line from knees to head. Cross your ankles and keep your core engaged. Perform push-ups maintaining proper form from this modified position.",
-                      "youtubeSearchTerm": "knee push ups proper form tutorial"
+                      name: "Knee Push-ups",
+                      instructions: "Start in a plank position but drop your knees to the ground, creating a straight line from knees to head. Cross your ankles and keep your core engaged. Perform push-ups maintaining proper form from this modified position.",
+                      youtubeSearchTerm: "knee push ups proper form tutorial"
                     }
                   ]
                 },
@@ -110,14 +110,14 @@ export async function POST(request: NextRequest) {
                   "youtubeSearchTerm": "bodyweight squats proper form",
                   "alternatives": [
                     {
-                      "name": "Chair Squats",
-                      "instructions": "Use a chair for support. Sit down and stand up from the chair repeatedly, focusing on proper form.",
-                      "youtubeSearchTerm": "chair squats beginner"
+                      name: "Chair Squats",
+                      instructions: "Use a chair for support. Sit down and stand up from the chair repeatedly, focusing on proper form.",
+                      youtubeSearchTerm: "chair squats beginner"
                     },
                     {
-                      "name": "Wall Squats",
-                      "instructions": "Stand with your back against a wall. Slide down until thighs are parallel to floor, hold, then slide back up.",
-                      "youtubeSearchTerm": "wall squats proper form"
+                      name: "Wall Squats",
+                      instructions: "Stand with your back against a wall. Slide down until thighs are parallel to floor, hold, then slide back up.",
+                      youtubeSearchTerm: "wall squats proper form"
                     }
                   ]
                 },
@@ -131,14 +131,14 @@ export async function POST(request: NextRequest) {
                   "youtubeSearchTerm": "plank exercise proper form",
                   "alternatives": [
                     {
-                      "name": "Knee Plank",
-                      "instructions": "Perform plank with knees on the ground, maintaining straight line from knees to head.",
-                      "youtubeSearchTerm": "modified plank knees"
+                      name: "Knee Plank",
+                      instructions: "Perform plank with knees on the ground, maintaining straight line from knees to head.",
+                      youtubeSearchTerm: "modified plank knees"
                     },
                     {
-                      "name": "Wall Plank",
-                      "instructions": "Stand arm's length from wall, place hands against wall and hold plank position.",
-                      "youtubeSearchTerm": "wall plank exercise"
+                      name: "Wall Plank",
+                      instructions: "Stand arm's length from wall, place hands against wall and hold plank position.",
+                      youtubeSearchTerm: "wall plank exercise"
                     }
                   ]
                 },
@@ -152,14 +152,14 @@ export async function POST(request: NextRequest) {
                   "youtubeSearchTerm": "lunges proper form tutorial",
                   "alternatives": [
                     {
-                      "name": "Stationary Lunges",
-                      "instructions": "Stay in lunge position and pulse up and down instead of stepping forward.",
-                      "youtubeSearchTerm": "stationary lunges exercise"
+                      name: "Stationary Lunges",
+                      instructions: "Stay in lunge position and pulse up and down instead of stepping forward.",
+                      youtubeSearchTerm: "stationary lunges exercise"
                     },
                     {
-                      "name": "Reverse Lunges",
-                      "instructions": "Step backward instead of forward, easier on the knees.",
-                      "youtubeSearchTerm": "reverse lunges proper form"
+                      name: "Reverse Lunges",
+                      instructions: "Step backward instead of forward, easier on the knees.",
+                      youtubeSearchTerm: "reverse lunges proper form"
                     }
                   ]
                 }
@@ -269,43 +269,43 @@ export async function POST(request: NextRequest) {
             exerciseName: "Push-ups",
             targetMuscles: ["Chest", "Shoulders", "Triceps"],
             sets: 3,
-            reps": "8-12",
-            restSeconds": 60,
-            instructions": "Start in a high plank position with hands slightly wider than shoulder-width apart. Lower your body until your chest nearly touches the ground, keeping your body in a straight line. Push back up to the starting position, fully extending your arms.",
-            youtubeSearchTerm": "push ups proper form tutorial",
-            alternatives": [
+            reps: "8-12",
+            restSeconds: 60,
+            instructions: "Start in a high plank position with hands slightly wider than shoulder-width apart. Lower your body until your chest nearly touches the ground, keeping your body in a straight line. Push back up to the starting position, fully extending your arms.",
+            youtubeSearchTerm: "push ups proper form tutorial",
+            alternatives: [
               {
-                name": "Incline Push-ups",
-                instructions": "Place hands on an elevated surface like a bench or step. Perform push-up motion with easier angle.",
-                youtubeSearchTerm": "incline push ups tutorial"
+                name: "Incline Push-ups",
+                instructions: "Place hands on an elevated surface like a bench or step. Perform push-up motion with easier angle.",
+                youtubeSearchTerm: "incline push ups tutorial"
               },
               {
-                name": "Wall Push-ups",
-                instructions": "Stand arm's length from wall, place palms flat against wall, and perform push-up motion.",
-                youtubeSearchTerm": "wall push ups beginner"
+                name: "Wall Push-ups",
+                instructions: "Stand arm's length from wall, place palms flat against wall, and perform push-up motion.",
+                youtubeSearchTerm: "wall push ups beginner"
               }
             ]
           }
         ],
         "Lower Body Strength": [
           {
-            exerciseName": "Bodyweight Squats",
-            targetMuscles": ["Quadriceps", "Glutes", "Hamstrings"],
-            sets": 3,
-            reps": "10-15",
-            restSeconds": 60,
-            instructions": "Stand with feet shoulder-width apart, lower your body by bending your knees and pushing your hips back as if sitting in a chair. Keep your chest up and knees behind your toes. Return to standing position.",
-            youtubeSearchTerm": "bodyweight squats proper form",
-            alternatives": [
+            exerciseName: "Bodyweight Squats",
+            targetMuscles: ["Quadriceps", "Glutes", "Hamstrings"],
+            sets: 3,
+            reps: "10-15",
+            restSeconds: 60,
+            instructions: "Stand with feet shoulder-width apart, lower your body by bending your knees and pushing your hips back as if sitting in a chair. Keep your chest up and knees behind your toes. Return to standing position.",
+            youtubeSearchTerm: "bodyweight squats proper form",
+            alternatives: [
               {
-                name": "Chair-Assisted Squats",
-                instructions": "Use a chair behind you for support and guidance. Sit back until you lightly touch the chair, then stand up.",
-                youtubeSearchTerm": "chair assisted squats"
+                name: "Chair-Assisted Squats",
+                instructions: "Use a chair behind you for support and guidance. Sit back until you lightly touch the chair, then stand up.",
+                youtubeSearchTerm: "chair assisted squats"
               },
               {
-                name": "Wall Squats",
-                instructions": "Lean your back against a wall and slide down into squat position, holding for 15-30 seconds.",
-                youtubeSearchTerm": "wall squats exercise"
+                name: "Wall Squats",
+                instructions: "Lean your back against a wall and slide down into squat position, holding for 15-30 seconds.",
+                youtubeSearchTerm: "wall squats exercise"
               }
             ]
           }
@@ -316,48 +316,48 @@ export async function POST(request: NextRequest) {
         const focusArea = focusAreas[(i - 1) % focusAreas.length];
         const dayExercises = exercisesByFocus[focusArea] || [
           {
-            exerciseName": "Full Body Movement",
-            targetMuscles": ["Full Body"],
-            sets": 3,
-            reps": "8-12",
-            restSeconds": 60,
-            instructions": "Perform movements appropriate for your fitness level and available equipment. Focus on proper form over speed or intensity.",
-            youtubeSearchTerm": `${preferences.primary_goal.toLowerCase()} ${preferences.fitness_level.toLowerCase()} workout`,
-            alternatives": [
+            exerciseName: "Full Body Movement",
+            targetMuscles: ["Full Body"],
+            sets: 3,
+            reps: "8-12",
+            restSeconds: 60,
+            instructions: "Perform movements appropriate for your fitness level and available equipment. Focus on proper form over speed or intensity.",
+            youtubeSearchTerm: `${preferences.primary_goal.toLowerCase()} ${preferences.fitness_level.toLowerCase()} workout`,
+            alternatives: [
               {
-                name": "Beginner Modification",
-                instructions": "Reduce intensity and take longer rest periods as needed.",
-                youtubeSearchTerm": "beginner workout modifications"
+                name: "Beginner Modification",
+                instructions: "Reduce intensity and take longer rest periods as needed.",
+                youtubeSearchTerm: "beginner workout modifications"
               },
               {
-                name": "Equipment-Free Version",
-                instructions": "Use bodyweight exercises that target similar muscle groups.",
-                youtubeSearchTerm": "bodyweight exercises no equipment"
+                name: "Equipment-Free Version",
+                instructions: "Use bodyweight exercises that target similar muscle groups.",
+                youtubeSearchTerm: "bodyweight exercises no equipment"
               }
             ]
           }
         ];
 
         fallbackWeeklyPlan[`Day${i}`] = {
-          dayName": dayNames[i - 1],
-          focus": `${focusArea} - ${preferences.primary_goal}`,
-          duration": preferences.available_time_per_session,
-          warmup": {
-            exercises": [
+          dayName: dayNames[i - 1],
+          focus: `${focusArea} - ${preferences.primary_goal}`,
+          duration: preferences.available_time_per_session,
+          warmup: {
+            exercises: [
               {
-                name": "Dynamic Warm-up",
-                duration": Math.max(2, Math.floor(preferences.available_time_per_session * 0.2)),
-                instructions": "Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise. Start slowly and gradually increase range of motion."
+                name: "Dynamic Warm-up",
+                duration: Math.max(2, Math.floor(preferences.available_time_per_session * 0.2)),
+                instructions: "Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise. Start slowly and gradually increase range of motion."
               }
             ]
           },
-          mainWorkout": dayExercises,
-          cooldown": {
-            exercises": [
+          mainWorkout: dayExercises,
+          cooldown: {
+            exercises: [
               {
-                name": "Cool-down Stretches",
-                duration": Math.max(2, Math.floor(preferences.available_time_per_session * 0.2)),
-                instructions": "Perform gentle static stretches holding each position for 15-30 seconds. Focus on the muscle groups worked during the session and breathe deeply."
+                name: "Cool-down Stretches",
+                duration: Math.max(2, Math.floor(preferences.available_time_per_session * 0.2)),
+                instructions: "Perform gentle static stretches holding each position for 15-30 seconds. Focus on the muscle groups worked during the session and breathe deeply."
               }
             ]
           }
