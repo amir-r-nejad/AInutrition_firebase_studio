@@ -1,0 +1,24 @@
+Error: ./src/app/api/exercise-planner/generate/route.ts:272:17
+Parsing ecmascript source code failed
+[0m [90m 270 |[39m             targetMuscles[33m:[39m [[32m"Chest"[39m[33m,[39m [32m"Shoulders"[39m[33m,[39m [32m"Triceps"[39m][33m,[39m[0m
+[0m [90m 271 |[39m             sets[33m:[39m [35m3[39m[33m,[39m[0m
+[0m[31m[1m>[22m[39m[90m 272 |[39m             reps[32m": "[39m[35m8[39m[33m-[39m[35m12[39m[32m",[39m[0m
+[0m [90m     |[39m                 [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[0m
+[0m [90m 273 |[39m             restSeconds[32m": 60,[39m[0m
+[0m [90m 274 |[39m             instructions[32m": "[39m[33mStart[39m [36min[39m a high plank position [36mwith[39m hands slightly wider than shoulder[33m-[39mwidth apart[33m.[39m [33mLower[39m your body until your chest nearly touches the ground[33m,[39m keeping your body [36min[39m a straight line[33m.[39m [33mPush[39m back up to the starting position[33m,[39m fully extending your arms[33m.[39m[32m",[39m[0m
+[0m [90m 275 |[39m             youtubeSearchTerm[32m": "[39mpush ups proper form tutorial[32m",[39m[0m
+
+Unexpected token `string literal (: , ": ")`. Expected ... , *,  (, [, :, , ?, =, an identifier, public, protected, private, readonly, <.
+    at BuildError (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_client_8f19e6fb._.js:11188:41)
+    at react-stack-bottom-frame (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:14911:24)
+    at renderWithHooksAgain (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:6256:24)
+    at renderWithHooks (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:6207:28)
+    at updateFunctionComponent (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:7543:21)
+    at beginWork (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:8142:24)
+    at runWithFiberInDEV (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:3073:74)
+    at performUnitOfWork (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10243:97)
+    at workLoopSync (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10135:40)
+    at renderRootSync (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10118:13)
+    at performWorkOnRoot (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:9853:212)
+    at performWorkOnRootViaSchedulerTask (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10826:9)
+    at MessagePort.performWorkUntilDeadline (https://58eb2d9b-2f99-4ad5-aa72-6ec5de5676c4-00-dmjqzmj7sl41.riker.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:1982:64)
