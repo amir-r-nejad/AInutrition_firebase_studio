@@ -92,6 +92,30 @@ export default function ExercisePlannerPage() {
   const [expandedExercises, setExpandedExercises] = useState<{ [key: string]: boolean }>({});
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
 
+  // Load saved exercise plan from localStorage
+  useEffect(() => {
+    const savedPlan = localStorage.getItem('generatedExercisePlan');
+    if (savedPlan) {
+      try {
+        const parsedPlan = JSON.parse(savedPlan);
+        setGeneratedPlan(parsedPlan);
+        
+        // Expand all days by default if weeklyPlan exists
+        if (parsedPlan.weeklyPlan) {
+          const allDays = Object.keys(parsedPlan.weeklyPlan);
+          const expandedDaysObject = allDays.reduce((acc, day) => {
+            acc[day] = true;
+            return acc;
+          }, {} as { [key: string]: boolean });
+          setExpandedDays(expandedDaysObject);
+        }
+      } catch (error) {
+        console.error('Error parsing saved exercise plan:', error);
+        localStorage.removeItem('generatedExercisePlan');
+      }
+    }
+  }, []);
+
   const form = useForm<ExercisePlannerFormData>({
     resolver: zodResolver(exercisePlannerSchema),
     defaultValues: {
@@ -325,6 +349,9 @@ export default function ExercisePlannerPage() {
 
       if (planData) {
         setGeneratedPlan(planData);
+        
+        // Save to localStorage for persistence
+        localStorage.setItem('generatedExercisePlan', JSON.stringify(planData));
         
         // Expand all days by default if weeklyPlan exists
         if (planData.weeklyPlan) {
@@ -1259,6 +1286,25 @@ export default function ExercisePlannerPage() {
                   </div>
                 )}
               </Button>
+              {generatedPlan && (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setGeneratedPlan(null);
+                    localStorage.removeItem('generatedExercisePlan');
+                    alert('Exercise plan cleared successfully!');
+                  }}
+                  variant="outline"
+                  className="border-red-300 text-red-600 hover:bg-red-50 px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Clear Plan
+                  </div>
+                </Button>
+              )}
             </div>
           </form>
         </Form>
