@@ -1,0 +1,24 @@
+Error: ./src/app/api/exercise-planner/generate/route.ts:429:34
+Parsing ecmascript source code failed
+[0m [90m 427 |[39m                   {[0m
+[0m [90m 428 |[39m                     [32m"name"[39m[33m:[39m [32m"Dynamic Warm-up"[39m[33m,[39m[0m
+[0m[31m[1m>[22m[39m[90m 429 |[39m                     [32m"duration"[39m[33m:[39m ${[33mMath[39m[33m.[39mmax([35m5[39m[33m,[39m [33mMath[39m[33m.[39mfloor(preferences[33m.[39mavailable_time_per_session [33m*[39m [35m0.12[39m))}[33m,[39m[0m
+[0m [90m     |[39m                                  [31m[1m^[22m[39m[0m
+[0m [90m 430 |[39m                     [32m"instructions"[39m[33m:[39m [32m"Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise. Start slowly and gradually increase range of motion."[39m[0m
+[0m [90m 431 |[39m                   }[0m
+[0m [90m 432 |[39m                 ][0m
+
+Expected ',', got '{'
+    at BuildError (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_client_8f19e6fb._.js:11188:41)
+    at react-stack-bottom-frame (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:14911:24)
+    at renderWithHooksAgain (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:6256:24)
+    at renderWithHooks (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:6207:28)
+    at updateFunctionComponent (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:7543:21)
+    at beginWork (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:8142:24)
+    at runWithFiberInDEV (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:3073:74)
+    at performUnitOfWork (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10243:97)
+    at workLoopSync (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10135:40)
+    at renderRootSync (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10118:13)
+    at performWorkOnRoot (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:9853:212)
+    at performWorkOnRootViaSchedulerTask (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10826:9)
+    at MessagePort.performWorkUntilDeadline (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:1982:64)
