@@ -80,6 +80,8 @@ export async function POST(request: NextRequest) {
         - Medical conditions: ${preferences.existing_medical_conditions?.join(", ") || "None"}
         - Injuries/limitations: ${preferences.injuries_or_limitations || "None"}
         - Available equipment: ${preferences.available_equipment?.join(", ") || "Bodyweight only"}
+        - Space availability: ${preferences.space_availability || "Any space"}
+        - Machines access: ${preferences.machines_access ? "Yes" : "No"}
 
         Create a comprehensive weekly workout plan in JSON format with the following structure:
 
@@ -271,8 +273,15 @@ export async function POST(request: NextRequest) {
         - 6-8 main exercises minimum
         - Realistic warm-up (5-8 minutes total)
         - Realistic cool-down (3-5 minutes total)
-        - Consider user's limitations: ${preferences.injuries_or_limitations || "None"}
+        - Consider user's limitations: ${preferences.injuries_or_limitations || "None"}  
         - Available equipment: ${preferences.available_equipment?.join(", ") || "Bodyweight only"}
+        - Space availability: ${preferences.space_availability || "Any space"}
+        - Machines access: ${preferences.machines_access ? "Yes" : "No"}
+        - Exercise location: ${preferences.exercise_location || "Any location"}
+        - Medical conditions: ${preferences.existing_medical_conditions?.join(", ") || "None"}
+        - Current medications: ${preferences.current_medications?.join(", ") || "None"}
+        - Preferred time of day: ${preferences.preferred_time_of_day || "Any time"}
+        - Job type/activity level: ${preferences.job_type || "Moderate activity"}
 
         Return ONLY the JSON object with NO additional text, comments, or explanations.`;
 
@@ -442,7 +451,7 @@ export async function POST(request: NextRequest) {
             restSeconds: 60,
             instructions:
               "Perform movements appropriate for your fitness level and available equipment. Focus on proper form over speed or intensity.",
-            youtubeSearchTerm: `${preferences.primary_goal.toLowerCase()} ${preferences.fitness_level.toLowerCase()} workout`,
+            youtubeSearchTerm: `${preferences.primary_goal?.toLowerCase() || 'general'} ${preferences.fitness_level?.toLowerCase() || 'beginner'} workout ${preferences.available_equipment?.join(' ').toLowerCase() || 'bodyweight'}`,
             alternatives: [
               {
                 name: "Beginner Modification",

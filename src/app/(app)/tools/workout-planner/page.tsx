@@ -207,7 +207,7 @@ export default function ExercisePlannerPage() {
             available_equipment: savedData.available_equipment || [],
             available_equipment_other: savedData.available_equipment_other || '',
             machines_access: false,
-            space_availability: undefined,
+            space_availability: savedData.space_availability || undefined,
             want_to_track_progress: savedData.want_to_track_progress ?? true,
             weekly_checkins_enabled: savedData.weekly_checkins_enabled ?? true,
             accountability_support: savedData.accountability_support ?? true,
@@ -869,7 +869,7 @@ export default function ExercisePlannerPage() {
                               <FormLabel>Exercise Days per Week *</FormLabel>
                               <FormControl>
                                 <Input 
-                                  type="number" 
+                                  type="number"```typescript
                                   min="1" 
                                   max="7"
                                   placeholder="e.g., 3"
@@ -1642,56 +1642,3 @@ export default function ExercisePlannerPage() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <ul className="space-y-3">
-                          {generatedPlan.safetyNotes.map((note: string, idx: number) => (
-                            <li key={idx} className="flex items-start gap-2 text-sm text-red-700">
-                              <ArrowRight className="w-4 h-4 mt-0.5 text-red-500 flex-shrink-0" />
-                              {note}
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {generatedPlan.nutritionTips && (
-                    <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-100">
-                      <CardHeader>
-                        <CardTitle className="text-green-800 flex items-center gap-2">
-                          <Utensils className="w-5 h-5" />
-                          Nutrition Tips
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="space-y-3">
-                          {generatedPlan.nutritionTips.map((tip: string, idx: number) => (
-                            <li key={idx} className="flex items-start gap-2 text-sm text-green-700">
-                              <ArrowRight className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" />
-                              {tip}
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <Card className="border-gray-200">
-                <CardContent className="p-12 text-center">
-                  <div className="space-y-4">
-                    <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
-                      <Activity className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-600">No workout plan available</h3>
-                    <p className="text-gray-500">Please generate a new workout plan to get started.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
