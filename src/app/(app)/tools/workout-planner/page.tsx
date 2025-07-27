@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Dumbbell, Heart, Target, Clock, MapPin, Utensils, TrendingUp } from 'lucide-react';
+import { Dumbbell, Heart, Target, Clock, MapPin, Utensils, TrendingUp, Activity } from 'lucide-react';
 
 const exercisePlannerSchema = z.object({
   // Basic Info (from profile)
@@ -138,7 +138,7 @@ export default function ExercisePlannerPage() {
         const result = await response.json();
         if (result.success && result.data) {
           const savedData = result.data;
-          
+
           // Update form with saved preferences
           form.reset({
             fitness_level: savedData.fitness_level || '',
@@ -196,7 +196,7 @@ export default function ExercisePlannerPage() {
     setIsSaving(true);
     try {
       const data = form.getValues();
-      
+
       // Clean up the data before sending
       const cleanedData = {
         ...data,
@@ -209,7 +209,7 @@ export default function ExercisePlannerPage() {
         current_medications_other: data.current_medications_other || null,
         available_equipment_other: data.available_equipment_other || null,
       };
-      
+
       console.log('Saving preferences:', cleanedData);
 
       // Save to Supabase
@@ -223,7 +223,7 @@ export default function ExercisePlannerPage() {
 
       const result = await response.json();
       console.log('Response status:', response.status, 'Response data:', result);
-      
+
       if (!response.ok) {
         console.error('Server error response:', result);
         const errorMessage = result.details || result.error || 'Failed to save preferences';
@@ -286,13 +286,19 @@ export default function ExercisePlannerPage() {
       const result = await response.json();
       console.log('Exercise plan generated:', result);
 
-      // Set the generated plan to display it
-      if (result.success && result.plan) {
-        setGeneratedPlan(result.plan);
-        alert('Exercise plan generated successfully!');
-      } else {
-        alert('Error: Plan generation failed');
+      if (result.parsed_plan) {
+        setGeneratedPlan(result.parsed_plan);
+      } else if (result.generated_content) {
+        try {
+          const parsed = JSON.parse(result.generated_content);
+          setGeneratedPlan(parsed);
+        } catch (e) {
+          console.error('Failed to parse generated content:', e);
+          setGeneratedPlan({ error: 'Failed to parse generated plan' });
+        }
       }
+
+      alert('Exercise plan generated successfully!');
 
     } catch (error) {
       console.error('Error generating exercise plan:', error);
@@ -1211,253 +1217,153 @@ export default function ExercisePlannerPage() {
           </form>
         </Form>
 
-        {/* Generated Exercise Plan Display */}
-        {generatedPlan && (
-          <div className="mt-8 space-y-6">
-            <Card className="bg-white border-green-200">
-              <CardHeader>
-                <CardTitle className="text-green-800 text-center flex items-center justify-center gap-2">
-                  <Dumbbell className="w-6 h-6" />
-                  Your Personalized Exercise Plan
-                </CardTitle>
-                <p className="text-green-600 text-center">{generatedPlan.plan_description}</p>
-              </CardHeader>
-              <CardContent>
-                {generatedPlan.weekly_plan?.gemini_response && (() => {
-                  try {
-                    const planData = JSON.parse(generatedPlan.weekly_plan.gemini_response.replace(/```json|```/g, ''));
-                    const weeklyPlan = planData.weeklyPlan || {};
-                    
-                    return (
-                      <div className="space-y-6">
-                        {/* Workout Days */}
-                        {Object.entries(weeklyPlan).map(([dayKey, dayData]: [string, any], index) => (
-                          <Card key={dayKey} className="border-green-200">
-                            <CardHeader>
-                              <CardTitle className="text-green-800 flex items-center justify-between">
-                                <span className="flex items-center gap-2">
-                                  <Target className="w-5 h-5" />
-                                  {dayData.dayName || dayKey} - {dayData.focus}
-                                </span>
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Clock className="w-4 h-4" />
-                                  {dayData.duration} min
-                                </div>
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                              
-                              {/* Warm-up */}
-                              {dayData.warmup && (
-                                <div className="bg-blue-50 p-4 rounded-lg">
-                                  <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                                    <Heart className="w-4 h-4" />
-                                    Warm-up
-                                  </h4>
-                                  <div className="space-y-2">
-                                    {dayData.warmup.exercises?.map((exercise: any, i: number) => (
-                                      <div key={i} className="text-sm text-blue-700">
-                                        <strong>{exercise.name}</strong> - {exercise.duration} min
-                                        <p className="text-blue-600">{exercise.instructions}</p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
+    {/* Generated Plan Display */}
+    {generatedPlan && (
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="text-2xl font-semibold flex items-center text-green-600">
+            <Activity className="mr-2 h-6 w-6" />
+            Your Personalized Exercise Plan
+          </CardTitle>
+          <CardDescription>
+            AI-generated workout plan based on your preferences and goals
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {generatedPlan.error ? (
+            <div className="text-red-600 p-4 bg-red-50 rounded-lg">
+              {generatedPlan.error}
+            </div>
+          ) : generatedPlan.weeklyPlan ? (
+            <div className="space-y-6">
+              {/* Weekly Plan */}
+              {Object.entries(generatedPlan.weeklyPlan).map(([dayKey, dayPlan]: [string, any]) => (
+                <div key={dayKey} className="border rounded-lg p-4">
+                  <h3 className="text-xl font-semibold mb-2 text-blue-600">
+                    {dayPlan.dayName} - {dayPlan.focus}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">Duration: {dayPlan.duration} minutes</p>
 
-                              {/* Main Workout */}
-                              {dayData.mainWorkout && (
-                                <div className="space-y-4">
-                                  <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
-                                    <Dumbbell className="w-4 h-4" />
-                                    Main Workout
-                                  </h4>
-                                  {dayData.mainWorkout.map((exercise: any, exerciseIndex: number) => (
-                                    <div key={exerciseIndex} className="border border-green-200 rounded-lg p-4 space-y-3">
-                                      <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                          <h5 className="font-semibold text-green-800 text-lg">{exercise.exerciseName}</h5>
-                                          <p className="text-sm text-green-600">
-                                            Target: {exercise.targetMuscles?.join(', ')}
-                                          </p>
-                                        </div>
-                                        <div className="text-right text-sm text-green-700">
-                                          <div>{exercise.sets} sets × {exercise.reps} reps</div>
-                                          <div>Rest: {exercise.restSeconds}s</div>
-                                        </div>
-                                      </div>
-                                      
-                                      <div className="bg-green-50 p-3 rounded">
-                                        <p className="text-sm text-green-800">{exercise.instructions}</p>
-                                      </div>
-
-                                      {/* YouTube Link */}
-                                      {exercise.youtubeSearchTerm && (
-                                        <div className="flex items-center gap-2">
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="text-red-600 border-red-300 hover:bg-red-50"
-                                            onClick={() => {
-                                              const searchQuery = encodeURIComponent(exercise.youtubeSearchTerm);
-                                              window.open(`https://www.youtube.com/results?search_query=${searchQuery}`, '_blank');
-                                            }}
-                                          >
-                                            📺 Watch Tutorial
-                                          </Button>
-                                        </div>
-                                      )}
-
-                                      {/* Alternative Exercises */}
-                                      {exercise.alternatives && exercise.alternatives.length > 0 && (
-                                        <div className="bg-yellow-50 p-3 rounded-lg">
-                                          <h6 className="font-medium text-yellow-800 mb-2">Alternative Exercises:</h6>
-                                          <div className="space-y-2">
-                                            {exercise.alternatives.map((alt: any, altIndex: number) => (
-                                              <div key={altIndex} className="flex items-center justify-between">
-                                                <div className="flex-1">
-                                                  <div className="font-medium text-yellow-800">{alt.name}</div>
-                                                  <div className="text-sm text-yellow-700">{alt.instructions}</div>
-                                                </div>
-                                                {alt.youtubeSearchTerm && (
-                                                  <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="text-red-600 border-red-300 hover:bg-red-50 ml-2"
-                                                    onClick={() => {
-                                                      const searchQuery = encodeURIComponent(alt.youtubeSearchTerm);
-                                                      window.open(`https://www.youtube.com/results?search_query=${searchQuery}`, '_blank');
-                                                    }}
-                                                  >
-                                                    📺 Tutorial
-                                                  </Button>
-                                                )}
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Cool-down */}
-                              {dayData.cooldown && (
-                                <div className="bg-purple-50 p-4 rounded-lg">
-                                  <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                                    <TrendingUp className="w-4 h-4" />
-                                    Cool-down
-                                  </h4>
-                                  <div className="space-y-2">
-                                    {dayData.cooldown.exercises?.map((exercise: any, i: number) => (
-                                      <div key={i} className="text-sm text-purple-700">
-                                        <strong>{exercise.name}</strong> - {exercise.duration} min
-                                        <p className="text-purple-600">{exercise.instructions}</p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Rest Day */}
-                              {dayData.workoutDescription && !dayData.mainWorkout && (
-                                <div className="bg-gray-50 p-4 rounded-lg text-center">
-                                  <h4 className="font-semibold text-gray-800 mb-2">Rest Day</h4>
-                                  <p className="text-gray-600">{dayData.workoutDescription}</p>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        ))}
-
-                        {/* Additional Tips */}
-                        {(planData.progressionTips || planData.safetyNotes || planData.nutritionTips) && (
-                          <Card className="bg-blue-50 border-blue-200">
-                            <CardHeader>
-                              <CardTitle className="text-blue-800">Important Notes & Tips</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                              {planData.progressionTips && (
-                                <div>
-                                  <h5 className="font-semibold text-blue-800 mb-2">Progression Tips:</h5>
-                                  <ul className="list-disc list-inside space-y-1 text-blue-700">
-                                    {planData.progressionTips.map((tip: string, index: number) => (
-                                      <li key={index} className="text-sm">{tip}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              
-                              {planData.safetyNotes && (
-                                <div>
-                                  <h5 className="font-semibold text-blue-800 mb-2">Safety Notes:</h5>
-                                  <ul className="list-disc list-inside space-y-1 text-blue-700">
-                                    {planData.safetyNotes.map((note: string, index: number) => (
-                                      <li key={index} className="text-sm">{note}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-
-                              {planData.nutritionTips && (
-                                <div>
-                                  <h5 className="font-semibold text-blue-800 mb-2">Nutrition Tips:</h5>
-                                  <ul className="list-disc list-inside space-y-1 text-blue-700">
-                                    {planData.nutritionTips.map((tip: string, index: number) => (
-                                      <li key={index} className="text-sm">{tip}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        )}
-
-                        {/* Action Buttons */}
-                        <div className="flex justify-center space-x-4 pt-4">
-                          <Button 
-                            onClick={() => setGeneratedPlan(null)}
-                            variant="outline"
-                            className="border-green-300 text-green-700 hover:bg-green-50"
-                          >
-                            Generate New Plan
-                          </Button>
-                          <Button 
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                            onClick={() => {
-                              const planText = JSON.stringify(planData, null, 2);
-                              const blob = new Blob([planText], { type: 'application/json' });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = 'my-exercise-plan.json';
-                              a.click();
-                              URL.revokeObjectURL(url);
-                            }}
-                          >
-                            Download Plan
-                          </Button>
+                  {/* Warm-up */}
+                  {dayPlan.warmup && (
+                    <div className="mb-4">
+                      <h4 className="font-semibold text-orange-600 mb-2">Warm-up</h4>
+                      {dayPlan.warmup.exercises.map((exercise: any, idx: number) => (
+                        <div key={idx} className="ml-4 mb-2">
+                          <p><strong>{exercise.name}</strong> - {exercise.duration} min</p>
+                          <p className="text-sm text-gray-600">{exercise.instructions}</p>
                         </div>
-                      </div>
-                    );
-                  } catch (error) {
-                    console.error('Error parsing plan data:', error);
-                    return (
-                      <div className="bg-red-50 p-4 rounded-lg">
-                        <h3 className="font-semibold text-red-800 mb-2">Raw Plan Data:</h3>
-                        <div className="text-sm text-red-700 whitespace-pre-wrap">
-                          {generatedPlan.weekly_plan.gemini_response.replace(/```json|```/g, '')}
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Main Workout */}
+                  {dayPlan.mainWorkout && (
+                    <div className="mb-4">
+                      <h4 className="font-semibold text-red-600 mb-2">Main Workout</h4>
+                      {dayPlan.mainWorkout.map((exercise: any, idx: number) => (
+                        <div key={idx} className="ml-4 mb-4 p-3 bg-gray-50 rounded">
+                          <h5 className="font-semibold">{exercise.exerciseName}</h5>
+                          <p className="text-sm"><strong>Target:</strong> {exercise.targetMuscles?.join(', ')}</p>
+                          <p className="text-sm"><strong>Sets:</strong> {exercise.sets} | <strong>Reps:</strong> {exercise.reps} | <strong>Rest:</strong> {exercise.restSeconds}s</p>
+                          <p className="text-sm mt-2">{exercise.instructions}</p>
+
+                          {exercise.youtubeSearchTerm && (
+                            <a 
+                              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.youtubeSearchTerm)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-red-600 hover:underline text-sm"
+                            >
+                              🎥 Watch Tutorial: {exercise.youtubeSearchTerm}
+                            </a>
+                          )}
+
+                          {/* Alternatives */}
+                          {exercise.alternatives && exercise.alternatives.length > 0 && (
+                            <div className="mt-3">
+                              <p className="font-medium text-sm">Alternative Exercises:</p>
+                              {exercise.alternatives.map((alt: any, altIdx: number) => (
+                                <div key={altIdx} className="ml-4 mt-2">
+                                  <p className="text-sm"><strong>{alt.name}</strong></p>
+                                  <p className="text-xs text-gray-600">{alt.instructions}</p>
+                                  {alt.youtubeSearchTerm && (
+                                    <a 
+                                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(alt.youtubeSearchTerm)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-red-600 hover:underline text-xs"
+                                    >
+                                      🎥 {alt.youtubeSearchTerm}
+                                    </a>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    );
-                  }
-                })()}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Cool-down */}
+                  {dayPlan.cooldown && (
+                    <div>
+                      <h4 className="font-semibold text-green-600 mb-2">Cool-down</h4>
+                      {dayPlan.cooldown.exercises.map((exercise: any, idx: number) => (
+                        <div key={idx} className="ml-4 mb-2">
+                          <p><strong>{exercise.name}</strong> - {exercise.duration} min</p>
+                          <p className="text-sm text-gray-600">{exercise.instructions}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Tips Sections */}
+              <div className="grid md:grid-cols-3 gap-4 mt-6">
+                {generatedPlan.progressionTips && (
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <h4 className="font-semibold text-blue-600 mb-2">Progression Tips</h4>
+                    <ul className="text-sm space-y-1">
+                      {generatedPlan.progressionTips.map((tip: string, idx: number) => (
+                        <li key={idx}>• {tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {generatedPlan.safetyNotes && (
+                  <div className="p-4 bg-red-50 rounded-lg">
+                    <h4 className="font-semibold text-red-600 mb-2">Safety Notes</h4>
+                    <ul className="text-sm space-y-1">
+                      {generatedPlan.safetyNotes.map((note: string, idx: number) => (
+                        <li key={idx}>• {note}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {generatedPlan.nutritionTips && (
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <h4 className="font-semibold text-green-600 mb-2">Nutrition Tips</h4>
+                    <ul className="text-sm space-y-1">
+                      {generatedPlan.nutritionTips.map((tip: string, idx: number) => (
+                        <li key={idx}>• {tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center p-8">
+              <p className="text-gray-600">No workout plan available to display.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    )}
+  </div>
+);

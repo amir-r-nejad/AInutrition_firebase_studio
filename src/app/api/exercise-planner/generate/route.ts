@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -6,6 +7,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Gemini API Key exists:', !!process.env.GEMINI_API_KEY);
+    
     const supabase = await createClient();
 
     // Get user
@@ -16,11 +19,20 @@ export async function POST(request: NextRequest) {
 
     const { prompt: userPrompt, preferences } = await request.json();
 
+    // Check if Gemini API key is available
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('Gemini API key not found');
+      return NextResponse.json({ 
+        error: 'Gemini API key not configured',
+        details: 'Please set GEMINI_API_KEY environment variable'
+      }, { status: 500 });
+    }
+
     // Generate content with Gemini
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // Generate AI exercise plan using Gemini
-      const prompt = `Create a comprehensive weekly exercise plan in ENGLISH based on the following profile:
+    const prompt = `Create a comprehensive weekly exercise plan in ENGLISH based on the following profile:
 
 FITNESS PROFILE:
 - Fitness Level: ${preferences.fitness_level}
@@ -134,9 +146,89 @@ FORMAT: Return as valid JSON with this exact structure:
   ]
 }`;
 
+    console.log('Sending request to Gemini API...');
+    
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const generatedPlan = response.text();
+    let generatedPlan = response.text();
+
+    console.log('Received response from Gemini API');
+    console.log('Generated plan length:', generatedPlan.length);
+
+    // Clean up the response to extract JSON
+    generatedPlan = generatedPlan.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    // Try to parse the JSON to validate it
+    let parsedPlan;
+    try {
+      parsedPlan = JSON.parse(generatedPlan);
+      console.log('Successfully parsed JSON from Gemini');
+    } catch (parseError) {
+      console.error('Failed to parse JSON from Gemini:', parseError);
+      console.log('Raw response:', generatedPlan.substring(0, 500));
+      
+      // Create a fallback plan if JSON parsing fails
+      parsedPlan = {
+        weeklyPlan: {
+          Day1: {
+            dayName: "Monday",
+            focus: `${preferences.primary_goal} Workout`,
+            duration: preferences.available_time_per_session,
+            warmup: {
+              exercises: [
+                {
+                  name: "Light Cardio",
+                  duration: 5,
+                  instructions: "5 minutes of light movement to warm up your body"
+                }
+              ]
+            },
+            mainWorkout: [
+              {
+                exerciseName: "Basic Strength Training",
+                targetMuscles: ["Full Body"],
+                sets: 3,
+                reps: "8-12",
+                restSeconds: 60,
+                instructions: "Perform exercises based on your available equipment and fitness level",
+                youtubeSearchTerm: `${preferences.primary_goal.toLowerCase()} beginner workout`,
+                alternatives: [
+                  {
+                    name: "Modified Version",
+                    instructions: "Adjust intensity based on your fitness level",
+                    youtubeSearchTerm: "beginner workout modifications"
+                  }
+                ]
+              }
+            ],
+            cooldown: {
+              exercises: [
+                {
+                  name: "Stretching",
+                  duration: 5,
+                  instructions: "5 minutes of gentle stretching"
+                }
+              ]
+            }
+          }
+        },
+        progressionTips: [
+          "Start slowly and gradually increase intensity",
+          "Listen to your body",
+          "Stay consistent with your routine"
+        ],
+        safetyNotes: [
+          "Warm up before exercising",
+          "Stop if you feel pain",
+          "Stay hydrated"
+        ],
+        nutritionTips: [
+          "Eat a balanced diet",
+          "Stay hydrated",
+          "Get adequate rest"
+        ]
+      };
+    }
 
     // Save the generated plan to database
     const { data: planData, error: planError } = await supabase
@@ -148,7 +240,7 @@ FORMAT: Return as valid JSON with this exact structure:
         weekly_plan: {
           generated_content: generatedPlan,
           preferences: preferences,
-          gemini_response: generatedPlan
+          parsed_plan: parsedPlan
         },
         total_duration_minutes: preferences.available_time_per_session * preferences.exercise_days_per_week,
         difficulty_level: preferences.fitness_level,
@@ -171,6 +263,7 @@ FORMAT: Return as valid JSON with this exact structure:
       .update({
         generated_plan: {
           content: generatedPlan,
+          parsed_plan: parsedPlan,
           generated_at: new Date().toISOString()
         },
         gemini_prompt: prompt,
@@ -186,6 +279,7 @@ FORMAT: Return as valid JSON with this exact structure:
       success: true, 
       plan: planData,
       generated_content: generatedPlan,
+      parsed_plan: parsedPlan,
       message: 'Exercise plan generated successfully' 
     });
 
