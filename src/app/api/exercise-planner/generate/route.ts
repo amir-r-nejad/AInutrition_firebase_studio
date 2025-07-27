@@ -39,6 +39,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     // Generate AI exercise plan using Gemini
+    const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const focusAreas = [
+      "Upper Body Strength", 
+      "Lower Body Strength", 
+      "Core & Cardio", 
+      "Full Body Circuit", 
+      "Flexibility & Recovery", 
+      "Strength Training", 
+      "Active Recovery"
+    ];
+
     const prompt = `Create a comprehensive weekly exercise plan in ENGLISH based on the following profile:
 
 PERSONAL INFORMATION:
@@ -88,6 +99,8 @@ STRICT REQUIREMENTS:
 10. Include proper form instructions and safety tips
 11. Add YouTube search terms for video tutorials
 12. Make instructions very detailed and educational
+
+IMPORTANT: You MUST create ${preferences.exercise_days_per_week} complete workout days. Do not create fewer days.
 
 FORMAT: Return as valid JSON with this exact structure for ALL ${preferences.exercise_days_per_week} days:
 {
@@ -195,50 +208,110 @@ FORMAT: Return as valid JSON with this exact structure for ALL ${preferences.exe
       // Create a fallback plan if JSON parsing fails
       const fallbackWeeklyPlan: any = {};
       const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-      const focusAreas = ["Upper Body", "Lower Body", "Full Body", "Cardio & Core", "Strength", "Flexibility", "Active Recovery"];
+      const focusAreas = [
+        "Upper Body Strength", 
+        "Lower Body Strength", 
+        "Core & Cardio", 
+        "Full Body Circuit", 
+        "Flexibility & Recovery", 
+        "Strength Training", 
+        "Active Recovery"
+      ];
+      
+      const exercisesByFocus = {
+        "Upper Body Strength": [
+          {
+            exerciseName: "Push-ups",
+            targetMuscles: ["Chest", "Shoulders", "Triceps"],
+            sets: 3,
+            reps: "8-12",
+            restSeconds: 60,
+            instructions: "Start in a high plank position with hands slightly wider than shoulder-width apart. Lower your body until your chest nearly touches the ground, keeping your body in a straight line. Push back up to the starting position, fully extending your arms.",
+            youtubeSearchTerm: "push ups proper form tutorial",
+            alternatives: [
+              {
+                name: "Incline Push-ups",
+                instructions: "Place hands on an elevated surface like a bench or step. Perform push-up motion with easier angle.",
+                youtubeSearchTerm: "incline push ups tutorial"
+              },
+              {
+                name: "Wall Push-ups",
+                instructions: "Stand arm's length from wall, place palms flat against wall, and perform push-up motion.",
+                youtubeSearchTerm: "wall push ups beginner"
+              }
+            ]
+          }
+        ],
+        "Lower Body Strength": [
+          {
+            exerciseName: "Bodyweight Squats",
+            targetMuscles: ["Quadriceps", "Glutes", "Hamstrings"],
+            sets: 3,
+            reps: "10-15",
+            restSeconds: 60,
+            instructions: "Stand with feet shoulder-width apart, lower your body by bending your knees and pushing your hips back as if sitting in a chair. Keep your chest up and knees behind your toes. Return to standing position.",
+            youtubeSearchTerm: "bodyweight squats proper form",
+            alternatives: [
+              {
+                name: "Chair-Assisted Squats",
+                instructions: "Use a chair behind you for support and guidance. Sit back until you lightly touch the chair, then stand up.",
+                youtubeSearchTerm: "chair assisted squats"
+              },
+              {
+                name: "Wall Squats",
+                instructions: "Lean your back against a wall and slide down into squat position, holding for 15-30 seconds.",
+                youtubeSearchTerm: "wall squats exercise"
+              }
+            ]
+          }
+        ]
+      };
       
       for (let i = 1; i <= preferences.exercise_days_per_week; i++) {
+        const focusArea = focusAreas[(i - 1) % focusAreas.length];
+        const dayExercises = exercisesByFocus[focusArea] || [
+          {
+            exerciseName: "Full Body Movement",
+            targetMuscles: ["Full Body"],
+            sets: 3,
+            reps: "8-12",
+            restSeconds: 60,
+            instructions: "Perform movements appropriate for your fitness level and available equipment. Focus on proper form over speed or intensity.",
+            youtubeSearchTerm: `${preferences.primary_goal.toLowerCase()} ${preferences.fitness_level.toLowerCase()} workout`,
+            alternatives: [
+              {
+                name: "Beginner Modification",
+                instructions: "Reduce intensity and take longer rest periods as needed.",
+                youtubeSearchTerm: "beginner workout modifications"
+              },
+              {
+                name: "Equipment-Free Version",
+                instructions: "Use bodyweight exercises that target similar muscle groups.",
+                youtubeSearchTerm: "bodyweight exercises no equipment"
+              }
+            ]
+          }
+        ];
+
         fallbackWeeklyPlan[`Day${i}`] = {
           dayName: dayNames[i - 1],
-          focus: `${focusAreas[(i - 1) % focusAreas.length]} - ${preferences.primary_goal}`,
+          focus: `${focusArea} - ${preferences.primary_goal}`,
           duration: preferences.available_time_per_session,
           warmup: {
             exercises: [
               {
                 name: "Dynamic Warm-up",
-                duration: 5,
+                duration: Math.max(2, Math.floor(preferences.available_time_per_session * 0.2)),
                 instructions: "Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise. Start slowly and gradually increase range of motion."
               }
             ]
           },
-          mainWorkout: [
-            {
-              exerciseName: "Customized Exercise Set",
-              targetMuscles: ["Full Body"],
-              sets: 3,
-              reps: "8-12",
-              restSeconds: 60,
-              instructions: "Perform exercises appropriate for your fitness level and available equipment. Focus on proper form over speed or weight. Start with lighter resistance and progress gradually.",
-              youtubeSearchTerm: `${preferences.primary_goal.toLowerCase()} ${preferences.fitness_level.toLowerCase()} workout day ${i}`,
-              alternatives: [
-                {
-                  name: "Beginner Modification",
-                  instructions: "Reduce intensity, use bodyweight or lighter weights, and take longer rest periods as needed.",
-                  youtubeSearchTerm: "beginner workout modifications"
-                },
-                {
-                  name: "Equipment-Free Alternative",
-                  instructions: "Use bodyweight exercises that target the same muscle groups without requiring equipment.",
-                  youtubeSearchTerm: "bodyweight exercises no equipment"
-                }
-              ]
-            }
-          ],
+          mainWorkout: dayExercises,
           cooldown: {
             exercises: [
               {
                 name: "Cool-down Stretches",
-                duration: 5,
+                duration: Math.max(2, Math.floor(preferences.available_time_per_session * 0.2)),
                 instructions: "Perform gentle static stretches holding each position for 15-30 seconds. Focus on the muscle groups worked during the session and breathe deeply."
               }
             ]

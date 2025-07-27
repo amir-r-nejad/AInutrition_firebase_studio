@@ -271,6 +271,9 @@ export default function ExercisePlannerPage() {
       console.log('Generating exercise plan with preferences:', data);
 
       // Send to Gemini API - the backend will handle getting profile data
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
       const response = await fetch('/api/exercise-planner/generate', {
         method: 'POST',
         headers: {
@@ -279,54 +282,63 @@ export default function ExercisePlannerPage() {
         body: JSON.stringify({
           preferences: data
         }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error('Failed to generate exercise plan');
+        const errorText = await response.text();
+        console.error('API response error:', response.status, errorText);
+        throw new Error(`Failed to generate exercise plan: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
       console.log('Exercise plan generated:', result);
 
+      // Handle different response formats
+      let planData = null;
       if (result.plan?.weekly_plan?.parsed_plan) {
-        setGeneratedPlan(result.plan.weekly_plan.parsed_plan);
-        // Expand all days by default
-        const allDays = Object.keys(result.plan.weekly_plan.parsed_plan.weeklyPlan || {});
-        const expandedDaysObject = allDays.reduce((acc, day) => {
-          acc[day] = true;
-          return acc;
-        }, {} as { [key: string]: boolean });
-        setExpandedDays(expandedDaysObject);
+        planData = result.plan.weekly_plan.parsed_plan;
       } else if (result.parsed_plan) {
-        setGeneratedPlan(result.parsed_plan);
-        // Expand all days by default for parsed plan too
-        const allDays = Object.keys(result.parsed_plan.weeklyPlan || {});
-        const expandedDaysObject = allDays.reduce((acc, day) => {
-          acc[day] = true;
-          return acc;
-        }, {} as { [key: string]: boolean });
-        setExpandedDays(expandedDaysObject);
+        planData = result.parsed_plan;
       } else if (result.generated_content) {
         try {
-          const parsed = JSON.parse(result.generated_content);
-          setGeneratedPlan(parsed);
-          // Expand all days by default for generated content too
-          const allDays = Object.keys(parsed.weeklyPlan || {});
+          planData = JSON.parse(result.generated_content);
+        } catch (e) {
+          console.error('Failed to parse generated content:', e);
+          planData = { error: 'Failed to parse generated plan' };
+        }
+      }
+
+      if (planData) {
+        setGeneratedPlan(planData);
+        
+        // Expand all days by default if weeklyPlan exists
+        if (planData.weeklyPlan) {
+          const allDays = Object.keys(planData.weeklyPlan);
           const expandedDaysObject = allDays.reduce((acc, day) => {
             acc[day] = true;
             return acc;
           }, {} as { [key: string]: boolean });
           setExpandedDays(expandedDaysObject);
-        } catch (e) {
-          console.error('Failed to parse generated content:', e);
-          setGeneratedPlan({ error: 'Failed to parse generated plan' });
         }
+        
+        alert('Exercise plan generated successfully!');
+      } else {
+        throw new Error('No valid plan data received from server');
       }
 
-      alert('Exercise plan generated successfully!');
     } catch (error) {
       console.error('Error generating exercise plan:', error);
-      alert('Error generating exercise plan. Please try again.');
+      
+      if (error.name === 'AbortError') {
+        alert('Request timed out. Please try again with a shorter workout duration or fewer days.');
+      } else if (error.message.includes('Failed to fetch')) {
+        alert('Network error occurred. Please check your connection and try again.');
+      } else {
+        alert(`Error generating exercise plan: ${error.message}. Please try again.`);
+      }
     } finally {
       setIsGenerating(false);
     }
