@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -44,10 +43,10 @@ export default function DashboardPage() {
           getUserProfile(),
           getUserPlan()
         ]);
-        
+
         setProfile(profileData);
         setUserPlan(planData);
-        
+
         // Mock workout data - in real app, this would come from Supabase
         setWorkoutPlan({
           currentFitnessLevel: 'Intermediate',
@@ -96,7 +95,7 @@ export default function DashboardPage() {
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold text-green-800">Dashboard</h1>
           <p className="text-green-600">Overview of your nutrition journey and fitness progress</p>
-          
+
           {profile && (
             <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-green-200">
               <div className="flex items-center justify-center gap-2 text-green-700">

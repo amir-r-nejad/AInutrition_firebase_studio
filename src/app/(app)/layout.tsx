@@ -57,7 +57,6 @@ const navItems = [
     icon: SplitSquareHorizontal,
   },
   { href: '/tools/meal-suggestions', label: 'Meal Suggestions', icon: ChefHat },
-  { href: '/tools/workout-planner', label: 'AI Exercise Planner', icon: Dumbbell },
   { section: 'Meal Management' },
   {
     href: '/meal-plan/current',
@@ -65,6 +64,8 @@ const navItems = [
     icon: NotebookText,
   },
   { href: '/meal-plan/optimized', label: 'AI Meal Plan', icon: Bot },
+  { section: 'Exercise Planning' },
+  { href: '/tools/workout-planner', label: 'AI Exercise Planner', icon: Dumbbell },
   { section: 'Support' },
   {
     href: '/support/chatbot',
