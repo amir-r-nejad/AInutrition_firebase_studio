@@ -1,53 +1,67 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { GoogleGenerativeAI } from '@googleGenerativeAI/gemini-pro';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { GoogleGenerativeAI } from "@google/generative-ai"; // Correct import
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Gemini API Key exists:', !!process.env.GEMINI_API_KEY);
+    console.log("Gemini API Key exists:", !!process.env.GEMINI_API_KEY);
 
     const supabase = await createClient();
 
     // Get user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { prompt: userPrompt, preferences } = await request.json();
 
     // Check if Gemini API key is available
     if (!process.env.GEMINI_API_KEY) {
-      console.error('Gemini API key not found');
-      return NextResponse.json({ 
-        error: 'Gemini API key not configured',
-        details: 'Please set GEMINI_API_KEY environment variable'
-      }, { status: 500 });
+      console.error("Gemini API key not found");
+      return NextResponse.json(
+        {
+          error: "Gemini API key not configured",
+          details: "Please set GEMINI_API_KEY environment variable",
+        },
+        { status: 500 },
+      );
     }
 
     // Generate content with Gemini
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Get user profile data
     const { data: profileData } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', user.id)
+      .from("user_profiles")
+      .select("*")
+      .eq("user_id", user.id)
       .single();
 
     // Generate AI exercise plan using Gemini
-    const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    const focusAreas = [
-      "Upper Body Strength", 
-      "Lower Body Strength", 
-      "Core & Cardio", 
-      "Full Body Circuit", 
-      "Flexibility & Recovery", 
-      "Strength Training", 
-      "Active Recovery"
+    const dayNames = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
     ];
+    const focusAreas = [
+      "Upper Body Strength",
+      "Lower Body Strength",
+      "Core & Cardio",
+      "Full Body Circuit",
+      "Flexibility & Recovery",
+      "Strength Training",
+      "Active Recovery",
+    ] as const; // TypeScript const assertion for literal types
 
     const prompt = `You are a professional fitness trainer creating a personalized exercise plan.
 
@@ -63,9 +77,9 @@ export async function POST(request: NextRequest) {
         - Primary goal: ${preferences.primary_goal}
         - Available time per session: ${preferences.available_time_per_session} minutes
         - Exercise days per week: ${preferences.exercise_days_per_week}
-        - Medical conditions: ${preferences.existing_medical_conditions?.join(', ') || 'None'}
-        - Injuries/limitations: ${preferences.injuries_or_limitations || 'None'}
-        - Available equipment: ${preferences.available_equipment?.join(', ') || 'Bodyweight only'}
+        - Medical conditions: ${preferences.existing_medical_conditions?.join(", ") || "None"}
+        - Injuries/limitations: ${preferences.injuries_or_limitations || "None"}
+        - Available equipment: ${preferences.available_equipment?.join(", ") || "Bodyweight only"}
 
         Create a comprehensive weekly workout plan in JSON format with the following structure:
 
@@ -257,14 +271,14 @@ export async function POST(request: NextRequest) {
         - 6-8 main exercises minimum
         - Realistic warm-up (5-8 minutes total)
         - Realistic cool-down (3-5 minutes total)
-        - Consider user's limitations: ${preferences.injuries_or_limitations || 'None'}
-        - Available equipment: ${preferences.available_equipment?.join(', ') || 'Bodyweight only'}
+        - Consider user's limitations: ${preferences.injuries_or_limitations || "None"}
+        - Available equipment: ${preferences.available_equipment?.join(", ") || "Bodyweight only"}
 
         Return ONLY the JSON object with NO additional text, comments, or explanations.`;
 
-    console.log('Sending request to Gemini API...');
+    console.log("Sending request to Gemini API...");
 
-    let generatedPlan = '';
+    let generatedPlan = "";
     let retryCount = 0;
     const maxRetries = 2;
 
@@ -279,26 +293,33 @@ export async function POST(request: NextRequest) {
         }
 
         if (retryCount < maxRetries) {
-          console.log(`Retry ${retryCount + 1}: Response too short, retrying...`);
+          console.log(
+            `Retry ${retryCount + 1}: Response too short, retrying...`,
+          );
           retryCount++;
           continue;
         }
       } catch (apiError) {
-        console.error('Gemini API error:', apiError);
+        console.error("Gemini API error:", apiError);
         if (retryCount < maxRetries) {
           console.log(`Retry ${retryCount + 1}: API error, retrying...`);
           retryCount++;
           continue;
         }
-        throw new Error('Failed to get response from AI service after multiple attempts');
+        throw new Error(
+          "Failed to get response from AI service after multiple attempts",
+        );
       }
     }
 
-    console.log('Received response from Gemini API');
-    console.log('Generated plan length:', generatedPlan.length);
+    console.log("Received response from Gemini API");
+    console.log("Generated plan length:", generatedPlan.length);
 
     // Clean up the response to extract JSON
-    generatedPlan = generatedPlan.replace(/```json/g, '').replace(/```/g, '').trim();
+    generatedPlan = generatedPlan
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
 
     // Try to parse the JSON to validate it
     let parsedPlan;
@@ -307,8 +328,8 @@ export async function POST(request: NextRequest) {
       let cleanedPlan = generatedPlan;
 
       // Remove any trailing incomplete content
-      if (!cleanedPlan.endsWith('}')) {
-        const lastCompleteObject = cleanedPlan.lastIndexOf('}');
+      if (!cleanedPlan.endsWith("}")) {
+        const lastCompleteObject = cleanedPlan.lastIndexOf("}");
         if (lastCompleteObject > -1) {
           cleanedPlan = cleanedPlan.substring(0, lastCompleteObject + 1);
         }
@@ -316,34 +337,44 @@ export async function POST(request: NextRequest) {
 
       // Fix common JSON issues
       cleanedPlan = cleanedPlan
-        .replace(/,\s*}/g, '}')  // Remove trailing commas before closing braces
-        .replace(/,\s*]/g, ']')  // Remove trailing commas before closing brackets
-        .replace(/\n/g, ' ')     // Replace newlines with spaces
-        .replace(/\s+/g, ' ')    // Normalize whitespace
+        .replace(/,\s*}/g, "}") // Remove trailing commas before closing braces
+        .replace(/,\s*]/g, "]") // Remove trailing commas before closing brackets
+        .replace(/\n/g, " ") // Replace newlines with spaces
+        .replace(/\s+/g, " ") // Normalize whitespace
         .trim();
 
       parsedPlan = JSON.parse(cleanedPlan);
-      console.log('Successfully parsed JSON from Gemini');
+      console.log("Successfully parsed JSON from Gemini");
     } catch (parseError) {
-      console.error('Failed to parse JSON from Gemini:', parseError);
-      console.log('Raw response length:', generatedPlan.length);
-      console.log('Raw response preview:', generatedPlan.substring(0, 500));
-      console.log('Raw response ending:', generatedPlan.substring(Math.max(0, generatedPlan.length - 500)));
+      console.error("Failed to parse JSON from Gemini:", parseError);
+      console.log("Raw response length:", generatedPlan.length);
+      console.log("Raw response preview:", generatedPlan.substring(0, 500));
+      console.log(
+        "Raw response ending:",
+        generatedPlan.substring(Math.max(0, generatedPlan.length - 500)),
+      );
 
-      // Create a fallback plan if JSON parsing fails
-      const fallbackWeeklyPlan: any = {};
-      const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-      const focusAreas = [
-        "Upper Body Strength", 
-        "Lower Body Strength", 
-        "Core & Cardio", 
-        "Full Body Circuit", 
-        "Flexibility & Recovery", 
-        "Strength Training", 
-        "Active Recovery"
-      ];
+      // Define the type for exercisesByFocus
+      type Exercise = {
+        exerciseName: string;
+        targetMuscles: string[];
+        sets: number;
+        reps: string;
+        restSeconds: number;
+        instructions: string;
+        youtubeSearchTerm: string;
+        alternatives: {
+          name: string;
+          instructions: string;
+          youtubeSearchTerm: string;
+        }[];
+      };
 
-      const exercisesByFocus = {
+      type FocusExercises = {
+        [key: string]: Exercise[];
+      };
+
+      const exercisesByFocus: FocusExercises = {
         "Upper Body Strength": [
           {
             exerciseName: "Push-ups",
@@ -351,21 +382,24 @@ export async function POST(request: NextRequest) {
             sets: 3,
             reps: "8-12",
             restSeconds: 60,
-            instructions: "Start in a high plank position with hands slightly wider than shoulder-width apart. Lower your body until your chest nearly touches the ground, keeping your body in a straight line. Push back up to the starting position, fully extending your arms.",
+            instructions:
+              "Start in a high plank position with hands slightly wider than shoulder-width apart. Lower your body until your chest nearly touches the ground, keeping your body in a straight line. Push back up to the starting position, fully extending your arms.",
             youtubeSearchTerm: "push ups proper form tutorial",
             alternatives: [
               {
                 name: "Incline Push-ups",
-                instructions: "Place hands on an elevated surface like a bench or step. Perform push-up motion with easier angle.",
-                youtubeSearchTerm: "incline push ups tutorial"
+                instructions:
+                  "Place hands on an elevated surface like a bench or step. Perform push-up motion with easier angle.",
+                youtubeSearchTerm: "incline push ups tutorial",
               },
               {
                 name: "Wall Push-ups",
-                instructions: "Stand arm's length from wall, place palms flat against wall, and perform push-up motion.",
-                youtubeSearchTerm: "wall push ups beginner"
-              }
-            ]
-          }
+                instructions:
+                  "Stand arm's length from wall, place palms flat against wall, and perform push-up motion.",
+                youtubeSearchTerm: "wall push ups beginner",
+              },
+            ],
+          },
         ],
         "Lower Body Strength": [
           {
@@ -374,24 +408,29 @@ export async function POST(request: NextRequest) {
             sets: 3,
             reps: "10-15",
             restSeconds: 60,
-            instructions: "Stand with feet shoulder-width apart, lower your body by bending your knees and pushing your hips back as if sitting in a chair. Keep your chest up and knees behind your toes. Return to standing position.",
+            instructions:
+              "Stand with feet shoulder-width apart, lower your body by bending your knees and pushing your hips back as if sitting in a chair. Keep your chest up and knees behind your toes. Return to standing position.",
             youtubeSearchTerm: "bodyweight squats proper form",
             alternatives: [
               {
                 name: "Chair-Assisted Squats",
-                instructions: "Use a chair behind you for support and guidance. Sit back until you lightly touch the chair, then stand up.",
-                youtubeSearchTerm: "chair assisted squats"
+                instructions:
+                  "Use a chair behind you for support and guidance. Sit back until you lightly touch the chair, then stand up.",
+                youtubeSearchTerm: "chair assisted squats",
               },
               {
                 name: "Wall Squats",
-                instructions: "Lean your back against a wall and slide down into squat position, holding for 15-30 seconds.",
-                youtubeSearchTerm: "wall squats exercise"
-              }
-            ]
-          }
-        ]
+                instructions:
+                  "Lean your back against a wall and slide down into squat position, holding for 15-30 seconds.",
+                youtubeSearchTerm: "wall squats exercise",
+              },
+            ],
+          },
+        ],
       };
 
+      // Create fallback plan
+      const fallbackWeeklyPlan: { [key: string]: any } = {};
       for (let i = 1; i <= preferences.exercise_days_per_week; i++) {
         const focusArea = focusAreas[(i - 1) % focusAreas.length];
         const dayExercises = exercisesByFocus[focusArea] || [
@@ -401,21 +440,24 @@ export async function POST(request: NextRequest) {
             sets: 3,
             reps: "8-12",
             restSeconds: 60,
-            instructions: "Perform movements appropriate for your fitness level and available equipment. Focus on proper form over speed or intensity.",
+            instructions:
+              "Perform movements appropriate for your fitness level and available equipment. Focus on proper form over speed or intensity.",
             youtubeSearchTerm: `${preferences.primary_goal.toLowerCase()} ${preferences.fitness_level.toLowerCase()} workout`,
             alternatives: [
               {
                 name: "Beginner Modification",
-                instructions: "Reduce intensity and take longer rest periods as needed.",
-                youtubeSearchTerm: "beginner workout modifications"
+                instructions:
+                  "Reduce intensity and take longer rest periods as needed.",
+                youtubeSearchTerm: "beginner workout modifications",
               },
               {
                 name: "Equipment-Free Version",
-                instructions: "Use bodyweight exercises that target similar muscle groups.",
-                youtubeSearchTerm: "bodyweight exercises no equipment"
-              }
-            ]
-          }
+                instructions:
+                  "Use bodyweight exercises that target similar muscle groups.",
+                youtubeSearchTerm: "bodyweight exercises no equipment",
+              },
+            ],
+          },
         ];
 
         fallbackWeeklyPlan[`Day${i}`] = {
@@ -426,21 +468,29 @@ export async function POST(request: NextRequest) {
             exercises: [
               {
                 name: "Dynamic Warm-up",
-                duration: Math.max(5, Math.floor(preferences.available_time_per_session * 0.12)),
-                instructions: "Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise. Start slowly and gradually increase range of motion."
-              }
-            ]
+                duration: Math.max(
+                  5,
+                  Math.floor(preferences.available_time_per_session * 0.12),
+                ),
+                instructions:
+                  "Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise. Start slowly and gradually increase range of motion.",
+              },
+            ],
           },
           mainWorkout: dayExercises,
           cooldown: {
             exercises: [
               {
                 name: "Cool-down Stretches",
-                duration: Math.max(3, Math.floor(preferences.available_time_per_session * 0.08)),
-                instructions: "Perform gentle static stretches holding each position for 15-30 seconds. Focus on the muscle groups worked during the session and breathe deeply."
-              }
-            ]
-          }
+                duration: Math.max(
+                  3,
+                  Math.floor(preferences.available_time_per_session * 0.08),
+                ),
+                instructions:
+                  "Perform gentle static stretches holding each position for 15-30 seconds. Focus on the muscle groups worked during the session and breathe deeply.",
+              },
+            ],
+          },
         };
       }
 
@@ -449,79 +499,86 @@ export async function POST(request: NextRequest) {
         progressionTips: [
           "Start slowly and gradually increase intensity",
           "Listen to your body",
-          "Stay consistent with your routine"
+          "Stay consistent with your routine",
         ],
         safetyNotes: [
           "Warm up before exercising",
           "Stop if you feel pain",
-          "Stay hydrated"
+          "Stay hydrated",
         ],
         nutritionTips: [
           "Eat a balanced diet",
           "Stay hydrated",
-          "Get adequate rest"
-        ]
+          "Get adequate rest",
+        ],
       };
     }
 
     // Save the generated plan to database
     const { data: planData, error: planError } = await supabase
-      .from('exercise_plans')
+      .from("exercise_plans")
       .insert({
         user_id: user.id,
-        plan_name: `Exercise Plan ${new Date().toLocaleDateString('en-US')}`,
+        plan_name: `Exercise Plan ${new Date().toLocaleDateString("en-US")}`,
         plan_description: `Personalized workout plan created for goal: ${preferences.primary_goal}`,
         weekly_plan: {
           generated_content: generatedPlan,
           preferences: preferences,
-          parsed_plan: parsedPlan
+          parsed_plan: parsedPlan,
         },
-        total_duration_minutes: preferences.available_time_per_session * preferences.exercise_days_per_week,
+        total_duration_minutes:
+          preferences.available_time_per_session *
+          preferences.exercise_days_per_week,
         difficulty_level: preferences.fitness_level,
-        generated_by: 'gemini',
+        generated_by: "gemini",
         generation_prompt: prompt,
         generation_response: generatedPlan,
-        is_active: true
+        is_active: true,
       })
       .select()
       .single();
 
     if (planError) {
-      console.error('Database error saving plan:', planError);
-      return NextResponse.json({ error: 'Failed to save exercise plan' }, { status: 500 });
+      console.error("Database error saving plan:", planError);
+      return NextResponse.json(
+        { error: "Failed to save exercise plan" },
+        { status: 500 },
+      );
     }
 
     // Also update the planner data with the generated plan
     const { error: updateError } = await supabase
-      .from('exercise_planner_data')
+      .from("exercise_planner_data")
       .update({
         generated_plan: {
           content: generatedPlan,
           parsed_plan: parsedPlan,
-          generated_at: new Date().toISOString()
+          generated_at: new Date().toISOString(),
         },
         gemini_prompt: prompt,
-        gemini_response: generatedPlan
+        gemini_response: generatedPlan,
       })
-      .eq('user_id', user.id);
+      .eq("user_id", user.id);
 
     if (updateError) {
-      console.error('Error updating planner data:', updateError);
+      console.error("Error updating planner data:", updateError);
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       plan: planData,
       generated_content: generatedPlan,
       parsed_plan: parsedPlan,
-      message: 'Exercise plan generated successfully' 
+      message: "Exercise plan generated successfully",
     });
-
   } catch (error) {
-    console.error('Generate exercise plan error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to generate exercise plan',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    console.error("Generate exercise plan error:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to generate exercise plan",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
   }
 }
