@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<BaseProfileData | null>(null);
   const [userPlan, setUserPlan] = useState<UserPlanType | null>(null);
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null);
+  const [exercisePlan, setExercisePlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

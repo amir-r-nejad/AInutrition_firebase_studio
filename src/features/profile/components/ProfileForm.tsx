@@ -15,7 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { BaseProfileData } from '@/lib/schemas';
 import { editProfile } from '../actions/apiUserProfile';
 import { toast } from '@/hooks/use-toast';
-import { User, Activity, Heart, Target, Info } from 'lucide-react';
+import { User, Heart, Target, Info } from 'lucide-react';
 
 const profileSchema = z.object({
   full_name: z.string().min(1, 'Full name is required'),
@@ -26,15 +26,9 @@ const profileSchema = z.object({
   target_weight: z.number().min(30).max(300).optional(),
   body_fat_percentage: z.number().min(5).max(50).optional(),
   target_body_fat: z.number().min(5).max(50).optional(),
-  activity_level: z.enum(['Sedentary', 'Moderate', 'Active', 'Very Active']).optional(),
-  fitness_history: z.string().optional(),
-  injuries_limitations: z.string().optional(),
   dietary_preferences: z.string().optional(),
   allergies: z.string().optional(),
   medical_conditions: z.string().optional(),
-  fitness_goals: z.string().optional(),
-  preferred_workout_type: z.enum(['Cardio', 'Strength', 'Mixed', 'Flexibility']).optional(),
-  workout_experience: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -57,15 +51,9 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
       target_weight: profile?.target_weight || undefined,
       body_fat_percentage: profile?.body_fat_percentage || undefined,
       target_body_fat: profile?.target_body_fat || undefined,
-      activity_level: profile?.activity_level || undefined,
-      fitness_history: profile?.fitness_history || '',
-      injuries_limitations: profile?.injuries_limitations || '',
       dietary_preferences: profile?.dietary_preferences || '',
       allergies: profile?.allergies || '',
       medical_conditions: profile?.medical_conditions || '',
-      fitness_goals: profile?.fitness_goals || '',
-      preferred_workout_type: profile?.preferred_workout_type || undefined,
-      workout_experience: profile?.workout_experience || undefined,
     },
   });
 
@@ -96,7 +84,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <Accordion type="multiple" defaultValue={['basic', 'health', 'fitness']} className="space-y-4">
+          <Accordion type="multiple" defaultValue={['basic', 'health']} className="space-y-4">
             
             {/* Basic Information */}
             <AccordionItem value="basic">
@@ -323,146 +311,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Fitness & Activity */}
-            <AccordionItem value="fitness">
-              <AccordionTrigger className="text-lg font-semibold text-green-800">
-                <div className="flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  Fitness & Activity
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <Card>
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="activity_level"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Activity Level</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select activity level" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Sedentary">Sedentary (little/no exercise)</SelectItem>
-                                <SelectItem value="Moderate">Moderate (light exercise)</SelectItem>
-                                <SelectItem value="Active">Active (moderate exercise)</SelectItem>
-                                <SelectItem value="Very Active">Very Active (hard exercise)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="workout_experience"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Workout Experience</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select experience level" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Beginner">Beginner (0-1 years)</SelectItem>
-                                <SelectItem value="Intermediate">Intermediate (1-3 years)</SelectItem>
-                                <SelectItem value="Advanced">Advanced (3+ years)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="preferred_workout_type"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Preferred Workout Type</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select workout preference" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Cardio">Cardio focused</SelectItem>
-                                <SelectItem value="Strength">Strength training</SelectItem>
-                                <SelectItem value="Mixed">Mixed training</SelectItem>
-                                <SelectItem value="Flexibility">Flexibility/Yoga</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="fitness_history"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Fitness History</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Describe your fitness background, years of experience, past activities..."
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="injuries_limitations"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Injuries/Limitations</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="List any injuries, physical limitations, or conditions (e.g., back pain, knee issues)..."
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="fitness_goals"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Fitness Goals</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Describe your fitness goals (e.g., lose weight, build muscle, improve endurance)..."
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </AccordionContent>
-            </AccordionItem>
+            
 
             {/* Nutrition Preferences */}
             <AccordionItem value="nutrition">
@@ -520,8 +369,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
           </CardHeader>
           <CardContent>
             <p className="text-green-700">
-              Profile: {profile.age || 'N/A'}y, {profile.gender || 'N/A'}, {profile.height_cm || 'N/A'}cm, 
-              {profile.workout_experience || 'Beginner'}, {profile.activity_level || 'N/A'}
+              Profile: {profile.age || 'N/A'}y, {profile.gender || 'N/A'}, {profile.height_cm || 'N/A'}cm
             </p>
           </CardContent>
         </Card>
