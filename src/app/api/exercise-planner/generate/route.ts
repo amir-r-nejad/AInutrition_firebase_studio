@@ -51,6 +51,22 @@ export async function POST(request: NextRequest) {
 
     const prompt = `You are a professional fitness trainer creating a personalized exercise plan.
 
+        CRITICAL INSTRUCTIONS:
+        1. Generate a COMPLETE 7-day workout plan for ALL 7 days
+        2. Each day must have 6-8 exercises in the main workout section
+        3. Calculate realistic durations: warm-up = 10-15% of total time, cool-down = 10-15% of total time
+        4. DO NOT use comments or incomplete sections - provide COMPLETE exercises for every day
+        5. Return ONLY valid JSON without any comments or additional text
+
+        User preferences:
+        - Fitness level: ${preferences.fitness_level}
+        - Primary goal: ${preferences.primary_goal}
+        - Available time per session: ${preferences.available_time_per_session} minutes
+        - Exercise days per week: ${preferences.exercise_days_per_week}
+        - Medical conditions: ${preferences.existing_medical_conditions?.join(', ') || 'None'}
+        - Injuries/limitations: ${preferences.injuries_or_limitations || 'None'}
+        - Available equipment: ${preferences.available_equipment?.join(', ') || 'Bodyweight only'}
+
         Create a comprehensive weekly workout plan in JSON format with the following structure:
 
         {
@@ -62,13 +78,13 @@ export async function POST(request: NextRequest) {
               "warmup": {
                 "exercises": [
                   {
-                    "name": "Arm Circles",
-                    "duration": ${Math.max(300, Math.floor(preferences.available_time_per_session * 0.1))},
+                    "name": "Dynamic Arm Circles",
+                    "duration": ${Math.max(2, Math.floor(preferences.available_time_per_session * 0.1))},
                     "instructions": "Stand with feet shoulder-width apart. Extend arms to sides and make small circles forward for 30 seconds, then backward for 30 seconds."
                   },
                   {
                     "name": "Dynamic Stretches",
-                    "duration": ${Math.max(300, Math.floor(preferences.available_time_per_session * 0.1))},
+                    "duration": ${Math.max(3, Math.floor(preferences.available_time_per_session * 0.15))},
                     "instructions": "Perform leg swings, torso twists, and shoulder rolls to prepare your body for exercise."
                   }
                 ]
@@ -84,19 +100,19 @@ export async function POST(request: NextRequest) {
                   "youtubeSearchTerm": "push ups proper form tutorial beginner",
                   "alternatives": [
                     {
-                      name: "Incline Push-ups",
-                      instructions: "Place your hands on an elevated surface like a bench, step, or wall. The higher the surface, the easier the exercise. Position hands shoulder-width apart and step back so your body forms a straight line. Perform the push-up motion with the same form as regular push-ups.",
-                      youtubeSearchTerm: "incline push ups tutorial proper form"
+                      "name": "Incline Push-ups",
+                      "instructions": "Place your hands on an elevated surface like a bench, step, or wall. The higher the surface, the easier the exercise.",
+                      "youtubeSearchTerm": "incline push ups tutorial proper form"
                     },
                     {
-                      name: "Wall Push-ups",
-                      instructions: "Stand arm's length from a wall with feet hip-width apart. Place palms flat against the wall at shoulder height and shoulder-width apart. Lean in toward the wall by bending your elbows, keeping your body straight. Push back to starting position.",
-                      youtubeSearchTerm: "wall push ups beginner tutorial"
+                      "name": "Wall Push-ups",
+                      "instructions": "Stand arm's length from a wall and perform push-ups against the wall.",
+                      "youtubeSearchTerm": "wall push ups beginner tutorial"
                     },
                     {
-                      name: "Knee Push-ups",
-                      instructions: "Start in a plank position but drop your knees to the ground, creating a straight line from knees to head. Cross your ankles and keep your core engaged. Perform push-ups maintaining proper form from this modified position.",
-                      youtubeSearchTerm: "knee push ups proper form tutorial"
+                      "name": "Knee Push-ups",
+                      "instructions": "Start in a plank position but drop your knees to the ground for easier variation.",
+                      "youtubeSearchTerm": "knee push ups proper form tutorial"
                     }
                   ]
                 },
@@ -110,14 +126,46 @@ export async function POST(request: NextRequest) {
                   "youtubeSearchTerm": "bodyweight squats proper form",
                   "alternatives": [
                     {
-                      name: "Chair Squats",
-                      instructions: "Use a chair for support. Sit down and stand up from the chair repeatedly, focusing on proper form.",
-                      youtubeSearchTerm: "chair squats beginner"
+                      "name": "Chair Squats",
+                      "instructions": "Use a chair for support. Sit down and stand up from the chair repeatedly.",
+                      "youtubeSearchTerm": "chair squats beginner"
                     },
                     {
-                      name: "Wall Squats",
-                      instructions: "Stand with your back against a wall. Slide down until thighs are parallel to floor, hold, then slide back up.",
-                      youtubeSearchTerm: "wall squats proper form"
+                      "name": "Wall Squats",
+                      "instructions": "Stand with your back against a wall. Slide down until thighs are parallel to floor.",
+                      "youtubeSearchTerm": "wall squats proper form"
+                    }
+                  ]
+                },
+                {
+                  "exerciseName": "Dumbbell Rows",
+                  "targetMuscles": ["Back", "Biceps"],
+                  "sets": 3,
+                  "reps": "8-12 each arm",
+                  "restSeconds": 60,
+                  "instructions": "Hold dumbbell in one hand, support yourself with the other. Pull weight toward your hip, squeezing shoulder blade.",
+                  "youtubeSearchTerm": "dumbbell rows proper form",
+                  "alternatives": [
+                    {
+                      "name": "Resistance Band Rows",
+                      "instructions": "Use resistance band for similar pulling motion.",
+                      "youtubeSearchTerm": "resistance band rows"
+                    }
+                  ]
+                },
+                {
+                  "exerciseName": "Shoulder Press",
+                  "targetMuscles": ["Shoulders", "Triceps"],
+                  "sets": 3,
+                  "reps": "8-12",
+                  "restSeconds": 60,
+                  "instructions": "Hold dumbbells at shoulder height, press overhead until arms are fully extended.",
+                  "youtubeSearchTerm": "dumbbell shoulder press form",
+                  "alternatives": [
+                    {
+                      "name": "Pike Push-ups",
+                      "instructions": "Start in downward dog position and perform push-up motion.",
+                      "youtubeSearchTerm": "pike push ups shoulders"
                     }
                   ]
                 },
@@ -127,39 +175,61 @@ export async function POST(request: NextRequest) {
                   "sets": 3,
                   "reps": "30-60 seconds",
                   "restSeconds": 60,
-                  "instructions": "Start in a push-up position. Hold your body in a straight line from head to heels, engaging your core muscles. Breathe normally while holding the position.",
+                  "instructions": "Hold your body in a straight line from head to heels, engaging your core muscles.",
                   "youtubeSearchTerm": "plank exercise proper form",
                   "alternatives": [
                     {
-                      name: "Knee Plank",
-                      instructions: "Perform plank with knees on the ground, maintaining straight line from knees to head.",
-                      youtubeSearchTerm: "modified plank knees"
-                    },
-                    {
-                      name: "Wall Plank",
-                      instructions: "Stand arm's length from wall, place hands against wall and hold plank position.",
-                      youtubeSearchTerm: "wall plank exercise"
+                      "name": "Knee Plank",
+                      "instructions": "Perform plank with knees on the ground for easier variation.",
+                      "youtubeSearchTerm": "modified plank knees"
                     }
                   ]
                 },
                 {
                   "exerciseName": "Lunges",
-                  "targetMuscles": ["Quadriceps", "Glutes", "Hamstrings", "Calves"],
+                  "targetMuscles": ["Quadriceps", "Glutes", "Hamstrings"],
                   "sets": 3,
                   "reps": "8-12 each leg",
                   "restSeconds": 60,
-                  "instructions": "Step forward with one leg, lowering your hips until both knees are bent at 90 degrees. Push back to starting position and repeat with other leg.",
+                  "instructions": "Step forward with one leg, lower your hips until both knees are bent at 90 degrees.",
                   "youtubeSearchTerm": "lunges proper form tutorial",
                   "alternatives": [
                     {
-                      name: "Stationary Lunges",
-                      instructions: "Stay in lunge position and pulse up and down instead of stepping forward.",
-                      youtubeSearchTerm: "stationary lunges exercise"
-                    },
+                      "name": "Reverse Lunges",
+                      "instructions": "Step backward instead of forward, easier on the knees.",
+                      "youtubeSearchTerm": "reverse lunges proper form"
+                    }
+                  ]
+                },
+                {
+                  "exerciseName": "Bicep Curls",
+                  "targetMuscles": ["Biceps"],
+                  "sets": 3,
+                  "reps": "10-15",
+                  "restSeconds": 60,
+                  "instructions": "Hold dumbbells at your sides, curl up toward shoulders keeping elbows stationary.",
+                  "youtubeSearchTerm": "dumbbell bicep curls form",
+                  "alternatives": [
                     {
-                      name: "Reverse Lunges",
-                      instructions: "Step backward instead of forward, easier on the knees.",
-                      youtubeSearchTerm: "reverse lunges proper form"
+                      "name": "Resistance Band Curls",
+                      "instructions": "Use resistance band for similar curling motion.",
+                      "youtubeSearchTerm": "resistance band bicep curls"
+                    }
+                  ]
+                },
+                {
+                  "exerciseName": "Tricep Dips",
+                  "targetMuscles": ["Triceps", "Shoulders"],
+                  "sets": 3,
+                  "reps": "8-12",
+                  "restSeconds": 60,
+                  "instructions": "Use a chair or bench, lower your body by bending elbows, then push back up.",
+                  "youtubeSearchTerm": "tricep dips proper form",
+                  "alternatives": [
+                    {
+                      "name": "Wall Tricep Push-ups",
+                      "instructions": "Stand close to wall, hands close together, perform push-up motion.",
+                      "youtubeSearchTerm": "wall tricep pushups"
                     }
                   ]
                 }
@@ -168,19 +238,29 @@ export async function POST(request: NextRequest) {
                 "exercises": [
                   {
                     "name": "Upper Body Stretches",
-                    "duration": ${Math.max(300, Math.floor(preferences.available_time_per_session * 0.1))},
+                    "duration": ${Math.max(3, Math.floor(preferences.available_time_per_session * 0.1))},
                     "instructions": "Stretch chest, shoulders, and arms. Hold each stretch for 20-30 seconds."
                   },
                   {
                     "name": "Lower Body Stretches",
-                    "duration": ${Math.max(300, Math.floor(preferences.available_time_per_session * 0.1))},
+                    "duration": ${Math.max(2, Math.floor(preferences.available_time_per_session * 0.1))},
                     "instructions": "Stretch quadriceps, hamstrings, and calves. Hold each stretch for 20-30 seconds."
                   }
                 ]
               }
             }
           }
-`;
+        }
+
+        IMPORTANT: Generate complete workout plans for ALL 7 days. Each day should have:
+        - Appropriate focus area (Upper Body, Lower Body, Cardio, Full Body, etc.)
+        - 6-8 main exercises minimum
+        - Realistic warm-up (5-8 minutes total)
+        - Realistic cool-down (3-5 minutes total)
+        - Consider user's limitations: ${preferences.injuries_or_limitations || 'None'}
+        - Available equipment: ${preferences.available_equipment?.join(', ') || 'Bodyweight only'}
+
+        Return ONLY the JSON object with NO additional text, comments, or explanations.`;
 
     console.log('Sending request to Gemini API...');
 
@@ -346,7 +426,7 @@ export async function POST(request: NextRequest) {
             exercises: [
               {
                 name: "Dynamic Warm-up",
-                duration: Math.max(2, Math.floor(preferences.available_time_per_session * 0.2)),
+                duration: Math.max(5, Math.floor(preferences.available_time_per_session * 0.12)),
                 instructions: "Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise. Start slowly and gradually increase range of motion."
               }
             ]
@@ -356,7 +436,7 @@ export async function POST(request: NextRequest) {
             exercises: [
               {
                 name: "Cool-down Stretches",
-                duration: Math.max(2, Math.floor(preferences.available_time_per_session * 0.2)),
+                duration: Math.max(3, Math.floor(preferences.available_time_per_session * 0.08)),
                 instructions: "Perform gentle static stretches holding each position for 15-30 seconds. Focus on the muscle groups worked during the session and breathe deeply."
               }
             ]
