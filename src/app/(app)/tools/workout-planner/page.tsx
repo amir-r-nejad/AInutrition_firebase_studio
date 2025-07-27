@@ -1217,153 +1217,155 @@ export default function ExercisePlannerPage() {
           </form>
         </Form>
 
-    {/* Generated Plan Display */}
-    {generatedPlan && (
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle className="text-2xl font-semibold flex items-center text-green-600">
-            <Activity className="mr-2 h-6 w-6" />
-            Your Personalized Exercise Plan
-          </CardTitle>
-          <CardDescription>
-            AI-generated workout plan based on your preferences and goals
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {generatedPlan.error ? (
-            <div className="text-red-600 p-4 bg-red-50 rounded-lg">
-              {generatedPlan.error}
-            </div>
-          ) : generatedPlan.weeklyPlan ? (
-            <div className="space-y-6">
-              {/* Weekly Plan */}
-              {Object.entries(generatedPlan.weeklyPlan).map(([dayKey, dayPlan]: [string, any]) => (
-                <div key={dayKey} className="border rounded-lg p-4">
-                  <h3 className="text-xl font-semibold mb-2 text-blue-600">
-                    {dayPlan.dayName} - {dayPlan.focus}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">Duration: {dayPlan.duration} minutes</p>
-
-                  {/* Warm-up */}
-                  {dayPlan.warmup && (
-                    <div className="mb-4">
-                      <h4 className="font-semibold text-orange-600 mb-2">Warm-up</h4>
-                      {dayPlan.warmup.exercises.map((exercise: any, idx: number) => (
-                        <div key={idx} className="ml-4 mb-2">
-                          <p><strong>{exercise.name}</strong> - {exercise.duration} min</p>
-                          <p className="text-sm text-gray-600">{exercise.instructions}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Main Workout */}
-                  {dayPlan.mainWorkout && (
-                    <div className="mb-4">
-                      <h4 className="font-semibold text-red-600 mb-2">Main Workout</h4>
-                      {dayPlan.mainWorkout.map((exercise: any, idx: number) => (
-                        <div key={idx} className="ml-4 mb-4 p-3 bg-gray-50 rounded">
-                          <h5 className="font-semibold">{exercise.exerciseName}</h5>
-                          <p className="text-sm"><strong>Target:</strong> {exercise.targetMuscles?.join(', ')}</p>
-                          <p className="text-sm"><strong>Sets:</strong> {exercise.sets} | <strong>Reps:</strong> {exercise.reps} | <strong>Rest:</strong> {exercise.restSeconds}s</p>
-                          <p className="text-sm mt-2">{exercise.instructions}</p>
-
-                          {exercise.youtubeSearchTerm && (
-                            <a 
-                              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.youtubeSearchTerm)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-red-600 hover:underline text-sm"
-                            >
-                              🎥 Watch Tutorial: {exercise.youtubeSearchTerm}
-                            </a>
-                          )}
-
-                          {/* Alternatives */}
-                          {exercise.alternatives && exercise.alternatives.length > 0 && (
-                            <div className="mt-3">
-                              <p className="font-medium text-sm">Alternative Exercises:</p>
-                              {exercise.alternatives.map((alt: any, altIdx: number) => (
-                                <div key={altIdx} className="ml-4 mt-2">
-                                  <p className="text-sm"><strong>{alt.name}</strong></p>
-                                  <p className="text-xs text-gray-600">{alt.instructions}</p>
-                                  {alt.youtubeSearchTerm && (
-                                    <a 
-                                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(alt.youtubeSearchTerm)}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-red-600 hover:underline text-xs"
-                                    >
-                                      🎥 {alt.youtubeSearchTerm}
-                                    </a>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Cool-down */}
-                  {dayPlan.cooldown && (
-                    <div>
-                      <h4 className="font-semibold text-green-600 mb-2">Cool-down</h4>
-                      {dayPlan.cooldown.exercises.map((exercise: any, idx: number) => (
-                        <div key={idx} className="ml-4 mb-2">
-                          <p><strong>{exercise.name}</strong> - {exercise.duration} min</p>
-                          <p className="text-sm text-gray-600">{exercise.instructions}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+        {/* Generated Plan Display */}
+        {generatedPlan && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="text-2xl font-semibold flex items-center text-green-600">
+                <Activity className="mr-2 h-6 w-6" />
+                Your Personalized Exercise Plan
+              </CardTitle>
+              <CardDescription>
+                AI-generated workout plan based on your preferences and goals
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {generatedPlan.error ? (
+                <div className="text-red-600 p-4 bg-red-50 rounded-lg">
+                  {generatedPlan.error}
                 </div>
-              ))}
+              ) : generatedPlan.weeklyPlan ? (
+                <div className="space-y-6">
+                  {/* Weekly Plan */}
+                  {Object.entries(generatedPlan.weeklyPlan).map(([dayKey, dayPlan]: [string, any]) => (
+                    <div key={dayKey} className="border rounded-lg p-4">
+                      <h3 className="text-xl font-semibold mb-2 text-blue-600">
+                        {dayPlan.dayName} - {dayPlan.focus}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">Duration: {dayPlan.duration} minutes</p>
 
-              {/* Tips Sections */}
-              <div className="grid md:grid-cols-3 gap-4 mt-6">
-                {generatedPlan.progressionTips && (
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold text-blue-600 mb-2">Progression Tips</h4>
-                    <ul className="text-sm space-y-1">
-                      {generatedPlan.progressionTips.map((tip: string, idx: number) => (
-                        <li key={idx}>• {tip}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                      {/* Warm-up */}
+                      {dayPlan.warmup && (
+                        <div className="mb-4">
+                          <h4 className="font-semibold text-orange-600 mb-2">Warm-up</h4>
+                          {dayPlan.warmup.exercises.map((exercise: any, idx: number) => (
+                            <div key={idx} className="ml-4 mb-2">
+                              <p><strong>{exercise.name}</strong> - {exercise.duration} min</p>
+                              <p className="text-sm text-gray-600">{exercise.instructions}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-                {generatedPlan.safetyNotes && (
-                  <div className="p-4 bg-red-50 rounded-lg">
-                    <h4 className="font-semibold text-red-600 mb-2">Safety Notes</h4>
-                    <ul className="text-sm space-y-1">
-                      {generatedPlan.safetyNotes.map((note: string, idx: number) => (
-                        <li key={idx}>• {note}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                      {/* Main Workout */}
+                      {dayPlan.mainWorkout && (
+                        <div className="mb-4">
+                          <h4 className="font-semibold text-red-600 mb-2">Main Workout</h4>
+                          {dayPlan.mainWorkout.map((exercise: any, idx: number) => (
+                            <div key={idx} className="ml-4 mb-4 p-3 bg-gray-50 rounded">
+                              <h5 className="font-semibold">{exercise.exerciseName}</h5>
+                              <p className="text-sm"><strong>Target:</strong> {exercise.targetMuscles?.join(', ')}</p>
+                              <p className="text-sm"><strong>Sets:</strong> {exercise.sets} | <strong>Reps:</strong> {exercise.reps} | <strong>Rest:</strong> {exercise.restSeconds}s</p>
+                              <p className="text-sm mt-2">{exercise.instructions}</p>
 
-                {generatedPlan.nutritionTips && (
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <h4 className="font-semibold text-green-600 mb-2">Nutrition Tips</h4>
-                    <ul className="text-sm space-y-1">
-                      {generatedPlan.nutritionTips.map((tip: string, idx: number) => (
-                        <li key={idx}>• {tip}</li>
-                      ))}
-                    </ul>
+                              {exercise.youtubeSearchTerm && (
+                                <a 
+                                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.youtubeSearchTerm)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-red-600 hover:underline text-sm"
+                                >
+                                  🎥 Watch Tutorial: {exercise.youtubeSearchTerm}
+                                </a>
+                              )}
+
+                              {/* Alternatives */}
+                              {exercise.alternatives && exercise.alternatives.length > 0 && (
+                                <div className="mt-3">
+                                  <p className="font-medium text-sm">Alternative Exercises:</p>
+                                  {exercise.alternatives.map((alt: any, altIdx: number) => (
+                                    <div key={altIdx} className="ml-4 mt-2">
+                                      <p className="text-sm"><strong>{alt.name}</strong></p>
+                                      <p className="text-xs text-gray-600">{alt.instructions}</p>
+                                      {alt.youtubeSearchTerm && (
+                                        <a 
+                                          href={`https://www.youtube.com/results?search_query=${encodeURIComponent(alt.youtubeSearchTerm)}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-red-600 hover:underline text-xs"
+                                        >
+                                          🎥 {alt.youtubeSearchTerm}
+                                        </a>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Cool-down */}
+                      {dayPlan.cooldown && (
+                        <div>
+                          <h4 className="font-semibold text-green-600 mb-2">Cool-down</h4>
+                          {dayPlan.cooldown.exercises.map((exercise: any, idx: number) => (
+                            <div key={idx} className="ml-4 mb-2">
+                              <p><strong>{exercise.name}</strong> - {exercise.duration} min</p>
+                              <p className="text-sm text-gray-600">{exercise.instructions}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Tips Sections */}
+                  <div className="grid md:grid-cols-3 gap-4 mt-6">
+                    {generatedPlan.progressionTips && (
+                      <div className="p-4 bg-blue-50 rounded-lg">
+                        <h4 className="font-semibold text-blue-600 mb-2">Progression Tips</h4>
+                        <ul className="text-sm space-y-1">
+                          {generatedPlan.progressionTips.map((tip: string, idx: number) => (
+                            <li key={idx}>• {tip}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {generatedPlan.safetyNotes && (
+                      <div className="p-4 bg-red-50 rounded-lg">
+                        <h4 className="font-semibold text-red-600 mb-2">Safety Notes</h4>
+                        <ul className="text-sm space-y-1">
+                          {generatedPlan.safetyNotes.map((note: string, idx: number) => (
+                            <li key={idx}>• {note}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {generatedPlan.nutritionTips && (
+                      <div className="p-4 bg-green-50 rounded-lg">
+                        <h4 className="font-semibold text-green-600 mb-2">Nutrition Tips</h4>
+                        <ul className="text-sm space-y-1">
+                          {generatedPlan.nutritionTips.map((tip: string, idx: number) => (
+                            <li key={idx}>• {tip}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center p-8">
-              <p className="text-gray-600">No workout plan available to display.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    )}
-  </div>
-);
+                </div>
+              ) : (
+                <div className="text-center p-8">
+                  <p className="text-gray-600">No workout plan available to display.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
+}
