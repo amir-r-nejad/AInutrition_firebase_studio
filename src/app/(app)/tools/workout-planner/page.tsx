@@ -292,7 +292,17 @@ export default function ExercisePlannerPage() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API response error:', response.status, errorText);
-        throw new Error(`Failed to generate exercise plan: ${response.status} ${response.statusText}`);
+        
+        let errorMessage = 'Failed to generate exercise plan';
+        if (response.status === 500) {
+          errorMessage = 'Server error occurred while generating your plan. This might be due to high demand or complex requirements.';
+        } else if (response.status === 401) {
+          errorMessage = 'Authentication required. Please log in again.';
+        } else if (response.status >= 400 && response.status < 500) {
+          errorMessage = 'Invalid request. Please check your inputs and try again.';
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();

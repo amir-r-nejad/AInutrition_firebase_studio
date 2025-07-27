@@ -100,7 +100,12 @@ STRICT REQUIREMENTS:
 11. Add YouTube search terms for video tutorials
 12. Make instructions very detailed and educational
 
-IMPORTANT: You MUST create ${preferences.exercise_days_per_week} complete workout days. Do not create fewer days.
+CRITICAL FORMATTING REQUIREMENTS:
+1. You MUST create exactly ${preferences.exercise_days_per_week} complete workout days (Day1 through Day${preferences.exercise_days_per_week})
+2. Return ONLY valid JSON - no markdown, no code blocks, no extra text
+3. Ensure all JSON is properly closed with matching braces and brackets
+4. Do not truncate or cut off the response - complete all sections
+5. Keep all instructions concise but detailed (2-3 sentences max per exercise)
 
 FORMAT: Return as valid JSON with this exact structure for ALL ${preferences.exercise_days_per_week} days:
 {
@@ -186,9 +191,35 @@ FORMAT: Return as valid JSON with this exact structure for ALL ${preferences.exe
 
     console.log('Sending request to Gemini API...');
     
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let generatedPlan = response.text();
+    let generatedPlan = '';
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (retryCount <= maxRetries) {
+      try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        generatedPlan = response.text();
+        
+        if (generatedPlan && generatedPlan.length > 100) {
+          break; // Got a reasonable response
+        }
+        
+        if (retryCount < maxRetries) {
+          console.log(`Retry ${retryCount + 1}: Response too short, retrying...`);
+          retryCount++;
+          continue;
+        }
+      } catch (apiError) {
+        console.error('Gemini API error:', apiError);
+        if (retryCount < maxRetries) {
+          console.log(`Retry ${retryCount + 1}: API error, retrying...`);
+          retryCount++;
+          continue;
+        }
+        throw new Error('Failed to get response from AI service after multiple attempts');
+      }
+    }
 
     console.log('Received response from Gemini API');
     console.log('Generated plan length:', generatedPlan.length);
@@ -199,11 +230,32 @@ FORMAT: Return as valid JSON with this exact structure for ALL ${preferences.exe
     // Try to parse the JSON to validate it
     let parsedPlan;
     try {
-      parsedPlan = JSON.parse(generatedPlan);
+      // Additional cleanup for common JSON issues
+      let cleanedPlan = generatedPlan;
+      
+      // Remove any trailing incomplete content
+      if (!cleanedPlan.endsWith('}')) {
+        const lastCompleteObject = cleanedPlan.lastIndexOf('}');
+        if (lastCompleteObject > -1) {
+          cleanedPlan = cleanedPlan.substring(0, lastCompleteObject + 1);
+        }
+      }
+      
+      // Fix common JSON issues
+      cleanedPlan = cleanedPlan
+        .replace(/,\s*}/g, '}')  // Remove trailing commas before closing braces
+        .replace(/,\s*]/g, ']')  // Remove trailing commas before closing brackets
+        .replace(/\n/g, ' ')     // Replace newlines with spaces
+        .replace(/\s+/g, ' ')    // Normalize whitespace
+        .trim();
+      
+      parsedPlan = JSON.parse(cleanedPlan);
       console.log('Successfully parsed JSON from Gemini');
     } catch (parseError) {
       console.error('Failed to parse JSON from Gemini:', parseError);
-      console.log('Raw response:', generatedPlan.substring(0, 500));
+      console.log('Raw response length:', generatedPlan.length);
+      console.log('Raw response preview:', generatedPlan.substring(0, 500));
+      console.log('Raw response ending:', generatedPlan.substring(Math.max(0, generatedPlan.length - 500)));
       
       // Create a fallback plan if JSON parsing fails
       const fallbackWeeklyPlan: any = {};
