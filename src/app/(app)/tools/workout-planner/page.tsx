@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -99,7 +98,7 @@ export default function ExercisePlannerPage() {
       try {
         const parsedPlan = JSON.parse(savedPlan);
         setGeneratedPlan(parsedPlan);
-        
+
         // Expand all days by default if weeklyPlan exists
         if (parsedPlan.weeklyPlan) {
           const allDays = Object.keys(parsedPlan.weeklyPlan);
@@ -207,8 +206,8 @@ export default function ExercisePlannerPage() {
             job_type: savedData.job_type || undefined,
             available_equipment: savedData.available_equipment || [],
             available_equipment_other: savedData.available_equipment_other || '',
-            machines_access: savedData.machines_access || false,
-            space_availability: savedData.space_availability || undefined,
+            machines_access: false,
+            space_availability: undefined,
             want_to_track_progress: savedData.want_to_track_progress ?? true,
             weekly_checkins_enabled: savedData.weekly_checkins_enabled ?? true,
             accountability_support: savedData.accountability_support ?? true,
@@ -316,7 +315,7 @@ export default function ExercisePlannerPage() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API response error:', response.status, errorText);
-        
+
         let errorMessage = 'Failed to generate exercise plan';
         if (response.status === 500) {
           errorMessage = 'Server error occurred while generating your plan. This might be due to high demand or complex requirements.';
@@ -325,7 +324,7 @@ export default function ExercisePlannerPage() {
         } else if (response.status >= 400 && response.status < 500) {
           errorMessage = 'Invalid request. Please check your inputs and try again.';
         }
-        
+
         throw new Error(errorMessage);
       }
 
@@ -349,10 +348,10 @@ export default function ExercisePlannerPage() {
 
       if (planData) {
         setGeneratedPlan(planData);
-        
+
         // Save to localStorage for persistence
         localStorage.setItem('generatedExercisePlan', JSON.stringify(planData));
-        
+
         // Expand all days by default if weeklyPlan exists
         if (planData.weeklyPlan) {
           const allDays = Object.keys(planData.weeklyPlan);
@@ -362,7 +361,7 @@ export default function ExercisePlannerPage() {
           }, {} as { [key: string]: boolean });
           setExpandedDays(expandedDaysObject);
         }
-        
+
         alert('Exercise plan generated successfully!');
       } else {
         throw new Error('No valid plan data received from server');
@@ -370,7 +369,7 @@ export default function ExercisePlannerPage() {
 
     } catch (error: any) {
       console.error('Error generating exercise plan:', error);
-      
+
       if (error.name === 'AbortError') {
         alert('Request timed out after 2 minutes. Please try again. If the problem persists, try reducing the number of exercise days.');
       } else if (error.message?.includes('Failed to fetch')) {
@@ -1436,7 +1435,7 @@ export default function ExercisePlannerPage() {
                                       <div className="flex items-center justify-between mb-2">
                                         <h5 className="font-semibold text-orange-800">{exercise.name}</h5>
                                         <Badge variant="outline" className="text-orange-600 border-orange-300">
-                                          {exercise.duration}s
+                                          {exercise.duration} min
                                         </Badge>
                                       </div>
                                       <p className="text-sm text-orange-700">{exercise.instructions}</p>
@@ -1458,7 +1457,7 @@ export default function ExercisePlannerPage() {
                                 </div>
                                 <h4 className="text-xl font-bold text-blue-700">Main Workout</h4>
                               </div>
-                              
+
                               {dayPlan.mainWorkout.map((exercise: any, idx: number) => {
                                 const exerciseKey = `${dayKey}-exercise-${idx}`;
                                 return (
@@ -1595,7 +1594,7 @@ export default function ExercisePlannerPage() {
                                       <div className="flex items-center justify-between mb-2">
                                         <h5 className="font-semibold text-green-800">{exercise.name}</h5>
                                         <Badge variant="outline" className="text-green-600 border-green-300">
-                                          {exercise.duration}s
+                                          {exercise.duration} min
                                         </Badge>
                                       </div>
                                       <p className="text-sm text-green-700">{exercise.instructions}</p>

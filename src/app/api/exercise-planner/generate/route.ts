@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@googleGenerativeAI/gemini-pro';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -422,25 +422,25 @@ export async function POST(request: NextRequest) {
           dayName: dayNames[i - 1],
           focus: `${focusArea} - ${preferences.primary_goal}`,
           duration: preferences.available_time_per_session,
-          warmup: {
-            exercises: [
-              {
-                name: "Dynamic Warm-up",
-                duration: Math.max(5, Math.floor(preferences.available_time_per_session * 0.12)),
-                instructions: "Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise. Start slowly and gradually increase range of motion."
-              }
-            ]
-          },
+          "warmup": {
+                "exercises": [
+                  {
+                    "name": "Dynamic Warm-up",
+                    "duration": ${Math.max(5, Math.floor(preferences.available_time_per_session * 0.12))},
+                    "instructions": "Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise. Start slowly and gradually increase range of motion."
+                  }
+                ]
+              },
           mainWorkout: dayExercises,
-          cooldown: {
-            exercises: [
-              {
-                name: "Cool-down Stretches",
-                duration: Math.max(3, Math.floor(preferences.available_time_per_session * 0.08)),
-                instructions: "Perform gentle static stretches holding each position for 15-30 seconds. Focus on the muscle groups worked during the session and breathe deeply."
+          "cooldown": {
+                "exercises": [
+                  {
+                    "name": "Cool-down Stretches",
+                    "duration": ${Math.max(3, Math.floor(preferences.available_time_per_session * 0.08))},
+                    "instructions": "Perform gentle static stretches holding each position for 15-30 seconds. Focus on the muscle groups worked during the session and breathe deeply."
+                  }
+                ]
               }
-            ]
-          }
         };
       }
 
