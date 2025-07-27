@@ -272,7 +272,9 @@ export default function ExercisePlannerPage() {
 
       // Send to Gemini API - the backend will handle getting profile data
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 120000); // Increased to 120 seconds (2 minutes)
 
       const response = await fetch('/api/exercise-planner/generate', {
         method: 'POST',
@@ -329,15 +331,16 @@ export default function ExercisePlannerPage() {
         throw new Error('No valid plan data received from server');
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating exercise plan:', error);
       
       if (error.name === 'AbortError') {
-        alert('Request timed out. Please try again with a shorter workout duration or fewer days.');
-      } else if (error.message.includes('Failed to fetch')) {
+        alert('Request timed out after 2 minutes. Please try again. If the problem persists, try reducing the number of exercise days.');
+      } else if (error.message?.includes('Failed to fetch')) {
         alert('Network error occurred. Please check your connection and try again.');
       } else {
-        alert(`Error generating exercise plan: ${error.message}. Please try again.`);
+        const errorMessage = error?.message || 'Unknown error occurred';
+        alert(`Error generating exercise plan: ${errorMessage}. Please try again.`);
       }
     } finally {
       setIsGenerating(false);
