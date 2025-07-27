@@ -177,6 +177,34 @@ For each day (Monday through Sunday), create 6 distinct meals that:
 Generate the complete meal plan now.`,
 });
 
+// Transform AI output to required schema if needed
+function transformAIOutputToWeekSchema(output: any): any {
+  if (output && output.days && Array.isArray(output.days)) {
+    return {
+      week: output.days.map((dayObj: any) => ({
+        day: dayObj.day_of_week || dayObj.day || '',
+        meals: (dayObj.meals || []).map((meal: any) => ({
+          meal_type: meal.meal_name || meal.meal_type || '',
+          name: meal.custom_name || meal.name || '',
+          ingredients: meal.ingredients || [],
+          total_calories: meal.total_calories,
+          total_protein: meal.total_protein,
+          total_carbs: meal.total_carbs,
+          total_fat: meal.total_fat,
+        })),
+        daily_totals: dayObj.daily_totals || {
+          calories: dayObj.total_calories,
+          protein: dayObj.total_protein,
+          carbs: dayObj.total_carbs,
+          fat: dayObj.total_fat,
+        },
+      })),
+      weekly_summary: output.weekly_summary || {},
+    };
+  }
+  return output;
+}
+
 const generatePersonalizedMealPlanFlow = openaiModel.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
@@ -191,7 +219,7 @@ const generatePersonalizedMealPlanFlow = openaiModel.defineFlow(
       if (!output) throw new Error('AI did not return output.');
 
       const validationResult =
-        GeneratePersonalizedMealPlanOutputSchema.safeParse(output);
+        GeneratePersonalizedMealPlanOutputSchema.safeParse(transformAIOutputToWeekSchema(output));
       if (!validationResult.success) {
         console.error(
           'AI output validation error:',

@@ -336,3 +336,208 @@ export const MacroSplitterFormSchema = z.object({
 });
 
 export type MacroSplitterFormValues = z.infer<typeof MacroSplitterFormSchema>;
+
+// SuggestMealsForMacros Schemas
+export const SuggestMealsForMacrosInputSchema = z.object({
+  protein: z.number().min(0, 'Protein must be non-negative'),
+  carbs: z.number().min(0, 'Carbs must be non-negative'),
+  fat: z.number().min(0, 'Fat must be non-negative'),
+  calories: z.number().min(0, 'Calories must be non-negative'),
+  preferences: z.string().optional(),
+});
+
+export const SuggestMealsForMacrosOutputSchema = z.object({
+  suggestions: z.array(
+    z.object({
+      name: z.string(),
+      protein: z.number(),
+      carbs: z.number(),
+      fat: z.number(),
+      calories: z.number(),
+      description: z.string().optional(),
+    })
+  ),
+});
+
+// SmartCaloriePlanner Schemas
+export const SmartCaloriePlannerFormSchema = z.object({
+  age: z.number().int().positive().nullable(),
+  biological_sex: z.enum(['male', 'female']).nullable(),
+  height_cm: z.number().positive().nullable(),
+  current_weight_kg: z.number().positive().nullable(),
+  target_weight_1month_kg: z.number().positive().nullable(),
+  long_term_goal_weight_kg: z.number().positive().nullable(),
+  physical_activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']).nullable(),
+  primary_diet_goal: z.enum(['fat_loss', 'muscle_gain', 'maintenance']).nullable(),
+  bf_current: z.number().nullable(),
+  bf_target: z.number().nullable(),
+  bf_ideal: z.number().nullable(),
+  mm_current: z.number().nullable(),
+  mm_target: z.number().nullable(),
+  mm_ideal: z.number().nullable(),
+  bw_current: z.number().nullable(),
+  bw_target: z.number().nullable(),
+  bw_ideal: z.number().nullable(),
+  waist_current: z.number().nullable(),
+  waist_goal_1m: z.number().nullable(),
+  waist_ideal: z.number().nullable(),
+  hips_current: z.number().nullable(),
+  hips_goal_1m: z.number().nullable(),
+  hips_ideal: z.number().nullable(),
+  right_leg_current: z.number().nullable(),
+  right_leg_goal_1m: z.number().nullable(),
+  right_leg_ideal: z.number().nullable(),
+  left_leg_current: z.number().nullable(),
+  left_leg_goal_1m: z.number().nullable(),
+  left_leg_ideal: z.number().nullable(),
+  right_arm_current: z.number().nullable(),
+  right_arm_goal_1m: z.number().nullable(),
+  right_arm_ideal: z.number().nullable(),
+  left_arm_current: z.number().nullable(),
+  left_arm_goal_1m: z.number().nullable(),
+  left_arm_ideal: z.number().nullable(),
+});
+export type SmartCaloriePlannerFormValues = z.infer<typeof SmartCaloriePlannerFormSchema>;
+
+// AdjustMealIngredients Schemas
+export const AdjustMealIngredientsInputSchema = z.object({
+  userProfile: z.object({
+    age: z.number().nullable(),
+    primary_diet_goal: z.string().nullable(),
+    preferred_diet: z.string().nullable().optional(),
+    allergies: z.array(z.string()).nullable().optional(),
+    dispreferrred_ingredients: z.array(z.string()).nullable().optional(),
+    preferred_ingredients: z.array(z.string()).nullable().optional(),
+  }),
+  originalMeal: z.object({
+    name: z.string(),
+    custom_name: z.string().optional(),
+    ingredients: z.array(
+      z.object({
+        name: z.string(),
+        quantity: z.number(),
+        unit: z.string(),
+      })
+    ),
+  }),
+  targetMacros: z.object({
+    calories: z.number(),
+    protein: z.number(),
+    carbs: z.number(),
+    fat: z.number(),
+  }),
+});
+
+export const AdjustMealIngredientsOutputSchema = z.object({
+  adjustedMeal: z.object({
+    name: z.string(),
+    custom_name: z.string().optional(),
+    ingredients: z.array(
+      z.object({
+        name: z.string(),
+        quantity: z.number(),
+        unit: z.string(),
+        calories: z.number(),
+        protein: z.number(),
+        carbs: z.number(),
+        fat: z.number(),
+      })
+    ),
+    total_calories: z.number(),
+    total_protein: z.number(),
+    total_carbs: z.number(),
+    total_fat: z.number(),
+  }),
+  explanation: z.string(),
+});
+
+export type AdjustMealIngredientsInput = z.infer<typeof AdjustMealIngredientsInputSchema>;
+export type AdjustMealIngredientsOutput = z.infer<typeof AdjustMealIngredientsOutputSchema>;
+
+// GeneratePersonalizedMealPlan Schemas
+export const GeneratePersonalizedMealPlanInputSchema = z.object({
+  age: z.number().nullable(),
+  biological_sex: z.string().nullable(),
+  height_cm: z.number().nullable(),
+  current_weight_kg: z.number().nullable(),
+  primary_diet_goal: z.string().nullable(),
+  physical_activity_level: z.string().nullable(),
+  preferred_diet: z.string().nullable().optional(),
+  allergies: z.array(z.string()).nullable().optional(),
+  preferred_cuisines: z.array(z.string()).nullable().optional(),
+  dispreferrred_cuisines: z.array(z.string()).nullable().optional(),
+  preferred_ingredients: z.array(z.string()).nullable().optional(),
+  dispreferrred_ingredients: z.array(z.string()).nullable().optional(),
+  medical_conditions: z.array(z.string()).nullable().optional(),
+  preferred_micronutrients: z.array(z.string()).nullable().optional(),
+  meal_data: z.union([
+    z.object({
+      target_daily_calories: z.number().nullable(),
+      target_protein_g: z.number().nullable(),
+      target_carbs_g: z.number().nullable(),
+      target_fat_g: z.number().nullable(),
+    }),
+    z.object({
+      days: z.array(
+        z.object({
+          day_of_week: z.string(),
+          meals: z.array(
+            z.object({
+              name: z.string(),
+              custom_name: z.string().optional(),
+              ingredients: z.array(z.any()),
+              total_fat: z.number().nullable(),
+              total_carbs: z.number().nullable(),
+              total_protein: z.number().nullable(),
+              total_calories: z.number().nullable(),
+            })
+          ),
+        })
+      ),
+    })
+  ]).nullable(),
+});
+
+export const GeneratePersonalizedMealPlanOutputSchema = z.object({
+  week: z.array(
+    z.object({
+      day: z.string(),
+      meals: z.array(
+        z.object({
+          meal_type: z.string(),
+          name: z.string(),
+          ingredients: z.array(
+            z.object({
+              name: z.string(),
+              quantity: z.number(),
+              unit: z.string(),
+              calories: z.number(),
+              protein: z.number(),
+              carbs: z.number(),
+              fat: z.number(),
+            })
+          ),
+          total_calories: z.number(),
+          total_protein: z.number(),
+          total_carbs: z.number(),
+          total_fat: z.number(),
+        })
+      ),
+      daily_totals: z.object({
+        calories: z.number(),
+        protein: z.number(),
+        carbs: z.number(),
+        fat: z.number(),
+      }),
+    })
+  ),
+  weekly_summary: z.object({
+    total_calories: z.number(),
+    total_protein: z.number(),
+    total_carbs: z.number(),
+    total_fat: z.number(),
+  }),
+});
+
+export type GeneratePersonalizedMealPlanInput = z.infer<typeof GeneratePersonalizedMealPlanInputSchema>;
+export type GeneratePersonalizedMealPlanOutput = z.infer<typeof GeneratePersonalizedMealPlanOutputSchema>;

@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate content with Gemini
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Get user profile data
     const { data: profileData } = await supabase
