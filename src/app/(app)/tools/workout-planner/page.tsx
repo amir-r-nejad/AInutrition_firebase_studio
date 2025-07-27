@@ -218,7 +218,7 @@ export default function ExercisePlannerPage() {
       try {
         const parsedPlan = JSON.parse(savedPlan);
         setGeneratedPlan(parsedPlan);
-        if (parsedPlan.weeklyPlan) {
+        if (parsedPlan.weeklyPlan && typeof parsedPlan.weeklyPlan === 'object') {
           const allDays = Object.keys(parsedPlan.weeklyPlan);
           const expandedDaysObject = allDays.reduce(
             (acc, day) => {
@@ -472,7 +472,7 @@ export default function ExercisePlannerPage() {
       if (planData) {
         setGeneratedPlan(planData);
         localStorage.setItem("generatedExercisePlan", JSON.stringify(planData));
-        if (planData.weeklyPlan) {
+        if (planData.weeklyPlan && typeof planData.weeklyPlan === 'object') {
           const allDays = Object.keys(planData.weeklyPlan);
           const expandedDaysObject = allDays.reduce(
             (acc, day) => {
@@ -1679,7 +1679,7 @@ export default function ExercisePlannerPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="text-center space-y-2">
                         <div className="text-3xl font-bold text-blue-600">
-                          {Object.keys(generatedPlan.weeklyPlan).length}
+                          {generatedPlan.weeklyPlan ? Object.keys(generatedPlan.weeklyPlan).length : 0}
                         </div>
                         <p className="text-blue-700 font-medium">
                           Workout Days
@@ -1687,11 +1687,11 @@ export default function ExercisePlannerPage() {
                       </div>
                       <div className="text-center space-y-2">
                         <div className="text-3xl font-bold text-green-600">
-                          {Object.values(generatedPlan.weeklyPlan).reduce(
+                          {generatedPlan.weeklyPlan ? Object.values(generatedPlan.weeklyPlan).reduce(
                             (total: number, day: any) =>
                               total + (day.duration || 0),
                             0,
-                          )}
+                          ) : 0}
                         </div>
                         <p className="text-green-700 font-medium">
                           Total Minutes
@@ -1699,13 +1699,13 @@ export default function ExercisePlannerPage() {
                       </div>
                       <div className="text-center space-y-2">
                         <div className="text-3xl font-bold text-purple-600">
-                          {Math.round(
+                          {generatedPlan.weeklyPlan && Object.keys(generatedPlan.weeklyPlan).length > 0 ? Math.round(
                             Object.values(generatedPlan.weeklyPlan).reduce(
                               (total: number, day: any) =>
                                 total + (day.duration || 0),
                               0,
                             ) / Object.keys(generatedPlan.weeklyPlan).length,
-                          )}
+                          ) : 0}
                         </div>
                         <p className="text-purple-700 font-medium">
                           Avg Session
@@ -1716,7 +1716,7 @@ export default function ExercisePlannerPage() {
                 </Card>
 
                 <div className="space-y-6">
-                  {Object.entries(generatedPlan.weeklyPlan).map(
+                  {generatedPlan.weeklyPlan && Object.entries(generatedPlan.weeklyPlan).map(
                     ([dayKey, dayPlan]: [string, any], dayIndex) => (
                       <Card
                         key={dayKey}
