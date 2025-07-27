@@ -362,7 +362,7 @@ export async function POST(request: NextRequest) {
               {
                 name: "Wall Push-ups",
                 instructions: "Stand arm's length from wall, place palms flat against wall, and perform push-up motion.",
-                youtubeSearchTerm: "wall push ups beginner"
+                youtubeSearchTerm": "wall push ups beginner"
               }
             ]
           }
@@ -370,22 +370,22 @@ export async function POST(request: NextRequest) {
         "Lower Body Strength": [
           {
             exerciseName: "Bodyweight Squats",
-            targetMuscles: ["Quadriceps", "Glutes", "Hamstrings"],
+            targetMuscles": ["Quadriceps", "Glutes", "Hamstrings"],
             sets: 3,
-            reps: "10-15",
-            restSeconds: 60,
-            instructions: "Stand with feet shoulder-width apart, lower your body by bending your knees and pushing your hips back as if sitting in a chair. Keep your chest up and knees behind your toes. Return to standing position.",
-            youtubeSearchTerm: "bodyweight squats proper form",
-            alternatives: [
+            reps": "10-15",
+            restSeconds": 60,
+            instructions": "Stand with feet shoulder-width apart, lower your body by bending your knees and pushing your hips back as if sitting in a chair. Keep your chest up and knees behind your toes. Return to standing position.",
+            youtubeSearchTerm": "bodyweight squats proper form",
+            alternatives": [
               {
-                name: "Chair-Assisted Squats",
-                instructions: "Use a chair behind you for support and guidance. Sit back until you lightly touch the chair, then stand up.",
-                youtubeSearchTerm: "chair assisted squats"
+                name": "Chair-Assisted Squats",
+                instructions": "Use a chair behind you for support and guidance. Sit back until you lightly touch the chair, then stand up.",
+                youtubeSearchTerm": "chair assisted squats"
               },
               {
-                name: "Wall Squats",
-                instructions: "Lean your back against a wall and slide down into squat position, holding for 15-30 seconds.",
-                youtubeSearchTerm: "wall squats exercise"
+                name": "Wall Squats",
+                instructions": "Lean your back against a wall and slide down into squat position, holding for 15-30 seconds.",
+                youtubeSearchTerm": "wall squats exercise"
               }
             ]
           }
@@ -397,22 +397,22 @@ export async function POST(request: NextRequest) {
         const dayExercises = exercisesByFocus[focusArea] || [
           {
             exerciseName: "Full Body Movement",
-            targetMuscles: ["Full Body"],
-            sets: 3,
-            reps: "8-12",
-            restSeconds: 60,
-            instructions: "Perform movements appropriate for your fitness level and available equipment. Focus on proper form over speed or intensity.",
-            youtubeSearchTerm: `${preferences.primary_goal.toLowerCase()} ${preferences.fitness_level.toLowerCase()} workout`,
-            alternatives: [
+            targetMuscles": ["Full Body"],
+            sets": 3,
+            reps": "8-12",
+            restSeconds": 60,
+            instructions": "Perform movements appropriate for your fitness level and available equipment. Focus on proper form over speed or intensity.",
+            youtubeSearchTerm": `${preferences.primary_goal.toLowerCase()} ${preferences.fitness_level.toLowerCase()} workout`,
+            alternatives": [
               {
-                name: "Beginner Modification",
-                instructions: "Reduce intensity and take longer rest periods as needed.",
-                youtubeSearchTerm: "beginner workout modifications"
+                name": "Beginner Modification",
+                instructions": "Reduce intensity and take longer rest periods as needed.",
+                youtubeSearchTerm": "beginner workout modifications"
               },
               {
-                name: "Equipment-Free Version",
-                instructions: "Use bodyweight exercises that target similar muscle groups.",
-                youtubeSearchTerm: "bodyweight exercises no equipment"
+                name": "Equipment-Free Version",
+                instructions": "Use bodyweight exercises that target similar muscle groups.",
+                youtubeSearchTerm": "bodyweight exercises no equipment"
               }
             ]
           }
