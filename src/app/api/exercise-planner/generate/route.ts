@@ -14,13 +14,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { prompt, preferences } = await request.json();
+    const { prompt: userPrompt, preferences } = await request.json();
 
     // Generate content with Gemini
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // Generate AI exercise plan using Gemini
-      const prompt = `Create a comprehensive weekly exercise plan based on the following profile:
+      const prompt = `Create a comprehensive weekly exercise plan in ENGLISH based on the following profile:
 
 FITNESS PROFILE:
 - Fitness Level: ${preferences.fitness_level}
@@ -49,25 +49,33 @@ GOALS & FOCUS:
 - Timeline: ${preferences.goal_timeline_weeks} weeks
 - Target Weight: ${preferences.target_weight_kg || 'Not specified'} kg
 
-REQUIREMENTS:
-1. Create a complete weekly workout plan (${preferences.exercise_days_per_week} days)
-2. Each exercise must include: name, sets, reps, rest periods, detailed instructions
-3. Provide 2-3 alternative exercises for each main exercise
-4. Include YouTube search terms for each exercise (format: "exercise name tutorial proper form")
-5. Add warm-up and cool-down routines
-6. Consider all health conditions and limitations
+STRICT REQUIREMENTS:
+1. Response must be in ENGLISH only
+2. Create a complete weekly workout plan for ${preferences.exercise_days_per_week} days
+3. Each exercise must include: name, sets, reps, rest periods, detailed step-by-step instructions
+4. Provide 2-3 alternative exercises for each main exercise with YouTube search terms
+5. Include comprehensive warm-up and cool-down routines for each day
+6. Consider all health conditions and physical limitations
 7. Progressive difficulty based on fitness level
-8. Equipment-specific modifications
+8. Equipment-specific modifications and adaptations
+9. Include proper form instructions and safety tips
+10. Add YouTube search terms for video tutorials
 
-FORMAT: Return as JSON with this exact structure:
+FORMAT: Return as valid JSON with this exact structure:
 {
   "weeklyPlan": {
     "Day1": {
       "dayName": "Monday",
       "focus": "Upper Body Strength",
-      "duration": 45,
+      "duration": ${preferences.available_time_per_session},
       "warmup": {
-        "exercises": [{"name": "...", "duration": 5, "instructions": "..."}]
+        "exercises": [
+          {
+            "name": "Arm Circles",
+            "duration": 2,
+            "instructions": "Stand with arms extended, make small circles forward then backward"
+          }
+        ]
       },
       "mainWorkout": [
         {
@@ -76,30 +84,54 @@ FORMAT: Return as JSON with this exact structure:
           "sets": 3,
           "reps": "8-12",
           "restSeconds": 60,
-          "instructions": "Detailed step-by-step instructions...",
-          "youtubeSearchTerm": "push ups proper form tutorial",
+          "instructions": "Start in plank position with hands shoulder-width apart. Lower body until chest nearly touches ground. Push back up to starting position. Keep core tight throughout movement.",
+          "youtubeSearchTerm": "push ups proper form tutorial beginner",
           "alternatives": [
             {
               "name": "Incline Push-ups",
-              "instructions": "...",
-              "youtubeSearchTerm": "incline push ups tutorial"
+              "instructions": "Place hands on elevated surface like bench or step. Perform push-up motion with easier angle.",
+              "youtubeSearchTerm": "incline push ups tutorial proper form"
             },
             {
               "name": "Wall Push-ups",
-              "instructions": "...",
+              "instructions": "Stand arm's length from wall. Place hands flat against wall. Push body away from wall and return.",
               "youtubeSearchTerm": "wall push ups beginner tutorial"
+            },
+            {
+              "name": "Knee Push-ups",
+              "instructions": "Start in plank position but rest on knees instead of toes. Perform push-up motion.",
+              "youtubeSearchTerm": "knee push ups proper form tutorial"
             }
           ]
         }
       ],
       "cooldown": {
-        "exercises": [{"name": "...", "duration": 5, "instructions": "..."}]
+        "exercises": [
+          {
+            "name": "Chest Stretch",
+            "duration": 3,
+            "instructions": "Stand in doorway with arm against frame. Step forward to stretch chest and shoulder"
+          }
+        ]
       }
     }
   },
-  "progressionTips": ["..."],
-  "safetyNotes": ["..."],
-  "nutritionTips": ["..."]
+  "progressionTips": [
+    "Start with easier variations and progress to harder ones",
+    "Increase reps or sets weekly as you get stronger",
+    "Focus on proper form over speed or weight"
+  ],
+  "safetyNotes": [
+    "Stop immediately if you feel pain or discomfort",
+    "Warm up properly before each workout",
+    "Stay hydrated throughout exercise",
+    "Listen to your body and rest when needed"
+  ],
+  "nutritionTips": [
+    "Eat protein within 30 minutes after workout",
+    "Stay hydrated before, during, and after exercise",
+    "Include complex carbs for energy"
+  ]
 }`;
 
     const result = await model.generateContent(prompt);
@@ -111,11 +143,12 @@ FORMAT: Return as JSON with this exact structure:
       .from('exercise_plans')
       .insert({
         user_id: user.id,
-        plan_name: `برنامه ورزشی ${new Date().toLocaleDateString('fa-IR')}`,
-        plan_description: `برنامه ورزشی ایجاد شده برای هدف: ${preferences.primary_goal}`,
+        plan_name: `Exercise Plan ${new Date().toLocaleDateString('en-US')}`,
+        plan_description: `Personalized workout plan created for goal: ${preferences.primary_goal}`,
         weekly_plan: {
           generated_content: generatedPlan,
-          preferences: preferences
+          preferences: preferences,
+          gemini_response: generatedPlan
         },
         total_duration_minutes: preferences.available_time_per_session * preferences.exercise_days_per_week,
         difficulty_level: preferences.fitness_level,
