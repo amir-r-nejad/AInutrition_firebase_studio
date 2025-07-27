@@ -1763,7 +1763,7 @@ export default function ExercisePlannerPage() {
 
                         {expandedDays[dayKey] && (
                           <CardContent className="p-8 space-y-8">
-                            {dayPlan.warmup && (
+                            {dayPlan.warmup && dayPlan.warmup.exercises && dayPlan.warmup.exercises.length > 0 && (
                               <div className="space-y-4">
                                 <div className="flex items-center gap-2 mb-4">
                                   <div className="bg-orange-100 p-2 rounded-full">
@@ -1805,7 +1805,7 @@ export default function ExercisePlannerPage() {
 
                             <Separator />
 
-                            {dayPlan.mainWorkout && (
+                            {dayPlan.mainWorkout && dayPlan.mainWorkout.length > 0 && (
                               <div className="space-y-6">
                                 <div className="flex items-center gap-2 mb-6">
                                   <div className="bg-blue-100 p-2 rounded-full">
@@ -2018,7 +2018,7 @@ export default function ExercisePlannerPage() {
 
                             <Separator />
 
-                            {dayPlan.cooldown && (
+                            {dayPlan.cooldown && dayPlan.cooldown.exercises && dayPlan.cooldown.exercises.length > 0 && (
                               <div className="space-y-4">
                                 <div className="flex items-center gap-2 mb-4">
                                   <div className="bg-green-100 p-2 rounded-full">
