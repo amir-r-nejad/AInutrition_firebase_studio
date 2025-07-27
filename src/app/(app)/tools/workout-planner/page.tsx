@@ -1045,8 +1045,6 @@ export default function ExercisePlannerPage() {
                 </AccordionContent>
               </AccordionItem>
 
-
-
               {/* Additional Preferences */}
               <AccordionItem value="preferences">
                 <AccordionTrigger className="text-lg font-semibold text-green-800">
@@ -1366,6 +1364,6 @@ export default function ExercisePlannerPage() {
           </Card>
         )}
       </div>
-    );
-  };
+    
+  );
 }
