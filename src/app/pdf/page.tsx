@@ -1,6 +1,6 @@
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import PDFSection from '@/features/tools/components/pdf-preview/PDFSection';
 import { Suspense } from 'react';
-import PDFSection from '../../features/tools/components/pdf-preview/PDFSection';
 
 async function PDFPage() {
   return (

@@ -20,7 +20,6 @@ export async function editPlan(newPlan: any) {
       .from('profile')
       .select('user_id')
       .eq('user_id', user.id)
-      .single();
 
     if (!profileExists) {
       throw new Error('Profile must be created before saving plan');

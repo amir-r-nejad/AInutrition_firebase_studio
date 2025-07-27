@@ -6,6 +6,7 @@ services:
     container_name: nextjs-dev
     ports:
       - '3000:3000'
+    env_file: .env
 
     develop:
       watch:

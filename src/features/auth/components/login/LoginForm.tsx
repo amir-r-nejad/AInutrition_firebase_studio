@@ -33,7 +33,7 @@ function LoginForm() {
 
     if (isSuccess) {
       toast({ title: 'Login Successful', description: `Welcome back!!!` });
-      return router.push('/dashboard');
+      return router.push('/onboarding');
     }
 
     if (!isSuccess)

@@ -14,46 +14,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { BaseProfileData } from '@/lib/schemas';
 import { editProfile } from '../actions/apiUserProfile';
-import { toast } from '@/hooks/use-toast';
-import { User, Heart, Target, Info } from 'lucide-react';
 
-const profileSchema = z.object({
-  full_name: z.string().min(1, 'Full name is required'),
-  age: z.number().min(10).max(120).optional(),
-  gender: z.enum(['Male', 'Female', 'Other']).optional(),
-  height_cm: z.number().min(100).max(250).optional(),
-  current_weight: z.number().min(30).max(300).optional(),
-  target_weight: z.number().min(30).max(300).optional(),
-  body_fat_percentage: z.number().min(5).max(50).optional(),
-  target_body_fat: z.number().min(5).max(50).optional(),
-  dietary_preferences: z.string().optional(),
-  allergies: z.string().optional(),
-  medical_conditions: z.string().optional(),
-});
+function ProfileForm({
+  user,
+  profile,
+}: {
+  user: User;
+  profile: BaseProfileData;
+}) {
+  const { user_role, ...formData } = profile;
+  console.log(user_role);
 
-type ProfileFormData = z.infer<typeof profileSchema>;
-
-interface ProfileFormProps {
-  profile: BaseProfileData | null;
-}
-
-export default function ProfileForm({ profile }: ProfileFormProps) {
-  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      full_name: profile?.full_name || '',
-      age: profile?.age || undefined,
-      gender: profile?.gender || undefined,
-      height_cm: profile?.height_cm || undefined,
-      current_weight: profile?.current_weight || undefined,
-      target_weight: profile?.target_weight || undefined,
-      body_fat_percentage: profile?.body_fat_percentage || undefined,
-      target_body_fat: profile?.target_body_fat || undefined,
-      dietary_preferences: profile?.dietary_preferences || '',
-      allergies: profile?.allergies || '',
-      medical_conditions: profile?.medical_conditions || '',
+      ...formData,
+      name: user.user_metadata.name,
     },
   });
 

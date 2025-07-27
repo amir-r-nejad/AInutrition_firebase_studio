@@ -1,4 +1,5 @@
 import { z } from 'zod';
+// TODO: Import or define genders, allActivityLevels, smartPlannerDietGoals, preferredDiets as needed
 
 // User Profile Schema
 export const BaseProfileSchema = z.object({
@@ -24,7 +25,6 @@ export const BaseProfileSchema = z.object({
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
 });
-
 export type BaseProfileData = z.infer<typeof BaseProfileSchema>;
 
 // Profile Form Schema for editing
@@ -47,7 +47,6 @@ export const ProfileFormSchema = z.object({
   preferred_workout_type: z.enum(['Cardio', 'Strength', 'Mixed', 'Flexibility']).nullable(),
   workout_experience: z.enum(['Beginner', 'Intermediate', 'Advanced']).nullable(),
 });
-
 export type ProfileFormValues = z.infer<typeof ProfileFormSchema>;
 
 // User Plan Schema
@@ -63,7 +62,6 @@ export const UserPlanSchema = z.object({
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
 });
-
 export type UserPlanType = z.infer<typeof UserPlanSchema>;
 
 // Workout Plan Schema (new)
@@ -86,10 +84,9 @@ export const WorkoutPlanSchema = z.object({
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
 });
-
 export type WorkoutPlanType = z.infer<typeof WorkoutPlanSchema>;
 
-// Meal Schema
+// Meal Schema (move this up before WeeklyMealPlanSchema and MealPlansSchema)
 export const MealSchema = z.object({
   id: z.string(),
   user_id: z.string(),
@@ -104,7 +101,6 @@ export const MealSchema = z.object({
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
 });
-
 export type MealType = z.infer<typeof MealSchema>;
 
 // Weekly Meal Plan Schema
@@ -117,7 +113,6 @@ export const WeeklyMealPlanSchema = z.object({
   saturday: z.array(MealSchema),
   sunday: z.array(MealSchema),
 });
-
 export type WeeklyMealPlan = z.infer<typeof WeeklyMealPlanSchema>;
 
 // Meal Plans Schema
@@ -134,7 +129,6 @@ export const MealPlansSchema = z.object({
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
 });
-
 export type MealPlans = z.infer<typeof MealPlansSchema>;
 
 // Exercise Schema (new)
@@ -198,7 +192,7 @@ export const SignupSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
+}).refine((data: { password: string; confirmPassword: string }) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
@@ -206,7 +200,7 @@ export const SignupSchema = z.object({
 export const ResetPasswordSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
+}).refine((data: { password: string; confirmPassword: string }) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
