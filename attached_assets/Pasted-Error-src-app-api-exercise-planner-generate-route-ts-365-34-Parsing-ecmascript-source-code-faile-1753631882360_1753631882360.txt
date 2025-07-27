@@ -1,0 +1,26 @@
+Error: ./src/app/api/exercise-planner/generate/route.ts:365:34
+Parsing ecmascript source code failed
+[0m [90m 363 |[39m                 name[33m:[39m [32m"Wall Push-ups"[39m[33m,[39m[0m
+[0m [90m 364 |[39m                 instructions[33m:[39m [32m"Stand arm's length from wall, place palms flat against wall, and perform push-up motion."[39m[33m,[39m[0m
+[0m[31m[1m>[22m[39m[90m 365 |[39m                 youtubeSearchTerm[32m": "[39mwall push ups beginner[32m"[39m[0m
+[0m [90m     |[39m                                  [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[0m
+[0m [90m 366 |[39m               }[0m
+[0m [90m 367 |[39m             ][0m
+[0m [90m 368 |[39m           }[0m
+
+Unexpected token `string literal (: , ": ")`. Expected ... , *,  (, [, :, , ?, =, an identifier, public, protected, private, readonly, <.
+    at BuildError (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_client_8f19e6fb._.js:11188:41)
+    at react-stack-bottom-frame (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:14911:24)
+    at renderWithHooksAgain (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:6256:24)
+    at renderWithHooks (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:6207:28)
+    at updateFunctionComponent (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:7543:21)
+    at beginWork (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:8142:24)
+    at runWithFiberInDEV (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:3073:74)
+    at performUnitOfWork (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10243:97)
+    at workLoopSync (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10135:40)
+    at renderRootSync (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10118:13)
+    at performWorkOnRoot (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:9853:212)
+    at performSyncWorkOnRoot (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10834:9)
+    at flushSyncWorkAcrossRoots_impl (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10754:316)
+    at processRootScheduleInMicrotask (https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10774:106)
+    at https://45849abc-0693-40da-98b9-0beb578c88c5-00-1qjtapewlzx1d.worf.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:10845:158
