@@ -268,33 +268,15 @@ export default function ExercisePlannerPage() {
       // Save preferences first
       await savePreferences();
 
-      // Generate AI exercise plan using Gemini
-      const prompt = `Generate a personalized exercise plan based on these details:
+      console.log('Generating exercise plan with preferences:', data);
 
-      Fitness Level: ${data.fitness_level}
-      Exercise Experience: ${data.exercise_experience?.join(', ') || 'None'}
-      Primary Goal: ${data.primary_goal}
-      Exercise Days per Week: ${data.exercise_days_per_week}
-      Available Time per Session: ${data.available_time_per_session} minutes
-      Exercise Location: ${data.exercise_location}
-      Available Equipment: ${data.available_equipment?.join(', ') || 'None'}
-      Medical Conditions: ${data.existing_medical_conditions?.join(', ') || 'None'}
-      Injuries/Limitations: ${data.injuries_or_limitations || 'None'}
-      Job Type: ${data.job_type}
-      Preferred Difficulty: ${data.preferred_difficulty_level}
-
-      Please create a detailed weekly exercise plan with specific exercises, sets, reps, and rest periods. Format the response as a structured JSON with days, exercises, sets, reps, and descriptions.`;
-
-      console.log('Generating exercise plan with prompt:', prompt);
-
-      // Send to Gemini API
+      // Send to Gemini API - the backend will handle getting profile data
       const response = await fetch('/api/exercise-planner/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: prompt,
           preferences: data
         }),
       });
@@ -317,10 +299,24 @@ export default function ExercisePlannerPage() {
         setExpandedDays(expandedDaysObject);
       } else if (result.parsed_plan) {
         setGeneratedPlan(result.parsed_plan);
+        // Expand all days by default for parsed plan too
+        const allDays = Object.keys(result.parsed_plan.weeklyPlan || {});
+        const expandedDaysObject = allDays.reduce((acc, day) => {
+          acc[day] = true;
+          return acc;
+        }, {} as { [key: string]: boolean });
+        setExpandedDays(expandedDaysObject);
       } else if (result.generated_content) {
         try {
           const parsed = JSON.parse(result.generated_content);
           setGeneratedPlan(parsed);
+          // Expand all days by default for generated content too
+          const allDays = Object.keys(parsed.weeklyPlan || {});
+          const expandedDaysObject = allDays.reduce((acc, day) => {
+            acc[day] = true;
+            return acc;
+          }, {} as { [key: string]: boolean });
+          setExpandedDays(expandedDaysObject);
         } catch (e) {
           console.error('Failed to parse generated content:', e);
           setGeneratedPlan({ error: 'Failed to parse generated plan' });

@@ -31,8 +31,22 @@ export async function POST(request: NextRequest) {
     // Generate content with Gemini
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
+    // Get user profile data
+    const { data: profileData } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
     // Generate AI exercise plan using Gemini
     const prompt = `Create a comprehensive weekly exercise plan in ENGLISH based on the following profile:
+
+PERSONAL INFORMATION:
+- Age: ${profileData?.age || 'Not specified'} years
+- Height: ${profileData?.height_cm || 'Not specified'} cm
+- Weight: ${profileData?.weight_kg || 'Not specified'} kg
+- Gender: ${profileData?.gender || 'Not specified'}
+- Activity Level: ${profileData?.activity_level || 'Not specified'}
 
 FITNESS PROFILE:
 - Fitness Level: ${preferences.fitness_level}
@@ -63,17 +77,19 @@ GOALS & FOCUS:
 
 STRICT REQUIREMENTS:
 1. Response must be in ENGLISH only
-2. Create a complete weekly workout plan for ${preferences.exercise_days_per_week} days
-3. Each exercise must include: name, sets, reps, rest periods, detailed step-by-step instructions
-4. Provide 2-3 alternative exercises for each main exercise with YouTube search terms
-5. Include comprehensive warm-up and cool-down routines for each day
-6. Consider all health conditions and physical limitations
-7. Progressive difficulty based on fitness level
-8. Equipment-specific modifications and adaptations
-9. Include proper form instructions and safety tips
-10. Add YouTube search terms for video tutorials
+2. Create a complete weekly workout plan for ALL ${preferences.exercise_days_per_week} days (Day1 through Day${preferences.exercise_days_per_week})
+3. Each day must have different focus areas and exercises
+4. Each exercise must include: name, sets, reps, rest periods, VERY DETAILED step-by-step instructions (minimum 2-3 sentences)
+5. Provide 2-3 alternative exercises for each main exercise with YouTube search terms
+6. Include comprehensive warm-up and cool-down routines for each day
+7. Consider all health conditions, physical limitations, age, weight, and height
+8. Progressive difficulty based on fitness level and personal data
+9. Equipment-specific modifications and adaptations
+10. Include proper form instructions and safety tips
+11. Add YouTube search terms for video tutorials
+12. Make instructions very detailed and educational
 
-FORMAT: Return as valid JSON with this exact structure:
+FORMAT: Return as valid JSON with this exact structure for ALL ${preferences.exercise_days_per_week} days:
 {
   "weeklyPlan": {
     "Day1": {
@@ -84,8 +100,8 @@ FORMAT: Return as valid JSON with this exact structure:
         "exercises": [
           {
             "name": "Arm Circles",
-            "duration": 2,
-            "instructions": "Stand with arms extended, make small circles forward then backward"
+            "duration": 60,
+            "instructions": "Stand with feet shoulder-width apart and arms extended to the sides at shoulder height. Make small, controlled circles forward for 15 seconds, gradually increasing the size. Then reverse direction and make circles backward for 15 seconds. Keep your core engaged and maintain good posture throughout."
           }
         ]
       },
@@ -96,22 +112,22 @@ FORMAT: Return as valid JSON with this exact structure:
           "sets": 3,
           "reps": "8-12",
           "restSeconds": 60,
-          "instructions": "Start in plank position with hands shoulder-width apart. Lower body until chest nearly touches ground. Push back up to starting position. Keep core tight throughout movement.",
+          "instructions": "Start in a high plank position with hands placed slightly wider than shoulder-width apart, fingers spread for stability. Your body should form a straight line from head to heels. Engage your core and keep your glutes tight. Lower your body by bending your elbows, bringing your chest close to the ground while maintaining the straight line. Push through your palms to return to the starting position, fully extending your arms. Breathe in as you lower down and exhale as you push up.",
           "youtubeSearchTerm": "push ups proper form tutorial beginner",
           "alternatives": [
             {
               "name": "Incline Push-ups",
-              "instructions": "Place hands on elevated surface like bench or step. Perform push-up motion with easier angle.",
+              "instructions": "Place your hands on an elevated surface like a bench, step, or wall. The higher the surface, the easier the exercise. Position hands shoulder-width apart and step back so your body forms a straight line. Perform the push-up motion with the same form as regular push-ups.",
               "youtubeSearchTerm": "incline push ups tutorial proper form"
             },
             {
               "name": "Wall Push-ups",
-              "instructions": "Stand arm's length from wall. Place hands flat against wall. Push body away from wall and return.",
+              "instructions": "Stand arm's length from a wall with feet hip-width apart. Place palms flat against the wall at shoulder height and shoulder-width apart. Lean in toward the wall by bending your elbows, keeping your body straight. Push back to starting position.",
               "youtubeSearchTerm": "wall push ups beginner tutorial"
             },
             {
               "name": "Knee Push-ups",
-              "instructions": "Start in plank position but rest on knees instead of toes. Perform push-up motion.",
+              "instructions": "Start in a plank position but drop your knees to the ground, creating a straight line from knees to head. Cross your ankles and keep your core engaged. Perform push-ups maintaining proper form from this modified position.",
               "youtubeSearchTerm": "knee push ups proper form tutorial"
             }
           ]
@@ -121,12 +137,21 @@ FORMAT: Return as valid JSON with this exact structure:
         "exercises": [
           {
             "name": "Chest Stretch",
-            "duration": 3,
-            "instructions": "Stand in doorway with arm against frame. Step forward to stretch chest and shoulder"
+            "duration": 30,
+            "instructions": "Stand in a doorway and place your right forearm against the door frame with your elbow at shoulder height. Step forward with your right foot and lean gently forward until you feel a stretch across your chest and front shoulder. Hold for 30 seconds, then repeat on the left side."
           }
         ]
       }
-    }
+    },
+    "Day2": {
+      "dayName": "Tuesday",
+      "focus": "Lower Body & Core",
+      "duration": ${preferences.available_time_per_session},
+      "warmup": { "exercises": [...] },
+      "mainWorkout": [...],
+      "cooldown": { "exercises": [...] }
+    },
+    ... (continue for all ${preferences.exercise_days_per_week} days)
   },
   "progressionTips": [
     "Start with easier variations and progress to harder ones",
@@ -168,50 +193,61 @@ FORMAT: Return as valid JSON with this exact structure:
       console.log('Raw response:', generatedPlan.substring(0, 500));
       
       // Create a fallback plan if JSON parsing fails
-      parsedPlan = {
-        weeklyPlan: {
-          Day1: {
-            dayName: "Monday",
-            focus: `${preferences.primary_goal} Workout`,
-            duration: preferences.available_time_per_session,
-            warmup: {
-              exercises: [
-                {
-                  name: "Light Cardio",
-                  duration: 5,
-                  instructions: "5 minutes of light movement to warm up your body"
-                }
-              ]
-            },
-            mainWorkout: [
+      const fallbackWeeklyPlan: any = {};
+      const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+      const focusAreas = ["Upper Body", "Lower Body", "Full Body", "Cardio & Core", "Strength", "Flexibility", "Active Recovery"];
+      
+      for (let i = 1; i <= preferences.exercise_days_per_week; i++) {
+        fallbackWeeklyPlan[`Day${i}`] = {
+          dayName: dayNames[i - 1],
+          focus: `${focusAreas[(i - 1) % focusAreas.length]} - ${preferences.primary_goal}`,
+          duration: preferences.available_time_per_session,
+          warmup: {
+            exercises: [
               {
-                exerciseName: "Basic Strength Training",
-                targetMuscles: ["Full Body"],
-                sets: 3,
-                reps: "8-12",
-                restSeconds: 60,
-                instructions: "Perform exercises based on your available equipment and fitness level",
-                youtubeSearchTerm: `${preferences.primary_goal.toLowerCase()} beginner workout`,
-                alternatives: [
-                  {
-                    name: "Modified Version",
-                    instructions: "Adjust intensity based on your fitness level",
-                    youtubeSearchTerm: "beginner workout modifications"
-                  }
-                ]
+                name: "Dynamic Warm-up",
+                duration: 5,
+                instructions: "Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise. Start slowly and gradually increase range of motion."
               }
-            ],
-            cooldown: {
-              exercises: [
+            ]
+          },
+          mainWorkout: [
+            {
+              exerciseName: "Customized Exercise Set",
+              targetMuscles: ["Full Body"],
+              sets: 3,
+              reps: "8-12",
+              restSeconds: 60,
+              instructions: "Perform exercises appropriate for your fitness level and available equipment. Focus on proper form over speed or weight. Start with lighter resistance and progress gradually.",
+              youtubeSearchTerm: `${preferences.primary_goal.toLowerCase()} ${preferences.fitness_level.toLowerCase()} workout day ${i}`,
+              alternatives: [
                 {
-                  name: "Stretching",
-                  duration: 5,
-                  instructions: "5 minutes of gentle stretching"
+                  name: "Beginner Modification",
+                  instructions: "Reduce intensity, use bodyweight or lighter weights, and take longer rest periods as needed.",
+                  youtubeSearchTerm: "beginner workout modifications"
+                },
+                {
+                  name: "Equipment-Free Alternative",
+                  instructions: "Use bodyweight exercises that target the same muscle groups without requiring equipment.",
+                  youtubeSearchTerm: "bodyweight exercises no equipment"
                 }
               ]
             }
+          ],
+          cooldown: {
+            exercises: [
+              {
+                name: "Cool-down Stretches",
+                duration: 5,
+                instructions: "Perform gentle static stretches holding each position for 15-30 seconds. Focus on the muscle groups worked during the session and breathe deeply."
+              }
+            ]
           }
-        },
+        };
+      }
+      
+      parsedPlan = {
+        weeklyPlan: fallbackWeeklyPlan,
         progressionTips: [
           "Start slowly and gradually increase intensity",
           "Listen to your body",
