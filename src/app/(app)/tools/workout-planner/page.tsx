@@ -1213,51 +1213,249 @@ export default function ExercisePlannerPage() {
 
         {/* Generated Exercise Plan Display */}
         {generatedPlan && (
-          <Card className="mt-8 bg-white border-green-200">
-            <CardHeader>
-              <CardTitle className="text-green-800 text-center">
-                🎯 Your Personalized Exercise Plan
-              </CardTitle>
-              <p className="text-green-600 text-center">{generatedPlan.plan_description}</p>
-            </CardHeader>
-            <CardContent>
-              {generatedPlan.weekly_plan?.gemini_response && (
-                <div className="space-y-4">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-green-800 mb-2">Exercise Plan Details:</h3>
-                    <div className="text-sm text-green-700 whitespace-pre-wrap">
-                      {generatedPlan.weekly_plan.gemini_response.replace(/```json|```/g, '')}
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-center space-x-4 pt-4">
-                    <Button 
-                      onClick={() => setGeneratedPlan(null)}
-                      variant="outline"
-                      className="border-green-300 text-green-700 hover:bg-green-50"
-                    >
-                      Generate New Plan
-                    </Button>
-                    <Button 
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => {
-                        const planText = generatedPlan.weekly_plan.gemini_response;
-                        const blob = new Blob([planText], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'my-exercise-plan.txt';
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      }}
-                    >
-                      Download Plan
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="mt-8 space-y-6">
+            <Card className="bg-white border-green-200">
+              <CardHeader>
+                <CardTitle className="text-green-800 text-center flex items-center justify-center gap-2">
+                  <Dumbbell className="w-6 h-6" />
+                  Your Personalized Exercise Plan
+                </CardTitle>
+                <p className="text-green-600 text-center">{generatedPlan.plan_description}</p>
+              </CardHeader>
+              <CardContent>
+                {generatedPlan.weekly_plan?.gemini_response && (() => {
+                  try {
+                    const planData = JSON.parse(generatedPlan.weekly_plan.gemini_response.replace(/```json|```/g, ''));
+                    const weeklyPlan = planData.weeklyPlan || {};
+                    
+                    return (
+                      <div className="space-y-6">
+                        {/* Workout Days */}
+                        {Object.entries(weeklyPlan).map(([dayKey, dayData]: [string, any], index) => (
+                          <Card key={dayKey} className="border-green-200">
+                            <CardHeader>
+                              <CardTitle className="text-green-800 flex items-center justify-between">
+                                <span className="flex items-center gap-2">
+                                  <Target className="w-5 h-5" />
+                                  {dayData.dayName || dayKey} - {dayData.focus}
+                                </span>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Clock className="w-4 h-4" />
+                                  {dayData.duration} min
+                                </div>
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                              
+                              {/* Warm-up */}
+                              {dayData.warmup && (
+                                <div className="bg-blue-50 p-4 rounded-lg">
+                                  <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                                    <Heart className="w-4 h-4" />
+                                    Warm-up
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {dayData.warmup.exercises?.map((exercise: any, i: number) => (
+                                      <div key={i} className="text-sm text-blue-700">
+                                        <strong>{exercise.name}</strong> - {exercise.duration} min
+                                        <p className="text-blue-600">{exercise.instructions}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Main Workout */}
+                              {dayData.mainWorkout && (
+                                <div className="space-y-4">
+                                  <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
+                                    <Dumbbell className="w-4 h-4" />
+                                    Main Workout
+                                  </h4>
+                                  {dayData.mainWorkout.map((exercise: any, exerciseIndex: number) => (
+                                    <div key={exerciseIndex} className="border border-green-200 rounded-lg p-4 space-y-3">
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                          <h5 className="font-semibold text-green-800 text-lg">{exercise.exerciseName}</h5>
+                                          <p className="text-sm text-green-600">
+                                            Target: {exercise.targetMuscles?.join(', ')}
+                                          </p>
+                                        </div>
+                                        <div className="text-right text-sm text-green-700">
+                                          <div>{exercise.sets} sets × {exercise.reps} reps</div>
+                                          <div>Rest: {exercise.restSeconds}s</div>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="bg-green-50 p-3 rounded">
+                                        <p className="text-sm text-green-800">{exercise.instructions}</p>
+                                      </div>
+
+                                      {/* YouTube Link */}
+                                      {exercise.youtubeSearchTerm && (
+                                        <div className="flex items-center gap-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-red-600 border-red-300 hover:bg-red-50"
+                                            onClick={() => {
+                                              const searchQuery = encodeURIComponent(exercise.youtubeSearchTerm);
+                                              window.open(`https://www.youtube.com/results?search_query=${searchQuery}`, '_blank');
+                                            }}
+                                          >
+                                            📺 Watch Tutorial
+                                          </Button>
+                                        </div>
+                                      )}
+
+                                      {/* Alternative Exercises */}
+                                      {exercise.alternatives && exercise.alternatives.length > 0 && (
+                                        <div className="bg-yellow-50 p-3 rounded-lg">
+                                          <h6 className="font-medium text-yellow-800 mb-2">Alternative Exercises:</h6>
+                                          <div className="space-y-2">
+                                            {exercise.alternatives.map((alt: any, altIndex: number) => (
+                                              <div key={altIndex} className="flex items-center justify-between">
+                                                <div className="flex-1">
+                                                  <div className="font-medium text-yellow-800">{alt.name}</div>
+                                                  <div className="text-sm text-yellow-700">{alt.instructions}</div>
+                                                </div>
+                                                {alt.youtubeSearchTerm && (
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="text-red-600 border-red-300 hover:bg-red-50 ml-2"
+                                                    onClick={() => {
+                                                      const searchQuery = encodeURIComponent(alt.youtubeSearchTerm);
+                                                      window.open(`https://www.youtube.com/results?search_query=${searchQuery}`, '_blank');
+                                                    }}
+                                                  >
+                                                    📺 Tutorial
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Cool-down */}
+                              {dayData.cooldown && (
+                                <div className="bg-purple-50 p-4 rounded-lg">
+                                  <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                                    <TrendingUp className="w-4 h-4" />
+                                    Cool-down
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {dayData.cooldown.exercises?.map((exercise: any, i: number) => (
+                                      <div key={i} className="text-sm text-purple-700">
+                                        <strong>{exercise.name}</strong> - {exercise.duration} min
+                                        <p className="text-purple-600">{exercise.instructions}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Rest Day */}
+                              {dayData.workoutDescription && !dayData.mainWorkout && (
+                                <div className="bg-gray-50 p-4 rounded-lg text-center">
+                                  <h4 className="font-semibold text-gray-800 mb-2">Rest Day</h4>
+                                  <p className="text-gray-600">{dayData.workoutDescription}</p>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+
+                        {/* Additional Tips */}
+                        {(planData.progressionTips || planData.safetyNotes || planData.nutritionTips) && (
+                          <Card className="bg-blue-50 border-blue-200">
+                            <CardHeader>
+                              <CardTitle className="text-blue-800">Important Notes & Tips</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              {planData.progressionTips && (
+                                <div>
+                                  <h5 className="font-semibold text-blue-800 mb-2">Progression Tips:</h5>
+                                  <ul className="list-disc list-inside space-y-1 text-blue-700">
+                                    {planData.progressionTips.map((tip: string, index: number) => (
+                                      <li key={index} className="text-sm">{tip}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              
+                              {planData.safetyNotes && (
+                                <div>
+                                  <h5 className="font-semibold text-blue-800 mb-2">Safety Notes:</h5>
+                                  <ul className="list-disc list-inside space-y-1 text-blue-700">
+                                    {planData.safetyNotes.map((note: string, index: number) => (
+                                      <li key={index} className="text-sm">{note}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {planData.nutritionTips && (
+                                <div>
+                                  <h5 className="font-semibold text-blue-800 mb-2">Nutrition Tips:</h5>
+                                  <ul className="list-disc list-inside space-y-1 text-blue-700">
+                                    {planData.nutritionTips.map((tip: string, index: number) => (
+                                      <li key={index} className="text-sm">{tip}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="flex justify-center space-x-4 pt-4">
+                          <Button 
+                            onClick={() => setGeneratedPlan(null)}
+                            variant="outline"
+                            className="border-green-300 text-green-700 hover:bg-green-50"
+                          >
+                            Generate New Plan
+                          </Button>
+                          <Button 
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => {
+                              const planText = JSON.stringify(planData, null, 2);
+                              const blob = new Blob([planText], { type: 'application/json' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = 'my-exercise-plan.json';
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                          >
+                            Download Plan
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  } catch (error) {
+                    console.error('Error parsing plan data:', error);
+                    return (
+                      <div className="bg-red-50 p-4 rounded-lg">
+                        <h3 className="font-semibold text-red-800 mb-2">Raw Plan Data:</h3>
+                        <div className="text-sm text-red-700 whitespace-pre-wrap">
+                          {generatedPlan.weekly_plan.gemini_response.replace(/```json|```/g, '')}
+                        </div>
+                      </div>
+                    );
+                  }
+                })()}
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>
