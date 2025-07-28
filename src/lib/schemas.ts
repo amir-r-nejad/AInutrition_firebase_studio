@@ -141,7 +141,7 @@ export interface GlobalCalculatedTargets {
 // Base fields for onboarding/profile data used by tools
 export interface BaseProfileData {
   name: string;
-  user_role?: string;
+  user_role: 'client' | 'coach';
   age?: number;
   biological_sex?: string;
   height_cm?: number;
@@ -731,19 +731,43 @@ export const OnboardingFormSchema = z.object({
 export type OnboardingFormValues = z.infer<typeof OnboardingFormSchema>;
 export type { CustomCalculatedTargets };
 
-// Coach Profile Schema
-export const CoachProfileSchema = z.object({
-  user_id: z.string(),
-  first_name: z.string(),
-  last_name: z.string(),
-  age: z.number(),
-  description: z.string(),
-  certification: z.string(),
-  years_experience: z.number(),
-  joined_date: z.string().optional(),
-  total_clients: z.number().optional(),
-});
-export type CoachProfile = z.infer<typeof CoachProfileSchema>;
+// Coach-Client Relationship Types
+export interface CoachClientRelationship {
+  id: number;
+  coach_id: string;
+  client_id: string;
+  status: 'pending' | 'accepted' | 'declined';
+  status_message?: string | null;
+  requested_at: string;
+  responded_at?: string | null;
+  created_at: string;
+}
+
+export interface CoachClientRequest {
+  id: number;
+  coach_id: string;
+  client_email: string;
+  request_message?: string | null;
+  status: 'pending' | 'accepted' | 'declined';
+  approval_token?: string | null;
+  requested_at: string;
+  responded_at?: string | null;
+  response_message?: string | null;
+  created_at: string;
+}
+
+export interface CoachProfile {
+  id: number;
+  user_id: string;
+  description?: string | null;
+  certification: string[];
+  years_experience: number;
+  total_clients: number;
+  joined_date: string;
+  status: 'pending_approval' | 'approved' | 'suspended';
+  created_at: string;
+  updated_at: string;
+}
 
 export interface UserPlanType {
   //These fields are not used in the current schema but are included for reference

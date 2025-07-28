@@ -75,8 +75,25 @@ export function getAIApiErrorMessage(error: any): string {
   }`;
 }
 
-export const formatValue = (value: any, unit = '', fallback = 'Not set') =>
-  !value || value === '' ? fallback : `${value}${unit}`;
+export function formatValue(
+  value: number | string | null | undefined,
+  suffix = '',
+  fallback = 'N/A',
+  decimals = 1
+) {
+  if (value === null || value === undefined || value === '') return fallback;
+
+  if (typeof value === 'number') {
+    return value.toFixed(decimals) + suffix;
+  }
+
+  const numValue = parseFloat(String(value));
+  if (!isNaN(numValue)) {
+    return numValue.toFixed(decimals) + suffix;
+  }
+
+  return String(value) + suffix;
+}
 
 export function calculateProgress(
   current: number | undefined,
