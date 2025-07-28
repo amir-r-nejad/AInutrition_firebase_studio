@@ -19,11 +19,11 @@ import { mockCoachProfile } from '@/features/coach/lib/mockData';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { svaeCoachProfile } from '../../actions/coachProfile';
 import {
   CoachProfileFormSchema,
   CoachProfileFormValues,
 } from '../../schemas/coachSchemas';
+import { saveCoachProfile } from '../../actions/coachProfile';
 
 export function CoachProfileForm({ coach }: { coach: any }) {
   const { toast } = useToast();
@@ -43,7 +43,7 @@ export function CoachProfileForm({ coach }: { coach: any }) {
 
   async function handleSubmit(data: CoachProfileFormValues) {
     try {
-      await svaeCoachProfile(data);
+      await saveCoachProfile(data);
 
       toast({
         title: 'Profile Updated',

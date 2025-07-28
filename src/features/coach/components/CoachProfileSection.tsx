@@ -2,8 +2,10 @@ import ErrorMessage from '@/components/ui/ErrorMessage';
 import { getCoachProfile } from '../lib/data-service';
 import { CoachProfileForm } from './profile/CoachProfileForm';
 import { CoachProfileHeader } from './profile/CoachProfileHeader';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export async function CoachProfileSection() {
+  noStore();
   try {
     const coach = await getCoachProfile();
 

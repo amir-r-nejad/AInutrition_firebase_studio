@@ -1,4 +1,5 @@
 import { Logo } from '@/components/Logo';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Sidebar,
   SidebarContent,
@@ -11,8 +12,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { getUser } from '@/lib/supabase/data-service';
 import { BarChart3, UserCheck, UserPen, Users } from 'lucide-react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
 const coachMenuItems = [
   {
@@ -75,10 +79,24 @@ export function CoachSidebar() {
       </SidebarContent>
 
       <SidebarFooter className='border-t border-sidebar-border p-4'>
-        <div className='text-xs text-sidebar-foreground/60'>
-          Coach Dashboard v1.0
-        </div>
+        <Suspense fallback={<Skeleton className='w-10 h-10 rounded-full' />}>
+          <CoachSidebarProfile />
+        </Suspense>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+async function CoachSidebarProfile() {
+  const coach = await getUser();
+
+  return (
+    <div className='text-sm text-sidebar-foreground/60 flex items-center gap-2'>
+      <Avatar>
+        <AvatarImage src={coach.user_metadata.avatar_url} />
+        <AvatarFallback></AvatarFallback>
+      </Avatar>
+      {coach.user_metadata.full_name.split('').slice(0, 20)}
+    </div>
   );
 }

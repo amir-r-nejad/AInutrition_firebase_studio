@@ -49,7 +49,11 @@ function ClientsList({ clients }: { clients: any }) {
           </div>
 
           <div className='flex items-center gap-2'>
-            <Link href={`/coach-dashboard/clients/${client.user_id}`}>
+            <Link
+              href={`/coach-dashboard/clients/${
+                client.client_id || client.user_id
+              }`}
+            >
               <Button
                 variant='outline'
                 size='sm'
