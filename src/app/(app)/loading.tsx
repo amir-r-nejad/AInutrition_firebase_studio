@@ -1,93 +1,70 @@
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Leaf } from 'lucide-react';
 
-function AppLoading() {
+function AuthLoading() {
   return (
-    <div className='space-y-8 animate-pulse'>
-      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-        <div className='space-y-2'>
-          <Skeleton className='h-8 w-48 bg-muted' />
-          <Skeleton className='h-4 w-64 bg-muted' />
+    <div className='flex min-h-screen flex-col items-center justify-center bg-background p-4'>
+      <div className='w-full max-w-md space-y-6'>
+        <div className='flex flex-col items-center space-y-4'>
+          <div className='flex items-center gap-2'>
+            <Leaf className='h-8 w-8 text-primary animate-pulse' />
+            <span className='text-2xl font-bold text-primary'>NutriPlan</span>
+          </div>
+          <div className='flex items-center gap-2 text-muted-foreground'>
+            <div className='h-2.5 w-2.5 bg-primary rounded-full animate-bounce' />
+            <div
+              className='h-2.5 w-2.5 bg-primary rounded-full animate-bounce'
+              style={{ animationDelay: '0.1s' }}
+            />
+            <div
+              className='h-2.5 w-2.5 bg-primary rounded-full animate-bounce'
+              style={{ animationDelay: '0.2s' }}
+            />
+          </div>
         </div>
-        <div className='flex gap-3'>
-          <Skeleton className='h-10 w-32 bg-muted' />
-          <Skeleton className='h-10 w-40 bg-muted' />
-        </div>
-      </div>
 
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className='border-border/50'>
-            <CardContent className='p-6'>
-              <div className='flex items-center justify-between space-y-0 pb-2'>
-                <Skeleton className='h-4 w-24 bg-muted' />
-                <div className='h-4 w-4 rounded bg-muted' />
+        <Card className='border-border/50 shadow-lg'>
+          <CardHeader className='space-y-2'>
+            <Skeleton className='h-6 w-32 bg-muted mx-auto' />
+            <Skeleton className='h-4 w-48 bg-muted mx-auto' />
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            <div className='space-y-3'>
+              <div className='space-y-2'>
+                <Skeleton className='h-4 w-16 bg-muted' />
+                <Skeleton className='h-10 w-full bg-muted rounded-md' />
               </div>
               <div className='space-y-2'>
-                <Skeleton className='h-8 w-16 bg-muted' />
-                <Skeleton className='h-3 w-20 bg-muted' />
+                <Skeleton className='h-4 w-20 bg-muted' />
+                <Skeleton className='h-10 w-full bg-muted rounded-md' />
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </div>
 
-      <div className='grid gap-4 md:grid-cols-2'>
-        <Card className='border-border/50'>
-          <CardContent className='p-6'>
-            <div className='space-y-4'>
-              <div className='flex items-center gap-2'>
-                <Skeleton className='h-5 w-5 rounded bg-muted' />
-                <Skeleton className='h-5 w-32 bg-muted' />
-              </div>
-              <div className='space-y-3'>
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className='space-y-2'>
-                    <div className='flex justify-between'>
-                      <Skeleton className='h-4 w-16 bg-muted' />
-                      <Skeleton className='h-4 w-20 bg-muted' />
-                    </div>
-                    <Skeleton className='h-2 w-full bg-muted rounded-full' />
-                  </div>
-                ))}
-              </div>
+            <Skeleton className='h-10 w-full bg-primary/20 rounded-md' />
+
+            <div className='flex items-center gap-4'>
+              <Skeleton className='h-px flex-1 bg-muted' />
+              <Skeleton className='h-4 w-8 bg-muted' />
+              <Skeleton className='h-px flex-1 bg-muted' />
+            </div>
+
+            <Skeleton className='h-10 w-full bg-muted rounded-md' />
+
+            <div className='text-center'>
+              <Skeleton className='h-4 w-40 bg-muted mx-auto' />
             </div>
           </CardContent>
         </Card>
 
-        <Card className='border-border/50'>
-          <CardContent className='p-6'>
-            <div className='space-y-4'>
-              <Skeleton className='h-5 w-28 bg-muted' />
-              <div className='space-y-3'>
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className='flex items-center justify-between'>
-                    <Skeleton className='h-4 w-20 bg-muted' />
-                    <Skeleton className='h-6 w-12 rounded-full bg-muted' />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className='flex items-center justify-center py-8'>
-        <div className='flex items-center gap-3 text-primary'>
-          <Leaf className='h-8 w-8 animate-spin' />
-          <div className='space-y-1'>
-            <p className='text-lg font-medium'>
-              Loading your nutrition data...
-            </p>
-            <p className='text-sm text-muted-foreground'>
-              Please wait while we prepare your dashboard
-            </p>
-          </div>
+        <div className='text-center'>
+          <p className='text-sm text-muted-foreground'>
+            Loading authentication...
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
-export default AppLoading;
+export default AuthLoading;
