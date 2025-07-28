@@ -1,5 +1,11 @@
 import { z } from 'zod';
-// TODO: Import or define genders, allActivityLevels, smartPlannerDietGoals, preferredDiets as needed
+import { genders, activityLevels, smartPlannerDietGoals, preferredDiets } from './constants';
+
+// Helper function for preprocessing optional numbers
+export const preprocessOptionalNumber = (val: any) => {
+  if (val === '' || val === null || val === undefined) return null;
+  return val;
+};
 
 // User Profile Schema
 export const BaseProfileSchema = z.object({
@@ -63,6 +69,665 @@ export const UserPlanSchema = z.object({
   updated_at: z.string().nullable(),
 });
 export type UserPlanType = z.infer<typeof UserPlanSchema>;
+
+// Global Calculated Targets Type
+export interface GlobalCalculatedTargets {
+  bmr_kcal?: number | null;
+  maintenance_calories_tdee?: number | null;
+  target_daily_calories?: number | null;
+  target_protein_g?: number | null;
+  protein_calories?: number | null;
+  target_protein_percentage?: number | null;
+  target_carbs_g?: number | null;
+  carb_calories?: number | null;
+  target_carbs_percentage?: number | null;
+  target_fat_g?: number | null;
+  fat_calories?: number | null;
+  target_fat_percentage?: number | null;
+  current_weight_for_custom_calc?: number | null;
+  estimated_weekly_weight_change_kg?: number | null;
+  custom_total_calories_final?: number | null;
+  custom_protein_g?: number | null;
+  custom_protein_percentage?: number | null;
+  custom_carbs_g?: number | null;
+  custom_carbs_percentage?: number | null;
+  custom_fat_g?: number | null;
+  custom_fat_percentage?: number | null;
+  custom_total_calories?: number | null;
+  custom_protein_per_kg?: number | null;
+  remaining_calories_carbs_percentage?: number | null;
+  proteinCalories?: number | null;
+  carbCalories?: number | null;
+  fatCalories?: number | null;
+}
+
+// Base fields for onboarding/profile data used by tools
+export interface ExtendedProfileData {
+  name: string;
+  user_role: 'client' | 'coach';
+  age?: number;
+  biological_sex?: string;
+  height_cm?: number;
+  current_weight_kg?: number;
+  target_weight_1month_kg?: number;
+  long_term_goal_weight_kg?: number;
+  physical_activity_level?: string;
+  primary_diet_goal?: string;
+
+  // Body Composition
+  bf_current?: number;
+  bf_target?: number;
+  bf_ideal?: number;
+  mm_current?: number;
+  mm_target?: number;
+  mm_ideal?: number;
+  bw_current?: number;
+  bw_target?: number;
+  bw_ideal?: number;
+
+  // Measurements
+  waist_current?: number;
+  waist_goal_1m?: number;
+  waist_ideal?: number;
+  hips_current?: number;
+  hips_goal_1m?: number;
+  hips_ideal?: number;
+  right_leg_current?: number;
+  right_leg_goal_1m?: number;
+  right_leg_ideal?: number;
+  left_leg_current?: number;
+  left_leg_goal_1m?: number;
+  left_leg_ideal?: number;
+  right_arm_current?: number;
+  right_arm_goal_1m?: number;
+  right_arm_ideal?: number;
+  left_arm_current?: number;
+  left_arm_goal_1m?: number;
+  left_arm_ideal?: number;
+
+  is_onboarding_complete?: boolean;
+  subscription_status?: string;
+
+  // Exercise related
+  pain_mobility_issues?: string[];
+  injuries?: string[];
+  surgeries?: string[];
+  exercise_goals?: string[];
+  preferred_exercise_types?: string[];
+  exercise_frequency?: string;
+  typical_exercise_intensity?: string;
+  equipment_access?: string[];
+
+  // Diet preferences
+  preferred_diet?: string;
+  allergies?: string[];
+  preferred_cuisines?: string[];
+  dispreferrred_cuisines?: string[];
+  preferred_ingredients?: string[];
+  dispreferrred_ingredients?: string[];
+  preferred_micronutrients?: string[];
+  medical_conditions?: string[];
+  medications?: string[];
+
+  meal_distributions?: MealMacroDistribution[] | null;
+}
+
+export const MealMacroDistributionSchema = z.object({
+  mealName: z.string(),
+  calories_pct: z.coerce
+    .number()
+    .min(0, '% must be >= 0')
+    .max(100, '% must be <= 100')
+    .default(0),
+});
+export type MealMacroDistribution = z.infer<typeof MealMacroDistributionSchema>;
+
+export const MacroSplitterFormSchema = z
+  .object({
+    meal_distributions: z
+      .array(MealMacroDistributionSchema)
+      .length(6, `Must have 6 meal entries.`),
+  })
+  .superRefine((data, ctx) => {
+    const checkSum = (
+      macroKey: keyof Omit<MealMacroDistribution, 'mealName'>,
+      macroName: string
+    ) => {
+      const sum = data.meal_distributions.reduce(
+        (acc, meal) => acc + (Number(meal[macroKey]) || 0),
+        0
+      );
+      if (Math.abs(sum - 100) > 0.01) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Total ${macroName} percentages must sum to 100%. Current sum: ${sum.toFixed(
+            0
+          )}%`,
+          path: ['mealDistributions'],
+        });
+      }
+    };
+    checkSum('calories_pct', 'Calorie');
+  });
+export type MacroSplitterFormValues = z.infer<typeof MacroSplitterFormSchema>;
+
+export const SmartCaloriePlannerFormSchema = z.object({
+  user_role: z
+    .enum(['client', 'coach'], {
+      required_error: 'User role is required.',
+    })
+    .nullable(),
+  age: z.coerce
+    .number()
+    .int('Age must be a whole number (e.g., 30, not 30.5).')
+    .positive('Age must be a positive number.')
+    .nullable(),
+  biological_sex: z
+    .enum(genders.map((g) => g.value) as [string, ...string[]], {
+      required_error: 'Gender is required.',
+    })
+    .nullable(),
+  height_cm: z.coerce
+    .number()
+    .positive('Height must be a positive number.')
+    .nullable(),
+  current_weight_kg: z.coerce
+    .number()
+    .positive('Current weight must be a positive number.')
+    .nullable(),
+  target_weight_1month_kg: z.coerce
+    .number()
+    .positive('1-Month Goal Weight must be a positive number.')
+    .nullable(),
+  long_term_goal_weight_kg: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce
+        .number()
+        .positive('Long-term Goal Weight must be positive if provided.')
+        .optional()
+    )
+    .nullable(),
+  physical_activity_level: z
+    .enum(activityLevels.map((al) => al.value) as [string, ...string[]], {
+      required_error: 'Activity level is required.',
+    })
+    .nullable(),
+  primary_diet_goal: z
+    .enum(smartPlannerDietGoals.map((g) => g.value) as [string, ...string[]], {
+      required_error: 'Diet goal is required.',
+    })
+    .nullable(),
+
+  bf_current: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce
+        .number()
+        .min(0, 'Must be >= 0')
+        .max(100, 'Body fat % must be between 0 and 100.')
+        .optional()
+    )
+    .nullable(),
+  bf_target: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce
+        .number()
+        .min(0, 'Must be >= 0')
+        .max(100, 'Target body fat % must be between 0 and 100.')
+        .optional()
+    )
+    .nullable(),
+  bf_ideal: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce.number().min(0).max(100).optional()
+    )
+    .nullable(),
+  mm_current: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce.number().min(0).max(100).optional()
+    )
+    .nullable(),
+  mm_target: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce.number().min(0).max(100).optional()
+    )
+    .nullable(),
+  mm_ideal: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce.number().min(0).max(100).optional()
+    )
+    .nullable(),
+  bw_current: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce.number().min(0).max(100).optional()
+    )
+    .nullable(),
+  bw_target: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce.number().min(0).max(100).optional()
+    )
+    .nullable(),
+  bw_ideal: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce.number().min(0).max(100).optional()
+    )
+    .nullable(),
+
+  waist_current: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  waist_goal_1m: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  waist_ideal: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  hips_current: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  hips_goal_1m: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  hips_ideal: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+
+  right_leg_current: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  right_leg_goal_1m: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  right_leg_ideal: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  left_leg_current: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  left_leg_goal_1m: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  left_leg_ideal: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  right_arm_current: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  right_arm_goal_1m: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  right_arm_ideal: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  left_arm_current: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  left_arm_goal_1m: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+  left_arm_ideal: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().min(0).optional())
+    .nullable(),
+
+  custom_total_calories: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce
+        .number()
+        .int('Custom calories must be a whole number if provided.')
+        .positive('Custom calories must be positive if provided.')
+        .optional()
+    )
+    .nullable(),
+  custom_protein_per_kg: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce
+        .number()
+        .min(0, 'Protein per kg must be non-negative if provided.')
+        .optional()
+    )
+    .nullable(), // Protein per kg can be decimal
+  remaining_calories_carb_pct: z
+    .preprocess(
+      preprocessOptionalNumber,
+      z.coerce
+        .number()
+        .int('Carb percentage must be a whole number.')
+        .min(0, 'Carb percentage must be between 0 and 100.')
+        .max(100, 'Carb percentage must be between 0 and 100.')
+        .optional()
+        .default(50)
+    )
+    .nullable(),
+
+  carbCalories: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().int().optional())
+    .nullable(),
+  carbGrams: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().int().optional())
+    .nullable(),
+  carbTargetPct: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().int().optional())
+    .nullable(),
+
+  fatCalories: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().int().optional())
+    .nullable(),
+  fatGrams: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().int().optional())
+    .nullable(),
+  fatTargetPct: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().int().optional())
+    .nullable(),
+
+  proteinCalories: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().int().optional())
+    .nullable(),
+  proteinGrams: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().int().optional())
+    .nullable(),
+  proteinTargetPct: z
+    .preprocess(preprocessOptionalNumber, z.coerce.number().int().optional())
+    .nullable(),
+});
+export type SmartCaloriePlannerFormValues = z.infer<
+  typeof SmartCaloriePlannerFormSchema
+>;
+
+export const MealSuggestionPreferencesSchema = z.object({
+  preferred_diet: z
+    .enum(preferredDiets.map((pd) => pd.value) as [string, ...string[]])
+    .nullable(),
+  preferred_cuisines: z.array(z.string()).nullable(),
+  dispreferrred_cuisines: z.array(z.string()).nullable(),
+  preferred_ingredients: z.array(z.string()).nullable(),
+  dispreferrred_ingredients: z.array(z.string()).nullable(),
+  allergies: z.array(z.string()).nullable(),
+  preferred_micronutrients: z.array(z.string()).nullable(),
+  medical_conditions: z.array(z.string()).nullable(),
+  medications: z.array(z.string()).nullable(),
+});
+export type MealSuggestionPreferencesValues = z.infer<
+  typeof MealSuggestionPreferencesSchema
+>;
+
+export interface MacroResults {
+  Protein_g: number;
+  Carbs_g: number;
+  Fat_g: number;
+  Protein_cals: number;
+  Carb_cals: number;
+  Fat_cals: number;
+  Total_cals: number;
+  Protein_pct: number;
+  Carb_pct: number;
+  Fat_pct: number;
+}
+
+const CalculatedTargetsSchema = z.object({
+  bmr: z.number().optional(),
+  tdee: z.number().optional(),
+  targetCalories: z.number().optional(),
+  targetProtein: z.number().optional(),
+  targetCarbs: z.number().optional(),
+  targetFat: z.number().optional(),
+  current_weight_for_calc: z.number().optional(),
+});
+
+const CustomCalculatedTargetsSchema = z.object({
+  totalCalories: z.number().optional(),
+  proteinGrams: z.number().optional(),
+  proteinCalories: z.number().optional(),
+  proteinPct: z.number().optional(),
+  carbGrams: z.number().optional(),
+  carbCalories: z.number().optional(),
+  carbPct: z.number().optional(),
+  fatGrams: z.number().optional(),
+  fatCalories: z.number().optional(),
+  fatPct: z.number().optional(),
+});
+type CustomCalculatedTargets = z.infer<typeof CustomCalculatedTargetsSchema>;
+
+// Onboarding Schema
+export const OnboardingFormSchema = z.object({
+  user_role: z.enum(['client', 'coach'], {
+    required_error: 'User role is required.',
+  }),
+  age: z.coerce
+    .number()
+    .int('Age must be a whole number.')
+    .min(1, 'Age is required')
+    .max(120),
+  biological_sex: z.enum(genders.map((g) => g.value) as [string, ...string[]], {
+    required_error: 'Biological sex is required.',
+  }),
+  height_cm: z.coerce.number().min(50, 'Height must be at least 50cm').max(300),
+  current_weight_kg: z.coerce
+    .number()
+    .min(20, 'Weight must be at least 20kg')
+    .max(500),
+  target_weight_1month_kg: z.coerce
+    .number()
+    .min(20, 'Target weight must be at least 20kg')
+    .max(500),
+  long_term_goal_weight_kg: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  physical_activity_level: z.enum(
+    activityLevels.map((al) => al.value) as [string, ...string[]],
+    { required_error: 'Activity level is required.' }
+  ),
+  primary_diet_goal: z.enum(
+    smartPlannerDietGoals.map((g) => g.value) as [string, ...string[]],
+    { required_error: 'Diet goal is required.' }
+  ),
+
+  bf_current: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).max(100).optional()
+  ),
+  bf_target: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).max(100).optional()
+  ),
+  bf_ideal: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).max(100).optional()
+  ),
+  mm_current: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).max(100).optional()
+  ),
+  mm_target: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).max(100).optional()
+  ),
+  mm_ideal: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).max(100).optional()
+  ),
+  bw_current: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).max(100).optional()
+  ),
+  bw_target: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).max(100).optional()
+  ),
+  bw_ideal: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).max(100).optional()
+  ),
+
+  waist_current: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  waist_goal_1m: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  waist_ideal: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  hips_current: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  hips_goal_1m: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  hips_ideal: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  right_leg_current: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  right_leg_goal_1m: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  right_leg_ideal: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  left_leg_current: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  left_leg_goal_1m: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  left_leg_ideal: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  right_arm_current: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  right_arm_goal_1m: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  right_arm_ideal: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  left_arm_current: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  left_arm_goal_1m: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+  left_arm_ideal: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce.number().min(0).optional()
+  ),
+
+  preferred_diet: z.string().optional(),
+  allergies: z.string().or(z.array(z.string())).optional(),
+  preferred_cuisines: z.string().or(z.array(z.string())).optional(),
+  dispreferrred_cuisines: z.string().or(z.array(z.string())).optional(),
+  preferred_ingredients: z.string().or(z.array(z.string())).optional(),
+  dispreferrred_ingredients: z.string().or(z.array(z.string())).optional(),
+  mealsPerDay: z.coerce.number().min(2).max(7).default(3),
+  preferred_micronutrients: z.string().or(z.array(z.string())).optional(),
+
+  medical_conditions: z.string().or(z.array(z.string())).optional(),
+  medications: z.string().or(z.array(z.string())).optional(),
+
+  systemCalculatedTargets: CalculatedTargetsSchema,
+  userCustomizedTargets: CustomCalculatedTargetsSchema,
+
+  custom_total_calories: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce
+      .number()
+      .positive('Custom calories must be positive if provided.')
+      .optional()
+  ),
+  custom_protein_per_kg: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce
+      .number()
+      .min(0, 'Protein per kg must be non-negative if provided.')
+      .optional()
+  ),
+  remaining_calories_carbs_percentage: z.preprocess(
+    preprocessOptionalNumber,
+    z.coerce
+      .number()
+      .int('Carb % must be a whole number.')
+      .min(0)
+      .max(100)
+      .optional()
+      .default(50)
+  ),
+
+  mealDistributions: z.array(MealMacroDistributionSchema).optional(),
+
+  typicalMealsDescription: z.string().optional(),
+});
+
+export type OnboardingFormValues = z.infer<typeof OnboardingFormSchema>;
+export type { CustomCalculatedTargets };
+
+// Coach-Client Relationship Types
+export interface CoachClientRelationship {
+  id: number;
+  coach_id: string;
+  client_id: string;
+  status: 'pending' | 'accepted' | 'declined';
+  status_message?: string | null;
+  requested_at: string;
+  responded_at?: string | null;
+  created_at: string;
+}
+
+export interface CoachClientRequest {
+  id: number;
+  coach_id: string;
+  client_email: string;
+  request_message?: string | null;
+  status: 'pending' | 'accepted' | 'declined';
+  approval_token?: string | null;
+  requested_at: string;
+  responded_at?: string | null;
+  response_message?: string | null;
+  created_at: string;
+}
+
+export interface CoachProfile {
+  id: number;
+  user_id: string;
+  description?: string | null;
+  certification: string[];
+  years_experience: number;
+  total_clients: number;
+  joined_date: string;
+  status: 'pending_approval' | 'approved' | 'suspended';
+  created_at: string;
+  updated_at: string;
+}
 
 // Workout Plan Schema (new)
 export const WorkoutPlanSchema = z.object({
@@ -257,86 +922,6 @@ export interface MealSuggestion {
   servings: number;
 }
 
-// Onboarding Schemas
-export const OnboardingFormSchema = z.object({
-  age: z.number().int().positive().nullable(),
-  biological_sex: z.enum(['male', 'female']).nullable(),
-  height_cm: z.number().positive().nullable(),
-  current_weight_kg: z.number().positive().nullable(),
-  target_weight_1month_kg: z.number().positive().nullable(),
-  long_term_goal_weight_kg: z.number().positive().nullable(),
-  physical_activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']).nullable(),
-  primary_diet_goal: z.enum(['fat_loss', 'muscle_gain', 'maintenance']).nullable(),
-  custom_total_calories: z.number().int().positive().nullable(),
-  custom_protein_per_kg: z.number().min(0).nullable(),
-  remaining_calories_carbs_percentage: z.number().int().min(0).max(100).default(50).nullable(),
-  allergies: z.union([z.string(), z.array(z.string())]).optional(),
-  preferred_cuisines: z.union([z.string(), z.array(z.string())]).optional(),
-  dispreferrred_cuisines: z.union([z.string(), z.array(z.string())]).optional(),
-  preferred_ingredients: z.union([z.string(), z.array(z.string())]).optional(),
-  dispreferrred_ingredients: z.union([z.string(), z.array(z.string())]).optional(),
-  preferred_micronutrients: z.union([z.string(), z.array(z.string())]).optional(),
-  medical_conditions: z.union([z.string(), z.array(z.string())]).optional(),
-  medications: z.union([z.string(), z.array(z.string())]).optional(),
-});
-
-export type OnboardingFormValues = z.infer<typeof OnboardingFormSchema>;
-
-// Global Calculated Targets Type
-export interface GlobalCalculatedTargets {
-  bmr_kcal?: number;
-  maintenance_calories_tdee?: number;
-  target_daily_calories?: number;
-  target_protein_g?: number;
-  protein_calories?: number;
-  target_protein_percentage?: number;
-  target_carbs_g?: number;
-  carb_calories?: number;
-  target_carbs_percentage?: number;
-  target_fat_g?: number;
-  fat_calories?: number;
-  target_fat_percentage?: number;
-  current_weight_for_custom_calc?: number;
-  estimated_weekly_weight_change_kg?: number;
-  custom_total_calories_final?: number | null;
-  custom_protein_g?: number | null;
-  custom_protein_percentage?: number | null;
-  custom_carbs_g?: number | null;
-  custom_carbs_percentage?: number | null;
-  custom_fat_g?: number | null;
-  custom_fat_percentage?: number | null;
-  custom_total_calories?: number | null;
-  custom_protein_per_kg?: number | null;
-}
-
-// Helper function for preprocessing optional numbers
-export const preprocessOptionalNumber = (val: any) => {
-  if (val === '' || val === null || val === undefined) return null;
-  return val;
-};
-
-export const MealSuggestionPreferencesSchema = z.object({
-  dietary_preferences: z.string().optional(),
-  allergies: z.string().optional(),
-  preferred_cooking_time: z.string().optional(),
-  budget_preference: z.string().optional(),
-  ingredient_preferences: z.string().optional(),
-  cultural_cuisine_preferences: z.string().optional(),
-});
-
-export type MealSuggestionPreferencesValues = z.infer<typeof MealSuggestionPreferencesSchema>;
-
-export const MacroSplitterFormSchema = z.object({
-  total_calories: z.number().min(1000).max(5000),
-  protein_percentage: z.number().min(10).max(50),
-  fat_percentage: z.number().min(15).max(45),
-  carb_percentage: z.number().min(20).max(70),
-  meal_count: z.number().min(1).max(8),
-  meal_names: z.array(z.string()).optional(),
-});
-
-export type MacroSplitterFormValues = z.infer<typeof MacroSplitterFormSchema>;
-
 // SuggestMealsForMacros Schemas
 export const SuggestMealsForMacrosInputSchema = z.object({
   protein: z.number().min(0, 'Protein must be non-negative'),
@@ -358,46 +943,6 @@ export const SuggestMealsForMacrosOutputSchema = z.object({
     })
   ),
 });
-
-// SmartCaloriePlanner Schemas
-export const SmartCaloriePlannerFormSchema = z.object({
-  age: z.number().int().positive().nullable(),
-  biological_sex: z.enum(['male', 'female']).nullable(),
-  height_cm: z.number().positive().nullable(),
-  current_weight_kg: z.number().positive().nullable(),
-  target_weight_1month_kg: z.number().positive().nullable(),
-  long_term_goal_weight_kg: z.number().positive().nullable(),
-  physical_activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']).nullable(),
-  primary_diet_goal: z.enum(['fat_loss', 'muscle_gain', 'maintenance']).nullable(),
-  bf_current: z.number().nullable(),
-  bf_target: z.number().nullable(),
-  bf_ideal: z.number().nullable(),
-  mm_current: z.number().nullable(),
-  mm_target: z.number().nullable(),
-  mm_ideal: z.number().nullable(),
-  bw_current: z.number().nullable(),
-  bw_target: z.number().nullable(),
-  bw_ideal: z.number().nullable(),
-  waist_current: z.number().nullable(),
-  waist_goal_1m: z.number().nullable(),
-  waist_ideal: z.number().nullable(),
-  hips_current: z.number().nullable(),
-  hips_goal_1m: z.number().nullable(),
-  hips_ideal: z.number().nullable(),
-  right_leg_current: z.number().nullable(),
-  right_leg_goal_1m: z.number().nullable(),
-  right_leg_ideal: z.number().nullable(),
-  left_leg_current: z.number().nullable(),
-  left_leg_goal_1m: z.number().nullable(),
-  left_leg_ideal: z.number().nullable(),
-  right_arm_current: z.number().nullable(),
-  right_arm_goal_1m: z.number().nullable(),
-  right_arm_ideal: z.number().nullable(),
-  left_arm_current: z.number().nullable(),
-  left_arm_goal_1m: z.number().nullable(),
-  left_arm_ideal: z.number().nullable(),
-});
-export type SmartCaloriePlannerFormValues = z.infer<typeof SmartCaloriePlannerFormSchema>;
 
 // AdjustMealIngredients Schemas
 export const AdjustMealIngredientsInputSchema = z.object({
@@ -541,3 +1086,40 @@ export const GeneratePersonalizedMealPlanOutputSchema = z.object({
 
 export type GeneratePersonalizedMealPlanInput = z.infer<typeof GeneratePersonalizedMealPlanInputSchema>;
 export type GeneratePersonalizedMealPlanOutput = z.infer<typeof GeneratePersonalizedMealPlanOutputSchema>;
+
+// SuggestIngredientSwap Schemas
+export const SuggestIngredientSwapInputSchema = z.object({
+  mealName: z.string(),
+  ingredients: z.array(z.string()).optional(),
+  dietaryPreferences: z.string().optional(),
+  dislikedIngredients: z.array(z.string()).optional(),
+  allergies: z.array(z.string()).optional(),
+  nutrientTargets: z.object({
+    calories: z.number(),
+    protein: z.number(),
+    carbohydrates: z.number(),
+    fat: z.number(),
+  }),
+});
+
+export const SuggestIngredientSwapOutputSchema = z.array(
+  z.object({
+    ingredientName: z.string(),
+    reason: z.string(),
+  })
+);
+
+export type SuggestIngredientSwapInput = z.infer<typeof SuggestIngredientSwapInputSchema>;
+export type SuggestIngredientSwapOutput = z.infer<typeof SuggestIngredientSwapOutputSchema>;
+
+// Support Chatbot Schemas
+export const SupportChatbotInputSchema = z.object({
+  userQuery: z.string().min(1, 'User query is required'),
+});
+
+export const SupportChatbotOutputSchema = z.object({
+  botResponse: z.string().min(1, 'Bot response is required'),
+});
+
+export type SupportChatbotInput = z.infer<typeof SupportChatbotInputSchema>;
+export type SupportChatbotOutput = z.infer<typeof SupportChatbotOutputSchema>;

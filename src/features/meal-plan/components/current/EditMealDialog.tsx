@@ -19,7 +19,13 @@ import { PlusCircle, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { editMealPlan } from '../../lib/data-service';
 
-function EditMealDialog({ mealPlan }: { mealPlan: MealPlans }) {
+function EditMealDialog({
+  mealPlan,
+  userId,
+}: {
+  mealPlan: MealPlans;
+  userId?: string;
+}) {
   const { toast } = useToast();
 
   const { getQueryParams, removeQueryParams } = useQueryParams();
@@ -120,7 +126,7 @@ function EditMealDialog({ mealPlan }: { mealPlan: MealPlans }) {
     newWeeklyPlan.days[dayIndex].meals[mealIndex] = mealToSave;
 
     try {
-      await editMealPlan({ meal_data: newWeeklyPlan });
+      await editMealPlan({ meal_data: newWeeklyPlan }, userId);
       toast({
         title: 'Meal Saved',
         description: `${meal.custom_name || meal.name} has been updated.`,

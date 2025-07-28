@@ -4,12 +4,23 @@ import {
   getAcceptedClientRequests,
   getPendingClientRequests,
 } from '../../lib/data-service';
+import { unstable_noStore as noStore } from 'next/cache';
+import EmptyState from '@/components/ui/EmptyState';
 
 export async function CoachStatsCards() {
+  noStore();
+
   const accpetedRequests = await getAcceptedClientRequests();
   const pendingRequests = await getPendingClientRequests();
 
-  if (!accpetedRequests || !pendingRequests) return <p>No client</p>;
+  if (!accpetedRequests || !pendingRequests)
+    return (
+      <EmptyState
+        icon={Users}
+        title='No Requests Found'
+        description="Looks like there are no client requests available right now. Once someone sends a request, it'll show up here."
+      />
+    );
 
   const stats = [
     {

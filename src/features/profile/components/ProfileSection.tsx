@@ -1,13 +1,21 @@
-import { getUser, getUserProfile } from '@/lib/supabase/data-service';
+import {
+  getUser,
+  getUserDataById,
+  getUserProfile,
+} from '@/lib/supabase/data-service';
 import ProfileForm from './ProfileForm';
 import ErrorMessage from '@/components/ui/ErrorMessage';
 
-async function ProfileSection() {
+async function ProfileSection({ clientId }: { clientId?: string }) {
   try {
-    const user = await getUser();
-    const profile = await getUserProfile();
+    let user;
 
-    return <ProfileForm user={user} profile={profile} />;
+    if (clientId) user = await getUserDataById(clientId);
+    else user = await getUser();
+
+    const profile = await getUserProfile(clientId);
+
+    return <ProfileForm user={user} profile={profile} clientId={clientId} />;
   } catch (error: any) {
     return (
       <ErrorMessage

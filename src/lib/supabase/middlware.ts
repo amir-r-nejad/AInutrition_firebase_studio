@@ -46,6 +46,37 @@ export async function updateSession(request: NextRequest) {
     return supabaseRes;
   }
 
+  // Handle coach client dashboard access
+  if (pathname.startsWith('/coach-dashboard/clients/') && user) {
+    const pathSegments = pathname.split('/');
+    const clientId = pathSegments[3]; // /coach-dashboard/clients/[clientId]/...
+
+    if (clientId && clientId !== 'page') {
+      // Verify coach has access to this client
+      const { data: coachData } = await supabase
+        .from('coaches')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!coachData)
+        return NextResponse.redirect(new URL('/coach-dashboard', request.url));
+
+      const { data: accessData } = await supabase
+        .from('coach_clients')
+        .select('id')
+        .eq('coach_id', user.id)
+        .eq('client_id', clientId)
+        .eq('status', 'accepted')
+        .single();
+
+      if (!accessData)
+        return NextResponse.redirect(
+          new URL('/coach-dashboard/clients', request.url)
+        );
+    }
+  }
+
   // Handle password reset flow
   if (pathname.startsWith('/reset-password')) {
     if (

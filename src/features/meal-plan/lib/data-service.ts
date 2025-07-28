@@ -1,3 +1,5 @@
+'use server';
+
 import { getUser } from '@/features/profile/lib/data-services';
 import {
   GeneratePersonalizedMealPlanOutput,
@@ -5,19 +7,21 @@ import {
   WeeklyMealPlan,
 } from '@/lib/schemas';
 import { createClient } from '@/lib/supabase/client';
+import { revalidatePath } from 'next/cache';
 
-export async function editMealPlan(mealPlan: {
-  meal_data: WeeklyMealPlan;
-}): Promise<MealPlans> {
+export async function editMealPlan(
+  mealPlan: { meal_data: WeeklyMealPlan },
+  userId?: string
+): Promise<MealPlans> {
   const supabase = createClient();
-  const user = await getUser();
+  const targetUserId = userId || (await getUser()).id;
 
-  if (!user?.id) throw new Error('User not authenticated');
+  if (!targetUserId) throw new Error('User not authenticated');
 
   const { data, error } = await supabase
     .from('meal_plans')
     .update(mealPlan)
-    .eq('user_id', user.id)
+    .eq('user_id', targetUserId)
     .select()
     .single();
 
@@ -31,21 +35,25 @@ export async function editMealPlan(mealPlan: {
     throw new Error(`Failed to update meal plan: ${error.message}`);
   }
 
+  revalidatePath('/meal-plan/current');
   return data as MealPlans;
 }
 
-export async function editAiPlan(aiPlan: {
-  ai_plan: GeneratePersonalizedMealPlanOutput;
-}): Promise<MealPlans> {
+export async function editAiPlan(
+  aiPlan: {
+    ai_plan: GeneratePersonalizedMealPlanOutput;
+  },
+  userId?: string
+): Promise<MealPlans> {
   const supabase = createClient();
-  const user = await getUser();
+  const targetUserId = userId || (await getUser()).id;
 
-  if (!user?.id) throw new Error('User not authenticated');
+  if (!targetUserId) throw new Error('User not authenticated');
 
   const { data, error } = await supabase
     .from('meal_plans')
     .update(aiPlan)
-    .eq('user_id', user.id)
+    .eq('user_id', targetUserId)
     .select()
     .single();
 

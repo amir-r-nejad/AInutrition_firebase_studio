@@ -16,9 +16,9 @@ export async function saveCoachOnboarding(
     } = await supabase.auth.getUser();
 
     if (authError)
-      throw new Error(`Authentication error: ${authError.message}`);
+      throw new Error('Authentication failed. Please log in again.');
 
-    if (!user) throw new Error('Unauthorized access!');
+    if (!user) throw new Error('User session expired. Please log in again.');
 
     const { age, first_name, last_name, user_role, ...coachInfo } =
       onboardingData;
@@ -34,7 +34,9 @@ export async function saveCoachOnboarding(
     });
 
     if (updateError)
-      throw new Error(`Failed to update user: ${updateError.message}`);
+      throw new Error(
+        `Unable to update your profile information. Please verify your data and try again. Error: ${updateError.message}`
+      );
 
     // Upsert coach data (insert or update)
     const { error: coachError } = await supabase
@@ -45,18 +47,32 @@ export async function saveCoachOnboarding(
       .eq('user_id', user.id)
       .single();
 
-    if (coachError)
-      throw new Error(`Failed to save coach data: ${coachError.message}`);
+    if (coachError) {
+      if (coachError.code === '23505')
+        throw new Error(
+          'Coach profile data conflicts with existing records. Please check your input and try again.'
+        );
+
+      if (coachError.code === 'PGRST116')
+        throw new Error(
+          'Coach profile not found. Please contact support for assistance.'
+        );
+
+      throw new Error(
+        `Failed to save coach information. Please verify your data and try again. Error: ${coachError.message}`
+      );
+    }
 
     revalidatePath('/', 'layout');
     return { success: true };
-  } catch (error) {
-    console.error('saveCoachOnboarding error:', error);
-    throw error;
+  } catch {
+    throw new Error(
+      'Onboarding process failed. Please check your connection and try again.'
+    );
   }
 }
 
-export async function svaeCoachProfile(profileData: CoachProfileFormValues) {
+export async function saveCoachProfile(profileData: CoachProfileFormValues) {
   try {
     const supabase = await createClient();
     const {
@@ -65,9 +81,9 @@ export async function svaeCoachProfile(profileData: CoachProfileFormValues) {
     } = await supabase.auth.getUser();
 
     if (authError)
-      throw new Error(`Authentication error: ${authError.message}`);
+      throw new Error('Authentication failed. Please log in again.');
 
-    if (!user) throw new Error('Unauthorized access!');
+    if (!user) throw new Error('User session expired. Please log in again.');
 
     const { age, first_name, last_name, ...coachInfo } = profileData;
 
@@ -82,7 +98,9 @@ export async function svaeCoachProfile(profileData: CoachProfileFormValues) {
     });
 
     if (updateError)
-      throw new Error(`Failed to update user: ${updateError.message}`);
+      throw new Error(
+        `Unable to update your profile information. Please verify your data and try again. Error: ${updateError.message}`
+      );
 
     // Upsert coach data (insert or update)
     const { error: coachError } = await supabase
@@ -93,13 +111,27 @@ export async function svaeCoachProfile(profileData: CoachProfileFormValues) {
       .eq('user_id', user.id)
       .single();
 
-    if (coachError)
-      throw new Error(`Failed to save coach data: ${coachError.message}`);
+    if (coachError) {
+      if (coachError.code === '23505')
+        throw new Error(
+          'Coach profile data conflicts with existing records. Please check your input and try again.'
+        );
+
+      if (coachError.code === 'PGRST116')
+        throw new Error(
+          'Coach profile not found. Please contact support for assistance.'
+        );
+
+      throw new Error(
+        `Failed to update coach profile. Please verify your data and try again. Error: ${coachError.message}`
+      );
+    }
 
     revalidatePath('/', 'layout');
     return { success: true };
-  } catch (error) {
-    console.error('saveCoachOnboarding error:', error);
-    throw error;
+  } catch {
+    throw new Error(
+      'Profile update failed. Please check your connection and try again.'
+    );
   }
 }

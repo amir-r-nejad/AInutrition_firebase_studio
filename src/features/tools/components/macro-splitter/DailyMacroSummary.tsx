@@ -4,9 +4,9 @@ import { formatNumber } from '@/lib/utils';
 import { Info } from 'lucide-react';
 import Link from 'next/link';
 
-async function DailyMacroSummary() {
+async function DailyMacroSummary({ clientId }: { clientId?: string }) {
   try {
-    const plan = await getUserPlan();
+    const plan = await getUserPlan(clientId);
 
     const hasCustomMacros =
       plan.custom_total_calories ||

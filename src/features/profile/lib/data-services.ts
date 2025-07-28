@@ -1,9 +1,11 @@
+'use server';
+
 import { BaseProfileData, UserPlanType } from '@/lib/schemas';
-import { createClient } from '../../../lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { User } from '@supabase/supabase-js';
 
 export async function getUser(): Promise<User> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -13,7 +15,7 @@ export async function getUser(): Promise<User> {
 }
 
 export async function getUserProfile(): Promise<BaseProfileData> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const user = await getUser();
 
   const { data } = await supabase
@@ -28,7 +30,7 @@ export async function getUserProfile(): Promise<BaseProfileData> {
 }
 
 export async function getUserPlan(): Promise<UserPlanType> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const user = await getUser();
 
   const { data } = await supabase

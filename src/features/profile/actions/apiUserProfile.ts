@@ -5,17 +5,29 @@ import { UserAttributes } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { editPlan } from './apiUserPlan';
 
-export async function editProfile(newProfile: any, newUser?: UserAttributes) {
+export async function editProfile(
+  newProfile: any,
+  newUser?: UserAttributes,
+  userId?: string
+) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
 
-    if (authError)
-      throw new Error(`Authentication error: ${authError.message}`);
-    if (!user) throw new Error('Unauthorized access!');
+    let targetUserId;
+
+    if (userId) targetUserId = userId;
+    else {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError)
+        throw new Error(`Authentication error: ${authError.message}`);
+      if (!user) throw new Error('Unauthorized access!');
+
+      targetUserId = user.id;
+    }
 
     // Filter out null, undefined, and empty string values to prevent enum validation errors
     const filteredProfile = Object.entries(newProfile).reduce((acc, [key, value]) => {
@@ -27,15 +39,16 @@ export async function editProfile(newProfile: any, newUser?: UserAttributes) {
 
     const { error } = await supabase
       .from('profile')
-      .upsert(
-        { user_id: user.id, ...filteredProfile },
-        { onConflict: 'user_id' }
-      );
+      .update(filteredProfile)
+      .eq('user_id', targetUserId)
+      .single();
 
     if (error)
       throw new Error(
         `Profile update failed: ${error.code} - ${error.message}`
       );
+
+    console.log();
 
     if (newUser) {
       const { error: userError } = await supabase.auth.updateUser({

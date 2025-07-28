@@ -9,21 +9,28 @@ import WeeklyMealPlanTabs from './WeeklyMealPlanTabs';
 
 async function PlanSection({
   searchParams,
+  clientId,
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
+  clientId?: string;
 }) {
   try {
-    const profile = await getUserProfile();
-    const plan = await getUserPlan();
-    const mealPlan = await getMealPlan();
+    const profile = await getUserProfile(clientId);
+    const plan = await getUserPlan(clientId);
+    const mealPlan = await getMealPlan(clientId);
 
     const params = await searchParams;
     const isEditing = params.is_edit;
 
     return (
       <>
-        <WeeklyMealPlanTabs profile={profile} plan={plan} mealPlan={mealPlan} />
-        {isEditing && <EditMealDialog mealPlan={mealPlan} />}
+        <WeeklyMealPlanTabs
+          profile={profile}
+          plan={plan}
+          mealPlan={mealPlan}
+          userId={clientId}
+        />
+        {isEditing && <EditMealDialog mealPlan={mealPlan} userId={clientId} />}
       </>
     );
   } catch (error: any) {

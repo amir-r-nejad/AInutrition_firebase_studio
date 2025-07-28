@@ -19,9 +19,13 @@ import { CalculatedMealMacros } from '../../types/toolsGlobalTypes';
 
 type FinalMacroProps = {
   calculatedSplit: CalculatedMealMacros[] | null;
+  isCoachPreview?: boolean;
 };
 
-function FinalMacrosOverview({ calculatedSplit }: FinalMacroProps) {
+function FinalMacrosOverview({
+  calculatedSplit,
+  isCoachPreview = false,
+}: FinalMacroProps) {
   if (!calculatedSplit) return null;
 
   return (
@@ -52,9 +56,11 @@ function FinalMacrosOverview({ calculatedSplit }: FinalMacroProps) {
                 <TableHead className='px-2 py-2 text-right text-xs font-medium'>
                   Fat (g)
                 </TableHead>
-                <TableHead className='px-2 py-2 text-right text-xs font-medium w-[180px]'>
-                  Actions
-                </TableHead>
+                {!isCoachPreview && (
+                  <TableHead className='px-2 py-2 text-right text-xs font-medium w-[180px]'>
+                    Actions
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -86,30 +92,32 @@ function FinalMacrosOverview({ calculatedSplit }: FinalMacroProps) {
                       maximumFractionDigits: 1,
                     })}
                   </TableCell>
-                  <TableCell className='px-2 py-1 text-right'>
-                    <Link
-                      href={{
-                        pathname: '/tools/meal-suggestions',
-                        query: {
-                          mealName: mealData.mealName,
-                          calories: mealData.Calories.toString(),
-                          protein: mealData['Protein (g)'].toString(),
-                          carbs: mealData['Carbs (g)'].toString(),
-                          fat: mealData['Fat (g)'].toString(),
-                        },
-                      }}
-                    >
-                      <Button
-                        type='button'
-                        variant='outline'
-                        size='sm'
-                        className='h-8 text-xs'
+                  {!isCoachPreview && (
+                    <TableCell className='px-2 py-1 text-right'>
+                      <Link
+                        href={{
+                          pathname: '/tools/meal-suggestions',
+                          query: {
+                            mealName: mealData.mealName,
+                            calories: mealData.Calories.toString(),
+                            protein: mealData['Protein (g)'].toString(),
+                            carbs: mealData['Carbs (g)'].toString(),
+                            fat: mealData['Fat (g)'].toString(),
+                          },
+                        }}
                       >
-                        <Lightbulb className='mr-1.5 h-3.5 w-3.5' />
-                        Suggest Meals
-                      </Button>
-                    </Link>
-                  </TableCell>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='sm'
+                          className='h-8 text-xs'
+                        >
+                          <Lightbulb className='mr-1.5 h-3.5 w-3.5' />
+                          Suggest Meals
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
               <TableRow className='font-semibold border-t-2 text-sm bg-muted/70'>

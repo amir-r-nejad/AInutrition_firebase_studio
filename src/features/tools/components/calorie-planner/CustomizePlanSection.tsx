@@ -2,12 +2,14 @@ import { getUserPlan, getUserProfile } from '@/lib/supabase/data-service';
 import CustomizePlanForm from './CustomizePlanForm';
 import ErrorMessage from '@/components/ui/ErrorMessage';
 
-async function CustomizePlanSection() {
+async function CustomizePlanSection({ clientId }: { clientId?: string }) {
   try {
-    const profile = await getUserProfile();
-    const plan = await getUserPlan();
+    const profile = await getUserProfile(clientId);
+    const plan = await getUserPlan(clientId);
 
-    return <CustomizePlanForm plan={plan} profile={profile} />;
+    return (
+      <CustomizePlanForm plan={plan} profile={profile} clientId={clientId} />
+    );
   } catch (error: any) {
     return (
       <ErrorMessage

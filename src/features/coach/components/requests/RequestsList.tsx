@@ -2,9 +2,10 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import EmptyState from '@/components/ui/EmptyState';
 import { useQueryParams } from '@/hooks/useQueryParams';
 import { getTimeAgo } from '@/lib/utils';
-import { Clock } from 'lucide-react';
+import { Clock, MailOpen } from 'lucide-react';
 
 type RequestType = {
   requests: {
@@ -25,7 +26,15 @@ function RequestsList({ requests }: RequestType) {
       )
     : requests;
 
-  if (searchedReq.length <= 0) return <p>No requests found</p>;
+  if (!requests || requests.length === 0) {
+    return (
+      <EmptyState
+        icon={MailOpen}
+        title='No Pending Requests'
+        description="You don't have any pending client requests at the moment. Share your coaching profile or send requests to potential clients."
+      />
+    );
+  }
 
   return (
     <ul className='space-y-4'>

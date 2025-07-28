@@ -1,10 +1,12 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { getCoachProfile } from '../../lib/data-service';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export async function CoachDashboardHeader() {
-  const coach = await getCoachProfile();
+  noStore();
 
+  const coach = await getCoachProfile();
   const [firstName, lastName] = coach.full_name.split(' ');
 
   return (
