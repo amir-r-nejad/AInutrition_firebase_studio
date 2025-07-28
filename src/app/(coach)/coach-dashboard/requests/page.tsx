@@ -1,14 +1,21 @@
+import PageLoadingSpinner from '@/components/ui/PageLoadingSpinner';
 import { PendingRequestsSection } from '@/features/coach/components/requests/PendingRequestsSection';
 import { RequestsHeader } from '@/features/coach/components/requests/RequestsHeader';
 import { Suspense } from 'react';
 
-export default function CoachRequestsPage() {
+export default async function CoachRequestsPage() {
   return (
     <div className='space-y-8'>
-      <Suspense fallback={<p>Loading...</p>}>
+      <Suspense
+        fallback={<PageLoadingSpinner message='Loading requests header...' />}
+      >
         <RequestsHeader />
       </Suspense>
-      <PendingRequestsSection />
+      <Suspense
+        fallback={<PageLoadingSpinner message='Loading requests ...' />}
+      >
+        <PendingRequestsSection />
+      </Suspense>
     </div>
   );
 }
