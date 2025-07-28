@@ -40,7 +40,6 @@ const navItems = [
     label: 'Smart Calorie Planner',
     icon: BrainCircuit,
   },
-  // { href: '/tools/macro-calculator', label: 'Daily Macro Breakdown', icon: Scaling }, // Removed
   {
     href: '/tools/macro-splitter',
     label: 'Macro Splitter',
