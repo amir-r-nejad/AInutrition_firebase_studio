@@ -105,14 +105,30 @@ function CoachLoading() {
         </CardContent>
       </Card>
 
-      <div className='flex items-center justify-center py-8'>
-        <div className='flex items-center gap-3 text-primary'>
-          <Users className='h-8 w-8 animate-pulse' />
-          <div className='space-y-1'>
-            <p className='text-lg font-medium'>Loading coach dashboard...</p>
-            <p className='text-sm text-muted-foreground'>
-              Preparing your client management tools
+      <div className='flex items-center justify-center py-12'>
+        <div className='flex flex-col items-center gap-4 text-center'>
+          <div className='relative'>
+            <Users className='h-12 w-12 text-primary animate-pulse' />
+            <div className='absolute inset-0 rounded-full bg-primary/20 animate-ping' />
+          </div>
+          <div className='space-y-2'>
+            <p className='text-xl font-semibold text-primary'>
+              Loading coach dashboard...
             </p>
+            <p className='text-sm text-muted-foreground max-w-md'>
+              Preparing your client management tools and analytics
+            </p>
+            <div className='flex justify-center gap-1 pt-2'>
+              <div className='w-2 h-2 bg-primary rounded-full animate-bounce' />
+              <div
+                className='w-2 h-2 bg-primary rounded-full animate-bounce'
+                style={{ animationDelay: '0.1s' }}
+              />
+              <div
+                className='w-2 h-2 bg-primary rounded-full animate-bounce'
+                style={{ animationDelay: '0.2s' }}
+              />
+            </div>
           </div>
         </div>
       </div>

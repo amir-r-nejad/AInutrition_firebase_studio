@@ -30,7 +30,7 @@ export async function CoachDashboardHeader() {
       </div>
 
       <Badge variant='default' className='text-sm hidden lg:block'>
-        {coach.certification}
+        {coach.certification.join(', ')}
       </Badge>
     </div>
   );
