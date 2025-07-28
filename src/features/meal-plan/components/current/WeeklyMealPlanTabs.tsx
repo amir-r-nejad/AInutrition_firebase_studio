@@ -16,10 +16,12 @@ function WeeklyMealPlanTabs({
   profile,
   plan,
   mealPlan,
+  userId,
 }: {
   profile: BaseProfileData;
   plan: UserPlanType;
   mealPlan: MealPlans;
+  userId?: string;
 }) {
   const { toast } = useToast();
   const { getQueryParams, updateAndRemoveQueryParams } = useQueryParams();
@@ -102,7 +104,7 @@ function WeeklyMealPlanTabs({
 
       newWeeklyPlan.days[dayIndex].meals[mealIndex] = updatedMealData;
 
-      await editMealPlan({ meal_data: newWeeklyPlan });
+      await editMealPlan({ meal_data: newWeeklyPlan }, userId);
       setMealPlanState((meal) => ({ ...meal!, meal_data: newWeeklyPlan }));
 
       toast({

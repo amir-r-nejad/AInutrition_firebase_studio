@@ -6,11 +6,11 @@ import {
 } from '@/lib/supabase/data-service';
 import MealPlanGenerator from './MealPlanGenerator';
 
-async function AiPlanSection() {
+async function AiPlanSection({ clientId }: { clientId?: string }) {
   try {
-    const mealPlan = await getMealPlan();
-    const profile = await getUserProfile();
-    const userPlan = await getUserPlan();
+    const mealPlan = await getMealPlan(clientId);
+    const profile = await getUserProfile(clientId);
+    const userPlan = await getUserPlan(clientId);
 
     return (
       <MealPlanGenerator

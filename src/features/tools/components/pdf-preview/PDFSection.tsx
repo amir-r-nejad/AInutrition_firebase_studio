@@ -1,16 +1,24 @@
 import {
   getMealPlan,
+  getUser,
+  getUserDataById,
   getUserPlan,
   getUserProfile,
 } from '@/lib/supabase/data-service';
 import PDFView from './PDFView';
 
-async function PDFSection() {
-  const profile = await getUserProfile();
-  const plan = await getUserPlan();
-  const mealPlan = await getMealPlan();
+async function PDFSection({ clientId }: { clientId?: string }) {
+  const profile = await getUserProfile(clientId);
+  const plan = await getUserPlan(clientId);
+  const mealPlan = await getMealPlan(clientId);
 
-  return <PDFView profile={profile} plan={plan} mealPlan={mealPlan} />;
+  let user;
+  if (clientId) user = await getUserDataById(clientId);
+  else user = await getUser();
+
+  return (
+    <PDFView profile={profile} plan={plan} mealPlan={mealPlan} user={user} />
+  );
 }
 
 export default PDFSection;

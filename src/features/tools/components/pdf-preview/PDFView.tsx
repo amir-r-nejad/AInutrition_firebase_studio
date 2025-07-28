@@ -7,6 +7,7 @@ import type {
   UserPlanType,
   WeeklyMealPlan,
 } from '@/lib/schemas';
+import { formatValue } from '@/lib/utils';
 import {
   Document,
   Font,
@@ -15,6 +16,7 @@ import {
   Text,
   View,
 } from '@react-pdf/renderer';
+import { User } from '@supabase/supabase-js';
 import dynamic from 'next/dynamic';
 
 const PDFViewer = dynamic(() => import('./pdfViewer'), {
@@ -26,6 +28,7 @@ type PDFViewProps = {
   profile: BaseProfileData;
   plan: UserPlanType;
   mealPlan: MealPlans;
+  user: User;
 };
 
 // Register custom fonts
@@ -419,30 +422,10 @@ const styles = StyleSheet.create({
   },
 });
 
-function PDFView({ profile, plan, mealPlan }: PDFViewProps) {
+function PDFView({ profile, plan, mealPlan, user }: PDFViewProps) {
   const formatArray = (arr: string[] | null | undefined, fallback = 'None') => {
     if (!arr || arr.length === 0) return fallback;
     return arr.join(', ');
-  };
-
-  const formatValue = (
-    value: number | string | null | undefined,
-    suffix = '',
-    fallback = 'N/A',
-    decimals = 1
-  ) => {
-    if (value === null || value === undefined || value === '') return fallback;
-
-    if (typeof value === 'number') {
-      return value.toFixed(decimals) + suffix;
-    }
-
-    const numValue = parseFloat(String(value));
-    if (!isNaN(numValue)) {
-      return numValue.toFixed(decimals) + suffix;
-    }
-
-    return String(value) + suffix;
   };
 
   const formatIntValue = (
@@ -631,7 +614,7 @@ function PDFView({ profile, plan, mealPlan }: PDFViewProps) {
                 Generated on {getCurrentDate()}
               </Text>
               <Text style={styles.headerUser}>
-                For: {profile.name || 'User'}
+                For: {user.user_metadata?.full_name || 'User'}
               </Text>
             </View>
           </View>

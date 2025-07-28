@@ -29,13 +29,17 @@ import CustomizePlanTable from './CustomizePlanTable';
 import CustomizeToolTip from './CustomizeToolTip';
 import { editPlan } from '@/features/profile/actions/apiUserPlan';
 
+type CustomizePlanFormProps = {
+  plan: UserPlanType;
+  profile: BaseProfileData;
+  clientId?: string;
+};
+
 function CustomizePlanForm({
   plan,
   profile,
-}: {
-  plan: UserPlanType;
-  profile: BaseProfileData;
-}) {
+  clientId,
+}: CustomizePlanFormProps) {
   const { toast } = useToast();
 
   const form = useForm<customizePlanFormValues>({
@@ -84,7 +88,7 @@ function CustomizePlanForm({
       };
 
       try {
-        await editPlan(planToResest);
+        await editPlan(planToResest, clientId);
 
         toast({
           title: 'Custom Plan Reset',
@@ -119,10 +123,13 @@ function CustomizePlanForm({
     });
 
     try {
-      await editPlan({
-        ...formData,
-        ...updateObj,
-      });
+      await editPlan(
+        {
+          ...formData,
+          ...updateObj,
+        },
+        clientId
+      );
 
       toast({
         title: 'Plan Saved',

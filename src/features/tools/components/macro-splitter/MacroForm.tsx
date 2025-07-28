@@ -46,13 +46,13 @@ import {
 import { useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
-function MacroForm({
-  plan,
-  profile,
-}: {
+type MacroFormProps = {
   profile: BaseProfileData;
   plan: UserPlanType;
-}) {
+  clientId?: string;
+};
+
+function MacroForm({ plan, profile, clientId }: MacroFormProps) {
   const { toast } = useToast();
   const [calculatedSplit, setCalculatedSplit] = useState<
     CalculatedMealMacros[] | null
@@ -89,9 +89,13 @@ function MacroForm({
     setCalculatedSplit(null);
 
     try {
-      await editProfile({
-        meal_distributions: defaultValues,
-      });
+      await editProfile(
+        {
+          meal_distributions: defaultValues,
+        },
+        undefined,
+        clientId
+      );
 
       toast({
         title: 'Success',
@@ -125,9 +129,13 @@ function MacroForm({
     setCalculatedSplit(result);
 
     try {
-      await editProfile({
-        meal_distributions: data.meal_distributions,
-      });
+      await editProfile(
+        {
+          meal_distributions: data.meal_distributions,
+        },
+        undefined,
+        clientId
+      );
 
       toast({
         title: 'Success',
@@ -461,7 +469,10 @@ function MacroForm({
         </form>
       </Form>
 
-      <FinalMacrosOverview calculatedSplit={calculatedSplit} />
+      <FinalMacrosOverview
+        calculatedSplit={calculatedSplit}
+        isCoachPreview={Boolean(clientId)}
+      />
     </>
   );
 }

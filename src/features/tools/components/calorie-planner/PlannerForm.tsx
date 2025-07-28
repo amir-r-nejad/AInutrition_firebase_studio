@@ -46,13 +46,13 @@ import { Calculator, RefreshCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FieldPath, useForm } from 'react-hook-form';
 
-function PlannerForm({
-  plan,
-  profile,
-}: {
+type PlannerFormProps = {
   plan: UserPlanType;
   profile: BaseProfileData;
-}) {
+  clientId?: string;
+};
+
+function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
   const { toast } = useToast();
   const [results, setResults] = useState<GlobalCalculatedTargets | null>(null);
 
@@ -113,12 +113,15 @@ function PlannerForm({
     } = form.getValues();
 
     try {
-      await editProfile(newProfile);
-      await editPlan({
-        custom_protein_per_kg,
-        custom_total_calories,
-        remaining_calories_carb_pct,
-      });
+      await editProfile(newProfile, undefined, clientId);
+      await editPlan(
+        {
+          custom_protein_per_kg,
+          custom_total_calories,
+          remaining_calories_carb_pct,
+        },
+        clientId
+      );
 
       toast({
         title: 'Smart Planner Reset',
@@ -152,6 +155,7 @@ function PlannerForm({
         description: 'Please fill all required basic info fields.',
         variant: 'destructive',
       });
+
       return;
     }
 
@@ -286,11 +290,14 @@ function PlannerForm({
     const { remaining_calories_carb_pct, ...newProfile } = data;
 
     try {
-      await editProfile(newProfile);
-      await editPlan({
-        ...newPlan,
-        remaining_calories_carb_pct,
-      });
+      await editProfile(newProfile, undefined, clientId);
+      await editPlan(
+        {
+          ...newPlan,
+          remaining_calories_carb_pct,
+        },
+        clientId
+      );
 
       setResults({
         estimated_weekly_weight_change_kg,
