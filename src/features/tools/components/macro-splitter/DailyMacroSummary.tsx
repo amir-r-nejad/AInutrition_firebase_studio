@@ -27,14 +27,14 @@ async function DailyMacroSummary({ clientId }: { clientId?: string }) {
           <p>
             <span className='font-medium'>Calories:</span>{' '}
             {formatNumber(
-              plan.custom_total_calories || plan.target_daily_calories,
+              plan.custom_total_calories || plan.target_daily_calories || 0,
               { maximumFractionDigits: 0 }
             )}{' '}
             kcal
           </p>
           <p>
             <span className='font-medium'>Protein:</span>{' '}
-            {formatNumber(plan.custom_protein_g ?? plan.target_protein_g, {
+            {formatNumber(plan.custom_protein_g ?? plan.target_protein_g ?? 0, {
               minimumFractionDigits: 1,
               maximumFractionDigits: 1,
             })}{' '}
@@ -42,7 +42,7 @@ async function DailyMacroSummary({ clientId }: { clientId?: string }) {
           </p>
           <p>
             <span className='font-medium'>Carbs:</span>{' '}
-            {formatNumber(plan.custom_carbs_g ?? plan.target_carbs_g, {
+            {formatNumber(plan.custom_carbs_g ?? plan.target_carbs_g ?? 0, {
               minimumFractionDigits: 1,
               maximumFractionDigits: 1,
             })}{' '}
@@ -50,7 +50,7 @@ async function DailyMacroSummary({ clientId }: { clientId?: string }) {
           </p>
           <p>
             <span className='font-medium'>Fat:</span>{' '}
-            {formatNumber(plan.custom_fat_g ?? plan.target_fat_g, {
+            {formatNumber(plan.custom_fat_g ?? plan.target_fat_g ?? 0, {
               minimumFractionDigits: 1,
               maximumFractionDigits: 1,
             })}{' '}

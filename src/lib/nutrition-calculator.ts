@@ -80,11 +80,11 @@ export function calculateEstimatedDailyTargets(profile: {
   age?: number | null;
   physical_activity_level?: string | null;
   primary_diet_goal?: string | null;
-  long_term_goal_weight_kg?: number | null;
+  target_weight_kg?: number | null;
   bf_current?: number | null;
   bf_target?: number | null;
   waist_current?: number | null;
-  waist_goal_1m?: number | null;
+  waist_target?: number | null;
 }): {
   target_daily_calories?: number;
   target_protein_g?: number;

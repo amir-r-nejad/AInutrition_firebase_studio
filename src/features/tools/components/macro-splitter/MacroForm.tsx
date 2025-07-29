@@ -44,7 +44,7 @@ import {
   SplitSquareHorizontal,
 } from 'lucide-react';
 import { useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, SubmitHandler } from 'react-hook-form';
 
 type MacroFormProps = {
   profile: BaseProfileData;
@@ -110,7 +110,7 @@ function MacroForm({ plan, profile, clientId }: MacroFormProps) {
     }
   }
 
-  async function onSubmit(data: MacroSplitterFormValues) {
+  const onSubmit: SubmitHandler<MacroSplitterFormValues> = async (data) => {
     const totalCalories =
       plan.custom_total_calories ?? plan.target_daily_calories;
     const protein = plan.custom_protein_g ?? plan.target_protein_g;
@@ -118,10 +118,10 @@ function MacroForm({ plan, profile, clientId }: MacroFormProps) {
     const fat = plan.custom_fat_g ?? plan.target_fat_g;
 
     const macroTargets = {
-      calories: totalCalories,
-      protein_g: protein,
-      carbs_g: carbs,
-      fat_g: fat,
+      calories: totalCalories || 0,
+      protein_g: protein || 0,
+      carbs_g: carbs || 0,
+      fat_g: fat || 0,
     };
 
     const result = customMacroSplit(macroTargets, data.meal_distributions);
@@ -148,7 +148,7 @@ function MacroForm({ plan, profile, clientId }: MacroFormProps) {
         variant: 'destructive',
       });
     }
-  }
+  };
 
   return (
     <>

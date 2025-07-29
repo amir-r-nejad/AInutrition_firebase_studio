@@ -1,6 +1,6 @@
 'use server';
 
-import { BaseProfileData, UserPlanType } from '@/lib/schemas';
+import { UserProfile, UserPlan } from '@/lib/schemas';
 import { createClient } from '@/lib/supabase/server';
 import { User } from '@supabase/supabase-js';
 
@@ -14,7 +14,7 @@ export async function getUser(): Promise<User> {
   return user;
 }
 
-export async function getUserProfile(): Promise<BaseProfileData> {
+export async function getUserProfile(): Promise<UserProfile> {
   const supabase = await createClient();
   const user = await getUser();
 
@@ -26,10 +26,10 @@ export async function getUserProfile(): Promise<BaseProfileData> {
 
   if (!data) throw new Error('User profile not found');
 
-  return data as BaseProfileData;
+  return data as UserProfile;
 }
 
-export async function getUserPlan(): Promise<UserPlanType> {
+export async function getUserPlan(): Promise<UserPlan> {
   const supabase = await createClient();
   const user = await getUser();
 
@@ -41,5 +41,5 @@ export async function getUserPlan(): Promise<UserPlanType> {
 
   if (!data) throw new Error('User plan not found');
 
-  return data as UserPlanType;
+  return data as UserPlan;
 }

@@ -1,5 +1,3 @@
-export const ONBOARDED_KEY = 'isOnboarded';
-
 export const AUTH_ROUTES = [
   '/login',
   '/signup',

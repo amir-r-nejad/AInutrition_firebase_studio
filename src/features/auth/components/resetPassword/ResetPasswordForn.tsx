@@ -7,24 +7,30 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { KeyRound } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
-import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { resetPasswordAction } from '../../actions/resetPassword';
 import { newPasswordSchema } from '../../schemas/authSchema';
 import SubmitButton from '../../../../components/ui/SubmitButton';
+
+type ResetPasswordFormValues = {
+  newPassword: string;
+  confirmNewPassword: string;
+};
 
 function ResetPasswordForn() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const { toast } = useToast();
-  const { handleSubmit, formState, register } = useForm({
-    resolver: zodResolver(newPasswordSchema),
-  });
+  const { handleSubmit, formState, register } =
+    useForm<ResetPasswordFormValues>({
+      resolver: zodResolver(newPasswordSchema),
+    });
 
   const token = searchParams.get('token_hash');
   const isLoading = formState.isSubmitting;
 
-  const onSubmit: SubmitHandler<FieldValues> = async (data) => {
+  const onSubmit: SubmitHandler<ResetPasswordFormValues> = async (data) => {
     if (!token)
       return toast({
         title: 'Error',

@@ -1,12 +1,12 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -23,65 +23,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import SubmitButton from '@/components/ui/SubmitButton';
+import { editPlan } from '@/features/profile/actions/apiUserPlan';
+import { editProfile } from '@/features/profile/actions/apiUserProfile';
+import HelpAccordion from '@/features/tools/components/calorie-planner/HelpAccordion';
+import PlanResult from '@/features/tools/components/calorie-planner/PlanResult';
 import { useToast } from '@/hooks/use-toast';
 import {
-  ExtendedProfileData,
+  activityLevels,
+  genders,
+  smartPlannerDietGoals,
+} from '@/lib/constants';
+import { calculateBMR, calculateTDEE } from '@/lib/nutrition-calculator';
+import {
+  BaseProfileData,
+  SmartCaloriePlannerFormSchema,
   UserPlanType,
   type GlobalCalculatedTargets,
+  type SmartCaloriePlannerFormValues,
 } from '@/lib/schemas';
-import { formatNumber } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Calculator, RefreshCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { FieldPath, useForm } from 'react-hook-form';
-import { editProfile } from '@/features/profile/actions/apiUserProfile';
-import { editPlan } from '@/features/profile/actions/apiUserPlan';
-
-// Create a simplified form schema for the planner
-const PlannerFormSchema = {
-  age: null as number | null,
-  biological_sex: null as string | null,
-  height_cm: null as number | null,
-  current_weight_kg: null as number | null,
-  target_weight_1month_kg: null as number | null,
-  long_term_goal_weight_kg: null as number | null,
-  physical_activity_level: null as string | null,
-  primary_diet_goal: null as string | null,
-  bf_current: null as number | null,
-  bf_target: null as number | null,
-  bf_ideal: null as number | null,
-  mm_current: null as number | null,
-  mm_target: null as number | null,
-  mm_ideal: null as number | null,
-  bw_current: null as number | null,
-  bw_target: null as number | null,
-  bw_ideal: null as number | null,
-  waist_current: null as number | null,
-  waist_goal_1m: null as number | null,
-  waist_ideal: null as number | null,
-  hips_current: null as number | null,
-  hips_goal_1m: null as number | null,
-  hips_ideal: null as number | null,
-  right_leg_current: null as number | null,
-  right_leg_goal_1m: null as number | null,
-  right_leg_ideal: null as number | null,
-  left_leg_current: null as number | null,
-  left_leg_goal_1m: null as number | null,
-  left_leg_ideal: null as number | null,
-  right_arm_current: null as number | null,
-  right_arm_goal_1m: null as number | null,
-  right_arm_ideal: null as number | null,
-  left_arm_current: null as number | null,
-  left_arm_goal_1m: null as number | null,
-  left_arm_ideal: null as number | null,
-};
-
-type PlannerFormValues = typeof PlannerFormSchema;
+import { FieldPath, useForm, SubmitHandler } from 'react-hook-form';
 
 type PlannerFormProps = {
   plan: UserPlanType;
-  profile: ExtendedProfileData;
+  profile: BaseProfileData;
   clientId?: string;
 };
 
@@ -89,116 +56,84 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
   const { toast } = useToast();
   const [results, setResults] = useState<GlobalCalculatedTargets | null>(null);
 
-  const form = useForm<PlannerFormValues>({
-    defaultValues: {
-      age: profile.age || null,
-      biological_sex: profile.biological_sex || null,
-      height_cm: profile.height_cm || null,
-      current_weight_kg: profile.current_weight_kg || null,
-      target_weight_1month_kg: profile.target_weight_1month_kg || null,
-      long_term_goal_weight_kg: profile.long_term_goal_weight_kg || null,
-      physical_activity_level: profile.physical_activity_level || null,
-      primary_diet_goal: profile.primary_diet_goal || null,
-      bf_current: profile.bf_current || null,
-      bf_target: profile.bf_target || null,
-      bf_ideal: profile.bf_ideal || null,
-      mm_current: profile.mm_current || null,
-      mm_target: profile.mm_target || null,
-      mm_ideal: profile.mm_ideal || null,
-      bw_current: profile.bw_current || null,
-      bw_target: profile.bw_target || null,
-      bw_ideal: profile.bw_ideal || null,
-      waist_current: profile.waist_current || null,
-      waist_goal_1m: profile.waist_goal_1m || null,
-      waist_ideal: profile.waist_ideal || null,
-      hips_current: profile.hips_current || null,
-      hips_goal_1m: profile.hips_goal_1m || null,
-      hips_ideal: profile.hips_ideal || null,
-      right_leg_current: profile.right_leg_current || null,
-      right_leg_goal_1m: profile.right_leg_goal_1m || null,
-      right_leg_ideal: profile.right_leg_ideal || null,
-      left_leg_current: profile.left_leg_current || null,
-      left_leg_goal_1m: profile.left_leg_goal_1m || null,
-      left_leg_ideal: profile.left_leg_ideal || null,
-      right_arm_current: profile.right_arm_current || null,
-      right_arm_goal_1m: profile.right_arm_goal_1m || null,
-      right_arm_ideal: profile.right_arm_ideal || null,
-      left_arm_current: profile.left_arm_current || null,
-      left_arm_goal_1m: profile.left_arm_goal_1m || null,
-      left_arm_ideal: profile.left_arm_ideal || null,
-    },
+  const form = useForm<SmartCaloriePlannerFormValues>({
+    resolver: zodResolver(SmartCaloriePlannerFormSchema),
+    defaultValues: profile,
   });
 
   async function handleSmartPlannerReset() {
     form.reset({
-      age: null,
-      biological_sex: null,
-      height_cm: null,
-      current_weight_kg: null,
-      target_weight_1month_kg: null,
-      long_term_goal_weight_kg: null,
+      age: undefined,
+      biological_sex: undefined,
+      height_cm: undefined,
+      current_weight_kg: undefined,
+      target_weight_1month_kg: undefined,
+      long_term_goal_weight_kg: undefined,
       physical_activity_level: 'moderate',
       primary_diet_goal: 'fat_loss',
-      bf_current: null,
-      bf_target: null,
-      bf_ideal: null,
-      mm_current: null,
-      mm_target: null,
-      mm_ideal: null,
-      bw_current: null,
-      bw_target: null,
-      bw_ideal: null,
-      waist_current: null,
-      waist_goal_1m: null,
-      waist_ideal: null,
-      hips_current: null,
-      hips_goal_1m: null,
-      hips_ideal: null,
-      right_leg_current: null,
-      right_leg_goal_1m: null,
-      right_leg_ideal: null,
-      left_leg_current: null,
-      left_leg_goal_1m: null,
-      left_leg_ideal: null,
-      right_arm_current: null,
-      right_arm_goal_1m: null,
-      right_arm_ideal: null,
-      left_arm_current: null,
-      left_arm_goal_1m: null,
-      left_arm_ideal: null,
+      bf_current: undefined,
+      bf_target: undefined,
+      bf_ideal: undefined,
+      mm_current: undefined,
+      mm_target: undefined,
+      mm_ideal: undefined,
+      bw_current: undefined,
+      bw_target: undefined,
+      bw_ideal: undefined,
+      waist_current: undefined,
+      waist_goal_1m: undefined,
+      waist_ideal: undefined,
+      hips_current: undefined,
+      hips_goal_1m: undefined,
+      hips_ideal: undefined,
+      right_leg_current: undefined,
+      right_leg_goal_1m: undefined,
+      right_leg_ideal: undefined,
+      left_leg_current: undefined,
+      left_leg_goal_1m: undefined,
+      left_leg_ideal: undefined,
+      right_arm_current: undefined,
+      right_arm_goal_1m: undefined,
+      right_arm_ideal: undefined,
+      left_arm_current: undefined,
+      left_arm_goal_1m: undefined,
+      left_arm_ideal: undefined,
+      custom_total_calories: undefined,
+      custom_protein_per_kg: undefined,
+      remaining_calories_carbs_percentage: 50,
     });
 
     setResults(null);
 
+    const {
+      custom_protein_per_kg,
+      custom_total_calories,
+      remaining_calories_carbs_percentage,
+      ...newProfile
+    } = form.getValues();
+
+    // Convert null values to undefined for the profile update
+    const profileUpdate = Object.fromEntries(
+      Object.entries(newProfile).map(([key, value]) => [
+        key,
+        value === null ? undefined : value,
+      ])
+    ) as Partial<BaseProfileData>;
+
     try {
-      await editProfile({}, undefined, clientId);
-      await editPlan({}, clientId);
+      await editProfile(profileUpdate, undefined, clientId);
+      await editPlan(
+        {
+          custom_protein_per_kg,
+          custom_total_calories,
+          remaining_calories_carbs_percentage,
+        },
+        clientId
+      );
 
       toast({
         title: 'Smart Planner Reset',
         description: 'All smart planner inputs and results cleared.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Reset Error',
-        description: error,
-        variant: 'destructive',
-      });
-    }
-  }
-
-  async function onSubmit(data: PlannerFormValues) {
-    if (!results) return;
-
-    const newProfile = { ...data };
-
-    try {
-      await editProfile(newProfile, undefined, clientId);
-      await editPlan(results, clientId);
-
-      toast({
-        title: 'Smart Planner Saved',
-        description: 'Your smart planner data has been saved successfully.',
       });
     } catch (error: any) {
       toast({
@@ -209,89 +144,223 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
     }
   }
 
-  // Calculate results based on form data
-  useEffect(() => {
-    const formValues = form.getValues();
-    const { age, biological_sex, height_cm, current_weight_kg, physical_activity_level, primary_diet_goal } = formValues;
+  const onSubmit: SubmitHandler<SmartCaloriePlannerFormValues> = async (
+    data
+  ) => {
+    const activity = activityLevels.find(
+      (al) => al.value === data.physical_activity_level
+    );
+    if (
+      !activity ||
+      !data.physical_activity_level ||
+      !data.current_weight_kg ||
+      !data.height_cm ||
+      !data.age ||
+      !data.target_weight_1month_kg ||
+      !data.primary_diet_goal ||
+      !data.biological_sex
+    ) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please fill all required basic info fields.',
+        variant: 'destructive',
+      });
 
-    if (!age || !biological_sex || !height_cm || !current_weight_kg || !physical_activity_level || !primary_diet_goal) {
-        setResults(null);
-        return;
+      return;
+    }
+
+    const bmr = calculateBMR(
+      data.biological_sex,
+      data.current_weight_kg,
+      data.height_cm,
+      data.age
+    );
+    const tdee = calculateTDEE(bmr, data.physical_activity_level);
+
+    let targetCaloriesS1: number;
+    const weightDeltaKg1M =
+      data.current_weight_kg - data.target_weight_1month_kg;
+    const calorieAdjustmentS1 = (7700 * weightDeltaKg1M) / 30;
+    targetCaloriesS1 = tdee - calorieAdjustmentS1;
+
+    if (data.primary_diet_goal === 'fat_loss') {
+      targetCaloriesS1 = Math.min(targetCaloriesS1, tdee - 200);
+      targetCaloriesS1 = Math.max(targetCaloriesS1, bmr + 200, 1200);
+    } else if (data.primary_diet_goal === 'muscle_gain') {
+      targetCaloriesS1 = Math.max(targetCaloriesS1, tdee + 150);
+    } else if (data.primary_diet_goal === 'recomp') {
+      targetCaloriesS1 = Math.min(
+        Math.max(targetCaloriesS1, tdee - 300),
+        tdee + 100
+      );
+      targetCaloriesS1 = Math.max(targetCaloriesS1, bmr + 100, 1400);
+    }
+
+    let finalTargetCalories = targetCaloriesS1;
+    let targetCaloriesS2: number | undefined = undefined;
+    let targetCaloriesS3: number | undefined = undefined;
+
+    if (
+      data.bf_current &&
+      data.bf_target &&
+      data.current_weight_kg &&
+      data.bf_current > 0 &&
+      data.bf_target > 0 &&
+      data.bf_current > data.bf_target
+    ) {
+      const fatMassLossKg =
+        data.current_weight_kg * ((data.bf_current - data.bf_target) / 100);
+      const calorieAdjustmentS2 = (7700 * fatMassLossKg) / 30;
+      targetCaloriesS2 = tdee - calorieAdjustmentS2;
+      finalTargetCalories = (finalTargetCalories + targetCaloriesS2) / 2;
+    }
+
+    if (
+      data.waist_current &&
+      data.waist_goal_1m &&
+      data.current_weight_kg &&
+      data.waist_current > 0 &&
+      data.waist_goal_1m > 0 &&
+      data.waist_current > data.waist_goal_1m
+    ) {
+      const waistChangeCm = data.waist_current - data.waist_goal_1m;
+      if (Math.abs(waistChangeCm) > 5) {
+        toast({
+          title: 'Waist Goal Warning',
+          description:
+            'A waist change of more than 5cm in 1 month may be unrealistic. Results are indicative.',
+          variant: 'default',
+          duration: 7000,
+        });
       }
-
-    // Basic BMR calculation (Mifflin-St Jeor Equation)
-    let bmr = 0;
-    if (biological_sex === 'male') {
-      bmr = 10 * current_weight_kg + 6.25 * height_cm - 5 * age + 5;
-    } else {
-      bmr = 10 * current_weight_kg + 6.25 * height_cm - 5 * age - 161;
+      const estimatedFatLossPercent = waistChangeCm * 0.5;
+      const estimatedFatLossKg =
+        (estimatedFatLossPercent / 100) * data.current_weight_kg;
+      const calorieAdjustmentS3 = (7700 * estimatedFatLossKg) / 30;
+      targetCaloriesS3 = tdee - calorieAdjustmentS3;
+      console.log(targetCaloriesS3);
     }
 
-    // Activity multiplier
-    let activityMultiplier = 1.2; // sedentary
-    switch (physical_activity_level) {
-      case 'light':
-        activityMultiplier = 1.375;
-        break;
-      case 'moderate':
-        activityMultiplier = 1.55;
-        break;
-      case 'active':
-        activityMultiplier = 1.725;
-        break;
-      case 'very_active':
-        activityMultiplier = 1.9;
-        break;
+    finalTargetCalories = Math.max(bmr + 100, Math.round(finalTargetCalories));
+
+    const estimatedWeeklyWeightChangeKg =
+      ((tdee - finalTargetCalories) * 7) / 7700;
+
+    let proteinTargetPct = 0,
+      carbTargetPct = 0,
+      fatTargetPct = 0;
+    if (data.primary_diet_goal === 'fat_loss') {
+      proteinTargetPct = 0.35;
+      carbTargetPct = 0.35;
+      fatTargetPct = 0.3;
+    } else if (data.primary_diet_goal === 'muscle_gain') {
+      proteinTargetPct = 0.3;
+      carbTargetPct = 0.5;
+      fatTargetPct = 0.2;
+    } else if (data.primary_diet_goal === 'recomp') {
+      proteinTargetPct = 0.4;
+      carbTargetPct = 0.35;
+      fatTargetPct = 0.25;
     }
 
-    const tdee = bmr * activityMultiplier;
+    const proteinCalories = finalTargetCalories * proteinTargetPct;
+    const proteinGrams = proteinCalories / 4;
+    const carbCalories = finalTargetCalories * carbTargetPct;
+    const carbGrams = carbCalories / 4;
+    const fatCalories = finalTargetCalories * fatTargetPct;
+    const fatGrams = fatCalories / 9;
 
-    // Calculate target calories based on goal
-    let targetCalories = tdee;
-    if (primary_diet_goal === 'fat_loss') {
-      targetCalories = tdee - 500;
-    } else if (primary_diet_goal === 'muscle_gain') {
-      targetCalories = tdee + 300;
-    }
+    const {
+      protein_calories,
+      carb_calories,
+      fat_calories,
+      current_weight_for_custom_calc,
+      estimated_weekly_weight_change_kg,
+      ...newPlan
+    }: GlobalCalculatedTargets = {
+      bmr_kcal: Math.round(bmr),
+      maintenance_calories_tdee: Math.round(tdee),
+      target_daily_calories: Math.round(finalTargetCalories),
 
-    // Calculate macro distribution
-    let proteinPct = 0.3;
-    let carbPct = 0.4;
-    let fatPct = 0.3;
+      target_protein_percentage: proteinTargetPct * 100,
+      target_fat_percentage: fatTargetPct * 100,
+      target_carbs_percentage: carbTargetPct * 100,
 
-    if (primary_diet_goal === 'fat_loss') {
-      proteinPct = 0.35;
-      carbPct = 0.35;
-      fatPct = 0.3;
-    } else if (primary_diet_goal === 'muscle_gain') {
-      proteinPct = 0.3;
-      carbPct = 0.5;
-      fatPct = 0.2;
-    }
+      target_protein_g: proteinGrams,
+      target_carbs_g: carbGrams,
+      target_fat_g: fatGrams,
 
-    const proteinGrams = (targetCalories * proteinPct) / 4;
-    const carbGrams = (targetCalories * carbPct) / 4;
-    const fatGrams = (targetCalories * fatPct) / 9;
+      estimated_weekly_weight_change_kg: estimatedWeeklyWeightChangeKg,
+      protein_calories: proteinCalories,
+      carb_calories: carbCalories,
+      fat_calories: fatCalories,
+      current_weight_for_custom_calc: data.current_weight_kg,
+    };
 
-    const estimated_weekly_weight_change_kg = ((tdee - targetCalories) * 7) / 7700;
+    const { remaining_calories_carbs_percentage, ...newProfile } = data;
+
+    // Convert null values to undefined for the profile update
+    const profileUpdate = Object.fromEntries(
+      Object.entries(newProfile).map(([key, value]) => [
+        key,
+        value === null ? undefined : value,
+      ])
+    ) as Partial<BaseProfileData>;
+
+    try {
+      await editProfile(profileUpdate, undefined, clientId);
+      await editPlan(
+        {
+          ...newPlan,
+          remaining_calories_carbs_percentage,
+        },
+        clientId
+      );
 
       setResults({
-      bmr_kcal: bmr,
-      maintenance_calories_tdee: tdee,
-      target_daily_calories: targetCalories,
-      target_protein_g: proteinGrams,
-      protein_calories: proteinGrams * 4,
-      target_protein_percentage: proteinPct * 100,
-      target_carbs_g: carbGrams,
-      carb_calories: carbGrams * 4,
-      target_carbs_percentage: carbPct * 100,
-      target_fat_g: fatGrams,
-      fat_calories: fatGrams * 9,
-      target_fat_percentage: fatPct * 100,
-      current_weight_for_custom_calc: current_weight_kg,
         estimated_weekly_weight_change_kg,
+        protein_calories,
+        carb_calories,
+        fat_calories,
+        current_weight_for_custom_calc,
+        ...newPlan,
       });
-  }, [form.watch()]);
+      toast({
+        title: 'Calculation Complete',
+        description: 'Your smart calorie plan has been generated and saved.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Save Error',
+        description: error,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  useEffect(
+    function () {
+      const estimated_weekly_weight_change_kg =
+        ((plan.maintenance_calories_tdee! - plan.target_daily_calories!) * 7) /
+        7700;
+
+      const proteinCalories =
+        (plan.target_protein_percentage! * plan.target_daily_calories!) / 100;
+      const carbCalories =
+        (plan.target_carbs_percentage! * plan.target_daily_calories!) / 100;
+      const fatCalories =
+        (plan.target_fat_percentage! * plan.target_daily_calories!) / 100;
+
+      setResults({
+        ...plan,
+        estimated_weekly_weight_change_kg,
+        protein_calories: proteinCalories,
+        carb_calories: carbCalories,
+        fat_calories: fatCalories,
+      });
+    },
+    [plan]
+  );
 
   return (
     <>
@@ -303,8 +372,8 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
             className='w-full'
           >
             <AccordionItem value='basic-info'>
-              <AccordionTrigger className='text-lg font-semibold'>
-                Basic Information
+              <AccordionTrigger className='text-xl font-semibold'>
+                📋 Basic Info (Required)
               </AccordionTrigger>
               <AccordionContent className='grid md:grid-cols-2 gap-x-6 gap-y-4 pt-4 px-1'>
                 <FormField
@@ -312,21 +381,27 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
                   name='age'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Age</FormLabel>
+                      <FormLabel>Age (Years)</FormLabel>
                       <FormControl>
+                        <div>
                           <Input
                             type='number'
-                          placeholder='Enter your age'
+                            placeholder='e.g., 30'
                             {...field}
                             value={field.value ?? ''}
                             onChange={(e) =>
                               field.onChange(
                                 e.target.value === ''
-                                ? null
+                                  ? ''
                                   : parseInt(e.target.value, 10)
                               )
                             }
+                            step='1'
+                            onWheel={(e) =>
+                              (e.currentTarget as HTMLInputElement).blur()
+                            }
                           />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -339,17 +414,24 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
                     <FormItem>
                       <FormLabel>Biological Sex</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value || undefined}
+                        value={field.value ?? ''}
+                        onValueChange={(value) =>
+                          value && field.onChange(value)
+                        }
                       >
                         <FormControl>
+                          <div>
                             <SelectTrigger>
-                            <SelectValue placeholder='Select biological sex' />
+                              <SelectValue placeholder='Select sex' />
                             </SelectTrigger>
+                          </div>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value='male'>Male</SelectItem>
-                          <SelectItem value='female'>Female</SelectItem>
+                          {genders.map((g) => (
+                            <SelectItem key={g.value} value={g.value}>
+                              {g.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -363,19 +445,25 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
                     <FormItem>
                       <FormLabel>Height (cm)</FormLabel>
                       <FormControl>
+                        <div>
                           <Input
                             type='number'
-                          placeholder='Enter height in cm'
+                            placeholder='e.g., 175'
                             {...field}
                             value={field.value ?? ''}
                             onChange={(e) =>
                               field.onChange(
                                 e.target.value === ''
-                                ? null
-                                : parseInt(e.target.value, 10)
+                                  ? ''
+                                  : parseFloat(e.target.value)
                               )
                             }
+                            step='0.1'
+                            onWheel={(e) =>
+                              (e.currentTarget as HTMLInputElement).blur()
+                            }
                           />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -388,20 +476,25 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
                     <FormItem>
                       <FormLabel>Current Weight (kg)</FormLabel>
                       <FormControl>
+                        <div>
                           <Input
                             type='number'
-                          step='0.1'
-                          placeholder='Enter current weight'
+                            placeholder='e.g., 70'
                             {...field}
                             value={field.value ?? ''}
                             onChange={(e) =>
                               field.onChange(
                                 e.target.value === ''
-                                ? null
+                                  ? ''
                                   : parseFloat(e.target.value)
                               )
                             }
+                            step='0.1'
+                            onWheel={(e) =>
+                              (e.currentTarget as HTMLInputElement).blur()
+                            }
                           />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -412,22 +505,27 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
                   name='target_weight_1month_kg'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>1-Month Goal Weight (kg)</FormLabel>
+                      <FormLabel>Target Weight After 1 Month (kg)</FormLabel>
                       <FormControl>
+                        <div>
                           <Input
                             type='number'
-                          step='0.1'
-                          placeholder='Enter 1-month goal weight'
+                            placeholder='e.g., 68'
                             {...field}
                             value={field.value ?? ''}
                             onChange={(e) =>
                               field.onChange(
                                 e.target.value === ''
-                                ? null
+                                  ? ''
                                   : parseFloat(e.target.value)
                               )
                             }
+                            step='0.1'
+                            onWheel={(e) =>
+                              (e.currentTarget as HTMLInputElement).blur()
+                            }
                           />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -438,22 +536,32 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
                   name='long_term_goal_weight_kg'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Long-term Goal Weight (kg)</FormLabel>
+                      <FormLabel>
+                        Long-Term Goal Weight (kg){' '}
+                        <span className='text-xs text-muted-foreground'>
+                          (Optional)
+                        </span>
+                      </FormLabel>
                       <FormControl>
+                        <div>
                           <Input
                             type='number'
-                          step='0.1'
-                          placeholder='Enter long-term goal weight'
+                            placeholder='e.g., 65'
                             {...field}
                             value={field.value ?? ''}
                             onChange={(e) =>
                               field.onChange(
                                 e.target.value === ''
-                                ? null
+                                  ? ''
                                   : parseFloat(e.target.value)
                               )
                             }
+                            step='0.1'
+                            onWheel={(e) =>
+                              (e.currentTarget as HTMLInputElement).blur()
+                            }
                           />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -466,20 +574,24 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
                     <FormItem>
                       <FormLabel>Physical Activity Level</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value || undefined}
+                        value={field.value ?? ''}
+                        onValueChange={(value) =>
+                          value && field.onChange(value)
+                        }
                       >
                         <FormControl>
+                          <div>
                             <SelectTrigger>
                               <SelectValue placeholder='Select activity level' />
                             </SelectTrigger>
+                          </div>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value='sedentary'>Sedentary</SelectItem>
-                          <SelectItem value='light'>Light</SelectItem>
-                          <SelectItem value='moderate'>Moderate</SelectItem>
-                          <SelectItem value='active'>Active</SelectItem>
-                          <SelectItem value='very_active'>Very Active</SelectItem>
+                          {activityLevels.map((al) => (
+                            <SelectItem key={al.value} value={al.value}>
+                              {al.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -491,20 +603,24 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
                   name='primary_diet_goal'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Primary Diet Goal</FormLabel>
+                      <FormLabel>Diet Goal</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value || undefined}
+                        value={field.value ?? ''}
                       >
                         <FormControl>
+                          <div>
                             <SelectTrigger>
                               <SelectValue placeholder='Select diet goal' />
                             </SelectTrigger>
+                          </div>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value='fat_loss'>Fat Loss</SelectItem>
-                          <SelectItem value='muscle_gain'>Muscle Gain</SelectItem>
-                          <SelectItem value='maintenance'>Maintenance</SelectItem>
+                          {smartPlannerDietGoals.map((dg) => (
+                            <SelectItem key={dg.value} value={dg.value}>
+                              {dg.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -514,219 +630,207 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Body Composition Section */}
-            <AccordionItem value='body-composition'>
-              <AccordionTrigger className='text-lg font-semibold'>
-                Body Composition
+            <AccordionItem value='body-comp'>
+              <AccordionTrigger className='text-xl font-semibold'>
+                💪 Body Composition (Optional)
               </AccordionTrigger>
-              <AccordionContent className='grid md:grid-cols-3 gap-x-6 gap-y-4 pt-4 px-1'>
-                {Object.entries({
-                  bf_current: 'Current Body Fat %',
-                  bf_target: 'Target Body Fat %',
-                  bf_ideal: 'Ideal Body Fat %',
-                  mm_current: 'Current Muscle Mass %',
-                  mm_target: 'Target Muscle Mass %',
-                  mm_ideal: 'Ideal Muscle Mass %',
-                  bw_current: 'Current Bone Weight %',
-                  bw_target: 'Target Bone Weight %',
-                  bw_ideal: 'Ideal Bone Weight %',
-                }).map(([key, label]) => (
+              <AccordionContent className='space-y-1 pt-4 px-1'>
+                <div className='grid grid-cols-4 gap-x-2 pb-1 border-b mb-2 text-sm font-medium text-muted-foreground'>
+                  <FormLabel className='col-span-1'>Metric</FormLabel>
+                  <FormLabel className='text-center'>Current (%)</FormLabel>
+                  <FormLabel className='text-center'>
+                    Target (1 Mth) (%)
+                  </FormLabel>
+                  <FormLabel className='text-center'>Ideal (%)</FormLabel>
+                </div>
+                {(['Body Fat', 'Muscle Mass', 'Body Water'] as const).map(
+                  (metric) => {
+                    const keys = {
+                      'Body Fat': ['bf_current', 'bf_target', 'bf_ideal'],
+                      'Muscle Mass': ['mm_current', 'mm_target', 'mm_ideal'],
+                      'Body Water': ['bw_current', 'bw_target', 'bw_ideal'],
+                    }[metric] as [
+                      FieldPath<SmartCaloriePlannerFormValues>,
+                      FieldPath<SmartCaloriePlannerFormValues>,
+                      FieldPath<SmartCaloriePlannerFormValues>
+                    ];
+                    return (
+                      <div
+                        key={metric}
+                        className='grid grid-cols-4 gap-x-2 items-start py-1'
+                      >
+                        <FormLabel className='text-sm pt-2'>{metric}</FormLabel>
+                        {keys.map((key) => (
                           <FormField
                             key={key}
                             control={form.control}
-                    name={key as keyof PlannerFormValues}
+                            name={key}
                             render={({ field }) => (
                               <FormItem className='text-center'>
-                        <FormLabel className='text-sm'>{label}</FormLabel>
                                 <FormControl>
+                                  <div>
                                     <Input
                                       type='number'
-                            step='0.1'
-                            placeholder='0.0'
+                                      placeholder='e.g., 20'
                                       {...field}
                                       value={field.value ?? ''}
                                       onChange={(e) =>
                                         field.onChange(
                                           e.target.value === ''
-                                  ? null
+                                            ? ''
                                             : parseFloat(e.target.value)
                                         )
                                       }
+                                      className='w-full text-center text-sm h-9'
+                                      step='0.1'
+                                      onWheel={(e) =>
+                                        (
+                                          e.currentTarget as HTMLInputElement
+                                        ).blur()
+                                      }
                                     />
+                                  </div>
                                 </FormControl>
-                        <FormMessage />
+                                <FormMessage className='text-xs text-center' />
                               </FormItem>
                             )}
                           />
                         ))}
+                      </div>
+                    );
+                  }
+                )}
               </AccordionContent>
             </AccordionItem>
 
-            {/* Measurements Section */}
             <AccordionItem value='measurements'>
-              <AccordionTrigger className='text-lg font-semibold'>
-                Body Measurements
+              <AccordionTrigger className='text-xl font-semibold'>
+                📏 Measurements (Optional)
               </AccordionTrigger>
-              <AccordionContent className='grid md:grid-cols-3 gap-x-6 gap-y-4 pt-4 px-1'>
-                {Object.entries({
-                  waist_current: 'Current Waist (cm)',
-                  waist_goal_1m: '1-Month Waist Goal (cm)',
-                  waist_ideal: 'Ideal Waist (cm)',
-                  hips_current: 'Current Hips (cm)',
-                  hips_goal_1m: '1-Month Hips Goal (cm)',
-                  hips_ideal: 'Ideal Hips (cm)',
-                  right_leg_current: 'Current Right Leg (cm)',
-                  right_leg_goal_1m: '1-Month Right Leg Goal (cm)',
-                  right_leg_ideal: 'Ideal Right Leg (cm)',
-                  left_leg_current: 'Current Left Leg (cm)',
-                  left_leg_goal_1m: '1-Month Left Leg Goal (cm)',
-                  left_leg_ideal: 'Ideal Left Leg (cm)',
-                  right_arm_current: 'Current Right Arm (cm)',
-                  right_arm_goal_1m: '1-Month Right Arm Goal (cm)',
-                  right_arm_ideal: 'Ideal Right Arm (cm)',
-                  left_arm_current: 'Current Left Arm (cm)',
-                  left_arm_goal_1m: '1-Month Left Arm Goal (cm)',
-                  left_arm_ideal: 'Ideal Left Arm (cm)',
-                }).map(([key, label]) => (
+              <AccordionContent className='space-y-1 pt-4 px-1'>
+                <div className='grid grid-cols-4 gap-x-2 pb-1 border-b mb-2 text-sm font-medium text-muted-foreground'>
+                  <FormLabel className='col-span-1'>Metric</FormLabel>
+                  <FormLabel className='text-center'>Current (cm)</FormLabel>
+                  <FormLabel className='text-center'>1-Mth Goal (cm)</FormLabel>
+                  <FormLabel className='text-center'>Ideal (cm)</FormLabel>
+                </div>
+                {(
+                  [
+                    'Waist',
+                    'Hips',
+                    'Right Leg',
+                    'Left Leg',
+                    'Right Arm',
+                    'Left Arm',
+                  ] as const
+                ).map((metric) => {
+                  const keys = {
+                    Waist: ['waist_current', 'waist_goal_1m', 'waist_ideal'],
+                    Hips: ['hips_current', 'hips_goal_1m', 'hips_ideal'],
+                    'Right Leg': [
+                      'right_leg_current',
+                      'right_leg_goal_1m',
+                      'right_leg_ideal',
+                    ],
+                    'Left Leg': [
+                      'left_leg_current',
+                      'left_leg_goal_1m',
+                      'left_leg_ideal',
+                    ],
+                    'Right Arm': [
+                      'right_arm_current',
+                      'right_arm_goal_1m',
+                      'right_arm_ideal',
+                    ],
+                    'Left Arm': [
+                      'left_arm_current',
+                      'left_arm_goal_1m',
+                      'left_arm_ideal',
+                    ],
+                  }[metric] as [
+                    FieldPath<SmartCaloriePlannerFormValues>,
+                    FieldPath<SmartCaloriePlannerFormValues>,
+                    FieldPath<SmartCaloriePlannerFormValues>
+                  ];
+                  return (
+                    <div
+                      key={metric}
+                      className='grid grid-cols-4 gap-x-2 items-start py-1'
+                    >
+                      <FormLabel className='text-sm pt-2'>{metric}</FormLabel>
+                      {keys.map((key) => (
                         <FormField
                           key={key}
                           control={form.control}
-                    name={key as keyof PlannerFormValues}
+                          name={key}
                           render={({ field }) => (
                             <FormItem className='text-center'>
-                        <FormLabel className='text-sm'>{label}</FormLabel>
                               <FormControl>
+                                <div>
                                   <Input
                                     type='number'
-                            step='0.1'
-                            placeholder='0.0'
+                                    placeholder='e.g., 80'
                                     {...field}
                                     value={field.value ?? ''}
                                     onChange={(e) =>
                                       field.onChange(
                                         e.target.value === ''
-                                  ? null
+                                          ? ''
                                           : parseFloat(e.target.value)
                                       )
                                     }
+                                    className='w-full text-center text-sm h-9'
+                                    step='0.1'
+                                    onWheel={(e) =>
+                                      (
+                                        e.currentTarget as HTMLInputElement
+                                      ).blur()
+                                    }
                                   />
+                                </div>
                               </FormControl>
-                        <FormMessage />
+                              <FormMessage className='text-xs text-center' />
                             </FormItem>
                           )}
                         />
                       ))}
+                    </div>
+                  );
+                })}
               </AccordionContent>
             </AccordionItem>
+
+            <HelpAccordion />
           </Accordion>
 
-          {/* Results Display */}
-          {results && (
-            <div className='space-y-6'>
-              <div className='text-center'>
-                <h3 className='text-lg font-semibold mb-4'>
-                  Calculated Results
-                </h3>
-              </div>
-              <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-4'>
-                <div className='p-4 border rounded-lg'>
-                  <div className='text-sm text-muted-foreground'>BMR</div>
-                  <div className='text-2xl font-bold'>
-                    {formatNumber(results.bmr_kcal || 0, {
-                      maximumFractionDigits: 0,
-                    })}{' '}
-                    kcal
-                  </div>
-                </div>
-                <div className='p-4 border rounded-lg'>
-                  <div className='text-sm text-muted-foreground'>TDEE</div>
-                  <div className='text-2xl font-bold'>
-                    {formatNumber(results.maintenance_calories_tdee || 0, {
-                      maximumFractionDigits: 0,
-                    })}{' '}
-                    kcal
-                  </div>
-                </div>
-                <div className='p-4 border rounded-lg'>
-                  <div className='text-sm text-muted-foreground'>
-                    Target Calories
-                  </div>
-                  <div className='text-2xl font-bold'>
-                    {formatNumber(results.target_daily_calories || 0, {
-                      maximumFractionDigits: 0,
-                    })}{' '}
-                    kcal
-                  </div>
-                </div>
-                <div className='p-4 border rounded-lg'>
-                  <div className='text-sm text-muted-foreground'>
-                    Weekly Weight Change
-                  </div>
-                  <div className='text-2xl font-bold'>
-                    {formatNumber(results.estimated_weekly_weight_change_kg || 0, {
-                      maximumFractionDigits: 2,
-                    })}{' '}
-                    kg
-                  </div>
-                </div>
-              </div>
-              <div className='grid md:grid-cols-3 gap-4'>
-                <div className='p-4 border rounded-lg'>
-                  <div className='text-sm text-muted-foreground'>Protein</div>
-                  <div className='text-xl font-bold'>
-                    {formatNumber(results.target_protein_g || 0, {
-                      maximumFractionDigits: 1,
-                    })}{' '}
-                    g ({formatNumber(results.target_protein_percentage || 0, {
-                      maximumFractionDigits: 0,
-                    })}%)
-                  </div>
-                </div>
-                <div className='p-4 border rounded-lg'>
-                  <div className='text-sm text-muted-foreground'>Carbs</div>
-                  <div className='text-xl font-bold'>
-                    {formatNumber(results.target_carbs_g || 0, {
-                      maximumFractionDigits: 1,
-                    })}{' '}
-                    g ({formatNumber(results.target_carbs_percentage || 0, {
-                      maximumFractionDigits: 0,
-                    })}%)
-                  </div>
-                </div>
-                <div className='p-4 border rounded-lg'>
-                  <div className='text-sm text-muted-foreground'>Fat</div>
-                  <div className='text-xl font-bold'>
-                    {formatNumber(results.target_fat_g || 0, {
-                      maximumFractionDigits: 1,
-                    })}{' '}
-                    g ({formatNumber(results.target_fat_percentage || 0, {
-                      maximumFractionDigits: 0,
-                    })}%)
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-                    <div className='flex justify-end gap-2'>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={handleSmartPlannerReset}
-            >
-              <RefreshCcw className='h-4 w-4' />
-              Reset
-            </Button>
+          <div className='flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mt-8'>
             <Button
               type='submit'
-              disabled={!results}
+              className='flex-1 text-lg py-3'
+              disabled={form.formState.isSubmitting}
             >
-              <Calculator className='h-4 w-4' />
-              Save Results
+              {' '}
+              <Calculator className='mr-2 h-5 w-5' />{' '}
+              {form.formState.isSubmitting
+                ? 'Calculating...'
+                : 'Calculate Smart Target'}{' '}
+            </Button>
+          </div>
+          <div className='mt-4 flex justify-end'>
+            <Button
+              type='button'
+              variant='ghost'
+              onClick={handleSmartPlannerReset}
+              className='text-sm'
+            >
+              {' '}
+              <RefreshCcw className='mr-2 h-4 w-4' /> Reset Smart Planner Inputs{' '}
             </Button>
           </div>
         </form>
       </Form>
+
+      <PlanResult results={results} />
     </>
   );
 }

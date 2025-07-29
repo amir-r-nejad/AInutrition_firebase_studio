@@ -3,10 +3,22 @@ import { Button } from '@/components/ui/button';
 import { Calendar, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
-function ClientsList({ clients }: { clients: any }) {
+interface ClientData {
+  user_id: string;
+  full_name: string;
+  email?: string;
+  age: number;
+  biological_sex: string;
+  primary_diet_goal: string;
+  created_at: string;
+  avatar_url?: string;
+  client_id?: string;
+}
+
+function ClientsList({ clients }: { clients: ClientData[] }) {
   return (
     <ul className='space-y-4'>
-      {clients.map((client: any) => (
+      {clients.map((client) => (
         <li
           key={client.user_id}
           className='flex flex-col lg:flex-row gap-5 lg:items-center justify-between p-4 rounded-lg border border-border/30 hover:border-border/60 transition-all duration-200 hover:shadow-sm'
@@ -15,8 +27,8 @@ function ClientsList({ clients }: { clients: any }) {
             <Avatar className='h-12 w-12'>
               <AvatarImage src={client?.avatar_url} />
               <AvatarFallback className='bg-primary/10 text-primary font-medium'>
-                {client.full_name.split(' ').at(0).at(0)}
-                {client.full_name.split(' ').at(-1).at(0)}
+                {client.full_name.split(' ').at(0)?.at(0)}
+                {client.full_name.split(' ').at(-1)?.at(0)}
               </AvatarFallback>
             </Avatar>
 
@@ -28,7 +40,7 @@ function ClientsList({ clients }: { clients: any }) {
               </div>
 
               <div className='flex items-center gap-4 text-sm text-muted-foreground'>
-                <span>{client.email}</span>
+                <span>{client.email || 'No email'}</span>
                 <span>•</span>
                 <span>{client.age} years old</span>
                 <span>•</span>

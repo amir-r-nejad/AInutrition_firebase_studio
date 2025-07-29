@@ -1,12 +1,12 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import type { UserPlanType } from '@/lib/schemas';
+import type { UserPlan } from '@/lib/schemas';
 import { getUser } from '../data-service';
 
 import { revalidatePath } from 'next/cache';
 
-export async function getUserPlan(userId?: string): Promise<UserPlanType> {
+export async function getUserPlan(userId?: string): Promise<UserPlan> {
   try {
     const supabase = await createClient();
     const targetUserId = userId || (await getUser()).id;
@@ -28,7 +28,7 @@ export async function getUserPlan(userId?: string): Promise<UserPlanType> {
       );
     }
 
-    return data as UserPlanType;
+    return data as UserPlan;
   } catch {
     throw new Error(
       'Failed to retrieve user plan. Please check your connection and try again.'
@@ -37,7 +37,7 @@ export async function getUserPlan(userId?: string): Promise<UserPlanType> {
 }
 
 export async function updateUserPlan(
-  planData: Partial<UserPlanType>,
+  planData: Partial<UserPlan>,
   userId?: string
 ): Promise<void> {
   try {
@@ -69,7 +69,7 @@ export async function updateUserPlan(
 }
 
 export async function createUserPlan(
-  planData: Partial<UserPlanType>,
+  planData: Partial<UserPlan>,
   userId?: string
 ): Promise<void> {
   try {
@@ -110,21 +110,12 @@ export async function resetUserPlan(userId?: string): Promise<void> {
       maintenance_calories_tdee: null,
       target_daily_calories: null,
       target_protein_g: null,
-      target_protein_percentage: null,
       target_carbs_g: null,
-      target_carbs_percentage: null,
       target_fat_g: null,
-      target_fat_percentage: null,
       custom_total_calories: null,
-      custom_protein_per_kg: null,
-      remaining_calories_carbs_percentage: null,
-      custom_total_calories_final: null,
       custom_protein_g: null,
-      custom_protein_percentage: null,
       custom_carbs_g: null,
-      custom_carbs_percentage: null,
       custom_fat_g: null,
-      custom_fat_percentage: null,
     })
     .eq('user_id', userId);
 

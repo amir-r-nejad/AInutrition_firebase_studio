@@ -13,48 +13,21 @@ export async function getUser(): Promise<User> {
 
   return user;
 }
-
 export async function getUserProfile(
   userId?: string
 ): Promise<BaseProfileData> {
   const supabase = await createClient();
   const targetUserId = userId || (await getUser()).id;
 
-  if (!targetUserId) throw new Error('User not authenticated');
-
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('profile')
     .select('*')
     .eq('user_id', targetUserId)
     .single();
 
-  if (error) throw new Error(`Failed to get user profile: ${error.message}`);
   if (!data) throw new Error('User profile not found');
 
   return data as BaseProfileData;
-}
-
-export async function getUserPlan(userId?: string): Promise<UserPlanType | null> {
-  const supabase = await createClient();
-  const targetUserId = userId || (await getUser()).id;
-
-  if (!targetUserId) throw new Error('User not authenticated');
-
-  const { data, error } = await supabase
-    .from('smart_plan')
-    .select('*')
-    .eq('user_id', targetUserId)
-    .single();
-
-  if (error) {
-    // If no rows found, return null instead of throwing error
-    if (error.code === 'PGRST116') {
-      return null;
-    }
-    throw new Error(`Failed to get user plan: ${error.message}`);
-  }
-
-  return data as UserPlanType;
 }
 
 export async function getMealPlan(userId?: string): Promise<MealPlans> {
@@ -77,6 +50,22 @@ export async function getMealPlan(userId?: string): Promise<MealPlans> {
   }
 
   return data as MealPlans;
+}
+export async function getUserPlan(userId?: string): Promise<UserPlanType> {
+  const supabase = await createClient();
+  const targetUserId = userId || (await getUser()).id;
+
+  if (!targetUserId) throw new Error('User not authenticated');
+
+  const { data } = await supabase
+    .from('smart_plan')
+    .select('*')
+    .eq('user_id', targetUserId)
+    .single();
+
+  if (!data) throw new Error('User plan not found');
+
+  return data as UserPlanType;
 }
 
 export async function getProfileById(

@@ -2,8 +2,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockClientRequests } from '@/features/coach/lib/mockData';
 import { Check, Clock, Mail, X } from 'lucide-react';
+
+const mockClientRequests = [
+  {
+    user_id: 'req_001',
+    full_name: 'John Doe',
+    email_address: 'john.doe@email.com',
+    profile_picture: null,
+    request_date: '2 days ago',
+  },
+];
 
 export function ClientRequestsSection() {
   return (

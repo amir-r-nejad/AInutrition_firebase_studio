@@ -96,8 +96,8 @@ export function formatValue(
 }
 
 export function calculateProgress(
-  current: number | undefined,
-  target: number | undefined
+  current: number | undefined | null,
+  target: number | undefined | null
 ) {
   if (!current || !target) return 0;
   return Math.min((current / target) * 100, 100);

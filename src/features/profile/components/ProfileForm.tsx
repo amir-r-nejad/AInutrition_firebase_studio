@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Accordion } from '@/components/ui/accordion';
@@ -19,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
+import SubmitButton from '@/components/ui/SubmitButton';
 import CommaSeparatedInput from '@/features/profile/components/CommaSeparatedInput';
 import ProfileAccordionItem from '@/features/profile/components/ProfileAccordionItem';
 import { useToast } from '@/hooks/use-toast';
@@ -34,18 +33,17 @@ import {
   type ProfileFormValues,
 } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { UserMetadata } from '@supabase/supabase-js';
-import { useForm } from 'react-hook-form';
+import { User } from '@supabase/supabase-js';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { editProfile } from '../actions/apiUserProfile';
 
 type ProfileFormProps = {
-  user: UserMetadata;
+  user: User;
   profile: BaseProfileData;
   clientId?: string;
 };
 
 function ProfileForm({ user, profile, clientId }: ProfileFormProps) {
-  const isCoachView = Boolean(clientId);
   const { toast } = useToast();
 
   const form = useForm<ProfileFormValues>({
@@ -56,11 +54,23 @@ function ProfileForm({ user, profile, clientId }: ProfileFormProps) {
     },
   });
 
-  async function onSubmit(data: ProfileFormValues) {
+  const onSubmit: SubmitHandler<ProfileFormValues> = async (data) => {
     const { full_name, ...newProfile } = data;
 
+    // Convert null values to undefined for the profile update
+    const profileUpdate = Object.fromEntries(
+      Object.entries(newProfile).map(([key, value]) => [
+        key,
+        value === null ? undefined : value,
+      ])
+    ) as Partial<BaseProfileData>;
+
     try {
-      await editProfile(newProfile, { data: { full_name } }, clientId);
+      await editProfile(
+        profileUpdate,
+        { user_metadata: { full_name } },
+        clientId
+      );
 
       return toast({
         title: 'Profile Updated',
@@ -73,7 +83,7 @@ function ProfileForm({ user, profile, clientId }: ProfileFormProps) {
         variant: 'destructive',
       });
     }
-  }
+  };
 
   return (
     <Form {...form}>
@@ -87,79 +97,186 @@ function ProfileForm({ user, profile, clientId }: ProfileFormProps) {
             label='Account Information'
             value='account-info'
           >
-            {!isCoachView && (
-              <>
-                <FormField
-                  control={form.control}
-                  name='full_name'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <div>
-                          <Input
-                            placeholder='Your full name'
-                            {...field}
-                            value={field.value ?? ''}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <Input
-                    value={user?.email ?? 'N/A'}
-                    readOnly
-                    disabled
-                    className='bg-muted/50'
-                  />
-                  <FormDescription>
-                    Your email address cannot be changed here.
-                  </FormDescription>
-                </FormItem>
-              </>
-            )}
-
             <FormField
               control={form.control}
-              name="age"
+              name='full_name'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Age</FormLabel>
+                  <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="Enter your age"
-                      {...field}
-                      value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                    />
+                    <div>
+                      <Input
+                        placeholder='Your full name'
+                        {...field}
+                        value={field.value ?? ''}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <Input
+                value={user?.email ?? 'N/A'}
+                readOnly
+                disabled
+                className='bg-muted/50'
+              />
+              <FormDescription>
+                Your email address cannot be changed here.
+              </FormDescription>
+            </FormItem>
+
             <FormField
               control={form.control}
-              name="gender"
+              name='subscription_status'
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Subscription Status</FormLabel>
+                    <Select
+                      value={field.value ?? undefined}
+                      onValueChange={(value) => value && field.onChange(value)}
+                    >
+                      <FormControl>
+                        <div>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select your subscription status' />
+                          </SelectTrigger>
+                        </div>
+                      </FormControl>
+                      <SelectContent>
+                        {subscriptionStatuses.map((status) => (
+                          <SelectItem key={status.value} value={status.value}>
+                            {status.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            <FormField
+              control={form.control}
+              name='current_weight_kg'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Gender</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+                  <FormLabel>Current Goal Weight</FormLabel>
+                  <FormControl>
+                    <Input
+                      type='number'
+                      placeholder='Enter your goal weight in kg'
+                      {...field}
+                      value={field.value ?? ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </ProfileAccordionItem>
+
+          <ProfileAccordionItem
+            value='medical-physical'
+            label='Medical Info & Physical Limitations'
+          >
+            <CommaSeparatedInput
+              fieldName='pain_mobility_issues'
+              label='Pain/Mobility Issues (comma-separated, Optional)'
+              placeholder='e.g., Knee pain, Limited shoulder range'
+              control={form.control}
+            />
+            <CommaSeparatedInput
+              fieldName='injuries'
+              label='Injuries (comma-separated, Optional)'
+              placeholder='e.g., ACL tear, Rotator cuff'
+              control={form.control}
+            />
+
+            <CommaSeparatedInput
+              fieldName='surgeries'
+              label='Surgeries (comma-separated, Optional)'
+              placeholder='e.g., Knee replacement, Appendix removal'
+              control={form.control}
+            />
+          </ProfileAccordionItem>
+
+          <ProfileAccordionItem
+            value='exercise-preferences'
+            label='Exercise Preferences'
+          >
+            <CommaSeparatedInput
+              fieldName='exercise_goals'
+              label='Exercise Goals (comma-separated, Optional)'
+              placeholder='e.g., Weight loss, Muscle gain, Improve endurance'
+              control={form.control}
+            />
+
+            <CommaSeparatedInput
+              fieldName='preferred_exercise_types'
+              label='Preferred Types of Exercise (comma-separated, Optional)'
+              placeholder='e.g., Running, Weightlifting, Yoga'
+              control={form.control}
+            />
+
+            <FormField
+              control={form.control}
+              name='exercise_frequency'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Exercise Frequency (Optional)</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value ?? undefined}
+                  >
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
+                      <div>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Select how often you exercise' />
+                        </SelectTrigger>
+                      </div>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      {exerciseFrequencies.map((ef) => (
+                        <SelectItem key={ef.value} value={ef.value}>
+                          {ef.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='typical_exercise_intensity'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Typical Exercise Intensity (Optional)</FormLabel>
+                  <Select
+                    value={field.value ?? undefined}
+                    onValueChange={(value) => value && field.onChange(value)}
+                  >
+                    <FormControl>
+                      <div>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Select intensity' />
+                        </SelectTrigger>
+                      </div>
+                    </FormControl>
+                    <SelectContent>
+                      {exerciseIntensities.map((ei) => (
+                        <SelectItem key={ei.value} value={ei.value}>
+                          {ei.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -167,176 +284,23 @@ function ProfileForm({ user, profile, clientId }: ProfileFormProps) {
               )}
             />
 
-            <FormField
+            <CommaSeparatedInput
+              fieldName='equipment_access'
+              label='Equipment Access (comma-separated, Optional)'
+              placeholder='e.g., Dumbbells, Resistance bands, Full gym'
               control={form.control}
-              name="height_cm"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Height (cm)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="Enter height in cm"
-                      {...field}
-                      value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
             />
-
-            <FormField
-              control={form.control}
-              name="current_weight"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Current Weight (kg)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.1"
-                      placeholder="Enter current weight"
-                      {...field}
-                      value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-                      <FormField
-                        control={form.control}
-                        name="target_weight"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Target Weight (kg)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.1"
-                                placeholder="Enter target weight"
-                                {...field}
-                      value={field.value ?? ''}
-                                onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="body_fat_percentage"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Current Body Fat %</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.1"
-                                placeholder="Enter body fat percentage"
-                                {...field}
-                      value={field.value ?? ''}
-                                onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="target_body_fat"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Target Body Fat %</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.1"
-                                placeholder="Enter target body fat"
-                                {...field}
-                      value={field.value ?? ''}
-                                onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="medical_conditions"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Medical Conditions</FormLabel>
-                            <FormControl>
-                    <Input 
-                                placeholder="List any medical conditions or medications..."
-                                {...field}
-                      value={field.value ?? ''}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="allergies"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Allergies</FormLabel>
-                            <FormControl>
-                    <Input 
-                                placeholder="List any food allergies or dietary restrictions..."
-                                {...field}
-                      value={field.value ?? ''}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                    <FormField
-                      control={form.control}
-                      name="dietary_preferences"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Dietary Preferences</FormLabel>
-                          <FormControl>
-                    <Input 
-                              placeholder="Describe your dietary preferences (e.g., vegetarian, vegan, keto, paleo, etc.)..."
-                              {...field}
-                      value={field.value ?? ''}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
           </ProfileAccordionItem>
-          </Accordion>
+        </Accordion>
 
-          <div className="flex justify-center pt-6">
-            <Button
-              type="submit"
-              className="bg-green-600 hover:bg-green-700 text-white px-12 py-3 text-lg"
-            >
-            Save Profile
-            </Button>
-          </div>
-        </form>
-      </Form>
+        <SubmitButton
+          label='Save Profile'
+          loadingLabel='Saving...'
+          className='w-full text-lg py-6'
+          isLoading={form.formState.isSubmitting}
+        />
+      </form>
+    </Form>
   );
 }
 

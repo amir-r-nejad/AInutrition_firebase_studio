@@ -47,7 +47,7 @@ function MealPlanGenerator({
 
       const input = mapProfileToMealPlanInput({
         ...profile,
-        ...mealPlan,
+        meal_data: mealPlan.meal_data || { days: [] },
         ...userPlan,
       });
 

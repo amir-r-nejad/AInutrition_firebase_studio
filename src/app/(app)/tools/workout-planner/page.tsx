@@ -1,10 +1,15 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Form,
   FormControl,
@@ -12,53 +17,46 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import {
-  Dumbbell,
-  Heart,
-  Target,
-  Clock,
-  MapPin,
-  Utensils,
-  TrendingUp,
   Activity,
-  PlayCircle,
+  ArrowRight,
+  BarChart3,
+  Calendar,
+  CheckCircle,
   ChevronDown,
   ChevronUp,
-  Zap,
-  Timer,
+  Clock,
+  Dumbbell,
+  Heart,
   Repeat,
-  CheckCircle,
-  Youtube,
-  ArrowRight,
-  Calendar,
+  Target,
+  Timer,
+  TrendingUp,
   User,
-  BarChart3,
-} from "lucide-react";
+  Utensils,
+  Youtube,
+  Zap,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 const exercisePlannerSchema = z.object({
   fitness_level: z
-    .enum(["Beginner", "Intermediate", "Advanced", ""])
-    .refine((val) => val !== "", { message: "Please select a fitness level" }),
+    .enum(['Beginner', 'Intermediate', 'Advanced', ''])
+    .refine((val) => val !== '', { message: 'Please select a fitness level' }),
   exercise_experience: z.array(z.string()).optional(),
   exercise_experience_other: z.string().optional(),
   existing_medical_conditions: z.array(z.string()).optional(),
@@ -69,45 +67,45 @@ const exercisePlannerSchema = z.object({
   doctor_clearance: z.boolean(),
   primary_goal: z
     .enum([
-      "Lose fat",
-      "Build muscle",
-      "Increase endurance",
-      "Flexibility",
-      "General fitness",
-      "",
+      'Lose fat',
+      'Build muscle',
+      'Increase endurance',
+      'Flexibility',
+      'General fitness',
+      '',
     ])
-    .refine((val) => val !== "", { message: "Please select a primary goal" }),
+    .refine((val) => val !== '', { message: 'Please select a primary goal' }),
   secondary_goal: z
     .enum([
-      "Lose fat",
-      "Build muscle",
-      "Increase endurance",
-      "Flexibility",
-      "General fitness",
-      "",
+      'Lose fat',
+      'Build muscle',
+      'Increase endurance',
+      'Flexibility',
+      'General fitness',
+      '',
     ])
     .optional(),
   goal_timeline_weeks: z
     .number()
-    .min(1, { message: "Timeline must be at least 1 week" })
+    .min(1, { message: 'Timeline must be at least 1 week' })
     .max(52),
   target_weight_kg: z.number().min(30).max(300).or(z.literal(0)).optional(),
   muscle_groups_focus: z.array(z.string()).optional(),
   exercise_days_per_week: z
     .number()
-    .min(1, { message: "Must exercise at least 1 day per week" })
+    .min(1, { message: 'Must exercise at least 1 day per week' })
     .max(7),
   available_time_per_session: z
     .number()
-    .min(15, { message: "Session must be at least 15 minutes" })
+    .min(15, { message: 'Session must be at least 15 minutes' })
     .max(180),
   preferred_time_of_day: z
-    .enum(["Morning", "Afternoon", "Evening", ""])
-    .refine((val) => val !== "", { message: "Please select preferred time" }),
+    .enum(['Morning', 'Afternoon', 'Evening', ''])
+    .refine((val) => val !== '', { message: 'Please select preferred time' }),
   exercise_location: z
-    .enum(["Home", "Gym", "Outdoor", ""])
-    .refine((val) => val !== "", {
-      message: "Please select exercise location",
+    .enum(['Home', 'Gym', 'Outdoor', ''])
+    .refine((val) => val !== '', {
+      message: 'Please select exercise location',
     }),
   daily_step_count_avg: z
     .number()
@@ -116,88 +114,88 @@ const exercisePlannerSchema = z.object({
     .or(z.literal(0))
     .optional(),
   job_type: z
-    .enum(["Desk job", "Active job", "Standing job", ""])
-    .refine((val) => val !== "", { message: "Please select job type" }),
+    .enum(['Desk job', 'Active job', 'Standing job', ''])
+    .refine((val) => val !== '', { message: 'Please select job type' }),
   available_equipment: z.array(z.string()).optional(),
   available_equipment_other: z.string().optional(),
   machines_access: z.boolean().optional(),
   space_availability: z
-    .enum(["Small room", "Open area", "Gym space", ""])
-    .refine((val) => val !== "", {
-      message: "Please select space availability",
+    .enum(['Small room', 'Open area', 'Gym space', ''])
+    .refine((val) => val !== '', {
+      message: 'Please select space availability',
     }),
   want_to_track_progress: z.boolean(),
   weekly_checkins_enabled: z.boolean(),
   accountability_support: z.boolean(),
   preferred_difficulty_level: z
-    .enum(["Low", "Medium", "High", ""])
-    .refine((val) => val !== "", { message: "Please select difficulty level" }),
+    .enum(['Low', 'Medium', 'High', ''])
+    .refine((val) => val !== '', { message: 'Please select difficulty level' }),
   sleep_quality: z
-    .enum(["Poor", "Average", "Good", ""])
-    .refine((val) => val !== "", { message: "Please select sleep quality" }),
+    .enum(['Poor', 'Average', 'Good', ''])
+    .refine((val) => val !== '', { message: 'Please select sleep quality' }),
 });
 
 type ExercisePlannerFormData = z.infer<typeof exercisePlannerSchema>;
 
 const medicalConditions = [
-  "Asthma",
-  "Hypertension",
-  "Joint Issues",
-  "Heart Disease",
-  "Diabetes",
-  "Arthritis",
-  "Back Problems",
-  "None",
-  "Other",
+  'Asthma',
+  'Hypertension',
+  'Joint Issues',
+  'Heart Disease',
+  'Diabetes',
+  'Arthritis',
+  'Back Problems',
+  'None',
+  'Other',
 ];
 
 const exerciseExperiences = [
-  "Weightlifting",
-  "Cardio",
-  "HIIT",
-  "Yoga",
-  "Pilates",
-  "Running",
-  "Swimming",
-  "Cycling",
-  "None",
-  "Other",
+  'Weightlifting',
+  'Cardio',
+  'HIIT',
+  'Yoga',
+  'Pilates',
+  'Running',
+  'Swimming',
+  'Cycling',
+  'None',
+  'Other',
 ];
 
 const commonMedications = [
-  "Blood Pressure Medications",
-  "Diabetes Medications",
-  "Heart Medications",
-  "Asthma Inhalers",
-  "Pain Relievers",
-  "Anti-inflammatories",
-  "Antidepressants",
-  "Thyroid Medications",
-  "None",
-  "Other",
+  'Blood Pressure Medications',
+  'Diabetes Medications',
+  'Heart Medications',
+  'Asthma Inhalers',
+  'Pain Relievers',
+  'Anti-inflammatories',
+  'Antidepressants',
+  'Thyroid Medications',
+  'None',
+  'Other',
 ];
 
 const muscleGroups = [
-  "Chest",
-  "Back",
-  "Shoulders",
-  "Arms",
-  "Legs",
-  "Core",
-  "Glutes",
-  "Full Body",
+  'Chest',
+  'Back',
+  'Shoulders',
+  'Arms',
+  'Legs',
+  'Core',
+  'Glutes',
+  'Full Body',
 ];
 
 const equipmentOptions = [
-  "Dumbbells",
-  "Resistance Bands",
-  "Barbell",
-  "Yoga Mat",
-  "Pull-up Bar",
-  "Kettlebells",
-  "Treadmill",
-  "None",
-  "Other",
+  'Dumbbells',
+  'Resistance Bands',
+  'Barbell',
+  'Yoga Mat',
+  'Pull-up Bar',
+  'Kettlebells',
+  'Treadmill',
+  'None',
+  'Other',
 ];
 
 export default function ExercisePlannerPage() {
@@ -209,29 +207,29 @@ export default function ExercisePlannerPage() {
     [key: string]: boolean;
   }>({});
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>(
-    {},
+    {}
   );
 
   useEffect(() => {
-    const savedPlan = localStorage.getItem("generatedExercisePlan");
+    const savedPlan = localStorage.getItem('generatedExercisePlan');
     if (savedPlan) {
       try {
         const parsedPlan = JSON.parse(savedPlan);
         setGeneratedPlan(parsedPlan);
-        if (parsedPlan.weeklyPlan && typeof parsedPlan.weeklyPlan === 'object') {
+        if (
+          parsedPlan.weeklyPlan &&
+          typeof parsedPlan.weeklyPlan === 'object'
+        ) {
           const allDays = Object.keys(parsedPlan.weeklyPlan);
-          const expandedDaysObject = allDays.reduce(
-            (acc, day) => {
-              acc[day] = true;
-              return acc;
-            },
-            {} as { [key: string]: boolean },
-          );
+          const expandedDaysObject = allDays.reduce((acc, day) => {
+            acc[day] = true;
+            return acc;
+          }, {} as { [key: string]: boolean });
           setExpandedDays(expandedDaysObject);
         }
       } catch (error) {
-        console.error("Error parsing saved exercise plan:", error);
-        localStorage.removeItem("generatedExercisePlan");
+        console.error('Error parsing saved exercise plan:', error);
+        localStorage.removeItem('generatedExercisePlan');
       }
     }
   }, []);
@@ -241,15 +239,15 @@ export default function ExercisePlannerPage() {
     defaultValues: {
       fitness_level: undefined,
       exercise_experience: [],
-      exercise_experience_other: "",
+      exercise_experience_other: '',
       existing_medical_conditions: [],
-      existing_medical_conditions_other: "",
-      injuries_or_limitations: "",
+      existing_medical_conditions_other: '',
+      injuries_or_limitations: '',
       current_medications: [],
-      current_medications_other: "",
+      current_medications_other: '',
       doctor_clearance: false,
       primary_goal: undefined,
-      secondary_goal: "",
+      secondary_goal: '',
       goal_timeline_weeks: 1,
       target_weight_kg: 0,
       muscle_groups_focus: [],
@@ -260,7 +258,7 @@ export default function ExercisePlannerPage() {
       daily_step_count_avg: 0,
       job_type: undefined,
       available_equipment: [],
-      available_equipment_other: "",
+      available_equipment_other: '',
       machines_access: false,
       space_availability: undefined,
       want_to_track_progress: true,
@@ -269,7 +267,7 @@ export default function ExercisePlannerPage() {
       preferred_difficulty_level: undefined,
       sleep_quality: undefined,
     },
-    mode: "onChange",
+    mode: 'onChange',
   });
 
   const toggleExerciseExpansion = (exerciseKey: string) => {
@@ -289,10 +287,10 @@ export default function ExercisePlannerPage() {
   const loadSavedPreferences = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/exercise-planner/get-preferences", {
-        method: "GET",
+      const response = await fetch('/api/exercise-planner/get-preferences', {
+        method: 'GET',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       });
 
@@ -304,18 +302,18 @@ export default function ExercisePlannerPage() {
             fitness_level: savedData.fitness_level || undefined,
             exercise_experience: savedData.exercise_experience || [],
             exercise_experience_other:
-              savedData.exercise_experience_other || "",
+              savedData.exercise_experience_other || '',
             existing_medical_conditions:
               savedData.existing_medical_conditions || [],
             existing_medical_conditions_other:
-              savedData.existing_medical_conditions_other || "",
-            injuries_or_limitations: savedData.injuries_or_limitations || "",
+              savedData.existing_medical_conditions_other || '',
+            injuries_or_limitations: savedData.injuries_or_limitations || '',
             current_medications: savedData.current_medications || [],
             current_medications_other:
-              savedData.current_medications_other || "",
+              savedData.current_medications_other || '',
             doctor_clearance: savedData.doctor_clearance || false,
             primary_goal: savedData.primary_goal || undefined,
-            secondary_goal: savedData.secondary_goal || "",
+            secondary_goal: savedData.secondary_goal || '',
             goal_timeline_weeks: savedData.goal_timeline_weeks || 1,
             target_weight_kg: savedData.target_weight_kg || 0,
             muscle_groups_focus: savedData.muscle_groups_focus || [],
@@ -328,7 +326,7 @@ export default function ExercisePlannerPage() {
             job_type: savedData.job_type || undefined,
             available_equipment: savedData.available_equipment || [],
             available_equipment_other:
-              savedData.available_equipment_other || "",
+              savedData.available_equipment_other || '',
             machines_access: savedData.machines_access || false,
             space_availability: savedData.space_availability || undefined,
             want_to_track_progress: savedData.want_to_track_progress ?? true,
@@ -338,11 +336,11 @@ export default function ExercisePlannerPage() {
               savedData.preferred_difficulty_level || undefined,
             sleep_quality: savedData.sleep_quality || undefined,
           });
-          console.log("Loaded saved preferences:", savedData);
+          console.log('Loaded saved preferences:', savedData);
         }
       }
     } catch (error) {
-      console.error("Error loading saved preferences:", error);
+      console.error('Error loading saved preferences:', error);
     } finally {
       setIsLoading(false);
     }
@@ -352,11 +350,11 @@ export default function ExercisePlannerPage() {
     loadSavedPreferences();
   }, []);
 
-  const selectedExerciseExperience = form.watch("exercise_experience") || [];
+  const selectedExerciseExperience = form.watch('exercise_experience') || [];
   const selectedMedicalConditions =
-    form.watch("existing_medical_conditions") || [];
-  const selectedEquipment = form.watch("available_equipment") || [];
-  const selectedMedications = form.watch("current_medications") || [];
+    form.watch('existing_medical_conditions') || [];
+  const selectedEquipment = form.watch('available_equipment') || [];
+  const selectedMedications = form.watch('current_medications') || [];
 
   const savePreferences = async () => {
     setIsSaving(true);
@@ -375,37 +373,39 @@ export default function ExercisePlannerPage() {
         available_equipment_other: data.available_equipment_other || null,
       };
 
-      console.log("Saving preferences:", cleanedData);
+      console.log('Saving preferences:', cleanedData);
 
-      const response = await fetch("/api/exercise-planner/save-preferences", {
-        method: "POST",
+      const response = await fetch('/api/exercise-planner/save-preferences', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(cleanedData),
       });
 
       const result = await response.json();
       console.log(
-        "Response status:",
+        'Response status:',
         response.status,
-        "Response data:",
-        result,
+        'Response data:',
+        result
       );
 
       if (!response.ok) {
-        console.error("Server error response:", result);
+        console.error('Server error response:', result);
         const errorMessage =
-          result.details || result.error || "Failed to save preferences";
+          result.details || result.error || 'Failed to save preferences';
         throw new Error(errorMessage);
       }
 
-      console.log("Preferences saved successfully:", result);
-      alert("Preferences saved successfully!");
+      console.log('Preferences saved successfully:', result);
+      alert('Preferences saved successfully!');
     } catch (error) {
-      console.error("Error saving preferences:", error);
+      console.error('Error saving preferences:', error);
       alert(
-        `Error saving preferences: ${error instanceof Error ? error.message : "Please try again."}`,
+        `Error saving preferences: ${
+          error instanceof Error ? error.message : 'Please try again.'
+        }`
       );
     } finally {
       setIsSaving(false);
@@ -416,17 +416,17 @@ export default function ExercisePlannerPage() {
     setIsGenerating(true);
     try {
       await savePreferences();
-      console.log("Generating exercise plan with preferences:", data);
+      console.log('Generating exercise plan with preferences:', data);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         controller.abort();
       }, 120000);
 
-      const response = await fetch("/api/exercise-planner/generate", {
-        method: "POST",
+      const response = await fetch('/api/exercise-planner/generate', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           preferences: data,
@@ -438,22 +438,22 @@ export default function ExercisePlannerPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("API response error:", response.status, errorText);
-        let errorMessage = "Failed to generate exercise plan";
+        console.error('API response error:', response.status, errorText);
+        let errorMessage = 'Failed to generate exercise plan';
         if (response.status === 500) {
           errorMessage =
-            "Server error occurred while generating your plan. This might be due to high demand or complex requirements.";
+            'Server error occurred while generating your plan. This might be due to high demand or complex requirements.';
         } else if (response.status === 401) {
-          errorMessage = "Authentication required. Please log in again.";
+          errorMessage = 'Authentication required. Please log in again.';
         } else if (response.status >= 400 && response.status < 500) {
           errorMessage =
-            "Invalid request. Please check your inputs and try again.";
+            'Invalid request. Please check your inputs and try again.';
         }
         throw new Error(errorMessage);
       }
 
       const result = await response.json();
-      console.log("Exercise plan generated:", result);
+      console.log('Exercise plan generated:', result);
 
       let planData = null;
       if (result.plan?.weekly_plan?.parsed_plan) {
@@ -464,43 +464,40 @@ export default function ExercisePlannerPage() {
         try {
           planData = JSON.parse(result.generated_content);
         } catch (e) {
-          console.error("Failed to parse generated content:", e);
-          planData = { error: "Failed to parse generated plan" };
+          console.error('Failed to parse generated content:', e);
+          planData = { error: 'Failed to parse generated plan' };
         }
       }
 
       if (planData) {
         setGeneratedPlan(planData);
-        localStorage.setItem("generatedExercisePlan", JSON.stringify(planData));
+        localStorage.setItem('generatedExercisePlan', JSON.stringify(planData));
         if (planData.weeklyPlan && typeof planData.weeklyPlan === 'object') {
           const allDays = Object.keys(planData.weeklyPlan);
-          const expandedDaysObject = allDays.reduce(
-            (acc, day) => {
-              acc[day] = true;
-              return acc;
-            },
-            {} as { [key: string]: boolean },
-          );
+          const expandedDaysObject = allDays.reduce((acc, day) => {
+            acc[day] = true;
+            return acc;
+          }, {} as { [key: string]: boolean });
           setExpandedDays(expandedDaysObject);
         }
-        alert("Exercise plan generated successfully!");
+        alert('Exercise plan generated successfully!');
       } else {
-        throw new Error("No valid plan data received from server");
+        throw new Error('No valid plan data received from server');
       }
     } catch (error: any) {
-      console.error("Error generating exercise plan:", error);
-      if (error.name === "AbortError") {
+      console.error('Error generating exercise plan:', error);
+      if (error.name === 'AbortError') {
         alert(
-          "Request timed out after 2 minutes. Please try again. If the problem persists, try reducing the number of exercise days.",
+          'Request timed out after 2 minutes. Please try again. If the problem persists, try reducing the number of exercise days.'
         );
-      } else if (error.message?.includes("Failed to fetch")) {
+      } else if (error.message?.includes('Failed to fetch')) {
         alert(
-          "Network error occurred. Please check your connection and try again.",
+          'Network error occurred. Please check your connection and try again.'
         );
       } else {
-        const errorMessage = error?.message || "Unknown error occurred";
+        const errorMessage = error?.message || 'Unknown error occurred';
         alert(
-          `Error generating exercise plan: ${errorMessage}. Please try again.`,
+          `Error generating exercise plan: ${errorMessage}. Please try again.`
         );
       }
     } finally {
@@ -510,15 +507,15 @@ export default function ExercisePlannerPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-yellow-50">
-        <div className="max-w-4xl mx-auto p-6 space-y-8">
-          <div className="text-center space-y-4">
-            <h1 className="text-3xl font-bold text-green-800">
+      <div className='min-h-screen bg-gradient-to-br from-green-50 to-yellow-50'>
+        <div className='max-w-4xl mx-auto p-6 space-y-8'>
+          <div className='text-center space-y-4'>
+            <h1 className='text-3xl font-bold text-green-800'>
               AI Exercise Planner
             </h1>
-            <p className="text-green-600">Loading your saved preferences...</p>
-            <div className="flex justify-center">
-              <div className="w-8 h-8 border-4 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
+            <p className='text-green-600'>Loading your saved preferences...</p>
+            <div className='flex justify-center'>
+              <div className='w-8 h-8 border-4 border-green-200 border-t-green-600 rounded-full animate-spin'></div>
             </div>
           </div>
         </div>
@@ -527,38 +524,38 @@ export default function ExercisePlannerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-yellow-50">
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold text-green-800">
+    <div className='min-h-dvh'>
+      <div className='max-w-7xl mx-auto p-6 space-y-8'>
+        <div className='text-center space-y-4'>
+          <h1 className='text-3xl font-bold text-green-800'>
             AI Exercise Planner
           </h1>
-          <p className="text-green-600">
+          <p className='text-green-600'>
             Create personalized exercise plans powered by AI
           </p>
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
             <Accordion
-              type="multiple"
-              defaultValue={["basic"]}
-              className="space-y-4"
+              type='multiple'
+              defaultValue={['basic']}
+              className='space-y-4'
             >
-              <AccordionItem value="basic">
-                <AccordionTrigger className="text-lg font-semibold text-green-800">
-                  <div className="flex items-center gap-2">
-                    <Dumbbell className="w-5 h-5" />
+              <AccordionItem value='basic'>
+                <AccordionTrigger className='text-lg font-semibold text-green-800'>
+                  <div className='flex items-center gap-2'>
+                    <Dumbbell className='w-5 h-5' />
                     Basic Fitness Information
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <Card>
-                    <CardContent className="pt-6 space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <CardContent className='pt-6 space-y-4'>
+                      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                         <FormField
                           control={form.control}
-                          name="fitness_level"
+                          name='fitness_level'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Fitness Level *</FormLabel>
@@ -568,17 +565,17 @@ export default function ExercisePlannerPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select fitness level" />
+                                    <SelectValue placeholder='Select fitness level' />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="Beginner">
+                                  <SelectItem value='Beginner'>
                                     Beginner
                                   </SelectItem>
-                                  <SelectItem value="Intermediate">
+                                  <SelectItem value='Intermediate'>
                                     Intermediate
                                   </SelectItem>
-                                  <SelectItem value="Advanced">
+                                  <SelectItem value='Advanced'>
                                     Advanced
                                   </SelectItem>
                                 </SelectContent>
@@ -591,27 +588,27 @@ export default function ExercisePlannerPage() {
 
                       <FormField
                         control={form.control}
-                        name="exercise_experience"
+                        name='exercise_experience'
                         render={() => (
                           <FormItem>
                             <FormLabel>
                               Exercise Experience (Select all that apply)
                             </FormLabel>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
                               {exerciseExperiences.map((experience) => (
                                 <FormField
                                   key={experience}
                                   control={form.control}
-                                  name="exercise_experience"
+                                  name='exercise_experience'
                                   render={({ field }) => (
                                     <FormItem
                                       key={experience}
-                                      className="flex flex-row items-start space-x-3 space-y-0"
+                                      className='flex flex-row items-start space-x-3 space-y-0'
                                     >
                                       <FormControl>
                                         <Checkbox
                                           checked={field.value?.includes(
-                                            experience,
+                                            experience
                                           )}
                                           onCheckedChange={(checked) => {
                                             return checked
@@ -622,13 +619,13 @@ export default function ExercisePlannerPage() {
                                               : field.onChange(
                                                   field.value?.filter(
                                                     (value) =>
-                                                      value !== experience,
-                                                  ),
+                                                      value !== experience
+                                                  )
                                                 );
                                           }}
                                         />
                                       </FormControl>
-                                      <FormLabel className="text-sm font-normal">
+                                      <FormLabel className='text-sm font-normal'>
                                         {experience}
                                       </FormLabel>
                                     </FormItem>
@@ -641,16 +638,16 @@ export default function ExercisePlannerPage() {
                         )}
                       />
 
-                      {selectedExerciseExperience.includes("Other") && (
+                      {selectedExerciseExperience.includes('Other') && (
                         <FormField
                           control={form.control}
-                          name="exercise_experience_other"
+                          name='exercise_experience_other'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Other Exercise Experience</FormLabel>
                               <FormControl>
                                 <Input
-                                  placeholder="Please specify your other exercise experience..."
+                                  placeholder='Please specify your other exercise experience...'
                                   {...field}
                                 />
                               </FormControl>
@@ -664,37 +661,37 @@ export default function ExercisePlannerPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="health">
-                <AccordionTrigger className="text-lg font-semibold text-green-800">
-                  <div className="flex items-center gap-2">
-                    <Heart className="w-5 h-5" />
+              <AccordionItem value='health'>
+                <AccordionTrigger className='text-lg font-semibold text-green-800'>
+                  <div className='flex items-center gap-2'>
+                    <Heart className='w-5 h-5' />
                     Health & Medical Information
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <Card>
-                    <CardContent className="pt-6 space-y-4">
+                    <CardContent className='pt-6 space-y-4'>
                       <FormField
                         control={form.control}
-                        name="existing_medical_conditions"
+                        name='existing_medical_conditions'
                         render={() => (
                           <FormItem>
                             <FormLabel>Existing Medical Conditions</FormLabel>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
                               {medicalConditions.map((condition) => (
                                 <FormField
                                   key={condition}
                                   control={form.control}
-                                  name="existing_medical_conditions"
+                                  name='existing_medical_conditions'
                                   render={({ field }) => (
                                     <FormItem
                                       key={condition}
-                                      className="flex flex-row items-start space-x-3 space-y-0"
+                                      className='flex flex-row items-start space-x-3 space-y-0'
                                     >
                                       <FormControl>
                                         <Checkbox
                                           checked={field.value?.includes(
-                                            condition,
+                                            condition
                                           )}
                                           onCheckedChange={(checked) => {
                                             return checked
@@ -705,13 +702,13 @@ export default function ExercisePlannerPage() {
                                               : field.onChange(
                                                   field.value?.filter(
                                                     (value) =>
-                                                      value !== condition,
-                                                  ),
+                                                      value !== condition
+                                                  )
                                                 );
                                           }}
                                         />
                                       </FormControl>
-                                      <FormLabel className="text-sm font-normal">
+                                      <FormLabel className='text-sm font-normal'>
                                         {condition}
                                       </FormLabel>
                                     </FormItem>
@@ -724,16 +721,16 @@ export default function ExercisePlannerPage() {
                         )}
                       />
 
-                      {selectedMedicalConditions.includes("Other") && (
+                      {selectedMedicalConditions.includes('Other') && (
                         <FormField
                           control={form.control}
-                          name="existing_medical_conditions_other"
+                          name='existing_medical_conditions_other'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Other Medical Conditions</FormLabel>
                               <FormControl>
                                 <Input
-                                  placeholder="Please specify your other medical conditions..."
+                                  placeholder='Please specify your other medical conditions...'
                                   {...field}
                                 />
                               </FormControl>
@@ -745,7 +742,7 @@ export default function ExercisePlannerPage() {
 
                       <FormField
                         control={form.control}
-                        name="injuries_or_limitations"
+                        name='injuries_or_limitations'
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
@@ -753,7 +750,7 @@ export default function ExercisePlannerPage() {
                             </FormLabel>
                             <FormControl>
                               <Textarea
-                                placeholder="Describe any injuries, limitations, or areas to avoid during exercise..."
+                                placeholder='Describe any injuries, limitations, or areas to avoid during exercise...'
                                 {...field}
                               />
                             </FormControl>
@@ -764,27 +761,27 @@ export default function ExercisePlannerPage() {
 
                       <FormField
                         control={form.control}
-                        name="current_medications"
+                        name='current_medications'
                         render={() => (
                           <FormItem>
                             <FormLabel>
                               Current Medications (Optional)
                             </FormLabel>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
                               {commonMedications.map((medication) => (
                                 <FormField
                                   key={medication}
                                   control={form.control}
-                                  name="current_medications"
+                                  name='current_medications'
                                   render={({ field }) => (
                                     <FormItem
                                       key={medication}
-                                      className="flex flex-row items-start space-x-3 space-y-0"
+                                      className='flex flex-row items-start space-x-3 space-y-0'
                                     >
                                       <FormControl>
                                         <Checkbox
                                           checked={field.value?.includes(
-                                            medication,
+                                            medication
                                           )}
                                           onCheckedChange={(checked) => {
                                             return checked
@@ -795,13 +792,13 @@ export default function ExercisePlannerPage() {
                                               : field.onChange(
                                                   field.value?.filter(
                                                     (value) =>
-                                                      value !== medication,
-                                                  ),
+                                                      value !== medication
+                                                  )
                                                 );
                                           }}
                                         />
                                       </FormControl>
-                                      <FormLabel className="text-sm font-normal">
+                                      <FormLabel className='text-sm font-normal'>
                                         {medication}
                                       </FormLabel>
                                     </FormItem>
@@ -814,16 +811,16 @@ export default function ExercisePlannerPage() {
                         )}
                       />
 
-                      {selectedMedications.includes("Other") && (
+                      {selectedMedications.includes('Other') && (
                         <FormField
                           control={form.control}
-                          name="current_medications_other"
+                          name='current_medications_other'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Other Current Medications</FormLabel>
                               <FormControl>
                                 <Input
-                                  placeholder="Please specify your other medications..."
+                                  placeholder='Please specify your other medications...'
                                   {...field}
                                 />
                               </FormControl>
@@ -835,16 +832,16 @@ export default function ExercisePlannerPage() {
 
                       <FormField
                         control={form.control}
-                        name="doctor_clearance"
+                        name='doctor_clearance'
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormItem className='flex flex-row items-start space-x-3 space-y-0'>
                             <FormControl>
                               <Checkbox
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
                               />
                             </FormControl>
-                            <div className="space-y-1 leading-none">
+                            <div className='space-y-1 leading-none'>
                               <FormLabel>
                                 I have medical clearance to exercise *
                               </FormLabel>
@@ -857,20 +854,20 @@ export default function ExercisePlannerPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="goals">
-                <AccordionTrigger className="text-lg font-semibold text-green-800">
-                  <div className="flex items-center gap-2">
-                    <Target className="w-5 h-5" />
+              <AccordionItem value='goals'>
+                <AccordionTrigger className='text-lg font-semibold text-green-800'>
+                  <div className='flex items-center gap-2'>
+                    <Target className='w-5 h-5' />
                     Fitness Goals
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <Card>
-                    <CardContent className="pt-6 space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <CardContent className='pt-6 space-y-4'>
+                      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                         <FormField
                           control={form.control}
-                          name="primary_goal"
+                          name='primary_goal'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Primary Goal *</FormLabel>
@@ -880,23 +877,23 @@ export default function ExercisePlannerPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select primary goal" />
+                                    <SelectValue placeholder='Select primary goal' />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="Lose fat">
+                                  <SelectItem value='Lose fat'>
                                     Lose Fat
                                   </SelectItem>
-                                  <SelectItem value="Build muscle">
+                                  <SelectItem value='Build muscle'>
                                     Build Muscle
                                   </SelectItem>
-                                  <SelectItem value="Increase endurance">
+                                  <SelectItem value='Increase endurance'>
                                     Increase Endurance
                                   </SelectItem>
-                                  <SelectItem value="Flexibility">
+                                  <SelectItem value='Flexibility'>
                                     Improve Flexibility
                                   </SelectItem>
-                                  <SelectItem value="General fitness">
+                                  <SelectItem value='General fitness'>
                                     General Fitness
                                   </SelectItem>
                                 </SelectContent>
@@ -908,7 +905,7 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="secondary_goal"
+                          name='secondary_goal'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Secondary Goal (Optional)</FormLabel>
@@ -918,23 +915,23 @@ export default function ExercisePlannerPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select secondary goal" />
+                                    <SelectValue placeholder='Select secondary goal' />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="Lose fat">
+                                  <SelectItem value='Lose fat'>
                                     Lose Fat
                                   </SelectItem>
-                                  <SelectItem value="Build muscle">
+                                  <SelectItem value='Build muscle'>
                                     Build Muscle
                                   </SelectItem>
-                                  <SelectItem value="Increase endurance">
+                                  <SelectItem value='Increase endurance'>
                                     Increase Endurance
                                   </SelectItem>
-                                  <SelectItem value="Flexibility">
+                                  <SelectItem value='Flexibility'>
                                     Improve Flexibility
                                   </SelectItem>
-                                  <SelectItem value="General fitness">
+                                  <SelectItem value='General fitness'>
                                     General Fitness
                                   </SelectItem>
                                 </SelectContent>
@@ -946,22 +943,22 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="goal_timeline_weeks"
+                          name='goal_timeline_weeks'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Goal Timeline (weeks) *</FormLabel>
                               <FormControl>
                                 <Input
-                                  type="number"
-                                  placeholder="e.g., 12"
-                                  value={field.value ?? ""}
+                                  type='number'
+                                  placeholder='e.g., 12'
+                                  value={field.value ?? ''}
                                   onChange={(
-                                    e: React.ChangeEvent<HTMLInputElement>,
+                                    e: React.ChangeEvent<HTMLInputElement>
                                   ) =>
                                     field.onChange(
                                       e.target.value
                                         ? Number(e.target.value)
-                                        : undefined,
+                                        : undefined
                                     )
                                   }
                                 />
@@ -973,7 +970,7 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="target_weight_kg"
+                          name='target_weight_kg'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>
@@ -981,17 +978,17 @@ export default function ExercisePlannerPage() {
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  type="number"
-                                  step="0.1"
-                                  placeholder="Enter target weight"
-                                  value={field.value ?? ""}
+                                  type='number'
+                                  step='0.1'
+                                  placeholder='Enter target weight'
+                                  value={field.value ?? ''}
                                   onChange={(
-                                    e: React.ChangeEvent<HTMLInputElement>,
+                                    e: React.ChangeEvent<HTMLInputElement>
                                   ) =>
                                     field.onChange(
                                       e.target.value
                                         ? Number(e.target.value)
-                                        : undefined,
+                                        : undefined
                                     )
                                   }
                                 />
@@ -1004,20 +1001,20 @@ export default function ExercisePlannerPage() {
 
                       <FormField
                         control={form.control}
-                        name="muscle_groups_focus"
+                        name='muscle_groups_focus'
                         render={() => (
                           <FormItem>
                             <FormLabel>Muscle Groups to Focus On</FormLabel>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div className='grid grid-cols-2 md:grid-cols-4 gap-2'>
                               {muscleGroups.map((group) => (
                                 <FormField
                                   key={group}
                                   control={form.control}
-                                  name="muscle_groups_focus"
+                                  name='muscle_groups_focus'
                                   render={({ field }) => (
                                     <FormItem
                                       key={group}
-                                      className="flex flex-row items-start space-x-3 space-y-0"
+                                      className='flex flex-row items-start space-x-3 space-y-0'
                                     >
                                       <FormControl>
                                         <Checkbox
@@ -1030,13 +1027,13 @@ export default function ExercisePlannerPage() {
                                                 ])
                                               : field.onChange(
                                                   field.value?.filter(
-                                                    (value) => value !== group,
-                                                  ),
+                                                    (value) => value !== group
+                                                  )
                                                 );
                                           }}
                                         />
                                       </FormControl>
-                                      <FormLabel className="text-sm font-normal">
+                                      <FormLabel className='text-sm font-normal'>
                                         {group}
                                       </FormLabel>
                                     </FormItem>
@@ -1053,37 +1050,37 @@ export default function ExercisePlannerPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="lifestyle">
-                <AccordionTrigger className="text-lg font-semibold text-green-800">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
+              <AccordionItem value='lifestyle'>
+                <AccordionTrigger className='text-lg font-semibold text-green-800'>
+                  <div className='flex items-center gap-2'>
+                    <Clock className='w-5 h-5' />
                     Lifestyle & Schedule
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <Card>
-                    <CardContent className="pt-6 space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <CardContent className='pt-6 space-y-4'>
+                      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                         <FormField
                           control={form.control}
-                          name="exercise_days_per_week"
+                          name='exercise_days_per_week'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Exercise Days per Week *</FormLabel>
                               <FormControl>
                                 <Input
-                                  type="number"
-                                  min="1"
-                                  max="7"
-                                  placeholder="e.g., 3"
-                                  value={field.value ?? ""}
+                                  type='number'
+                                  min='1'
+                                  max='7'
+                                  placeholder='e.g., 3'
+                                  value={field.value ?? ''}
                                   onChange={(
-                                    e: React.ChangeEvent<HTMLInputElement>,
+                                    e: React.ChangeEvent<HTMLInputElement>
                                   ) =>
                                     field.onChange(
                                       e.target.value
                                         ? Number(e.target.value)
-                                        : undefined,
+                                        : undefined
                                     )
                                   }
                                 />
@@ -1095,7 +1092,7 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="available_time_per_session"
+                          name='available_time_per_session'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>
@@ -1103,16 +1100,16 @@ export default function ExercisePlannerPage() {
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  type="number"
-                                  placeholder="e.g., 60"
-                                  value={field.value ?? ""}
+                                  type='number'
+                                  placeholder='e.g., 60'
+                                  value={field.value ?? ''}
                                   onChange={(
-                                    e: React.ChangeEvent<HTMLInputElement>,
+                                    e: React.ChangeEvent<HTMLInputElement>
                                   ) =>
                                     field.onChange(
                                       e.target.value
                                         ? Number(e.target.value)
-                                        : undefined,
+                                        : undefined
                                     )
                                   }
                                 />
@@ -1124,7 +1121,7 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="preferred_time_of_day"
+                          name='preferred_time_of_day'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Preferred Time of Day *</FormLabel>
@@ -1134,17 +1131,17 @@ export default function ExercisePlannerPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select preferred time" />
+                                    <SelectValue placeholder='Select preferred time' />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="Morning">
+                                  <SelectItem value='Morning'>
                                     Morning
                                   </SelectItem>
-                                  <SelectItem value="Afternoon">
+                                  <SelectItem value='Afternoon'>
                                     Afternoon
                                   </SelectItem>
-                                  <SelectItem value="Evening">
+                                  <SelectItem value='Evening'>
                                     Evening
                                   </SelectItem>
                                 </SelectContent>
@@ -1156,7 +1153,7 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="exercise_location"
+                          name='exercise_location'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Exercise Location *</FormLabel>
@@ -1166,13 +1163,13 @@ export default function ExercisePlannerPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select exercise location" />
+                                    <SelectValue placeholder='Select exercise location' />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="Home">Home</SelectItem>
-                                  <SelectItem value="Gym">Gym</SelectItem>
-                                  <SelectItem value="Outdoor">
+                                  <SelectItem value='Home'>Home</SelectItem>
+                                  <SelectItem value='Gym'>Gym</SelectItem>
+                                  <SelectItem value='Outdoor'>
                                     Outdoor
                                   </SelectItem>
                                 </SelectContent>
@@ -1184,22 +1181,22 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="daily_step_count_avg"
+                          name='daily_step_count_avg'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Daily Step Count (Optional)</FormLabel>
                               <FormControl>
                                 <Input
-                                  type="number"
-                                  placeholder="e.g., 8000"
-                                  value={field.value ?? ""}
+                                  type='number'
+                                  placeholder='e.g., 8000'
+                                  value={field.value ?? ''}
                                   onChange={(
-                                    e: React.ChangeEvent<HTMLInputElement>,
+                                    e: React.ChangeEvent<HTMLInputElement>
                                   ) =>
                                     field.onChange(
                                       e.target.value
                                         ? Number(e.target.value)
-                                        : undefined,
+                                        : undefined
                                     )
                                   }
                                 />
@@ -1211,7 +1208,7 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="job_type"
+                          name='job_type'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Job Type *</FormLabel>
@@ -1221,25 +1218,25 @@ export default function ExercisePlannerPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select job type" />
+                                    <SelectValue placeholder='Select job type' />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
                                   <SelectItem
-                                    value="Desk job"
-                                    title="Office work, computer work, administrative roles"
+                                    value='Desk job'
+                                    title='Office work, computer work, administrative roles'
                                   >
                                     Desk Job
                                   </SelectItem>
                                   <SelectItem
-                                    value="Active job"
-                                    title="Teaching, nursing, retail, walking/moving throughout the day"
+                                    value='Active job'
+                                    title='Teaching, nursing, retail, walking/moving throughout the day'
                                   >
                                     Active Job
                                   </SelectItem>
                                   <SelectItem
-                                    value="Standing job"
-                                    title="Cashier, security guard, factory work, standing most of the day"
+                                    value='Standing job'
+                                    title='Cashier, security guard, factory work, standing most of the day'
                                   >
                                     Standing Job
                                   </SelectItem>
@@ -1255,37 +1252,37 @@ export default function ExercisePlannerPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="equipment">
-                <AccordionTrigger className="text-lg font-semibold text-green-800">
-                  <div className="flex items-center gap-2">
-                    <Dumbbell className="w-5 h-5" />
+              <AccordionItem value='equipment'>
+                <AccordionTrigger className='text-lg font-semibold text-green-800'>
+                  <div className='flex items-center gap-2'>
+                    <Dumbbell className='w-5 h-5' />
                     Equipment & Space
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <Card>
-                    <CardContent className="pt-6 space-y-4">
+                    <CardContent className='pt-6 space-y-4'>
                       <FormField
                         control={form.control}
-                        name="available_equipment"
+                        name='available_equipment'
                         render={() => (
                           <FormItem>
                             <FormLabel>Available Equipment</FormLabel>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
                               {equipmentOptions.map((equipment) => (
                                 <FormField
                                   key={equipment}
                                   control={form.control}
-                                  name="available_equipment"
+                                  name='available_equipment'
                                   render={({ field }) => (
                                     <FormItem
                                       key={equipment}
-                                      className="flex flex-row items-start space-x-3 space-y-0"
+                                      className='flex flex-row items-start space-x-3 space-y-0'
                                     >
                                       <FormControl>
                                         <Checkbox
                                           checked={field.value?.includes(
-                                            equipment,
+                                            equipment
                                           )}
                                           onCheckedChange={(checked) => {
                                             return checked
@@ -1296,13 +1293,13 @@ export default function ExercisePlannerPage() {
                                               : field.onChange(
                                                   field.value?.filter(
                                                     (value) =>
-                                                      value !== equipment,
-                                                  ),
+                                                      value !== equipment
+                                                  )
                                                 );
                                           }}
                                         />
                                       </FormControl>
-                                      <FormLabel className="text-sm font-normal">
+                                      <FormLabel className='text-sm font-normal'>
                                         {equipment}
                                       </FormLabel>
                                     </FormItem>
@@ -1315,16 +1312,16 @@ export default function ExercisePlannerPage() {
                         )}
                       />
 
-                      {selectedEquipment.includes("Other") && (
+                      {selectedEquipment.includes('Other') && (
                         <FormField
                           control={form.control}
-                          name="available_equipment_other"
+                          name='available_equipment_other'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Other Available Equipment</FormLabel>
                               <FormControl>
                                 <Input
-                                  placeholder="Please specify your other available equipment..."
+                                  placeholder='Please specify your other available equipment...'
                                   {...field}
                                 />
                               </FormControl>
@@ -1334,19 +1331,19 @@ export default function ExercisePlannerPage() {
                         />
                       )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                         <FormField
                           control={form.control}
-                          name="machines_access"
+                          name='machines_access'
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormItem className='flex flex-row items-start space-x-3 space-y-0'>
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
                                 />
                               </FormControl>
-                              <div className="space-y-1 leading-none">
+                              <div className='space-y-1 leading-none'>
                                 <FormLabel>
                                   I have access to gym machines
                                 </FormLabel>
@@ -1357,7 +1354,7 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="space_availability"
+                          name='space_availability'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Space Availability *</FormLabel>
@@ -1367,17 +1364,17 @@ export default function ExercisePlannerPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select space type" />
+                                    <SelectValue placeholder='Select space type' />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="Small room">
+                                  <SelectItem value='Small room'>
                                     Small Room
                                   </SelectItem>
-                                  <SelectItem value="Open area">
+                                  <SelectItem value='Open area'>
                                     Open Area
                                   </SelectItem>
-                                  <SelectItem value="Gym space">
+                                  <SelectItem value='Gym space'>
                                     Gym Space
                                   </SelectItem>
                                 </SelectContent>
@@ -1392,20 +1389,20 @@ export default function ExercisePlannerPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="preferences">
-                <AccordionTrigger className="text-lg font-semibold text-green-800">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
+              <AccordionItem value='preferences'>
+                <AccordionTrigger className='text-lg font-semibold text-green-800'>
+                  <div className='flex items-center gap-2'>
+                    <TrendingUp className='w-5 h-5' />
                     Preferences & Tracking
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <Card>
-                    <CardContent className="pt-6 space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <CardContent className='pt-6 space-y-4'>
+                      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                         <FormField
                           control={form.control}
-                          name="preferred_difficulty_level"
+                          name='preferred_difficulty_level'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>
@@ -1417,13 +1414,13 @@ export default function ExercisePlannerPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select difficulty level" />
+                                    <SelectValue placeholder='Select difficulty level' />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="Low">Low</SelectItem>
-                                  <SelectItem value="Medium">Medium</SelectItem>
-                                  <SelectItem value="High">High</SelectItem>
+                                  <SelectItem value='Low'>Low</SelectItem>
+                                  <SelectItem value='Medium'>Medium</SelectItem>
+                                  <SelectItem value='High'>High</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -1433,7 +1430,7 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="sleep_quality"
+                          name='sleep_quality'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Sleep Quality *</FormLabel>
@@ -1443,15 +1440,15 @@ export default function ExercisePlannerPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select sleep quality" />
+                                    <SelectValue placeholder='Select sleep quality' />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="Poor">Poor</SelectItem>
-                                  <SelectItem value="Average">
+                                  <SelectItem value='Poor'>Poor</SelectItem>
+                                  <SelectItem value='Average'>
                                     Average
                                   </SelectItem>
-                                  <SelectItem value="Good">Good</SelectItem>
+                                  <SelectItem value='Good'>Good</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -1460,19 +1457,19 @@ export default function ExercisePlannerPage() {
                         />
                       </div>
 
-                      <div className="space-y-3">
+                      <div className='space-y-3'>
                         <FormField
                           control={form.control}
-                          name="want_to_track_progress"
+                          name='want_to_track_progress'
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormItem className='flex flex-row items-start space-x-3 space-y-0'>
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
                                 />
                               </FormControl>
-                              <div className="space-y-1 leading-none">
+                              <div className='space-y-1 leading-none'>
                                 <FormLabel>
                                   I want to track my progress
                                 </FormLabel>
@@ -1483,16 +1480,16 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="weekly_checkins_enabled"
+                          name='weekly_checkins_enabled'
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormItem className='flex flex-row items-start space-x-3 space-y-0'>
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
                                 />
                               </FormControl>
-                              <div className="space-y-1 leading-none">
+                              <div className='space-y-1 leading-none'>
                                 <FormLabel>Enable weekly check-ins</FormLabel>
                               </div>
                             </FormItem>
@@ -1501,16 +1498,16 @@ export default function ExercisePlannerPage() {
 
                         <FormField
                           control={form.control}
-                          name="accountability_support"
+                          name='accountability_support'
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormItem className='flex flex-row items-start space-x-3 space-y-0'>
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
                                 />
                               </FormControl>
-                              <div className="space-y-1 leading-none">
+                              <div className='space-y-1 leading-none'>
                                 <FormLabel>
                                   I want accountability support and reminders
                                 </FormLabel>
@@ -1525,31 +1522,31 @@ export default function ExercisePlannerPage() {
               </AccordionItem>
             </Accordion>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
+            <div className='flex flex-col sm:flex-row gap-4 justify-center pt-8'>
               <Button
-                type="button"
+                type='button'
                 onClick={savePreferences}
                 disabled={isSaving}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border border-blue-400"
+                className='bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border border-blue-400'
               >
                 {isSaving ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className='flex items-center gap-2'>
+                    <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
                     Saving...
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className='flex items-center gap-2'>
                     <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                      className='w-4 h-4'
+                      fill='none'
+                      stroke='currentColor'
+                      viewBox='0 0 24 24'
                     >
                       <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
                         strokeWidth={2}
-                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"
+                        d='M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12'
                       />
                     </svg>
                     Save Preferences
@@ -1557,28 +1554,28 @@ export default function ExercisePlannerPage() {
                 )}
               </Button>
               <Button
-                type="submit"
+                type='submit'
                 disabled={isGenerating}
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-12 py-3 text-lg rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border border-green-400"
+                className='bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-12 py-3 text-lg rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border border-green-400'
               >
                 {isGenerating ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className='flex items-center gap-2'>
+                    <div className='w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
                     Generating Exercise Plan...
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className='flex items-center gap-2'>
                     <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                      className='w-5 h-5'
+                      fill='none'
+                      stroke='currentColor'
+                      viewBox='0 0 24 24'
                     >
                       <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
                         strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                        d='M13 10V3L4 14h7v7l9-11h-7z'
                       />
                     </svg>
                     Generate AI Exercise Plan
@@ -1587,27 +1584,27 @@ export default function ExercisePlannerPage() {
               </Button>
               {generatedPlan && (
                 <Button
-                  type="button"
+                  type='button'
                   onClick={() => {
                     setGeneratedPlan(null);
-                    localStorage.removeItem("generatedExercisePlan");
-                    alert("Exercise plan cleared successfully!");
+                    localStorage.removeItem('generatedExercisePlan');
+                    alert('Exercise plan cleared successfully!');
                   }}
-                  variant="outline"
-                  className="border-red-300 text-red-600 hover:bg-red-50 px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                  variant='outline'
+                  className='border-red-300 text-red-600 hover:bg-red-50 px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200'
                 >
-                  <div className="flex items-center gap-2">
+                  <div className='flex items-center gap-2'>
                     <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                      className='w-4 h-4'
+                      fill='none'
+                      stroke='currentColor'
+                      viewBox='0 0 24 24'
                     >
                       <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
                         strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
                       />
                     </svg>
                     Clear Plan
@@ -1619,95 +1616,102 @@ export default function ExercisePlannerPage() {
         </Form>
 
         {generatedPlan && (
-          <div className="mt-12 space-y-8">
-            <div className="text-center space-y-4 bg-gradient-to-r from-green-600 to-blue-600 text-white py-12 px-8 rounded-2xl shadow-2xl">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-full">
-                  <Zap className="w-8 h-8 text-white" />
+          <div className='mt-12 space-y-8'>
+            <div className='text-center space-y-4 bg-gradient-to-r from-green-600 to-blue-600 text-white py-12 px-8 rounded-2xl shadow-2xl'>
+              <div className='flex items-center justify-center gap-3 mb-4'>
+                <div className='p-3 bg-white/20 backdrop-blur-sm rounded-full'>
+                  <Zap className='w-8 h-8 text-white' />
                 </div>
-                <h2 className="text-4xl font-bold">
+                <h2 className='text-4xl font-bold'>
                   Your Personalized Exercise Plan
                 </h2>
               </div>
-              <p className="text-xl text-white/90 max-w-3xl mx-auto">
+              <p className='text-xl text-white/90 max-w-3xl mx-auto'>
                 AI-generated workout plan based on your preferences and goals -
                 designed specifically for your fitness journey
               </p>
-              <div className="flex flex-wrap justify-center gap-4 mt-6">
+              <div className='flex flex-wrap justify-center gap-4 mt-6'>
                 <Badge
-                  variant="secondary"
-                  className="bg-white/20 text-white border-white/30 px-4 py-2 text-base"
+                  variant='secondary'
+                  className='bg-white/20 text-white border-white/30 px-4 py-2 text-base'
                 >
-                  <Calendar className="w-4 h-4 mr-2" />
+                  <Calendar className='w-4 h-4 mr-2' />
                   Full Week Plan
                 </Badge>
                 <Badge
-                  variant="secondary"
-                  className="bg-white/20 text-white border-white/30 px-4 py-2 text-base"
+                  variant='secondary'
+                  className='bg-white/20 text-white border-white/30 px-4 py-2 text-base'
                 >
-                  <User className="w-4 h-4 mr-2" />
+                  <User className='w-4 h-4 mr-2' />
                   Personalized
                 </Badge>
                 <Badge
-                  variant="secondary"
-                  className="bg-white/20 text-white border-white/30 px-4 py-2 text-base"
+                  variant='secondary'
+                  className='bg-white/20 text-white border-white/30 px-4 py-2 text-base'
                 >
-                  <BarChart3 className="w-4 h-4 mr-2" />
+                  <BarChart3 className='w-4 h-4 mr-2' />
                   Progress Tracking
                 </Badge>
               </div>
             </div>
 
             {generatedPlan.error ? (
-              <Card className="border-red-200 bg-red-50">
-                <CardContent className="p-8 text-center">
-                  <div className="text-red-600 text-lg font-semibold">
+              <Card className='border-red-200 bg-red-50'>
+                <CardContent className='p-8 text-center'>
+                  <div className='text-red-600 text-lg font-semibold'>
                     {generatedPlan.error}
                   </div>
                 </CardContent>
               </Card>
             ) : generatedPlan.weeklyPlan ? (
-              <div className="space-y-8">
-                <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className='space-y-8'>
+                <Card className='border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50'>
                   <CardHeader>
-                    <CardTitle className="text-2xl text-blue-800 flex items-center gap-2">
-                      <Calendar className="w-6 h-6" />
+                    <CardTitle className='text-2xl text-blue-800 flex items-center gap-2'>
+                      <Calendar className='w-6 h-6' />
                       Weekly Schedule Overview
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="text-center space-y-2">
-                        <div className="text-3xl font-bold text-blue-600">
-                          {generatedPlan.weeklyPlan ? Object.keys(generatedPlan.weeklyPlan).length : 0}
+                    <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+                      <div className='text-center space-y-2'>
+                        <div className='text-3xl font-bold text-blue-600'>
+                          {generatedPlan.weeklyPlan
+                            ? Object.keys(generatedPlan.weeklyPlan).length
+                            : 0}
                         </div>
-                        <p className="text-blue-700 font-medium">
+                        <p className='text-blue-700 font-medium'>
                           Workout Days
                         </p>
                       </div>
-                      <div className="text-center space-y-2">
-                        <div className="text-3xl font-bold text-green-600">
-                          {generatedPlan.weeklyPlan ? Object.values(generatedPlan.weeklyPlan).reduce(
-                            (total: number, day: any) =>
-                              total + (day.duration || 0),
-                            0,
-                          ) : 0}
+                      <div className='text-center space-y-2'>
+                        <div className='text-3xl font-bold text-green-600'>
+                          {generatedPlan.weeklyPlan
+                            ? Object.values(generatedPlan.weeklyPlan).reduce(
+                                (total: number, day: any) =>
+                                  total + (day.duration || 0),
+                                0
+                              )
+                            : 0}
                         </div>
-                        <p className="text-green-700 font-medium">
+                        <p className='text-green-700 font-medium'>
                           Total Minutes
                         </p>
                       </div>
-                      <div className="text-center space-y-2">
-                        <div className="text-3xl font-bold text-purple-600">
-                          {generatedPlan.weeklyPlan && Object.keys(generatedPlan.weeklyPlan).length > 0 ? Math.round(
-                            Object.values(generatedPlan.weeklyPlan).reduce(
-                              (total: number, day: any) =>
-                                total + (day.duration || 0),
-                              0,
-                            ) / Object.keys(generatedPlan.weeklyPlan).length,
-                          ) : 0}
+                      <div className='text-center space-y-2'>
+                        <div className='text-3xl font-bold text-purple-600'>
+                          {generatedPlan.weeklyPlan &&
+                          Object.keys(generatedPlan.weeklyPlan).length > 0
+                            ? Math.round(
+                                Object.values(generatedPlan.weeklyPlan).reduce(
+                                  (total: number, day: any) =>
+                                    total + (day.duration || 0),
+                                  0
+                                ) / Object.keys(generatedPlan.weeklyPlan).length
+                              )
+                            : 0}
                         </div>
-                        <p className="text-purple-700 font-medium">
+                        <p className='text-purple-700 font-medium'>
                           Avg Session
                         </p>
                       </div>
@@ -1715,376 +1719,389 @@ export default function ExercisePlannerPage() {
                   </CardContent>
                 </Card>
 
-                <div className="space-y-6">
-                  {generatedPlan.weeklyPlan && Object.entries(generatedPlan.weeklyPlan).map(
-                    ([dayKey, dayPlan]: [string, any], dayIndex) => (
-                      <Card
-                        key={dayKey}
-                        className="border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
-                      >
-                        <CardHeader
-                          className="bg-gradient-to-r from-green-500 to-blue-500 text-white cursor-pointer"
-                          onClick={() => toggleDayExpansion(dayKey)}
+                <div className='space-y-6'>
+                  {generatedPlan.weeklyPlan &&
+                    Object.entries(generatedPlan.weeklyPlan).map(
+                      ([dayKey, dayPlan]: [string, any]) => (
+                        <Card
+                          key={dayKey}
+                          className='border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden'
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
-                                <Dumbbell className="w-6 h-6 text-white" />
-                              </div>
-                              <div>
-                                <CardTitle className="text-2xl font-bold text-white">
-                                  {dayPlan.dayName} - {dayPlan.focus}
-                                </CardTitle>
-                                <div className="flex items-center gap-4 mt-2">
-                                  <Badge
-                                    variant="secondary"
-                                    className="bg-white/20 text-white border-white/30"
-                                  >
-                                    <Timer className="w-3 h-3 mr-1" />
-                                    {dayPlan.duration} min
-                                  </Badge>
-                                  <Badge
-                                    variant="secondary"
-                                    className="bg-white/20 text-white border-white/30"
-                                  >
-                                    <Target className="w-3 h-3 mr-1" />
-                                    {dayPlan.mainWorkout?.length || 0} exercises
-                                  </Badge>
+                          <CardHeader
+                            className='bg-gradient-to-r from-green-500 to-blue-500 text-white cursor-pointer'
+                            onClick={() => toggleDayExpansion(dayKey)}
+                          >
+                            <div className='flex items-center justify-between'>
+                              <div className='flex items-center gap-4'>
+                                <div className='bg-white/20 backdrop-blur-sm rounded-full p-2'>
+                                  <Dumbbell className='w-6 h-6 text-white' />
+                                </div>
+                                <div>
+                                  <CardTitle className='text-2xl font-bold text-white'>
+                                    {dayPlan.dayName} - {dayPlan.focus}
+                                  </CardTitle>
+                                  <div className='flex items-center gap-4 mt-2'>
+                                    <Badge
+                                      variant='secondary'
+                                      className='bg-white/20 text-white border-white/30'
+                                    >
+                                      <Timer className='w-3 h-3 mr-1' />
+                                      {dayPlan.duration} min
+                                    </Badge>
+                                    <Badge
+                                      variant='secondary'
+                                      className='bg-white/20 text-white border-white/30'
+                                    >
+                                      <Target className='w-3 h-3 mr-1' />
+                                      {dayPlan.mainWorkout?.length || 0}{' '}
+                                      exercises
+                                    </Badge>
+                                  </div>
                                 </div>
                               </div>
+                              {expandedDays[dayKey] ? (
+                                <ChevronUp className='w-6 h-6 text-white' />
+                              ) : (
+                                <ChevronDown className='w-6 h-6 text-white' />
+                              )}
                             </div>
-                            {expandedDays[dayKey] ? (
-                              <ChevronUp className="w-6 h-6 text-white" />
-                            ) : (
-                              <ChevronDown className="w-6 h-6 text-white" />
-                            )}
-                          </div>
-                        </CardHeader>
+                          </CardHeader>
 
-                        {expandedDays[dayKey] && (
-                          <CardContent className="p-8 space-y-8">
-                            {dayPlan.warmup && dayPlan.warmup.exercises && dayPlan.warmup.exercises.length > 0 && (
-                              <div className="space-y-4">
-                                <div className="flex items-center gap-2 mb-4">
-                                  <div className="bg-orange-100 p-2 rounded-full">
-                                    <Zap className="w-5 h-5 text-orange-600" />
-                                  </div>
-                                  <h4 className="text-xl font-bold text-orange-700">
-                                    Warm-up
-                                  </h4>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  {dayPlan.warmup.exercises.map(
-                                    (exercise: any, idx: number) => (
-                                      <Card
-                                        key={idx}
-                                        className="border-orange-200 bg-orange-50"
-                                      >
-                                        <CardContent className="p-4">
-                                          <div className="flex items-center justify-between mb-2">
-                                            <h5 className="font-semibold text-orange-800">
-                                              {exercise.name}
-                                            </h5>
-                                            <Badge
-                                              variant="outline"
-                                              className="text-orange-600 border-orange-300"
-                                            >
-                                              {exercise.duration} min
-                                            </Badge>
-                                          </div>
-                                          <p className="text-sm text-orange-700">
-                                            {exercise.instructions}
-                                          </p>
-                                        </CardContent>
-                                      </Card>
-                                    ),
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            <Separator />
-
-                            {dayPlan.mainWorkout && dayPlan.mainWorkout.length > 0 && (
-                              <div className="space-y-6">
-                                <div className="flex items-center gap-2 mb-6">
-                                  <div className="bg-blue-100 p-2 rounded-full">
-                                    <Activity className="w-5 h-5 text-blue-600" />
-                                  </div>
-                                  <h4 className="text-xl font-bold text-blue-700">
-                                    Main Workout
-                                  </h4>
-                                </div>
-
-                                {dayPlan.mainWorkout.map(
-                                  (exercise: any, idx: number) => {
-                                    const exerciseKey = `${dayKey}-exercise-${idx}`;
-                                    return (
-                                      <Card
-                                        key={idx}
-                                        className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg"
-                                      >
-                                        <CardContent className="p-6">
-                                          <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                              <div className="flex items-center gap-3">
-                                                <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">
-                                                  {idx + 1}
-                                                </div>
-                                                <h5 className="text-xl font-bold text-blue-800">
-                                                  {exercise.exerciseName}
+                          {expandedDays[dayKey] && (
+                            <CardContent className='p-8 space-y-8'>
+                              {dayPlan.warmup &&
+                                dayPlan.warmup.exercises &&
+                                dayPlan.warmup.exercises.length > 0 && (
+                                  <div className='space-y-4'>
+                                    <div className='flex items-center gap-2 mb-4'>
+                                      <div className='bg-orange-100 p-2 rounded-full'>
+                                        <Zap className='w-5 h-5 text-orange-600' />
+                                      </div>
+                                      <h4 className='text-xl font-bold text-orange-700'>
+                                        Warm-up
+                                      </h4>
+                                    </div>
+                                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                                      {dayPlan.warmup.exercises.map(
+                                        (exercise: any, idx: number) => (
+                                          <Card
+                                            key={idx}
+                                            className='border-orange-200 bg-orange-50'
+                                          >
+                                            <CardContent className='p-4'>
+                                              <div className='flex items-center justify-between mb-2'>
+                                                <h5 className='font-semibold text-orange-800'>
+                                                  {exercise.name}
                                                 </h5>
+                                                <Badge
+                                                  variant='outline'
+                                                  className='text-orange-600 border-orange-300'
+                                                >
+                                                  {exercise.duration} min
+                                                </Badge>
                                               </div>
-                                              <div className="flex gap-2">
-                                                {exercise.youtubeSearchTerm && (
-                                                  <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="border-red-300 text-red-600 hover:bg-red-50"
-                                                    onClick={() =>
-                                                      window.open(
-                                                        `https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.youtubeSearchTerm)}`,
-                                                        "_blank",
-                                                      )
-                                                    }
-                                                  >
-                                                    <Youtube className="w-4 h-4 mr-1" />
-                                                    Watch Tutorial
-                                                  </Button>
-                                                )}
-                                              </div>
-                                            </div>
+                                              <p className='text-sm text-orange-700'>
+                                                {exercise.instructions}
+                                              </p>
+                                            </CardContent>
+                                          </Card>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
 
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                              <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-                                                <div className="text-lg font-bold text-blue-600">
-                                                  {exercise.sets}
-                                                </div>
-                                                <div className="text-sm text-blue-700">
-                                                  Sets
-                                                </div>
-                                              </div>
-                                              <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-                                                <div className="text-lg font-bold text-green-600">
-                                                  {exercise.reps}
-                                                </div>
-                                                <div className="text-sm text-green-700">
-                                                  Reps
-                                                </div>
-                                              </div>
-                                              <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-                                                <div className="text-lg font-bold text-purple-600">
-                                                  {exercise.restSeconds}s
-                                                </div>
-                                                <div className="text-sm text-purple-700">
-                                                  Rest
-                                                </div>
-                                              </div>
-                                              <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-                                                <div className="text-lg font-bold text-orange-600">
-                                                  {exercise.targetMuscles
-                                                    ?.length || 0}
-                                                </div>
-                                                <div className="text-sm text-orange-700">
-                                                  Muscles
-                                                </div>
-                                              </div>
-                                            </div>
+                              <Separator />
 
-                                            {exercise.targetMuscles &&
-                                              exercise.targetMuscles.length >
-                                                0 && (
-                                                <div className="space-y-2">
-                                                  <p className="font-medium text-blue-700">
-                                                    Target Muscles:
-                                                  </p>
-                                                  <div className="flex flex-wrap gap-2">
-                                                    {exercise.targetMuscles.map(
-                                                      (
-                                                        muscle: string,
-                                                        muscleIdx: number,
-                                                      ) => (
-                                                        <Badge
-                                                          key={muscleIdx}
-                                                          variant="secondary"
-                                                          className="bg-blue-100 text-blue-700"
-                                                        >
-                                                          {muscle}
-                                                        </Badge>
-                                                      ),
+                              {dayPlan.mainWorkout &&
+                                dayPlan.mainWorkout.length > 0 && (
+                                  <div className='space-y-6'>
+                                    <div className='flex items-center gap-2 mb-6'>
+                                      <div className='bg-blue-100 p-2 rounded-full'>
+                                        <Activity className='w-5 h-5 text-blue-600' />
+                                      </div>
+                                      <h4 className='text-xl font-bold text-blue-700'>
+                                        Main Workout
+                                      </h4>
+                                    </div>
+
+                                    {dayPlan.mainWorkout.map(
+                                      (exercise: any, idx: number) => {
+                                        const exerciseKey = `${dayKey}-exercise-${idx}`;
+                                        return (
+                                          <Card
+                                            key={idx}
+                                            className='border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg'
+                                          >
+                                            <CardContent className='p-6'>
+                                              <div className='space-y-4'>
+                                                <div className='flex items-center justify-between'>
+                                                  <div className='flex items-center gap-3'>
+                                                    <div className='bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold'>
+                                                      {idx + 1}
+                                                    </div>
+                                                    <h5 className='text-xl font-bold text-blue-800'>
+                                                      {exercise.exerciseName}
+                                                    </h5>
+                                                  </div>
+                                                  <div className='flex gap-2'>
+                                                    {exercise.youtubeSearchTerm && (
+                                                      <Button
+                                                        variant='outline'
+                                                        size='sm'
+                                                        className='border-red-300 text-red-600 hover:bg-red-50'
+                                                        onClick={() =>
+                                                          window.open(
+                                                            `https://www.youtube.com/results?search_query=${encodeURIComponent(
+                                                              exercise.youtubeSearchTerm
+                                                            )}`,
+                                                            '_blank'
+                                                          )
+                                                        }
+                                                      >
+                                                        <Youtube className='w-4 h-4 mr-1' />
+                                                        Watch Tutorial
+                                                      </Button>
                                                     )}
                                                   </div>
                                                 </div>
-                                              )}
 
-                                            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4">
-                                              <p className="text-gray-700 leading-relaxed">
-                                                {exercise.instructions}
-                                              </p>
-                                            </div>
+                                                <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+                                                  <div className='bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center'>
+                                                    <div className='text-lg font-bold text-blue-600'>
+                                                      {exercise.sets}
+                                                    </div>
+                                                    <div className='text-sm text-blue-700'>
+                                                      Sets
+                                                    </div>
+                                                  </div>
+                                                  <div className='bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center'>
+                                                    <div className='text-lg font-bold text-green-600'>
+                                                      {exercise.reps}
+                                                    </div>
+                                                    <div className='text-sm text-green-700'>
+                                                      Reps
+                                                    </div>
+                                                  </div>
+                                                  <div className='bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center'>
+                                                    <div className='text-lg font-bold text-purple-600'>
+                                                      {exercise.restSeconds}s
+                                                    </div>
+                                                    <div className='text-sm text-purple-700'>
+                                                      Rest
+                                                    </div>
+                                                  </div>
+                                                  <div className='bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center'>
+                                                    <div className='text-lg font-bold text-orange-600'>
+                                                      {exercise.targetMuscles
+                                                        ?.length || 0}
+                                                    </div>
+                                                    <div className='text-sm text-orange-700'>
+                                                      Muscles
+                                                    </div>
+                                                  </div>
+                                                </div>
 
-                                            {exercise.alternatives &&
-                                              exercise.alternatives.length >
-                                                0 && (
-                                                <div className="space-y-3">
-                                                  <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                      toggleExerciseExpansion(
-                                                        exerciseKey,
-                                                      )
-                                                    }
-                                                    className="w-full border-indigo-300 text-indigo-600 hover:bg-indigo-50"
-                                                  >
-                                                    <Repeat className="w-4 h-4 mr-2" />
-                                                    {expandedExercises[
-                                                      exerciseKey
-                                                    ]
-                                                      ? "Hide"
-                                                      : "Show"}{" "}
-                                                    Alternative Exercises (
-                                                    {
-                                                      exercise.alternatives
-                                                        .length
-                                                    }
-                                                    )
-                                                    {expandedExercises[
-                                                      exerciseKey
-                                                    ] ? (
-                                                      <ChevronUp className="w-4 h-4 ml-2" />
-                                                    ) : (
-                                                      <ChevronDown className="w-4 h-4 ml-2" />
-                                                    )}
-                                                  </Button>
+                                                {exercise.targetMuscles &&
+                                                  exercise.targetMuscles
+                                                    .length > 0 && (
+                                                    <div className='space-y-2'>
+                                                      <p className='font-medium text-blue-700'>
+                                                        Target Muscles:
+                                                      </p>
+                                                      <div className='flex flex-wrap gap-2'>
+                                                        {exercise.targetMuscles.map(
+                                                          (
+                                                            muscle: string,
+                                                            muscleIdx: number
+                                                          ) => (
+                                                            <Badge
+                                                              key={muscleIdx}
+                                                              variant='secondary'
+                                                              className='bg-blue-100 text-blue-700'
+                                                            >
+                                                              {muscle}
+                                                            </Badge>
+                                                          )
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  )}
 
-                                                  {expandedExercises[
-                                                    exerciseKey
-                                                  ] && (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                                      {exercise.alternatives.map(
-                                                        (
-                                                          alt: any,
-                                                          altIdx: number,
-                                                        ) => (
-                                                          <Card
-                                                            key={altIdx}
-                                                            className="border-indigo-200 bg-indigo-50"
-                                                          >
-                                                            <CardContent className="p-4">
-                                                              <div className="space-y-3">
-                                                                <div className="flex items-center justify-between">
-                                                                  <h6 className="font-semibold text-indigo-800">
-                                                                    {alt.name}
-                                                                  </h6>
-                                                                  {alt.youtubeSearchTerm && (
-                                                                    <Button
-                                                                      variant="ghost"
-                                                                      size="sm"
-                                                                      className="text-red-600 hover:bg-red-50 p-1"
-                                                                      onClick={() =>
-                                                                        window.open(
-                                                                          `https://www.youtube.com/results?search_query=${encodeURIComponent(alt.youtubeSearchTerm)}`,
-                                                                          "_blank",
-                                                                        )
+                                                <div className='bg-white/80 backdrop-blur-sm rounded-lg p-4'>
+                                                  <p className='text-gray-700 leading-relaxed'>
+                                                    {exercise.instructions}
+                                                  </p>
+                                                </div>
+
+                                                {exercise.alternatives &&
+                                                  exercise.alternatives.length >
+                                                    0 && (
+                                                    <div className='space-y-3'>
+                                                      <Button
+                                                        variant='outline'
+                                                        size='sm'
+                                                        onClick={() =>
+                                                          toggleExerciseExpansion(
+                                                            exerciseKey
+                                                          )
+                                                        }
+                                                        className='w-full border-indigo-300 text-indigo-600 hover:bg-indigo-50'
+                                                      >
+                                                        <Repeat className='w-4 h-4 mr-2' />
+                                                        {expandedExercises[
+                                                          exerciseKey
+                                                        ]
+                                                          ? 'Hide'
+                                                          : 'Show'}{' '}
+                                                        Alternative Exercises (
+                                                        {
+                                                          exercise.alternatives
+                                                            .length
+                                                        }
+                                                        )
+                                                        {expandedExercises[
+                                                          exerciseKey
+                                                        ] ? (
+                                                          <ChevronUp className='w-4 h-4 ml-2' />
+                                                        ) : (
+                                                          <ChevronDown className='w-4 h-4 ml-2' />
+                                                        )}
+                                                      </Button>
+
+                                                      {expandedExercises[
+                                                        exerciseKey
+                                                      ] && (
+                                                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mt-4'>
+                                                          {exercise.alternatives.map(
+                                                            (
+                                                              alt: any,
+                                                              altIdx: number
+                                                            ) => (
+                                                              <Card
+                                                                key={altIdx}
+                                                                className='border-indigo-200 bg-indigo-50'
+                                                              >
+                                                                <CardContent className='p-4'>
+                                                                  <div className='space-y-3'>
+                                                                    <div className='flex items-center justify-between'>
+                                                                      <h6 className='font-semibold text-indigo-800'>
+                                                                        {
+                                                                          alt.name
+                                                                        }
+                                                                      </h6>
+                                                                      {alt.youtubeSearchTerm && (
+                                                                        <Button
+                                                                          variant='ghost'
+                                                                          size='sm'
+                                                                          className='text-red-600 hover:bg-red-50 p-1'
+                                                                          onClick={() =>
+                                                                            window.open(
+                                                                              `https://www.youtube.com/results?search_query=${encodeURIComponent(
+                                                                                alt.youtubeSearchTerm
+                                                                              )}`,
+                                                                              '_blank'
+                                                                            )
+                                                                          }
+                                                                        >
+                                                                          <Youtube className='w-4 h-4' />
+                                                                        </Button>
+                                                                      )}
+                                                                    </div>
+                                                                    <p className='text-sm text-indigo-700'>
+                                                                      {
+                                                                        alt.instructions
                                                                       }
-                                                                    >
-                                                                      <Youtube className="w-4 h-4" />
-                                                                    </Button>
-                                                                  )}
-                                                                </div>
-                                                                <p className="text-sm text-indigo-700">
-                                                                  {
-                                                                    alt.instructions
-                                                                  }
-                                                                </p>
-                                                              </div>
-                                                            </CardContent>
-                                                          </Card>
-                                                        ),
+                                                                    </p>
+                                                                  </div>
+                                                                </CardContent>
+                                                              </Card>
+                                                            )
+                                                          )}
+                                                        </div>
                                                       )}
                                                     </div>
                                                   )}
-                                                </div>
-                                              )}
-                                          </div>
-                                        </CardContent>
-                                      </Card>
-                                    );
-                                  },
-                                )}
-                              </div>
-                            )}
-
-                            <Separator />
-
-                            {dayPlan.cooldown && dayPlan.cooldown.exercises && dayPlan.cooldown.exercises.length > 0 && (
-                              <div className="space-y-4">
-                                <div className="flex items-center gap-2 mb-4">
-                                  <div className="bg-green-100 p-2 rounded-full">
-                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        );
+                                      }
+                                    )}
                                   </div>
-                                  <h4 className="text-xl font-bold text-green-700">
-                                    Cool-down
-                                  </h4>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  {dayPlan.cooldown.exercises.map(
-                                    (exercise: any, idx: number) => (
-                                      <Card
-                                        key={idx}
-                                        className="border-green-200 bg-green-50"
-                                      >
-                                        <CardContent className="p-4">
-                                          <div className="flex items-center justify-between mb-2">
-                                            <h5 className="font-semibold text-green-800">
-                                              {exercise.name}
-                                            </h5>
-                                            <Badge
-                                              variant="outline"
-                                              className="text-green-600 border-green-300"
-                                            >
-                                              {exercise.duration} min
-                                            </Badge>
-                                          </div>
-                                          <p className="text-sm text-green-700">
-                                            {exercise.instructions}
-                                          </p>
-                                        </CardContent>
-                                      </Card>
-                                    ),
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </CardContent>
-                        )}
-                      </Card>
-                    ),
-                  )}
+                                )}
+
+                              <Separator />
+
+                              {dayPlan.cooldown &&
+                                dayPlan.cooldown.exercises &&
+                                dayPlan.cooldown.exercises.length > 0 && (
+                                  <div className='space-y-4'>
+                                    <div className='flex items-center gap-2 mb-4'>
+                                      <div className='bg-green-100 p-2 rounded-full'>
+                                        <CheckCircle className='w-5 h-5 text-green-600' />
+                                      </div>
+                                      <h4 className='text-xl font-bold text-green-700'>
+                                        Cool-down
+                                      </h4>
+                                    </div>
+                                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                                      {dayPlan.cooldown.exercises.map(
+                                        (exercise: any, idx: number) => (
+                                          <Card
+                                            key={idx}
+                                            className='border-green-200 bg-green-50'
+                                          >
+                                            <CardContent className='p-4'>
+                                              <div className='flex items-center justify-between mb-2'>
+                                                <h5 className='font-semibold text-green-800'>
+                                                  {exercise.name}
+                                                </h5>
+                                                <Badge
+                                                  variant='outline'
+                                                  className='text-green-600 border-green-300'
+                                                >
+                                                  {exercise.duration} min
+                                                </Badge>
+                                              </div>
+                                              <p className='text-sm text-green-700'>
+                                                {exercise.instructions}
+                                              </p>
+                                            </CardContent>
+                                          </Card>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                            </CardContent>
+                          )}
+                        </Card>
+                      )
+                    )}
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-6 mt-12">
+                <div className='grid md:grid-cols-3 gap-6 mt-12'>
                   {generatedPlan.progressionTips && (
-                    <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100">
+                    <Card className='border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100'>
                       <CardHeader>
-                        <CardTitle className="text-blue-800 flex items-center gap-2">
-                          <TrendingUp className="w-5 h-5" />
+                        <CardTitle className='text-blue-800 flex items-center gap-2'>
+                          <TrendingUp className='w-5 h-5' />
                           Progression Tips
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <ul className="space-y-3">
+                        <ul className='space-y-3'>
                           {generatedPlan.progressionTips.map(
                             (tip: string, idx: number) => (
                               <li
                                 key={idx}
-                                className="flex items-start gap-2 text-sm text-blue-700"
+                                className='flex items-start gap-2 text-sm text-blue-700'
                               >
-                                <ArrowRight className="w-4 h-4 mt-0.5 text-blue-500 flex-shrink-0" />
+                                <ArrowRight className='w-4 h-4 mt-0.5 text-blue-500 flex-shrink-0' />
                                 {tip}
                               </li>
-                            ),
+                            )
                           )}
                         </ul>
                       </CardContent>
@@ -2092,25 +2109,25 @@ export default function ExercisePlannerPage() {
                   )}
 
                   {generatedPlan.safetyNotes && (
-                    <Card className="border-red-200 bg-gradient-to-br from-red-50 to-red-100">
+                    <Card className='border-red-200 bg-gradient-to-br from-red-50 to-red-100'>
                       <CardHeader>
-                        <CardTitle className="text-red-800 flex items-center gap-2">
-                          <Heart className="w-5 h-5" />
+                        <CardTitle className='text-red-800 flex items-center gap-2'>
+                          <Heart className='w-5 h-5' />
                           Safety Notes
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <ul className="space-y-3">
+                        <ul className='space-y-3'>
                           {generatedPlan.safetyNotes.map(
                             (note: string, idx: number) => (
                               <li
                                 key={idx}
-                                className="flex items-start gap-2 text-sm text-red-700"
+                                className='flex items-start gap-2 text-sm text-red-700'
                               >
-                                <ArrowRight className="w-4 h-4 mt-0.5 text-red-500 flex-shrink-0" />
+                                <ArrowRight className='w-4 h-4 mt-0.5 text-red-500 flex-shrink-0' />
                                 {note}
                               </li>
-                            ),
+                            )
                           )}
                         </ul>
                       </CardContent>
@@ -2118,25 +2135,25 @@ export default function ExercisePlannerPage() {
                   )}
 
                   {generatedPlan.nutritionTips && (
-                    <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-100">
+                    <Card className='border-green-200 bg-gradient-to-br from-green-50 to-green-100'>
                       <CardHeader>
-                        <CardTitle className="text-green-800 flex items-center gap-2">
-                          <Utensils className="w-5 h-5" />
+                        <CardTitle className='text-green-800 flex items-center gap-2'>
+                          <Utensils className='w-5 h-5' />
                           Nutrition Tips
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <ul className="space-y-3">
+                        <ul className='space-y-3'>
                           {generatedPlan.nutritionTips.map(
                             (tip: string, idx: number) => (
                               <li
                                 key={idx}
-                                className="flex items-start gap-2 text-sm text-green-700"
+                                className='flex items-start gap-2 text-sm text-green-700'
                               >
-                                <ArrowRight className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" />
+                                <ArrowRight className='w-4 h-4 mt-0.5 text-green-500 flex-shrink-0' />
                                 {tip}
                               </li>
-                            ),
+                            )
                           )}
                         </ul>
                       </CardContent>

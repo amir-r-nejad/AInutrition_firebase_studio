@@ -614,7 +614,7 @@ function PDFView({ profile, plan, mealPlan, user }: PDFViewProps) {
                 Generated on {getCurrentDate()}
               </Text>
               <Text style={styles.headerUser}>
-                For: {user.user_metadata?.full_name || 'User'}
+                For: {user.user_metadata?.full_name || user.email || 'User'}
               </Text>
             </View>
           </View>
@@ -865,14 +865,14 @@ function PDFView({ profile, plan, mealPlan, user }: PDFViewProps) {
                 Generated on {getCurrentDate()}
               </Text>
               <Text style={styles.headerUser}>
-                For: {profile.name || 'User'}
+                For: {user.user_metadata?.full_name || user.email || 'User'}
               </Text>
             </View>
           </View>
         </View>
 
         <View style={styles.content}>
-          {!mealPlan.meal_data.days || mealPlan.meal_data.days.length === 0 ? (
+          {!mealPlan.meal_data?.days || mealPlan.meal_data.days.length === 0 ? (
             <View style={styles.warningBox}>
               <Text style={styles.warningText}>
                 ⚠️ No current meal plan data found. Please create your meal plan
@@ -880,7 +880,7 @@ function PDFView({ profile, plan, mealPlan, user }: PDFViewProps) {
               </Text>
             </View>
           ) : (
-            renderMealPlanTable(mealPlan.meal_data, false)
+            renderMealPlanTable(mealPlan.meal_data!, false)
           )}
         </View>
 
@@ -909,7 +909,7 @@ function PDFView({ profile, plan, mealPlan, user }: PDFViewProps) {
                 Generated on {getCurrentDate()}
               </Text>
               <Text style={styles.headerUser}>
-                For: {profile.name || 'User'}
+                For: {user.user_metadata?.full_name || user.email || 'User'}
               </Text>
             </View>
           </View>

@@ -6,23 +6,29 @@ import { useToast } from '@/hooks/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UserPlus } from 'lucide-react';
 import { useEffect } from 'react';
-import { FieldValues, useForm } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { signupSchema } from '../../schemas/authSchema';
 import LoginWithGoogleButton from '../shared/LoginWithGoogleButton';
 import SubmitButton from '../../../../components/ui/SubmitButton';
 import { useRouter } from 'next/navigation';
 import { signupAction } from '../../actions/signup';
 
+type SignupFormValues = {
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
+
 function SignupForm() {
   const router = useRouter();
 
   const { toast } = useToast();
-  const { register, formState, handleSubmit } = useForm({
+  const { register, formState, handleSubmit } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
   });
 
   const isLoading = formState.isSubmitting;
-  const onSubmit = async (data: FieldValues) => {
+  const onSubmit: SubmitHandler<SignupFormValues> = async (data) => {
     const { email, password } = data;
     const { isSuccess, userError } = await signupAction({ email, password });
 

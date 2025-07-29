@@ -20,6 +20,7 @@ import {
   Bot,
   BrainCircuit,
   ChefHat,
+  Dumbbell,
   HelpCircle,
   LayoutDashboard,
   MessageSquareQuote,
@@ -30,16 +31,6 @@ import {
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import React from 'react';
-import {
-  Calculator,
-  CircleUser,
-  Dumbbell,
-  House,
-  MessageCircle,
-  PieChart,
-  Target,
-  Utensils,
-} from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -64,7 +55,11 @@ const navItems = [
   },
   { href: '/meal-plan/optimized', label: 'AI Meal Plan', icon: Bot },
   { section: 'Exercise Planning' },
-  { href: '/tools/workout-planner', label: 'AI Exercise Planner', icon: Dumbbell },
+  {
+    href: '/tools/workout-planner',
+    label: 'AI Exercise Planner',
+    icon: Dumbbell,
+  },
   { section: 'Support' },
   {
     href: '/support/chatbot',
@@ -105,7 +100,7 @@ export default async function AppLayout({
                   </React.Fragment>
                 );
               }
-              const IconComponent = item.icon; // Get the icon component
+              const IconComponent = item.icon!; // Get the icon component
               return (
                 <SidebarMenuItem key={item.label}>
                   <Link href={item.href!} passHref>

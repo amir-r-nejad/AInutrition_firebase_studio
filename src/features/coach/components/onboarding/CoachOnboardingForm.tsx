@@ -29,7 +29,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle, Leaf, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { saveCoachOnboarding } from '../../actions/coachProfile';
 
 const coachSteps = [
@@ -118,7 +118,9 @@ export function CoachOnboardingForm() {
     }
   }
 
-  async function handleSubmit(data: CoachOnboardingFormValues) {
+  const handleSubmit: SubmitHandler<CoachOnboardingFormValues> = async (
+    data
+  ) => {
     try {
       await saveCoachOnboarding(data);
 
@@ -137,7 +139,7 @@ export function CoachOnboardingForm() {
         variant: 'destructive',
       });
     }
-  }
+  };
 
   if (!activeStep) return null;
 

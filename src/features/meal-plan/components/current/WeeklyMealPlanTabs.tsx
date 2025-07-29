@@ -34,7 +34,16 @@ function WeeklyMealPlanTabs({
   );
 
   async function handleOptimizeMeal(dayIndex: number, mealIndex: number) {
-    const { meal_data } = mealPlan;
+    const meal_data = mealPlan.meal_data;
+
+    if (!meal_data) {
+      toast({
+        title: 'Error',
+        description: 'Meal plan data is not available.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     const mealToOptimize = meal_data.days[dayIndex].meals[mealIndex];
     const mealKey = `${meal_data.days[dayIndex].day_of_week}-${mealToOptimize.name}-${mealIndex}`;
@@ -43,17 +52,17 @@ function WeeklyMealPlanTabs({
     try {
       const dailyTargets = {
         targetCalories:
-          plan.custom_total_calories ?? plan.target_daily_calories,
-        targetProtein: plan.custom_protein_g ?? plan.target_protein_g,
-        targetCarbs: plan.custom_carbs_g ?? plan.target_carbs_g,
-        targetFat: plan.custom_fat_g ?? plan.target_fat_g,
+          plan.custom_total_calories ?? plan.target_daily_calories ?? 0,
+        targetProtein: plan.custom_protein_g ?? plan.target_protein_g ?? 0,
+        targetCarbs: plan.custom_carbs_g ?? plan.target_carbs_g ?? 0,
+        targetFat: plan.custom_fat_g ?? plan.target_fat_g ?? 0,
       };
 
       if (
-        !dailyTargets.targetCalories ||
-        !dailyTargets.targetProtein ||
-        !dailyTargets.targetCarbs ||
-        !dailyTargets.targetFat
+        dailyTargets.targetCalories <= 0 ||
+        dailyTargets.targetProtein <= 0 ||
+        dailyTargets.targetCarbs <= 0 ||
+        dailyTargets.targetFat <= 0
       ) {
         toast({
           title: 'Calculation Error',
@@ -77,7 +86,7 @@ function WeeklyMealPlanTabs({
           'AI did not return an adjusted meal or an unexpected format was received.'
         );
 
-      const newWeeklyPlan = meal_data;
+      const newWeeklyPlan = { ...meal_data };
       const updatedMealData = {
         ...result.adjustedMeal,
         total_calories: result.adjustedMeal.total_calories
@@ -152,7 +161,7 @@ function WeeklyMealPlanTabs({
         <ScrollBar orientation='horizontal' />
       </ScrollArea>
 
-      {mealPlanState?.meal_data.days.map((dayPlan, dayIndex) => (
+      {mealPlanState?.meal_data?.days.map((dayPlan, dayIndex) => (
         <TabsContent
           key={dayPlan.day_of_week}
           value={dayPlan.day_of_week}

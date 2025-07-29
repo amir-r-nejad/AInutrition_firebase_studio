@@ -7,22 +7,29 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail } from 'lucide-react';
-import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 
 import { useToast } from '@/hooks/use-toast';
 import { forgotPasswordAction } from '../../actions/forgotPassword';
 import { forgotPasswordSchema } from '../../schemas/authSchema';
 import SubmitButton from '../../../../components/ui/SubmitButton';
 
+type ForgotPasswordFormValues = {
+  email: string;
+};
+
 function ForgotPasswordForm() {
   const [message, setMessage] = useState<string>('');
   const { toast } = useToast();
-  const { formState, handleSubmit, register } = useForm({
-    resolver: zodResolver(forgotPasswordSchema),
-  });
+  const { formState, handleSubmit, register } =
+    useForm<ForgotPasswordFormValues>({
+      resolver: zodResolver(forgotPasswordSchema),
+    });
 
   const isLoading = formState.isSubmitting;
-  const onSubmit: SubmitHandler<FieldValues> = async (formData) => {
+  const onSubmit: SubmitHandler<ForgotPasswordFormValues> = async (
+    formData
+  ) => {
     const { email } = formData;
     const { isSuccess, message, userError } = await forgotPasswordAction(email);
 

@@ -110,11 +110,13 @@ function EditMealDialog({
 
     const { meal_data } = mealPlan;
 
-    const selectedDay = mealPlan.meal_data.days
-      .filter((plan) => plan.day_of_week === getQueryParams('selected_day'))
+    const selectedDay = mealPlan
+      ?.meal_data!.days.filter(
+        (plan) => plan.day_of_week === getQueryParams('selected_day')
+      )
       .at(0);
 
-    const dayIndex = mealPlan?.meal_data.days.findIndex(
+    const dayIndex = mealPlan?.meal_data!.days.findIndex(
       (plan) => plan.day_of_week === getQueryParams('selected_day')
     );
 
@@ -123,6 +125,7 @@ function EditMealDialog({
     ) as number;
 
     const newWeeklyPlan = meal_data;
+    if (!newWeeklyPlan) return;
     newWeeklyPlan.days[dayIndex].meals[mealIndex] = mealToSave;
 
     try {
@@ -163,7 +166,7 @@ function EditMealDialog({
   }, [meal?.ingredients]);
 
   useEffect(function () {
-    const selectedDay = mealPlan.meal_data.days
+    const selectedDay = mealPlan.meal_data?.days
       .filter((plan) => plan.day_of_week === getQueryParams('selected_day'))
       .at(0);
     const selectedMeal = selectedDay?.meals

@@ -11,9 +11,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
+import SubmitButton from '@/components/ui/SubmitButton';
 import { useToast } from '@/hooks/use-toast';
 import {
-  ExtendedProfileData,
+  BaseProfileData,
   GlobalCalculatedTargets,
   UserPlanType,
 } from '@/lib/schemas';
@@ -22,20 +23,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { RefreshCcw, Save } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
+import { customizePlanFormSchema } from '../../lib/schema';
+import { CustomizePlanFormValues } from '../../types/toolsGlobalTypes';
+import CustomizePlanTable from './CustomizePlanTable';
+import CustomizeToolTip from './CustomizeToolTip';
 import { editPlan } from '@/features/profile/actions/apiUserPlan';
-
-// Create a simple form schema for the customize plan
-const CustomizePlanFormSchema = {
-  custom_total_calories: null as number | null,
-  custom_protein_per_kg: null as number | null,
-  remaining_calories_carbs_percentage: 50 as number,
-};
-
-type CustomizePlanFormValues = typeof CustomizePlanFormSchema;
+import { SubmitHandler } from 'react-hook-form';
 
 type CustomizePlanFormProps = {
   plan: UserPlanType;
-  profile: ExtendedProfileData;
+  profile: BaseProfileData;
   clientId?: string;
 };
 
@@ -47,20 +44,15 @@ function CustomizePlanForm({
   const { toast } = useToast();
 
   const form = useForm<CustomizePlanFormValues>({
+    resolver: zodResolver(customizePlanFormSchema),
     defaultValues: {
-      custom_total_calories: null,
-      custom_protein_per_kg: null,
-      remaining_calories_carbs_percentage: 50,
+      ...plan,
+      ...{
+        remaining_calories_carbs_percentage:
+          plan.remaining_calories_carbs_percentage ?? 50,
+      },
     },
   });
-
-  if (!plan) {
-    return (
-      <div className="p-4 text-center text-muted-foreground">
-        No plan data available. Please complete your profile setup first.
-      </div>
-    );
-  }
 
   const [customPlanResults, setCustomPlanResults] =
     useState<GlobalCalculatedTargets | null>(null);
@@ -77,14 +69,27 @@ function CustomizePlanForm({
   async function handleResetForm() {
     startResetting(async () => {
       form.reset({
+        ...form.getValues(),
         custom_total_calories: null,
         custom_protein_per_kg: null,
         remaining_calories_carbs_percentage: 50,
       });
       setCustomPlanResults(null);
 
+      const planToResest = {
+        ...form.getValues(),
+
+        custom_carbs_g: null,
+        custom_carbs_percentage: null,
+        custom_fat_g: null,
+        custom_fat_percentage: null,
+        custom_protein_g: null,
+        custom_protein_percentage: null,
+        custom_total_calories_final: null,
+      };
+
       try {
-        await editPlan({}, clientId);
+        await editPlan(planToResest, clientId);
 
         toast({
           title: 'Custom Plan Reset',
@@ -100,14 +105,29 @@ function CustomizePlanForm({
     });
   }
 
-  async function onSubmit(formData: CustomizePlanFormValues) {
+  const onSubmit: SubmitHandler<CustomizePlanFormValues> = async (formData) => {
     if (!customPlanResults) return;
+
+    const updateObj: GlobalCalculatedTargets = {};
+    const excludedKeys = [
+      'estimated_weekly_weight_change_kg',
+      'carb_calories',
+      'protein_calories',
+      'fat_calories',
+      'current_weight_for_custom_calc',
+    ];
+    (
+      Object.keys(customPlanResults) as (keyof GlobalCalculatedTargets)[]
+    ).forEach((key) => {
+      if (!excludedKeys.includes(key as string))
+        updateObj[key] = customPlanResults[key];
+    });
 
     try {
       await editPlan(
         {
           ...formData,
-          ...customPlanResults,
+          ...updateObj,
         },
         clientId
       );
@@ -123,28 +143,31 @@ function CustomizePlanForm({
         variant: 'destructive',
       });
     }
-  }
+  };
 
   useEffect(() => {
     const [customTotalCalories, customProteinPerKg, remainingCarbPct] =
       watchedCustomInputs;
 
-    // Use plan.daily_calories instead of target_daily_calories
     const effectiveTotalCalories =
       customTotalCalories && customTotalCalories > 0
         ? customTotalCalories
-        : plan.daily_calories || 0;
+        : plan.target_daily_calories || 0;
 
-    const defaultProteinPerKg = 1.6; // Default value
+    const defaultProteinPerKg =
+      plan.target_protein_g &&
+      profile.current_weight_kg &&
+      profile.current_weight_kg > 0
+        ? plan.target_protein_g / profile.current_weight_kg
+        : 1.6;
 
     const effectiveProteinPerKg =
       customProteinPerKg && customProteinPerKg >= 0
         ? customProteinPerKg
         : defaultProteinPerKg;
 
-    // Use profile.current_weight_kg instead of current_weight
     const calculatedProteinGrams =
-      (profile.current_weight_kg || 70) * effectiveProteinPerKg;
+      profile.current_weight_kg! * effectiveProteinPerKg;
     const calculatedProteinCalories = calculatedProteinGrams * 4;
 
     let remainingCaloriesForCustom =
@@ -200,13 +223,14 @@ function CustomizePlanForm({
         finalCustomTotalCalories > 0
           ? Math.round((calculatedFatCalories / finalCustomTotalCalories) * 100)
           : 0,
-      bmr_kcal: plan.bmr,
-      maintenance_calories_tdee: plan.tdee,
+      bmr_kcal: plan.bmr_kcal,
+      maintenance_calories_tdee: plan.maintenance_calories_tdee,
 
       current_weight_for_custom_calc: profile.current_weight_kg,
       estimated_weekly_weight_change_kg:
-        plan.tdee && finalCustomTotalCalories
-          ? ((plan.tdee - finalCustomTotalCalories) * 7) / 7700
+        plan.maintenance_calories_tdee && finalCustomTotalCalories
+          ? ((plan.maintenance_calories_tdee - finalCustomTotalCalories) * 7) /
+            7700
           : undefined,
 
       carb_calories: Math.round(calculatedCarbCalories),
@@ -229,39 +253,43 @@ function CustomizePlanForm({
               <FormItem>
                 <FormLabel className='flex items-center'>
                   Custom Total Calories
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    Override the system-calculated total daily calories. Leave blank to use the original estimate:
-                    {plan?.daily_calories
-                      ? formatNumber(plan.daily_calories, {
-                          maximumFractionDigits: 0,
-                        })
-                      : 'N/A'} kcal.
-                  </span>
+                  <CustomizeToolTip
+                    message={`Override the system-calculated total daily calories. Leave blank to use the original estimate:
+                          ${
+                            plan?.target_daily_calories
+                              ? formatNumber(plan.target_daily_calories, {
+                                  maximumFractionDigits: 0,
+                                })
+                              : 'N/A'
+                          } kcal.`}
+                  />
                 </FormLabel>
                 <FormControl>
-                  <Input
-                    type='number'
-                    placeholder={`e.g., ${
-                      plan?.daily_calories
-                        ? formatNumber(plan.daily_calories, {
-                            maximumFractionDigits: 0,
-                          })
-                        : '2000'
-                    }`}
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value === ''
-                          ? null
-                          : parseInt(e.target.value, 10)
-                      )
-                    }
-                    step='1'
-                    onWheel={(e) =>
-                      (e.currentTarget as HTMLInputElement).blur()
-                    }
-                  />
+                  <div>
+                    <Input
+                      type='number'
+                      placeholder={`e.g., ${
+                        plan?.target_daily_calories
+                          ? formatNumber(plan.target_daily_calories, {
+                              maximumFractionDigits: 0,
+                            })
+                          : '2000'
+                      }`}
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === ''
+                            ? undefined
+                            : parseInt(e.target.value, 10)
+                        )
+                      }
+                      step='1'
+                      onWheel={(e) =>
+                        (e.currentTarget as HTMLInputElement).blur()
+                      }
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -274,34 +302,57 @@ function CustomizePlanForm({
               <FormItem>
                 <FormLabel className='flex items-center'>
                   Custom Protein (g/kg)
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    Set your desired protein intake in grams per kg of your current body weight (
-                    {profile?.current_weight_kg
-                      ? formatNumber(profile.current_weight_kg, {
-                          maximumFractionDigits: 1,
-                        })
-                      : 'N/A'} kg). Affects protein, carbs, and fat distribution.
-                    Original estimate: 1.6 g/kg.
-                  </span>
+                  <CustomizeToolTip
+                    message={` Set your desired protein intake in grams per kg of your current body weight (
+                      ${
+                        profile?.current_weight_kg
+                          ? formatNumber(profile.current_weight_kg, {
+                              maximumFractionDigits: 1,
+                            })
+                          : 'N/A'
+                      } kg). Affects protein, carbs, and fat distribution.
+                      Original estimate:
+                      ${
+                        profile?.current_weight_kg &&
+                        profile?.current_weight_kg > 0 &&
+                        plan?.target_protein_g
+                          ? formatNumber(
+                              plan.target_protein_g / profile.current_weight_kg,
+                              { maximumFractionDigits: 1 }
+                            )
+                          : 'N/A'
+                      } g/kg.`}
+                  />
                 </FormLabel>
                 <FormControl>
-                  <Input
-                    type='number'
-                    placeholder='e.g., 1.6'
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value === ''
-                          ? null
-                          : parseFloat(e.target.value)
-                      )
-                    }
-                    step='0.1'
-                    onWheel={(e) =>
-                      (e.currentTarget as HTMLInputElement).blur()
-                    }
-                  />
+                  <div>
+                    <Input
+                      type='number'
+                      placeholder={`e.g., ${
+                        profile?.current_weight_kg &&
+                        profile?.current_weight_kg > 0 &&
+                        plan?.target_protein_g
+                          ? formatNumber(
+                              plan.target_protein_g / profile.current_weight_kg,
+                              { maximumFractionDigits: 1 }
+                            )
+                          : '1.6'
+                      }`}
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === ''
+                            ? undefined
+                            : parseFloat(e.target.value)
+                        )
+                      }
+                      step='0.1'
+                      onWheel={(e) =>
+                        (e.currentTarget as HTMLInputElement).blur()
+                      }
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -317,9 +368,7 @@ function CustomizePlanForm({
                 <FormItem className='md:col-span-2'>
                   <FormLabel className='flex items-center'>
                     Remaining Calories from Carbs (%)
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      After protein is set, this slider determines how the remaining calories are split between carbohydrates and fat. Slide to adjust the carbohydrate percentage; fat will be the remainder.
-                    </span>
+                    <CustomizeToolTip message='After protein is set, this slider determines how the remaining calories are split between carbohydrates and fat. Slide to adjust the carbohydrate percentage; fat will be the remainder.' />
                   </FormLabel>
 
                   <FormControl>
@@ -356,77 +405,28 @@ function CustomizePlanForm({
           />
         </div>
 
-        {/* Results Display */}
-        {customPlanResults && (
-          <div className='space-y-4'>
-            <h3 className='text-lg font-semibold'>Custom Plan Results</h3>
-            <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-4'>
-              <div className='p-4 border rounded-lg'>
-                <div className='text-sm text-muted-foreground'>Total Calories</div>
-                <div className='text-2xl font-bold'>
-                  {formatNumber(customPlanResults.custom_total_calories_final || 0, {
-                    maximumFractionDigits: 0,
-                  })}{' '}
-                  kcal
-                </div>
-              </div>
-              <div className='p-4 border rounded-lg'>
-                <div className='text-sm text-muted-foreground'>Protein</div>
-                <div className='text-xl font-bold'>
-                  {formatNumber(customPlanResults.custom_protein_g || 0, {
-                    maximumFractionDigits: 1,
-                  })}{' '}
-                  g ({formatNumber(customPlanResults.custom_protein_percentage || 0, {
-                    maximumFractionDigits: 0,
-                  })}%)
-                </div>
-              </div>
-              <div className='p-4 border rounded-lg'>
-                <div className='text-sm text-muted-foreground'>Carbs</div>
-                <div className='text-xl font-bold'>
-                  {formatNumber(customPlanResults.custom_carbs_g || 0, {
-                    maximumFractionDigits: 1,
-                  })}{' '}
-                  g ({formatNumber(customPlanResults.custom_carbs_percentage || 0, {
-                    maximumFractionDigits: 0,
-                  })}%)
-                </div>
-              </div>
-              <div className='p-4 border rounded-lg'>
-                <div className='text-sm text-muted-foreground'>Fat</div>
-                <div className='text-xl font-bold'>
-                  {formatNumber(customPlanResults.custom_fat_g || 0, {
-                    maximumFractionDigits: 1,
-                  })}{' '}
-                  g ({formatNumber(customPlanResults.custom_fat_percentage || 0, {
-                    maximumFractionDigits: 0,
-                  })}%)
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <CustomizePlanTable plan={customPlanResults} />
 
-        <div className='mt-6 flex justify-end gap-2'>
+        <div className='mt-6 flex justify-end gap-1'>
           <Button
             disabled={isLoading || isResetting}
             type='button'
-            variant='outline'
+            variant='destructive'
             onClick={handleResetForm}
             size='sm'
           >
-            <RefreshCcw className='h-4 w-4' />
+            <RefreshCcw className='size-3' />
             Reset
           </Button>
 
-          <Button
-            type='submit'
-            disabled={isLoading || !customPlanResults}
+          <SubmitButton
+            className='w-min'
+            icon={<Save className='size-3' />}
+            isLoading={isLoading}
+            label='Save'
+            loadingLabel='Saving..'
             size='sm'
-          >
-            <Save className='h-4 w-4' />
-            Save
-          </Button>
+          />
         </div>
       </form>
     </Form>

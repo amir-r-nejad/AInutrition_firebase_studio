@@ -1,15 +1,14 @@
+import { defaultMacroPercentages } from '@/lib/constants';
 import {
-  MealMacroDistribution,
   SuggestMealsForMacrosInput,
   type MacroSplitterFormValues,
 } from '@/lib/schemas';
+import { UseFormReturn } from 'react-hook-form';
 import {
   AiMealInputTypes,
   CalculatedMealMacros,
   TotalMacros,
 } from '../types/toolsGlobalTypes';
-import { UseFormReturn } from 'react-hook-form';
-import { defaultMacroPercentages } from '@/lib/constants';
 
 export function customMacroSplit(
   totalMacros: TotalMacros,
@@ -33,17 +32,10 @@ export function customMacroSplit(
 }
 
 export function getMealMacroStats(
-  form: UseFormReturn<{
-    meal_distributions: {
-      mealName: string;
-      calories_pct: number;
-    }[];
-  }>
+  form: UseFormReturn<MacroSplitterFormValues>
 ) {
   const watchedMealDistributions = form.watch('meal_distributions');
-  const calculateColumnSum = (
-    macroKey: keyof Omit<MealMacroDistribution, 'mealName'>
-  ) => {
+  const calculateColumnSum = (macroKey: 'calories_pct') => {
     return watchedMealDistributions.reduce(
       (sum, meal) => sum + (Number(meal[macroKey]) || 0),
       0
@@ -99,11 +91,9 @@ export function prepareAiMealInput({
     activity_level: profile.physical_activity_level ?? undefined,
     diet_goal: profile.primary_diet_goal ?? undefined,
     preferred_diet: profile.preferred_diet ?? undefined,
-    preferred_cuisines: profile.preferred_cuisines ?? undefined,
-    dispreferrred_cuisines: profile.dispreferrred_cuisines ?? undefined,
-    preferred_ingredients: profile.preferred_ingredients ?? undefined,
-    dispreferrred_ingredients: profile.dispreferrred_ingredients ?? undefined,
     allergies: profile.allergies ?? undefined,
+    medical_conditions: profile.medical_conditions ?? undefined,
+    medications: profile.medications ?? undefined,
   };
 
   Object.keys(aiInput).forEach(

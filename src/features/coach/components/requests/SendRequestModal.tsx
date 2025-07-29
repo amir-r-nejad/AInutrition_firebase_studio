@@ -28,7 +28,7 @@ import {
 } from '@/features/coach/schemas/coachSchemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Send } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 
 interface SendRequestModalProps {
   isOpen: boolean;
@@ -53,7 +53,7 @@ export function SendRequestModal({ isOpen, onClose }: SendRequestModalProps) {
     onClose();
   }
 
-  async function handleSubmit(data: SendClientRequestValues) {
+  const handleSubmit: SubmitHandler<SendClientRequestValues> = async (data) => {
     try {
       const result = await sendApprovalRequest(
         data.approver_email,
@@ -84,7 +84,7 @@ export function SendRequestModal({ isOpen, onClose }: SendRequestModalProps) {
         variant: 'destructive',
       });
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
