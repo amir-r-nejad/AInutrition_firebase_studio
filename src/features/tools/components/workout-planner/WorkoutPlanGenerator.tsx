@@ -1,33 +1,26 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { BaseProfileData } from '@/lib/schemas';
 import {
-  Dumbbell,
+  Activity,
+  Award,
+  Calendar,
+  ChevronDown,
   Clock,
+  Dumbbell,
+  ExternalLink,
+  Heart,
+  Play,
   Target,
   TrendingUp,
-  Activity,
-  ChevronDown,
-  ExternalLink,
-  Play,
   Users,
-  Calendar,
-  Heart,
-  Award,
   Zap,
 } from 'lucide-react';
+import { useState } from 'react';
 
 interface Exercise {
   exerciseName: string;
