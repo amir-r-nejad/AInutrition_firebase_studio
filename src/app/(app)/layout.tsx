@@ -26,6 +26,7 @@ import {
   MessageSquareQuote,
   NotebookText,
   SplitSquareHorizontal,
+  TrendingUp,
   User,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -54,6 +55,12 @@ const navItems = [
     icon: NotebookText,
   },
   { href: '/meal-plan/optimized', label: 'AI Meal Plan', icon: Bot },
+  { section: 'Progress Tracking' },
+  {
+    href: '/progress',
+    label: 'Body Progress',
+    icon: TrendingUp,
+  },
   { section: 'Exercise Planning' },
   {
     href: '/tools/workout-planner',
