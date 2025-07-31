@@ -91,8 +91,9 @@ function EditProgressModal({
                     </FormLabel>
                     <FormControl>
                       <Input
-                        value={field.value}
+                        readOnly
                         disabled
+                        value={field.value}
                         type='date'
                         className='cursor-pointer'
                       />
