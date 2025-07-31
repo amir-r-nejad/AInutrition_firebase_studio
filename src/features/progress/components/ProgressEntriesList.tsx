@@ -18,7 +18,10 @@ export function ProgressEntriesList({
   entries,
   selectedMonth,
 }: ProgressEntriesListProps) {
-  const monthLabel = formatDate(new Date(selectedMonth), 'MMMM dd, yyyy');
+  const monthLabel =
+    selectedMonth === 'all_months'
+      ? 'All months status'
+      : formatDate(new Date(selectedMonth), 'MMMM dd, yyyy');
   const sortedEntries = entries.sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );

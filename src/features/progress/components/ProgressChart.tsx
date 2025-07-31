@@ -6,7 +6,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { TrendingDown } from 'lucide-react';
+import { Activity, Calendar, Ruler, TrendingDown, Weight } from 'lucide-react';
 import {
   Line,
   LineChart,
@@ -14,8 +14,14 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  Tooltip,
+  TooltipProps,
 } from 'recharts';
 import { BodyProgressEntry } from '../types';
+import {
+  NameType,
+  ValueType,
+} from 'recharts/types/component/DefaultTooltipContent';
 
 interface ProgressChartProps {
   entries: BodyProgressEntry[];
@@ -51,12 +57,15 @@ export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
       fullDate: entry.date,
     }));
 
-  const monthLabel = selectedMonth
-    ? new Date(
-        parseInt(selectedMonth.split('-')[0]),
-        parseInt(selectedMonth.split('-')[1]) - 1
-      ).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    : '';
+  const monthLabel =
+    selectedMonth === 'selectedMonth'
+      ? 'All months status'
+      : selectedMonth
+      ? new Date(
+          parseInt(selectedMonth.split('-')[0]),
+          parseInt(selectedMonth.split('-')[1]) - 1
+        ).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      : '';
 
   if (entries.length === 0) {
     return (
@@ -103,6 +112,11 @@ export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
                 className='text-xs'
                 tick={{ fontSize: 12 }}
               />
+
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: 'transparent' }}
+              />
               <YAxis
                 className='text-xs'
                 tick={{ fontSize: 12 }}
@@ -128,6 +142,7 @@ export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
                   stroke: 'var(--color-weight)',
                   strokeWidth: 2,
                 }}
+                tooltipType='none'
               />
             </LineChart>
           </ResponsiveContainer>
@@ -135,4 +150,37 @@ export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
       </CardContent>
     </Card>
   );
+}
+function CustomTooltip({
+  active,
+  payload,
+  label,
+}: TooltipProps<ValueType, NameType>) {
+  if (active && payload && payload.length) {
+    return (
+      <div className='bg-card p-3 border border-border rounded shadow-lg'>
+        <div className='flex items-center gap-0.5 text-foreground'>
+          <Calendar className='size-3' />
+          <p className='font-semibold'>{`Date: ${label}`}</p>
+        </div>
+        <div className='flex items-center gap-0.5 text-primary'>
+          <Weight className='size-3' />
+          <p className='font-semibold'>{`Weight: ${payload[0]?.value} kg`}</p>
+        </div>
+        <div className='flex items-center gap-0.5 text-ring'>
+          <Ruler className='size-3' />
+          <p className='font-semibold'>
+            {`Waist: ${payload[0].payload?.waist ?? 'N/A'} Cm`}
+          </p>
+        </div>
+        <div className='flex items-center gap-0.5 text-destructive'>
+          <Activity className='size-3' />
+          <p className='font-semibold'>
+            {`Body Fat: ${payload[0].payload?.bodyFat ?? 'N/A'}%`}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return null;
 }

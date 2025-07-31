@@ -17,7 +17,7 @@ export async function ProgressTrackingSection({
   const availableMonths = getAvailableMonths(progress);
 
   const params = await searchParams;
-  const selectedMonth = params?.selected_month || '2025-1';
+  const selectedMonth = params?.selected_month || 'all_months';
 
   const selectedMonthData = selectedMonth
     ? availableMonths.find((m) => m.value === selectedMonth)
@@ -25,7 +25,7 @@ export async function ProgressTrackingSection({
 
   const entries = selectedMonthData
     ? getEntriesForMonth({ progress, ...selectedMonthData })
-    : [];
+    : progress;
 
   return (
     <div className='space-y-6'>

@@ -142,7 +142,7 @@ export function WeeklyEntryForm({ entries }: { entries: BodyProgressEntry[] }) {
                   <FormItem>
                     <FormLabel className='flex items-center gap-2'>
                       <Activity className='h-4 w-4' />
-                      Body Fat (%)
+                      Body Fat (%) (Optional)
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -175,7 +175,7 @@ export function WeeklyEntryForm({ entries }: { entries: BodyProgressEntry[] }) {
                   <FormItem>
                     <FormLabel className='flex items-center gap-2'>
                       <Ruler className='h-4 w-4' />
-                      Waist (cm)
+                      Waist (cm) (Optional)
                     </FormLabel>
                     <FormControl>
                       <Input
