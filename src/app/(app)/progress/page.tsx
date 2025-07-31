@@ -21,7 +21,7 @@ export default function ProgressPage({
         />
         <CardContent>
           <Suspense
-            fallback={<LoadingScreen loadingLabel='loading your data' />}
+            fallback={<LoadingScreen loadingLabel='loading you data...' />}
           >
             <ProgressTrackingSection searchParams={searchParams} />
           </Suspense>

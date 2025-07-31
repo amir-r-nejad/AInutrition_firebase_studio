@@ -29,14 +29,18 @@ export async function ProgressTrackingSection({
 
   return (
     <div className='space-y-6'>
+      {/* Month Selector */}
       <div className='flex justify-between items-center'>
         <MonthSelector months={availableMonths} />
       </div>
 
+      {/* Progress Chart */}
       <ProgressChart entries={entries} selectedMonth={selectedMonth} />
 
-      <WeeklyEntryForm />
+      {/* Weekly Entry Form */}
+      <WeeklyEntryForm entries={progress} />
 
+      {/* Progress Entries List */}
       <ProgressEntriesList entries={entries} selectedMonth={selectedMonth} />
     </div>
   );
