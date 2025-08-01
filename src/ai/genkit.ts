@@ -3,7 +3,7 @@ import { googleAI } from '@genkit-ai/googleai';
 import openAI, { gpt4 } from 'genkitx-openai';
 
 export const geminiModel = genkit({
-  plugins: [googleAI({ apiKey: process.env.GEMINI_API_KEY })],
+  plugins: [googleAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_KEY })],
   model: googleAI.model('gemini-2.0-flash'),
 });
 
