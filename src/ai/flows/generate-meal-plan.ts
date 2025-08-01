@@ -181,56 +181,103 @@ Generate the complete meal plan now.`,
 function transformAIOutputToWeekSchema(output: any): any {
   if (output && output.days && Array.isArray(output.days)) {
     return {
-      week: output.days.map((dayObj: any) => ({
-        day: dayObj.day_of_week || dayObj.day || '',
+      days: output.days.map((dayObj: any) => ({
+        day_of_week: dayObj.day_of_week || dayObj.day || '',
         meals: (dayObj.meals || []).map((meal: any) => ({
-          meal_type: meal.meal_name || meal.name || meal.meal_type || '',
-          name: meal.custom_name || meal.name || '',
-          ingredients: meal.ingredients || [],
-          total_calories: meal.total_calories,
-          total_protein: meal.total_protein,
-          total_carbs: meal.total_carbs,
-          total_fat: meal.total_fat,
+          meal_name: meal.meal_name || meal.meal_type || '',
+          custom_name: meal.custom_name || meal.name || '',
+          ingredients: (meal.ingredients || []).map((ingredient: any) => ({
+            name: ingredient.name || '',
+            quantity: ingredient.quantity || 0,
+            unit: ingredient.unit || 'g',
+            calories: ingredient.calories || 0,
+            protein: ingredient.protein || 0,
+            carbs: ingredient.carbs || 0,
+            fat: ingredient.fat || 0,
+          })),
+          total_calories: meal.total_calories || 0,
+          total_protein: meal.total_protein || 0,
+          total_carbs: meal.total_carbs || 0,
+          total_fat: meal.total_fat || 0,
         })),
-        daily_totals: dayObj.daily_totals || {
-          calories: dayObj.total_calories,
-          protein: dayObj.total_protein,
-          carbs: dayObj.total_carbs,
-          fat: dayObj.total_fat,
-        },
       })),
-      weekly_summary: output.weekly_summary || {},
+      weekly_summary: output.weekly_summary || {
+        total_calories: 0,
+        total_protein: 0,
+        total_carbs: 0,
+        total_fat: 0,
+      },
     };
   }
   return output;
 }
 
-// Normalize input data to ensure all meals have required 'name' field
+// Normalize input data to ensure all meals have required fields
 function normalizeInputData(input: any): any {
-  if (input && input.meal_data && input.meal_data.days && Array.isArray(input.meal_data.days)) {
-    const normalizedInput = JSON.parse(JSON.stringify(input)); // Deep clone
-    
-    normalizedInput.meal_data.days = normalizedInput.meal_data.days.map((day: any) => ({
-      ...day,
-      meals: (day.meals || []).map((meal: any) => ({
-        ...meal,
-        // Ensure 'name' field exists - use meal_name if name is missing
-        name: meal.name || meal.meal_name || 'Unnamed Meal',
-        // Remove meal_name to avoid confusion
-        meal_name: undefined,
-        // Ensure required fields have default values
-        custom_name: meal.custom_name || '',
-        ingredients: meal.ingredients || [],
-        total_calories: meal.total_calories || null,
-        total_protein: meal.total_protein || null,
-        total_carbs: meal.total_carbs || null,
-        total_fat: meal.total_fat || null,
-      }))
-    }));
-    
-    return normalizedInput;
+  const normalizedInput = JSON.parse(JSON.stringify(input)); // Deep clone
+  
+  // Ensure meal_data exists with proper structure
+  if (!normalizedInput.meal_data) {
+    normalizedInput.meal_data = { days: [] };
   }
-  return input;
+  
+  if (!normalizedInput.meal_data.days || !Array.isArray(normalizedInput.meal_data.days)) {
+    normalizedInput.meal_data.days = [];
+  }
+  
+  // Add default target macros if missing
+  if (!normalizedInput.meal_data.target_daily_calories) {
+    normalizedInput.meal_data.target_daily_calories = 2000;
+  }
+  if (!normalizedInput.meal_data.target_protein_g) {
+    normalizedInput.meal_data.target_protein_g = 150;
+  }
+  if (!normalizedInput.meal_data.target_carbs_g) {
+    normalizedInput.meal_data.target_carbs_g = 200;
+  }
+  if (!normalizedInput.meal_data.target_fat_g) {
+    normalizedInput.meal_data.target_fat_g = 70;
+  }
+  
+  // Normalize days array
+  normalizedInput.meal_data.days = normalizedInput.meal_data.days.map((day: any) => ({
+    day_of_week: day.day_of_week || day.day || 'Monday',
+    meals: (day.meals || []).map((meal: any) => ({
+      name: meal.name || meal.meal_name || 'Unnamed Meal',
+      custom_name: meal.custom_name || '',
+      ingredients: (meal.ingredients || []).map((ingredient: any) => ({
+        name: ingredient.name || '',
+        quantity: ingredient.quantity || 0,
+        unit: ingredient.unit || 'g',
+        calories: ingredient.calories || 0,
+        protein: ingredient.protein || 0,
+        carbs: ingredient.carbs || 0,
+        fat: ingredient.fat || 0,
+      })),
+      total_calories: meal.total_calories || 0,
+      total_protein: meal.total_protein || 0,
+      total_carbs: meal.total_carbs || 0,
+      total_fat: meal.total_fat || 0,
+    }))
+  }));
+  
+  // Ensure other required fields have defaults
+  normalizedInput.age = normalizedInput.age || 30;
+  normalizedInput.biological_sex = normalizedInput.biological_sex || 'male';
+  normalizedInput.height_cm = normalizedInput.height_cm || 175;
+  normalizedInput.current_weight_kg = normalizedInput.current_weight_kg || 70;
+  normalizedInput.physical_activity_level = normalizedInput.physical_activity_level || 'moderate';
+  normalizedInput.primary_diet_goal = normalizedInput.primary_diet_goal || 'maintain_weight';
+  normalizedInput.preferred_diet = normalizedInput.preferred_diet || 'balanced';
+  normalizedInput.allergies = normalizedInput.allergies || [];
+  normalizedInput.medical_conditions = normalizedInput.medical_conditions || [];
+  normalizedInput.preferred_cuisines = normalizedInput.preferred_cuisines || [];
+  normalizedInput.dispreferrred_cuisines = normalizedInput.dispreferrred_cuisines || [];
+  normalizedInput.preferred_ingredients = normalizedInput.preferred_ingredients || [];
+  normalizedInput.dispreferrred_ingredients = normalizedInput.dispreferrred_ingredients || [];
+  normalizedInput.preferred_micronutrients = normalizedInput.preferred_micronutrients || [];
+  
+  return normalizedInput;
 }
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
@@ -243,34 +290,41 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
     input: GeneratePersonalizedMealPlanInput
   ): Promise<GeneratePersonalizedMealPlanOutput> => {
     try {
+      console.log('Raw input received:', JSON.stringify(input, null, 2));
+      
       // Normalize input data to fix schema issues
       const normalizedInput = normalizeInputData(input);
+      console.log('Normalized input:', JSON.stringify(normalizedInput, null, 2));
       
       // Validate normalized input
       const inputValidationResult = GeneratePersonalizedMealPlanInputSchema.safeParse(normalizedInput);
       if (!inputValidationResult.success) {
-        console.error('Input validation error:', inputValidationResult.error.flatten());
+        console.error('Input validation error:', JSON.stringify(inputValidationResult.error.flatten(), null, 2));
+        console.error('Failed input data:', JSON.stringify(normalizedInput, null, 2));
         throw new Error(`Input data validation failed: ${inputValidationResult.error.message}`);
       }
 
+      console.log('Input validation successful, calling AI...');
       const { output } = await prompt(inputValidationResult.data);
       if (!output) throw new Error('AI did not return output.');
 
-      const validationResult =
-        GeneratePersonalizedMealPlanOutputSchema.safeParse(transformAIOutputToWeekSchema(output));
+      console.log('Raw AI output:', JSON.stringify(output, null, 2));
+      
+      const transformedOutput = transformAIOutputToWeekSchema(output);
+      console.log('Transformed output:', JSON.stringify(transformedOutput, null, 2));
+
+      const validationResult = GeneratePersonalizedMealPlanOutputSchema.safeParse(transformedOutput);
       if (!validationResult.success) {
-        console.error(
-          'AI output validation error:',
-          validationResult.error.flatten()
-        );
-        throw new Error(
-          `AI returned data in an unexpected format. Details: ${validationResult.error.message}`
-        );
+        console.error('AI output validation error:', JSON.stringify(validationResult.error.flatten(), null, 2));
+        console.error('Failed output data:', JSON.stringify(transformedOutput, null, 2));
+        throw new Error(`AI returned data in an unexpected format. Details: ${validationResult.error.message}`);
       }
 
+      console.log('Output validation successful');
       return validationResult.data;
     } catch (error: any) {
       console.error('Error in generatePersonalizedMealPlanFlow:', error);
+      console.error('Error stack:', error.stack);
       throw new Error(getAIApiErrorMessage(error));
     }
   }
