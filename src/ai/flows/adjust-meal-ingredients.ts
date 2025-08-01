@@ -1,4 +1,3 @@
-
 "use server";
 
 import { geminiModel } from "@/ai/genkit";
@@ -46,63 +45,9 @@ Target Protein: {{targetMacros.protein}}g
 Target Carbs: {{targetMacros.carbs}}g
 Target Fat: {{targetMacros.fat}}g
 
-**EXAMPLE INPUT:**
-```json
-{
-  "currentMeal": {
-    "name": "Lunch",
-    "ingredients": [
-      {"name": "Chicken Breast", "quantity": 100, "unit": "g", "calories": 165, "protein": 31, "carbs": 0, "fat": 3.6},
-      {"name": "Brown Rice", "quantity": 80, "unit": "g", "calories": 111, "protein": 2.6, "carbs": 23, "fat": 0.9}
-    ],
-    "total_calories": 276,
-    "total_protein": 33.6,
-    "total_carbs": 23,
-    "total_fat": 4.5
-  },
-  "targetMacros": {
-    "calories": 400,
-    "protein": 40,
-    "carbs": 35,
-    "fat": 8
-  }
-}
-```
-
-**EXAMPLE OUTPUT:**
-```json
-{
-  "adjustedMeal": {
-    "name": "Lunch",
-    "custom_name": "",
-    "ingredients": [
-      {
-        "name": "Chicken Breast",
-        "quantity": 120,
-        "unit": "g",
-        "calories": 165,
-        "protein": 31,
-        "carbs": 0,
-        "fat": 3.6
-      },
-      {
-        "name": "Brown Rice",
-        "quantity": 100,
-        "unit": "g",
-        "calories": 111,
-        "protein": 2.6,
-        "carbs": 23,
-        "fat": 0.9
-      }
-    ],
-    "total_calories": 409,
-    "total_protein": 39.8,
-    "total_carbs": 23,
-    "total_fat": 5.22
-  },
-  "explanation": "Increased chicken breast from 100g to 120g and rice from 80g to 100g to meet calorie and protein targets."
-}
-```
+**EXAMPLE:**
+Input meal "Lunch" with chicken breast 100g and brown rice 80g targeting 400 calories
+Output meal "Lunch" with chicken breast 120g and brown rice 100g reaching 409 calories
 
 **YOUR OUTPUT MUST:**
 1. Have "name" field with EXACT same value: "{{currentMeal.name}}"
@@ -110,6 +55,8 @@ Target Fat: {{targetMacros.fat}}g
 3. Have same ingredients with ONLY quantity changes
 4. Have accurate total nutritional calculations
 5. Include explanation of what quantities were changed
+
+**STRICT REQUIREMENT:** The meal name in your response MUST be exactly "{{currentMeal.name}}" - no changes allowed.
 
 **DIETARY RESTRICTIONS TO RESPECT:**
 {{#if userProfile.allergies}}
@@ -146,10 +93,10 @@ const adjustMealIngredientsFlow = geminiModel.defineFlow(
       }
 
       // Extra validation to ensure meal name is preserved
-      if (output.adjustedMeal.name !== input.originalMeal.name) {
-        console.error(`Meal name changed from "${input.originalMeal.name}" to "${output.adjustedMeal.name}"`);
+      if (output.adjustedMeal.name !== input.currentMeal.name) {
+        console.error(`Meal name changed from "${input.currentMeal.name}" to "${output.adjustedMeal.name}"`);
         // Force the correct meal name
-        output.adjustedMeal.name = input.originalMeal.name;
+        output.adjustedMeal.name = input.currentMeal.name;
       }
 
       return validationResult.data;
