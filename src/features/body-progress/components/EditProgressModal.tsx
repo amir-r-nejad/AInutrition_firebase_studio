@@ -223,10 +223,10 @@ function EditProgressModal({
             />
 
             <SubmitButton
-              loadingLabel='Adding...'
+              loadingLabel='Editing...'
               isLoading={form.formState.isSubmitting}
-              icon={<Plus className='h-4 w-4 mr-2' />}
-              label='Add Progress Entry'
+              icon={<Plus />}
+              label='Edit Progress Entry'
               className='w-full md:w-auto'
             />
           </form>

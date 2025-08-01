@@ -6,7 +6,7 @@ import EditProgressModal from './EditProgressModal';
 
 type EditProgressButtonProps = { entry: BodyProgressEntry; clientId?: string };
 
-function EditProgressButton({ entry }: EditProgressButtonProps) {
+function EditProgressButton({ entry, clientId }: EditProgressButtonProps) {
   const [open, setOpen] = useState<string | null>(null);
 
   return (
@@ -17,6 +17,7 @@ function EditProgressButton({ entry }: EditProgressButtonProps) {
       </Button>
 
       <EditProgressModal
+        clientId={clientId}
         progress={entry}
         isOpen={open === entry.id}
         onClose={() => setOpen(null)}

@@ -231,7 +231,7 @@ export function WeeklyEntryForm({ entries, clientId }: WeeklyEntryFormProps) {
             <SubmitButton
               loadingLabel='Adding...'
               isLoading={form.formState.isSubmitting}
-              icon={<Plus className='h-4 w-4 mr-2' />}
+              icon={<Plus />}
               label='Add Progress Entry'
               className='w-full md:w-auto'
             />
