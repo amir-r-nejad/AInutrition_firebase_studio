@@ -15,19 +15,6 @@ externalPort = 3001
 runButton = "Development Server"
 
 [[workflows.workflow]]
-name = "workflow"
-mode = "sequential"
-author = 45855460
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm install"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-
-[[workflows.workflow]]
 name = "Development Server"
 author = 45855460
 mode = "sequential"
