@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { BodyProgressEntry } from '../types';
 import { EntryFormValues } from '../types/schema';
 
-export async function getUserProgress(userId?: string) {
+export async function getUserBodyProgress(userId?: string) {
   const supabase = await createClient();
 
   try {
@@ -15,7 +15,7 @@ export async function getUserProgress(userId?: string) {
     if (!targetUserId) throw new Error('Auth Error');
 
     const { data: progress, error } = await supabase
-      .from('progress')
+      .from('body_progress')
       .select('*')
       .eq('user_id', targetUserId);
 
@@ -27,7 +27,7 @@ export async function getUserProgress(userId?: string) {
   }
 }
 
-export async function saveUserProgress(
+export async function saveUserBodyProgress(
   progressToSave: EntryFormValues,
   userId?: string
 ) {
@@ -39,7 +39,7 @@ export async function saveUserProgress(
     if (!targetUserId) throw new Error('Auth Error');
 
     const { error } = await supabase
-      .from('progress')
+      .from('body_progress')
       .insert({ user_id: targetUserId, ...progressToSave })
       .single();
 
@@ -51,7 +51,7 @@ export async function saveUserProgress(
   }
 }
 
-export async function updateUserProgress(
+export async function updateUserBodyProgress(
   progressToUpdate: EntryFormValues,
   userId?: string
 ) {
@@ -65,7 +65,7 @@ export async function updateUserProgress(
     const { date, ...dataToUpdate } = progressToUpdate;
 
     const { error } = await supabase
-      .from('progress')
+      .from('body_progress')
       .update({ ...dataToUpdate })
       .eq('user_id', targetUserId)
       .eq('date', date)
@@ -79,7 +79,7 @@ export async function updateUserProgress(
   }
 }
 
-export async function deleteUserProgress(
+export async function deleteUserBodyProgress(
   progressToDelete: BodyProgressEntry,
   userId?: string
 ) {
@@ -92,7 +92,7 @@ export async function deleteUserProgress(
 
     const { date, id } = progressToDelete;
     const { error } = await supabase
-      .from('progress')
+      .from('body_progress')
       .delete()
       .eq('user_id', targetUserId)
       .eq('date', date)

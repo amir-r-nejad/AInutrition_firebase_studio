@@ -6,9 +6,9 @@ import { checkCoachAccess } from '@/lib/utils/access-control';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
-interface CoachClientProfilePageProps {
+type CoachClientProfilePageProps = {
   params: Promise<{ clientId: string }>;
-}
+};
 
 export default async function CoachClientProfilePage({
   params,

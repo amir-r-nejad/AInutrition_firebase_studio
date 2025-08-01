@@ -58,7 +58,7 @@ export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
     }));
 
   const monthLabel =
-    selectedMonth === 'selectedMonth'
+    selectedMonth === 'all_months'
       ? 'All months status'
       : selectedMonth
       ? new Date(

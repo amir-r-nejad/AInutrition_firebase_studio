@@ -4,17 +4,22 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Trash2 } from 'lucide-react';
 import { useTransition } from 'react';
-import { deleteUserProgress } from '../lib/progress-service';
 import { BodyProgressEntry } from '../types';
 import Spinner from '@/components/ui/Spinner';
+import { deleteUserBodyProgress } from '../lib/body-progress-service';
 
-function DeleteProgressButton({ entry }: { entry: BodyProgressEntry }) {
+type DeleteProgressButtonProps = {
+  entry: BodyProgressEntry;
+  clientId?: string;
+};
+
+function DeleteProgressButton({ entry, clientId }: DeleteProgressButtonProps) {
   const [isDeleting, startDeleting] = useTransition();
 
   async function handleDelete(entry: BodyProgressEntry) {
     startDeleting(async () => {
       try {
-        await deleteUserProgress(entry);
+        await deleteUserBodyProgress(entry, clientId);
         toast({
           title: 'Entry Deleted',
           description: 'Your progress entry has been successfully removed.',

@@ -1,11 +1,11 @@
 import { Card, CardContent } from '@/components/ui/card';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import SectionHeader from '@/components/ui/SectionHeader';
-import { ProgressTrackingSection } from '@/features/progress/components/ProgressTrackingSection';
+import { ProgressTrackingSection } from '@/features/body-progress/components/ProgressTrackingSection';
 import { TrendingUp } from 'lucide-react';
 import { Suspense } from 'react';
 
-export default function ProgressPage({
+export default function BodyProgressPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;

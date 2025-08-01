@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { BodyProgressEntry } from '../types';
 import EditProgressModal from './EditProgressModal';
 
-function EditProgressButton({ entry }: { entry: BodyProgressEntry }) {
+type EditProgressButtonProps = { entry: BodyProgressEntry; clientId?: string };
+
+function EditProgressButton({ entry }: EditProgressButtonProps) {
   const [open, setOpen] = useState<string | null>(null);
 
   return (

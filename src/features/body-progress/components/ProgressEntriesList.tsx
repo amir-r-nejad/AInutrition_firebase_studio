@@ -8,15 +8,18 @@ import { Activity, Calendar, FileText, Ruler, Scale } from 'lucide-react';
 import { BodyProgressEntry } from '../types';
 import DeleteProgressButton from './DeleteProgressButton';
 import EditProgressButton from './EditProgressButton';
+import EmptyProgressEntryCard from './EmptyProgressEntryCard';
 
 interface ProgressEntriesListProps {
   entries: BodyProgressEntry[];
   selectedMonth: string;
+  clientId?: string;
 }
 
 export function ProgressEntriesList({
   entries,
   selectedMonth,
+  clientId,
 }: ProgressEntriesListProps) {
   const monthLabel =
     selectedMonth === 'all_months'
@@ -26,27 +29,8 @@ export function ProgressEntriesList({
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  if (entries.length === 0) {
-    return (
-      <Card className='shadow-lg'>
-        <CardHeader>
-          <CardTitle className='text-xl flex items-center gap-2 text-primary'>
-            <FileText className='h-5 w-5' />
-            Progress Entries - {monthLabel}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className='flex items-center justify-center h-32 text-muted-foreground'>
-            <div className='text-center'>
-              <FileText className='h-8 w-8 mx-auto mb-2 opacity-50' />
-              <p>No entries recorded for {monthLabel}</p>
-              <p className='text-sm'>Add your first measurement above!</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  if (entries.length === 0)
+    return <EmptyProgressEntryCard monthLabel={monthLabel} />;
 
   return (
     <Card className='shadow-lg'>
@@ -82,8 +66,11 @@ export function ProgressEntriesList({
                       </div>
 
                       <div className='flex items-center gap-1'>
-                        <EditProgressButton entry={entry} />
-                        <DeleteProgressButton entry={entry} />
+                        <EditProgressButton entry={entry} clientId={clientId} />
+                        <DeleteProgressButton
+                          entry={entry}
+                          clientId={clientId}
+                        />
                       </div>
                     </div>
 
