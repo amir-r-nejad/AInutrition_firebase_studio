@@ -1,3 +1,4 @@
+
 "use server";
 
 import { geminiModel } from "@/ai/genkit";
@@ -20,10 +21,19 @@ const geminiPrompt = geminiModel.definePrompt({
   input: { schema: AdjustMealIngredientsInputSchema },
   output: { schema: AdjustMealIngredientsOutputSchema },
 
-  prompt: `You are an expert nutritionist. Your task is to adjust ONLY the quantities of existing ingredients in a meal to better meet the target macros. DO NOT add new ingredients, remove ingredients, or substitute ingredients.
+  prompt: `You are an expert nutritionist. Your task is to adjust ONLY the quantities of existing ingredients in a meal to better meet the target macros. 
+
+**CRITICAL RULES - MUST FOLLOW EXACTLY:**
+1. ✅ KEEP the meal name EXACTLY as provided: "{{currentMeal.name}}"
+2. ✅ KEEP all ingredient names EXACTLY as provided
+3. ✅ ONLY change the quantity numbers
+4. ❌ DO NOT add new ingredients
+5. ❌ DO NOT remove ingredients
+6. ❌ DO NOT change ingredient names
+7. ❌ DO NOT change the meal name
 
 **INPUT DATA:**
-Current Meal: {{currentMeal.name}}
+Current Meal Name: {{currentMeal.name}}
 Current Ingredients: {{#each currentMeal.ingredients}}
 - {{name}}: {{quantity}}{{unit}} ({{calories}} cal, {{protein}}g protein, {{carbs}}g carbs, {{fat}}g fat)
 {{/each}}
@@ -36,6 +46,71 @@ Target Protein: {{targetMacros.protein}}g
 Target Carbs: {{targetMacros.carbs}}g
 Target Fat: {{targetMacros.fat}}g
 
+**EXAMPLE INPUT:**
+```json
+{
+  "currentMeal": {
+    "name": "Lunch",
+    "ingredients": [
+      {"name": "Chicken Breast", "quantity": 100, "unit": "g", "calories": 165, "protein": 31, "carbs": 0, "fat": 3.6},
+      {"name": "Brown Rice", "quantity": 80, "unit": "g", "calories": 111, "protein": 2.6, "carbs": 23, "fat": 0.9}
+    ],
+    "total_calories": 276,
+    "total_protein": 33.6,
+    "total_carbs": 23,
+    "total_fat": 4.5
+  },
+  "targetMacros": {
+    "calories": 400,
+    "protein": 40,
+    "carbs": 35,
+    "fat": 8
+  }
+}
+```
+
+**EXAMPLE OUTPUT:**
+```json
+{
+  "adjustedMeal": {
+    "name": "Lunch",
+    "custom_name": "",
+    "ingredients": [
+      {
+        "name": "Chicken Breast",
+        "quantity": 120,
+        "unit": "g",
+        "calories": 165,
+        "protein": 31,
+        "carbs": 0,
+        "fat": 3.6
+      },
+      {
+        "name": "Brown Rice",
+        "quantity": 100,
+        "unit": "g",
+        "calories": 111,
+        "protein": 2.6,
+        "carbs": 23,
+        "fat": 0.9
+      }
+    ],
+    "total_calories": 409,
+    "total_protein": 39.8,
+    "total_carbs": 23,
+    "total_fat": 5.22
+  },
+  "explanation": "Increased chicken breast from 100g to 120g and rice from 80g to 100g to meet calorie and protein targets."
+}
+```
+
+**YOUR OUTPUT MUST:**
+1. Have "name" field with EXACT same value: "{{currentMeal.name}}"
+2. Have "custom_name" field (can be empty string "")
+3. Have same ingredients with ONLY quantity changes
+4. Have accurate total nutritional calculations
+5. Include explanation of what quantities were changed
+
 **DIETARY RESTRICTIONS TO RESPECT:**
 {{#if userProfile.allergies}}
 Allergies: {{#each userProfile.allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
@@ -44,29 +119,7 @@ Allergies: {{#each userProfile.allergies}}{{this}}{{#unless @last}}, {{/unless}}
 Diet Preference: {{userProfile.preferred_diet}}
 {{/if}}
 
-**CRITICAL RULES:**
-1. ONLY adjust the quantities of the existing ingredients
-2. DO NOT add any new ingredients
-3. DO NOT remove any existing ingredients  
-4. DO NOT substitute or replace ingredients
-5. Keep the same meal name: {{currentMeal.name}}
-6. Maintain the same ingredient names exactly as provided
-7. Only change the quantity values to get closer to target macros
-
-**INSTRUCTIONS:**
-1. Calculate the optimal quantities for each existing ingredient to meet target macros
-2. Use proportional scaling to adjust quantities while maintaining ingredient ratios when possible
-3. Ensure all nutritional calculations are accurate per 100g of each ingredient
-4. Provide a clear explanation of quantity changes made
-
-**OUTPUT REQUIREMENTS:**
-- Return the same meal with same name and same ingredients
-- Only the quantities should be different
-- Each ingredient must have accurate nutritional data per 100g
-- Calculate precise total nutritional values based on new quantities
-- Explain which quantities were changed and why
-
-Return only valid JSON matching the required schema.`,
+Return only valid JSON matching the required schema. The meal name MUST be "{{currentMeal.name}}" in your response.`,
 });
 
 const adjustMealIngredientsFlow = geminiModel.defineFlow(
@@ -90,6 +143,13 @@ const adjustMealIngredientsFlow = geminiModel.defineFlow(
         throw new Error(
           `AI returned data in an unexpected format. Details: ${validationResult.error.message}`,
         );
+      }
+
+      // Extra validation to ensure meal name is preserved
+      if (output.adjustedMeal.name !== input.originalMeal.name) {
+        console.error(`Meal name changed from "${input.originalMeal.name}" to "${output.adjustedMeal.name}"`);
+        // Force the correct meal name
+        output.adjustedMeal.name = input.originalMeal.name;
       }
 
       return validationResult.data;
