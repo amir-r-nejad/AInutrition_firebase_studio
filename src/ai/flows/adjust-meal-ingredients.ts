@@ -1,6 +1,6 @@
 'use server';
 
-import { openaiModel } from '@/ai/genkit';
+import { geminiModel } from '@/ai/genkit';
 
 import {
   AdjustMealIngredientsInputSchema,
@@ -14,6 +14,51 @@ export async function adjustMealIngredients(
 ): Promise<AdjustMealIngredientsOutput> {
   return adjustMealIngredientsFlow(input);
 }
+
+const prompt = geminiModel.definePrompt({
+  name: 'adjustMealIngredientsPrompt',
+  input: { schema: AdjustMealIngredientsInputSchema },
+  output: { schema: AdjustMealIngredientsOutputSchema },
+
+  prompt: `You are an expert nutritionist and meal planning assistant. Your task is to adjust a meal's ingredients based on user preferences while maintaining nutritional accuracy and meal integrity.
+
+**INPUT DATA:**
+Current Meal: {{currentMeal.name}}
+Current Ingredients: {{#each currentMeal.ingredients}}
+- {{name}}: {{quantity}}{{unit}} ({{calories}} cal, {{protein}}g protein, {{carbs}}g carbs, {{fat}}g fat)
+{{/each}}
+
+Current Totals: {{currentMeal.total_calories}} cal, {{currentMeal.total_protein}}g protein, {{currentMeal.total_carbs}}g carbs, {{currentMeal.total_fat}}g fat
+
+**ADJUSTMENT REQUEST:**
+{{adjustmentRequest}}
+
+**DIETARY RESTRICTIONS TO RESPECT:**
+{{#if dietaryRestrictions}}
+{{#each dietaryRestrictions}}
+- {{this}}
+{{/each}}
+{{else}}
+- None specified
+{{/if}}
+
+**INSTRUCTIONS:**
+1. Analyze the current meal and the requested adjustment
+2. Make intelligent ingredient substitutions, quantity adjustments, or additions
+3. Maintain the meal's character and appeal
+4. Respect all dietary restrictions
+5. Provide accurate nutritional calculations
+6. Explain your reasoning clearly
+
+**OUTPUT REQUIREMENTS:**
+- Return a complete adjusted meal with all ingredients
+- Each ingredient must have accurate nutritional data per 100g
+- Calculate precise quantities and total nutritional values
+- Provide a clear explanation of changes made
+- Ensure the meal remains balanced and appealing
+
+Return only valid JSON matching the required schema.`,
+});
 
 const prompt = openaiModel.definePrompt({
   name: 'adjustMealIngredientsPrompt',
@@ -74,7 +119,7 @@ Begin JSON response now.
 `,
 });
 
-const adjustMealIngredientsFlow = openaiModel.defineFlow(
+const adjustMealIngredientsFlow = geminiModel.defineFlow(
   {
     name: 'adjustMealIngredientsFlow',
     inputSchema: AdjustMealIngredientsInputSchema,

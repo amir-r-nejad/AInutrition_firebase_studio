@@ -1,6 +1,6 @@
 'use server';
 
-import { openaiModel } from '@/ai/genkit';
+import { geminiModel } from '@/ai/genkit';
 import {
   GeneratePersonalizedMealPlanInputSchema,
   GeneratePersonalizedMealPlanOutputSchema,
@@ -15,7 +15,7 @@ export async function generatePersonalizedMealPlan(
   return generatePersonalizedMealPlanFlow(input);
 }
 
-const prompt = openaiModel.definePrompt({
+const prompt = geminiModel.definePrompt({
   name: 'generatePersonalizedMealPlanPrompt',
   input: { schema: GeneratePersonalizedMealPlanInputSchema },
   output: { schema: GeneratePersonalizedMealPlanOutputSchema },
@@ -205,7 +205,7 @@ function transformAIOutputToWeekSchema(output: any): any {
   return output;
 }
 
-const generatePersonalizedMealPlanFlow = openaiModel.defineFlow(
+const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
     inputSchema: GeneratePersonalizedMealPlanInputSchema,
