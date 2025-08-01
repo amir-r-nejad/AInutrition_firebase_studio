@@ -102,7 +102,15 @@ const adjustMealIngredientsFlow = geminiModel.defineFlow(
       return validationResult.data;
     } catch (error: any) {
       console.error("Error in adjustMealIngredientsFlow:", error);
-      throw new Error(error);
+      
+      // Handle different error types properly
+      if (error instanceof Error) {
+        throw error;
+      } else if (typeof error === 'string') {
+        throw new Error(error);
+      } else {
+        throw new Error('An unexpected error occurred in meal ingredients adjustment');
+      }
     }
   },
 );
