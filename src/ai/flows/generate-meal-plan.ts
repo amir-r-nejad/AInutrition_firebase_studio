@@ -184,7 +184,7 @@ function transformAIOutputToWeekSchema(output: any): any {
       week: output.days.map((dayObj: any) => ({
         day: dayObj.day_of_week || dayObj.day || '',
         meals: (dayObj.meals || []).map((meal: any) => ({
-          meal_type: meal.meal_name || meal.meal_type || '',
+          meal_type: meal.meal_name || meal.name || meal.meal_type || '',
           name: meal.custom_name || meal.name || '',
           ingredients: meal.ingredients || [],
           total_calories: meal.total_calories,
@@ -205,6 +205,34 @@ function transformAIOutputToWeekSchema(output: any): any {
   return output;
 }
 
+// Normalize input data to ensure all meals have required 'name' field
+function normalizeInputData(input: any): any {
+  if (input && input.meal_data && input.meal_data.days && Array.isArray(input.meal_data.days)) {
+    const normalizedInput = JSON.parse(JSON.stringify(input)); // Deep clone
+    
+    normalizedInput.meal_data.days = normalizedInput.meal_data.days.map((day: any) => ({
+      ...day,
+      meals: (day.meals || []).map((meal: any) => ({
+        ...meal,
+        // Ensure 'name' field exists - use meal_name if name is missing
+        name: meal.name || meal.meal_name || 'Unnamed Meal',
+        // Remove meal_name to avoid confusion
+        meal_name: undefined,
+        // Ensure required fields have default values
+        custom_name: meal.custom_name || '',
+        ingredients: meal.ingredients || [],
+        total_calories: meal.total_calories || null,
+        total_protein: meal.total_protein || null,
+        total_carbs: meal.total_carbs || null,
+        total_fat: meal.total_fat || null,
+      }))
+    }));
+    
+    return normalizedInput;
+  }
+  return input;
+}
+
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
   {
     name: 'generatePersonalizedMealPlanFlow',
@@ -215,7 +243,17 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
     input: GeneratePersonalizedMealPlanInput
   ): Promise<GeneratePersonalizedMealPlanOutput> => {
     try {
-      const { output } = await prompt(input);
+      // Normalize input data to fix schema issues
+      const normalizedInput = normalizeInputData(input);
+      
+      // Validate normalized input
+      const inputValidationResult = GeneratePersonalizedMealPlanInputSchema.safeParse(normalizedInput);
+      if (!inputValidationResult.success) {
+        console.error('Input validation error:', inputValidationResult.error.flatten());
+        throw new Error(`Input data validation failed: ${inputValidationResult.error.message}`);
+      }
+
+      const { output } = await prompt(inputValidationResult.data);
       if (!output) throw new Error('AI did not return output.');
 
       const validationResult =
