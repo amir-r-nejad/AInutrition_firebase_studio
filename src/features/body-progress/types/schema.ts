@@ -9,11 +9,13 @@ export const entryFormSchema = z.object({
   bf_percentage: z.coerce
     .number()
     .min(0, 'Body fat percentage must be at least 0%')
-    .max(100, 'Body fat percentage must be less than 100%'),
+    .max(100, 'Body fat percentage must be less than 100%')
+    .optional(),
   waist_cm: z.coerce
     .number()
     .min(30, 'Waist measurement must be at least 30cm')
-    .max(200, 'Waist measurement must be less than 200cm'),
+    .max(200, 'Waist measurement must be less than 200cm')
+    .optional(),
   notes: z.string().optional(),
 });
 

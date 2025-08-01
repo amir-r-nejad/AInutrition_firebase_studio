@@ -29,6 +29,7 @@ export function MonthSelector({ months }: MonthSelectorProps) {
           <SelectValue placeholder='Select month' />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value={'all_months'}>All months</SelectItem>
           {months.map((month) => (
             <SelectItem key={month.value} value={month.value}>
               {month.label}

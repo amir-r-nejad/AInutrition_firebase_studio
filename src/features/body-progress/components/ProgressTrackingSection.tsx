@@ -1,5 +1,5 @@
-import { getAvailableMonths, getEntriesForMonth } from '../lib/mockData';
-import { getUserProgress } from '../lib/progress-service';
+import { getUserBodyProgress } from '../lib/body-progress-service';
+import { getAvailableMonths, getEntriesForMonth } from '../lib/utils';
 import { MonthSelector } from './MonthSelector';
 import { ProgressChart } from './ProgressChart';
 import { ProgressEntriesList } from './ProgressEntriesList';
@@ -7,17 +7,19 @@ import { WeeklyEntryForm } from './WeeklyEntryForm';
 
 type ProgressTrackingParams = {
   searchParams: Promise<{ [key: string]: string | undefined }>;
+  clientId?: string;
 };
 
 export async function ProgressTrackingSection({
   searchParams,
+  clientId,
 }: ProgressTrackingParams) {
-  const progress = await getUserProgress();
+  const progress = await getUserBodyProgress(clientId);
 
   const availableMonths = getAvailableMonths(progress);
 
   const params = await searchParams;
-  const selectedMonth = params?.selected_month || '2025-1';
+  const selectedMonth = params?.selected_month || 'all_months';
 
   const selectedMonthData = selectedMonth
     ? availableMonths.find((m) => m.value === selectedMonth)
@@ -25,7 +27,7 @@ export async function ProgressTrackingSection({
 
   const entries = selectedMonthData
     ? getEntriesForMonth({ progress, ...selectedMonthData })
-    : [];
+    : progress;
 
   return (
     <div className='space-y-6'>
@@ -38,7 +40,7 @@ export async function ProgressTrackingSection({
       <ProgressChart entries={entries} selectedMonth={selectedMonth} />
 
       {/* Weekly Entry Form */}
-      <WeeklyEntryForm entries={progress} />
+      <WeeklyEntryForm entries={progress} clientId={clientId} />
 
       {/* Progress Entries List */}
       <ProgressEntriesList entries={entries} selectedMonth={selectedMonth} />

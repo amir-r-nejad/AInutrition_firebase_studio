@@ -57,7 +57,7 @@ const navItems = [
   { href: '/meal-plan/optimized', label: 'AI Meal Plan', icon: Bot },
   { section: 'Progress Tracking' },
   {
-    href: '/progress',
+    href: '/body-progress',
     label: 'Body Progress',
     icon: TrendingUp,
   },

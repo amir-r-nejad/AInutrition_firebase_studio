@@ -1,6 +1,12 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -14,67 +20,67 @@ import SubmitButton from '@/components/ui/SubmitButton';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Activity, Calendar, FileText, Plus, Ruler, Scale } from 'lucide-react';
-import 'react-datepicker/dist/react-datepicker.css';
+import { Plus } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { saveUserProgress } from '../lib/progress-service';
-import { entryFormSchema, EntryFormValues } from '../types/schema';
-
 import { BodyProgressEntry } from '../types';
-import CustomDatePicker from '@/components/ui/CustomDatePicker';
+import { entryFormSchema, EntryFormValues } from '../types/schema';
+import { updateUserBodyProgress } from '../lib/body-progress-service';
 
-export function WeeklyEntryForm({ entries }: { entries: BodyProgressEntry[] }) {
+type EditProgressModalProps = {
+  onClose: () => void;
+  isOpen: boolean;
+  progress: BodyProgressEntry;
+  clientId?: string;
+};
+
+function EditProgressModal({
+  progress,
+  onClose,
+  isOpen,
+  clientId,
+}: EditProgressModalProps) {
   const form = useForm<EntryFormValues>({
     resolver: zodResolver(entryFormSchema),
-    defaultValues: {
-      date: new Date().toISOString().split('T')[0],
-      weight_kg: undefined,
-      bf_percentage: undefined,
-      waist_cm: undefined,
-      notes: '',
-    },
+    defaultValues: progress,
   });
 
-  const disabledDates = entries.map((ent) => new Date(ent.date));
+  function handleClose() {
+    form.reset();
+    onClose();
+  }
 
   async function onSubmit(data: EntryFormValues) {
     try {
-      await saveUserProgress(data);
+      await updateUserBodyProgress(data, clientId);
       toast({
-        title: 'Progress Entry Added!',
-        description: `Weight: ${data.weight_kg}kg, Body Fat: ${data.bf_percentage}%, Waist: ${data.waist_cm}cm`,
+        title: 'Progress Updated',
+        description: 'Your progress has been successfully saved.',
       });
-
-      form.reset({
-        date: new Date().toISOString().split('T')[0],
-        weight_kg: undefined,
-        bf_percentage: undefined,
-        waist_cm: undefined,
-        notes: '',
-      });
-    } catch (error) {
+      onClose();
+    } catch (error: any) {
       toast({
-        variant: 'destructive',
-        title: 'Uh oh! Something went wrong.',
+        title: 'Unexpected Error',
         description:
-          error instanceof Error
-            ? error.message
-            : 'Failed to save progress. Try again later.',
+          error?.message || 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
       });
     }
   }
 
   return (
-    <Form {...form}>
-      <Card>
-        <CardHeader>
-          <CardTitle className='text-xl flex items-center gap-2'>
-            <Plus className='h-5 w-5' />
-            Add Weekly Progress Entry
-          </CardTitle>
-        </CardHeader>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className='sm:max-w-md'>
+        <DialogHeader>
+          <DialogTitle className='text-xl font-semibold'>
+            Send Coaching Request
+          </DialogTitle>
+          <DialogDescription>
+            Send a personalized coaching request to a potential client via
+            email.
+          </DialogDescription>
+        </DialogHeader>
 
-        <CardContent>
+        <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <FormField
@@ -83,18 +89,15 @@ export function WeeklyEntryForm({ entries }: { entries: BodyProgressEntry[] }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className='flex items-center gap-2'>
-                      <Calendar className='h-4 w-4' />
                       Date
                     </FormLabel>
                     <FormControl>
-                      <CustomDatePicker
-                        {...field}
-                        maxDate={new Date()}
-                        selected={new Date(field.value)}
-                        excludeDates={disabledDates}
-                        onChange={(date) => {
-                          field.onChange(date?.toISOString().slice(0, 10));
-                        }}
+                      <Input
+                        readOnly
+                        disabled
+                        value={field.value}
+                        type='date'
+                        className='cursor-pointer'
                       />
                     </FormControl>
                     <FormMessage />
@@ -108,7 +111,6 @@ export function WeeklyEntryForm({ entries }: { entries: BodyProgressEntry[] }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className='flex items-center gap-2'>
-                      <Scale className='h-4 w-4' />
                       Weight (kg)
                     </FormLabel>
                     <FormControl>
@@ -141,7 +143,6 @@ export function WeeklyEntryForm({ entries }: { entries: BodyProgressEntry[] }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className='flex items-center gap-2'>
-                      <Activity className='h-4 w-4' />
                       Body Fat (%)
                     </FormLabel>
                     <FormControl>
@@ -174,7 +175,6 @@ export function WeeklyEntryForm({ entries }: { entries: BodyProgressEntry[] }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className='flex items-center gap-2'>
-                      <Ruler className='h-4 w-4' />
                       Waist (cm)
                     </FormLabel>
                     <FormControl>
@@ -208,7 +208,6 @@ export function WeeklyEntryForm({ entries }: { entries: BodyProgressEntry[] }) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className='flex items-center gap-2'>
-                    <FileText className='h-4 w-4' />
                     Notes (Optional)
                   </FormLabel>
                   <FormControl>
@@ -231,8 +230,10 @@ export function WeeklyEntryForm({ entries }: { entries: BodyProgressEntry[] }) {
               className='w-full md:w-auto'
             />
           </form>
-        </CardContent>
-      </Card>
-    </Form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+export default EditProgressModal;
