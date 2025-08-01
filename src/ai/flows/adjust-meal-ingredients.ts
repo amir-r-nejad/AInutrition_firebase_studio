@@ -15,7 +15,7 @@ export async function adjustMealIngredients(
   return adjustMealIngredientsFlow(input);
 }
 
-const prompt = geminiModel.definePrompt({
+const geminiPrompt = geminiModel.definePrompt({
   name: "adjustMealIngredientsPrompt",
   input: { schema: AdjustMealIngredientsInputSchema },
   output: { schema: AdjustMealIngredientsOutputSchema },
@@ -70,7 +70,7 @@ const adjustMealIngredientsFlow = geminiModel.defineFlow(
     input: AdjustMealIngredientsInput,
   ): Promise<AdjustMealIngredientsOutput> => {
     try {
-      const { output } = await prompt(input);
+      const { output } = await geminiPrompt(input);
 
       if (!output)
         throw new Error("AI did not return an output for meal adjustment.");
