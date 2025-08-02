@@ -1,0 +1,256 @@
+GenkitError: INVALID_ARGUMENT: Schema validation failed. Parse Errors:
+
+- preferred_diet: must be equal to one of the allowed values
+
+Provided data:
+
+{
+  "meal_data": {
+    "target_daily_calories": 2332,
+    "target_protein_g": 204.05,
+    "target_carbs_g": 204.05,
+    "target_fat_g": 77.7333333333333
+  },
+  "meal_distributions": [
+    {
+      "mealName": "Breakfast",
+      "calories_pct": 22.5
+    },
+    {
+      "mealName": "Morning Snack",
+      "calories_pct": 10
+    },
+    {
+      "mealName": "Lunch",
+      "calories_pct": 22.5
+    },
+    {
+      "mealName": "Afternoon Snack",
+      "calories_pct": 10
+    },
+    {
+      "mealName": "Dinner",
+      "calories_pct": 20
+    },
+    {
+      "mealName": "Evening Snack",
+      "calories_pct": 15
+    }
+  ],
+  "preferred_diet": "fat_loss",
+  "allergies": [],
+  "dispreferrred_ingredients": [],
+  "preferred_ingredients": [],
+  "medical_conditions": [
+    "Diabetes"
+  ]
+}
+
+Required JSON schema:
+
+{
+  "type": "object",
+  "properties": {
+    "age": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120,
+      "default": 30
+    },
+    "biological_sex": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "other"
+      ],
+      "default": "other"
+    },
+    "height_cm": {
+      "type": "number",
+      "minimum": 50,
+      "maximum": 300,
+      "default": 170
+    },
+    "current_weight_kg": {
+      "type": "number",
+      "minimum": 20,
+      "maximum": 500,
+      "default": 70
+    },
+    "target_weight_kg": {
+      "type": "number",
+      "minimum": 20,
+      "maximum": 500,
+      "default": 70
+    },
+    "physical_activity_level": {
+      "type": "string",
+      "enum": [
+        "sedentary",
+        "light",
+        "moderate",
+        "active",
+        "extra_active"
+      ],
+      "default": "moderate"
+    },
+    "primary_diet_goal": {
+      "type": "string",
+      "enum": [
+        "fat_loss",
+        "muscle_gain",
+        "recomp"
+      ],
+      "default": "fat_loss"
+    },
+    "preferred_diet": {
+      "type": "string",
+      "enum": [
+        "Standard",
+        "Vegetarian",
+        "Vegan",
+        "Keto"
+      ],
+      "default": "Standard"
+    },
+    "allergies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "dispreferrred_ingredients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "preferred_ingredients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "medical_conditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "meal_data": {
+      "type": "object",
+      "properties": {
+        "target_daily_calories": {
+          "type": "number",
+          "minimum": 100,
+          "default": 1200
+        },
+        "target_protein_g": {
+          "type": "number",
+          "minimum": 0,
+          "default": 90
+        },
+        "target_carbs_g": {
+          "type": "number",
+          "minimum": 0,
+          "default": 150
+        },
+        "target_fat_g": {
+          "type": "number",
+          "minimum": 0,
+          "default": 40
+        }
+      },
+      "additionalProperties": true,
+      "default": {
+        "target_daily_calories": 1200,
+        "target_protein_g": 90,
+        "target_carbs_g": 150,
+        "target_fat_g": 40
+      }
+    },
+    "meal_distributions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "mealName": {
+            "type": "string",
+            "enum": [
+              "Breakfast",
+              "Morning Snack",
+              "Lunch",
+              "Afternoon Snack",
+              "Dinner",
+              "Evening Snack"
+            ]
+          },
+          "calories_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "protein_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "carbs_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "fat_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "mealName",
+          "calories_pct"
+        ],
+        "additionalProperties": true
+      },
+      "minItems": 6,
+      "maxItems": 6,
+      "default": [
+        {
+          "mealName": "Breakfast",
+          "calories_pct": 25
+        },
+        {
+          "mealName": "Morning Snack",
+          "calories_pct": 10
+        },
+        {
+          "mealName": "Lunch",
+          "calories_pct": 30
+        },
+        {
+          "mealName": "Afternoon Snack",
+          "calories_pct": 10
+        },
+        {
+          "mealName": "Dinner",
+          "calories_pct": 20
+        },
+        {
+          "mealName": "Evening Snack",
+          "calories_pct": 5
+        }
+      ]
+    }
+  },
+  "additionalProperties": true,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
+    at resolveErrorDev (https://4019a45e-7702-41e8-9735-4cd011d4f881-00-2zig2afe5u28c.janeway.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:17582:48)
+    at processFullStringRow (https://4019a45e-7702-41e8-9735-4cd011d4f881-00-2zig2afe5u28c.janeway.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:17798:23)
+    at processFullBinaryRow (https://4019a45e-7702-41e8-9735-4cd011d4f881-00-2zig2afe5u28c.janeway.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:17786:9)
+    at progress (https://4019a45e-7702-41e8-9735-4cd011d4f881-00-2zig2afe5u28c.janeway.replit.dev/_next/static/chunks/node_modules_next_dist_compiled_2ce9398a._.js:17932:102)

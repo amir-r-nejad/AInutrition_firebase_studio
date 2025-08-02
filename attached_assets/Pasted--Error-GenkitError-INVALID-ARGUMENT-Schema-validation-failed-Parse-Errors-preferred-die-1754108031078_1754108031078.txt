@@ -1,0 +1,511 @@
+⨯ [Error [GenkitError]: INVALID_ARGUMENT: Schema validation failed. Parse Errors:
+
+- preferred_diet: must be equal to one of the allowed values
+
+Provided data:
+
+{
+  "meal_data": {
+    "target_daily_calories": 2332,
+    "target_protein_g": 204.05,
+    "target_carbs_g": 204.05,
+    "target_fat_g": 77.7333333333333
+  },
+  "meal_distributions": [
+    {
+      "mealName": "Breakfast",
+      "calories_pct": 22.5
+    },
+    {
+      "mealName": "Morning Snack",
+      "calories_pct": 10
+    },
+    {
+      "mealName": "Lunch",
+      "calories_pct": 22.5
+    },
+    {
+      "mealName": "Afternoon Snack",
+      "calories_pct": 10
+    },
+    {
+      "mealName": "Dinner",
+      "calories_pct": 20
+    },
+    {
+      "mealName": "Evening Snack",
+      "calories_pct": 15
+    }
+  ],
+  "preferred_diet": "fat_loss",
+  "allergies": [],
+  "dispreferrred_ingredients": [],
+  "preferred_ingredients": [],
+  "medical_conditions": [
+    "Diabetes"
+  ]
+}
+
+Required JSON schema:
+
+{
+  "type": "object",
+  "properties": {
+    "age": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120,
+      "default": 30
+    },
+    "biological_sex": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "other"
+      ],
+      "default": "other"
+    },
+    "height_cm": {
+      "type": "number",
+      "minimum": 50,
+      "maximum": 300,
+      "default": 170
+    },
+    "current_weight_kg": {
+      "type": "number",
+      "minimum": 20,
+      "maximum": 500,
+      "default": 70
+    },
+    "target_weight_kg": {
+      "type": "number",
+      "minimum": 20,
+      "maximum": 500,
+      "default": 70
+    },
+    "physical_activity_level": {
+      "type": "string",
+      "enum": [
+        "sedentary",
+        "light",
+        "moderate",
+        "active",
+        "extra_active"
+      ],
+      "default": "moderate"
+    },
+    "primary_diet_goal": {
+      "type": "string",
+      "enum": [
+        "fat_loss",
+        "muscle_gain",
+        "recomp"
+      ],
+      "default": "fat_loss"
+    },
+    "preferred_diet": {
+      "type": "string",
+      "enum": [
+        "Standard",
+        "Vegetarian",
+        "Vegan",
+        "Keto"
+      ],
+      "default": "Standard"
+    },
+    "allergies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "dispreferrred_ingredients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "preferred_ingredients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "medical_conditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "meal_data": {
+      "type": "object",
+      "properties": {
+        "target_daily_calories": {
+          "type": "number",
+          "minimum": 100,
+          "default": 1200
+        },
+        "target_protein_g": {
+          "type": "number",
+          "minimum": 0,
+          "default": 90
+        },
+        "target_carbs_g": {
+          "type": "number",
+          "minimum": 0,
+          "default": 150
+        },
+        "target_fat_g": {
+          "type": "number",
+          "minimum": 0,
+          "default": 40
+        }
+      },
+      "additionalProperties": true,
+      "default": {
+        "target_daily_calories": 1200,
+        "target_protein_g": 90,
+        "target_carbs_g": 150,
+        "target_fat_g": 40
+      }
+    },
+    "meal_distributions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "mealName": {
+            "type": "string",
+            "enum": [
+              "Breakfast",
+              "Morning Snack",
+              "Lunch",
+              "Afternoon Snack",
+              "Dinner",
+              "Evening Snack"
+            ]
+          },
+          "calories_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "protein_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "carbs_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "fat_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "mealName",
+          "calories_pct"
+        ],
+        "additionalProperties": true
+      },
+      "minItems": 6,
+      "maxItems": 6,
+      "default": [
+        {
+          "mealName": "Breakfast",
+          "calories_pct": 25
+        },
+        {
+          "mealName": "Morning Snack",
+          "calories_pct": 10
+        },
+        {
+          "mealName": "Lunch",
+          "calories_pct": 30
+        },
+        {
+          "mealName": "Afternoon Snack",
+          "calories_pct": 10
+        },
+        {
+          "mealName": "Dinner",
+          "calories_pct": 20
+        },
+        {
+          "mealName": "Evening Snack",
+          "calories_pct": 5
+        }
+      ]
+    }
+  },
+  "additionalProperties": true,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}] {
+  source: undefined,
+  status: 'INVALID_ARGUMENT',
+  detail: [Object],
+  code: 400,
+  originalMessage: 'Schema validation failed. Parse Errors:\n' +
+    '\n' +
+    '- preferred_diet: must be equal to one of the allowed values\n' +
+    '\n' +
+    'Provided data:\n' +
+    '\n' +
+    '{\n' +
+    '  "meal_data": {\n' +
+    '    "target_daily_calories": 2332,\n' +
+    '    "target_protein_g": 204.05,\n' +
+    '    "target_carbs_g": 204.05,\n' +
+    '    "target_fat_g": 77.7333333333333\n' +
+    '  },\n' +
+    '  "meal_distributions": [\n' +
+    '    {\n' +
+    '      "mealName": "Breakfast",\n' +
+    '      "calories_pct": 22.5\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "mealName": "Morning Snack",\n' +
+    '      "calories_pct": 10\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "mealName": "Lunch",\n' +
+    '      "calories_pct": 22.5\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "mealName": "Afternoon Snack",\n' +
+    '      "calories_pct": 10\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "mealName": "Dinner",\n' +
+    '      "calories_pct": 20\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "mealName": "Evening Snack",\n' +
+    '      "calories_pct": 15\n' +
+    '    }\n' +
+    '  ],\n' +
+    '  "preferred_diet": "fat_loss",\n' +
+    '  "allergies": [],\n' +
+    '  "dispreferrred_ingredients": [],\n' +
+    '  "preferred_ingredients": [],\n' +
+    '  "medical_conditions": [\n' +
+    '    "Diabetes"\n' +
+    '  ]\n' +
+    '}\n' +
+    '\n' +
+    'Required JSON schema:\n' +
+    '\n' +
+    '{\n' +
+    '  "type": "object",\n' +
+    '  "properties": {\n' +
+    '    "age": {\n' +
+    '      "type": "integer",\n' +
+    '      "minimum": 1,\n' +
+    '      "maximum": 120,\n' +
+    '      "default": 30\n' +
+    '    },\n' +
+    '    "biological_sex": {\n' +
+    '      "type": "string",\n' +
+    '      "enum": [\n' +
+    '        "male",\n' +
+    '        "female",\n' +
+    '        "other"\n' +
+    '      ],\n' +
+    '      "default": "other"\n' +
+    '    },\n' +
+    '    "height_cm": {\n' +
+    '      "type": "number",\n' +
+    '      "minimum": 50,\n' +
+    '      "maximum": 300,\n' +
+    '      "default": 170\n' +
+    '    },\n' +
+    '    "current_weight_kg": {\n' +
+    '      "type": "number",\n' +
+    '      "minimum": 20,\n' +
+    '      "maximum": 500,\n' +
+    '      "default": 70\n' +
+    '    },\n' +
+    '    "target_weight_kg": {\n' +
+    '      "type": "number",\n' +
+    '      "minimum": 20,\n' +
+    '      "maximum": 500,\n' +
+    '      "default": 70\n' +
+    '    },\n' +
+    '    "physical_activity_level": {\n' +
+    '      "type": "string",\n' +
+    '      "enum": [\n' +
+    '        "sedentary",\n' +
+    '        "light",\n' +
+    '        "moderate",\n' +
+    '        "active",\n' +
+    '        "extra_active"\n' +
+    '      ],\n' +
+    '      "default": "moderate"\n' +
+    '    },\n' +
+    '    "primary_diet_goal": {\n' +
+    '      "type": "string",\n' +
+    '      "enum": [\n' +
+    '        "fat_loss",\n' +
+    '        "muscle_gain",\n' +
+    '        "recomp"\n' +
+    '      ],\n' +
+    '      "default": "fat_loss"\n' +
+    '    },\n' +
+    '    "preferred_diet": {\n' +
+    '      "type": "string",\n' +
+    '      "enum": [\n' +
+    '        "Standard",\n' +
+    '        "Vegetarian",\n' +
+    '        "Vegan",\n' +
+    '        "Keto"\n' +
+    '      ],\n' +
+    '      "default": "Standard"\n' +
+    '    },\n' +
+    '    "allergies": {\n' +
+    '      "type": "array",\n' +
+    '      "items": {\n' +
+    '        "type": "string"\n' +
+    '      },\n' +
+    '      "default": []\n' +
+    '    },\n' +
+    '    "dispreferrred_ingredients": {\n' +
+    '      "type": "array",\n' +
+    '      "items": {\n' +
+    '        "type": "string"\n' +
+    '      },\n' +
+    '      "default": []\n' +
+    '    },\n' +
+    '    "preferred_ingredients": {\n' +
+    '      "type": "array",\n' +
+    '      "items": {\n' +
+    '        "type": "string"\n' +
+    '      },\n' +
+    '      "default": []\n' +
+    '    },\n' +
+    '    "medical_conditions": {\n' +
+    '      "type": "array",\n' +
+    '      "items": {\n' +
+    '        "type": "string"\n' +
+    '      },\n' +
+    '      "default": []\n' +
+    '    },\n' +
+    '    "meal_data": {\n' +
+    '      "type": "object",\n' +
+    '      "properties": {\n' +
+    '        "target_daily_calories": {\n' +
+    '          "type": "number",\n' +
+    '          "minimum": 100,\n' +
+    '          "default": 1200\n' +
+    '        },\n' +
+    '        "target_protein_g": {\n' +
+    '          "type": "number",\n' +
+    '          "minimum": 0,\n' +
+    '          "default": 90\n' +
+    '        },\n' +
+    '        "target_carbs_g": {\n' +
+    '          "type": "number",\n' +
+    '          "minimum": 0,\n' +
+    '          "default": 150\n' +
+    '        },\n' +
+    '        "target_fat_g": {\n' +
+    '          "type": "number",\n' +
+    '          "minimum": 0,\n' +
+    '          "default": 40\n' +
+    '        }\n' +
+    '      },\n' +
+    '      "additionalProperties": true,\n' +
+    '      "default": {\n' +
+    '        "target_daily_calories": 1200,\n' +
+    '        "target_protein_g": 90,\n' +
+    '        "target_carbs_g": 150,\n' +
+    '        "target_fat_g": 40\n' +
+    '      }\n' +
+    '    },\n' +
+    '    "meal_distributions": {\n' +
+    '      "type": "array",\n' +
+    '      "items": {\n' +
+    '        "type": "object",\n' +
+    '        "properties": {\n' +
+    '          "mealName": {\n' +
+    '            "type": "string",\n' +
+    '            "enum": [\n' +
+    '              "Breakfast",\n' +
+    '              "Morning Snack",\n' +
+    '              "Lunch",\n' +
+    '              "Afternoon Snack",\n' +
+    '              "Dinner",\n' +
+    '              "Evening Snack"\n' +
+    '            ]\n' +
+    '          },\n' +
+    '          "calories_pct": {\n' +
+    '            "type": "number",\n' +
+    '            "minimum": 0,\n' +
+    '            "maximum": 100\n' +
+    '          },\n' +
+    '          "protein_pct": {\n' +
+    '            "type": "number",\n' +
+    '            "minimum": 0,\n' +
+    '            "maximum": 100\n' +
+    '          },\n' +
+    '          "carbs_pct": {\n' +
+    '            "type": "number",\n' +
+    '            "minimum": 0,\n' +
+    '            "maximum": 100\n' +
+    '          },\n' +
+    '          "fat_pct": {\n' +
+    '            "type": "number",\n' +
+    '            "minimum": 0,\n' +
+    '            "maximum": 100\n' +
+    '          }\n' +
+    '        },\n' +
+    '        "required": [\n' +
+    '          "mealName",\n' +
+    '          "calories_pct"\n' +
+    '        ],\n' +
+    '        "additionalProperties": true\n' +
+    '      },\n' +
+    '      "minItems": 6,\n' +
+    '      "maxItems": 6,\n' +
+    '      "default": [\n' +
+    '        {\n' +
+    '          "mealName": "Breakfast",\n' +
+    '          "calories_pct": 25\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "mealName": "Morning Snack",\n' +
+    '          "calories_pct": 10\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "mealName": "Lunch",\n' +
+    '          "calories_pct": 30\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "mealName": "Afternoon Snack",\n' +
+    '          "calories_pct": 10\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "mealName": "Dinner",\n' +
+    '          "calories_pct": 20\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "mealName": "Evening Snack",\n' +
+    '          "calories_pct": 5\n' +
+    '        }\n' +
+    '      ]\n' +
+    '    }\n' +
+    '  },\n' +
+    '  "additionalProperties": true,\n' +
+    '  "$schema": "http://json-schema.org/draft-07/schema#"\n' +
+    '}',
+  digest: '2159248782'
+}
+ POST /meal-plan/optimized 500 in 653ms
