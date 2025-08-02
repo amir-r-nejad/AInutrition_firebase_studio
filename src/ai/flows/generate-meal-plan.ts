@@ -10,6 +10,7 @@ import {
   type GeneratePersonalizedMealPlanInput,
   type GeneratePersonalizedMealPlanOutput,
 } from "@/lib/schemas";
+import { z } from "zod";
 
 // Extended input schema for internal use
 const ExtendedGeneratePersonalizedMealPlanInputSchema = z.object({

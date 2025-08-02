@@ -1,0 +1,154 @@
+ Input meal_data: {
+  target_daily_calories: 2332,
+  target_protein_g: 204.05,
+  target_carbs_g: 204.05,
+  target_fat_g: 77.7333333333333
+}
+📋 Meal distributions: [
+  { mealName: 'Breakfast', calories_pct: 22.5 },
+  { mealName: 'Morning Snack', calories_pct: 10 },
+  { mealName: 'Lunch', calories_pct: 22.5 },
+  { mealName: 'Afternoon Snack', calories_pct: 10 },
+  { mealName: 'Dinner', calories_pct: 20 },
+  { mealName: 'Evening Snack', calories_pct: 15 }
+]
+🎯 Calculated meal targets: [
+  {
+    mealName: 'Breakfast',
+    calories: 525,
+    protein: 46,
+    carbs: 46,
+    fat: 17
+  },
+  {
+    mealName: 'Morning Snack',
+    calories: 233,
+    protein: 20,
+    carbs: 20,
+    fat: 8
+  },
+  { mealName: 'Lunch', calories: 525, protein: 46, carbs: 46, fat: 17 },
+  {
+    mealName: 'Afternoon Snack',
+    calories: 233,
+    protein: 20,
+    carbs: 20,
+    fat: 8
+  },
+  {
+    mealName: 'Dinner',
+    calories: 466,
+    protein: 41,
+    carbs: 41,
+    fat: 16
+  },
+  {
+    mealName: 'Evening Snack',
+    calories: 350,
+    protein: 31,
+    carbs: 31,
+    fat: 12
+  }
+]
+Attempt 1 failed: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [400 Bad Request] The specified schema produces a constraint that has too many states for serving.  Typical causes of this error are schemas with lots of text (for example, very long property or enum names), schemas with long array length limits (especially when nested), or schemas using complex value matchers (for example, integers or numbers with minimum/maximum bounds or strings with complex formats like date-time)
+    at async (src/ai/flows/generate-meal-plan.ts:155:27)
+  153 |     while (retryCount <= maxRetries) {
+  154 |       try {
+> 155 |         const { output } = await prompt({
+      |                           ^
+  156 |           ...input,
+  157 |           calculatedMealTargets: mealTargets,
+  158 |           dailyTotals: mealData, {
+  status: 400,
+  statusText: 'Bad Request',
+  errorDetails: undefined,
+  traceId: '97401e97d047208c687aa05e7a2e8384',
+  ignoreFailedSpan: true
+}
+🔍 Gemini API 400 Bad Request Error Analysis:
+   - Likely caused by complex schema or long prompt.
+   - Simplifying prompt and retrying...
+Fallback prompt failed: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [400 Bad Request] The specified schema produces a constraint that has too many states for serving.  Typical causes of this error are schemas with lots of text (for example, very long property or enum names), schemas with long array length limits (especially when nested), or schemas using complex value matchers (for example, integers or numbers with minimum/maximum bounds or strings with complex formats like date-time)
+    at async (src/ai/flows/generate-meal-plan.ts:197:31)
+  195 |
+  196 |           try {
+> 197 |             const { output } = await fallbackPrompt({
+      |                               ^
+  198 |               ...input,
+  199 |               calculatedMealTargets: mealTargets,
+  200 |               dailyTotals: mealData, {
+  status: 400,
+  statusText: 'Bad Request',
+  errorDetails: undefined,
+  traceId: '97401e97d047208c687aa05e7a2e8384',
+  ignoreFailedSpan: true
+}
+Retry 1 of 3...
+Attempt 2 failed: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [400 Bad Request] The specified schema produces a constraint that has too many states for serving.  Typical causes of this error are schemas with lots of text (for example, very long property or enum names), schemas with long array length limits (especially when nested), or schemas using complex value matchers (for example, integers or numbers with minimum/maximum bounds or strings with complex formats like date-time)
+    at async (src/ai/flows/generate-meal-plan.ts:155:27)
+  153 |     while (retryCount <= maxRetries) {
+  154 |       try {
+> 155 |         const { output } = await prompt({
+      |                           ^
+  156 |           ...input,
+  157 |           calculatedMealTargets: mealTargets,
+  158 |           dailyTotals: mealData, {
+  status: 400,
+  statusText: 'Bad Request',
+  errorDetails: undefined,
+  traceId: '97401e97d047208c687aa05e7a2e8384',
+  ignoreFailedSpan: true
+}
+🔍 Gemini API 400 Bad Request Error Analysis:
+   - Likely caused by complex schema or long prompt.
+   - Simplifying prompt and retrying...
+Fallback prompt failed: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [400 Bad Request] The specified schema produces a constraint that has too many states for serving.  Typical causes of this error are schemas with lots of text (for example, very long property or enum names), schemas with long array length limits (especially when nested), or schemas using complex value matchers (for example, integers or numbers with minimum/maximum bounds or strings with complex formats like date-time)
+    at async (src/ai/flows/generate-meal-plan.ts:197:31)
+  195 |
+  196 |           try {
+> 197 |             const { output } = await fallbackPrompt({
+      |                               ^
+  198 |               ...input,
+  199 |               calculatedMealTargets: mealTargets,
+  200 |               dailyTotals: mealData, {
+  status: 400,
+  statusText: 'Bad Request',
+  errorDetails: undefined,
+  traceId: '97401e97d047208c687aa05e7a2e8384',
+  ignoreFailedSpan: true
+}
+Retry 2 of 3...
+Attempt 3 failed: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [400 Bad Request] The specified schema produces a constraint that has too many states for serving.  Typical causes of this error are schemas with lots of text (for example, very long property or enum names), schemas with long array length limits (especially when nested), or schemas using complex value matchers (for example, integers or numbers with minimum/maximum bounds or strings with complex formats like date-time)
+    at async (src/ai/flows/generate-meal-plan.ts:155:27)
+  153 |     while (retryCount <= maxRetries) {
+  154 |       try {
+> 155 |         const { output } = await prompt({
+      |                           ^
+  156 |           ...input,
+  157 |           calculatedMealTargets: mealTargets,
+  158 |           dailyTotals: mealData, {
+  status: 400,
+  statusText: 'Bad Request',
+  errorDetails: undefined,
+  traceId: '97401e97d047208c687aa05e7a2e8384',
+  ignoreFailedSpan: true
+}
+🔍 Gemini API 400 Bad Request Error Analysis:
+   - Likely caused by complex schema or long prompt.
+   - Simplifying prompt and retrying...
+Fallback prompt failed: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [400 Bad Request] The specified schema produces a constraint that has too many states for serving.  Typical causes of this error are schemas with lots of text (for example, very long property or enum names), schemas with long array length limits (especially when nested), or schemas using complex value matchers (for example, integers or numbers with minimum/maximum bounds or strings with complex formats like date-time)
+    at async (src/ai/flows/generate-meal-plan.ts:197:31)
+  195 |
+  196 |           try {
+> 197 |             const { output } = await fallbackPrompt({
+      |                               ^
+  198 |               ...input,
+  199 |               calculatedMealTargets: mealTargets,
+  200 |               dailyTotals: mealData, {
+  status: 400,
+  statusText: 'Bad Request',
+  errorDetails: undefined,
+  traceId: '97401e97d047208c687aa05e7a2e8384',
+  ignoreFailedSpan: true
+}
+Retry 3 of 3...
