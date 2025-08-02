@@ -7,45 +7,66 @@ import {
   BaseProfileData,
   GeneratePersonalizedMealPlanInput,
   WeeklyMealPlan,
+  UserPlanType,
+  MealPlans,
 } from '@/lib/schemas';
 import { DailyTargetsTypes, MealToOptimizeTypes } from '../types';
 import { requiredFields } from './config';
 
-export function mapProfileToMealPlanInput(data: any): GeneratePersonalizedMealPlanInput {
-  // Extract meal data with proper validation
+export function mapProfileToMealPlanInput(data: {
+  meal_data?: MealPlans["meal_data"];
+  target_daily_calories?: number;
+  target_protein_g?: number;
+  target_carbs_g?: number;
+  target_fat_g?: number;
+  meal_distributions?: BaseProfileData["meal_distributions"];
+  preferred_diet?: string;
+  allergies?: string[];
+  dispreferrred_ingredients?: string[];
+  preferred_ingredients?: string[];
+  medical_conditions?: string[];
+} & Partial<BaseProfileData> & Partial<UserPlanType>): GeneratePersonalizedMealPlanInput {
+
+  // Extract meal data with proper fallbacks
   const mealData = {
     target_daily_calories: data.target_daily_calories || data.custom_total_calories || 2000,
     target_protein_g: data.target_protein_g || data.custom_protein_g || 150,
-    target_carbs_g: data.target_carbs_g || data.custom_carbs_g || 250,
-    target_fat_g: data.target_fat_g || data.custom_fat_g || 67,
+    target_carbs_g: data.target_carbs_g || data.custom_carbs_g || 200,
+    target_fat_g: data.target_fat_g || data.custom_fat_g || 65,
   };
 
-  console.log('Mapping profile to meal plan input:', {
+  // Get meal distributions from macro splitter
+  const mealDistributions = data.meal_distributions || [
+    { mealName: "Breakfast", calories_pct: 25, protein_pct: 25, carbs_pct: 25, fat_pct: 25 },
+    { mealName: "Morning Snack", calories_pct: 10, protein_pct: 10, carbs_pct: 10, fat_pct: 10 },
+    { mealName: "Lunch", calories_pct: 30, protein_pct: 30, carbs_pct: 30, fat_pct: 30 },
+    { mealName: "Afternoon Snack", calories_pct: 10, protein_pct: 10, carbs_pct: 10, fat_pct: 10 },
+    { mealName: "Dinner", calories_pct: 20, protein_pct: 20, carbs_pct: 20, fat_pct: 20 },
+    { mealName: "Evening Snack", calories_pct: 5, protein_pct: 5, carbs_pct: 5, fat_pct: 5 },
+  ];
+
+  // Extract user preferences
+  const preferences = {
+    diet: data.preferred_diet || data.primary_diet_goal || "Standard",
+    allergies: data.allergies || [],
+    disliked: data.dispreferrred_ingredients || [],
+    preferred: data.preferred_ingredients || [],
+  };
+
+  console.log("Mapping profile to meal plan input:", {
     mealData,
-    mealDistributions: data.meal_distributions,
-    preferences: {
-      diet: data.preferred_diet,
-      allergies: data.allergies,
-      disliked: data.dispreferrred_ingredients,
-      preferred: data.preferred_ingredients,
-    }
+    mealDistributions,
+    preferences,
   });
 
   return {
-    age: data.age || 25,
-    biological_sex: data.biological_sex || 'Male',
-    height_cm: data.height_cm || 175,
-    current_weight_kg: data.current_weight_kg || 70,
-    target_weight_kg: data.target_weight_kg || data.current_weight_kg || 70,
-    physical_activity_level: data.physical_activity_level || 'Moderate',
-    primary_diet_goal: data.primary_diet_goal || 'Maintain Weight',
-    preferred_diet: data.preferred_diet || 'Standard',
-    allergies: data.allergies || [],
-    medical_conditions: data.medical_conditions || [],
-    dispreferrred_ingredients: data.dispreferrred_ingredients || [],
-    preferred_ingredients: data.preferred_ingredients || [],
     meal_data: mealData,
-    meal_distributions: data.meal_distributions || null, // Include macro splitter data
+    meal_distributions: mealDistributions,
+    preferred_diet: preferences.diet,
+    allergies: preferences.allergies,
+    dispreferrred_ingredients: preferences.disliked,
+    preferred_ingredients: preferences.preferred,
+    medical_conditions: data.medical_conditions || [],
   };
 }
 
