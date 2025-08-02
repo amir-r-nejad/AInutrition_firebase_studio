@@ -40,7 +40,7 @@ export async function ProgressTrackingSection({
       <ProgressChart entries={entries} selectedMonth={selectedMonth} />
 
       {/* Weekly Entry Form */}
-      <WeeklyEntryForm entries={progress} clientId={clientId} />
+      <WeeklyEntryForm entries={progress} />
 
       {/* Progress Entries List */}
       <ProgressEntriesList entries={entries} selectedMonth={selectedMonth} />

@@ -17,6 +17,7 @@ import { Toaster } from '@/components/ui/toaster';
 import SignoutButton from '@/features/auth/components/signup/SignoutButton';
 import { createClient } from '@/lib/supabase/server';
 import {
+  Activity,
   Bot,
   BrainCircuit,
   ChefHat,
@@ -56,6 +57,11 @@ const navItems = [
   },
   { href: '/meal-plan/optimized', label: 'AI Meal Plan', icon: Bot },
   { section: 'Progress Tracking' },
+  {
+    href: '/meal-progress',
+    label: 'Meal Progress',
+    icon: Activity,
+  },
   {
     href: '/body-progress',
     label: 'Body Progress',

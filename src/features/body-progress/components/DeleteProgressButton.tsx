@@ -7,22 +7,25 @@ import { useTransition } from 'react';
 import { BodyProgressEntry } from '../types';
 import Spinner from '@/components/ui/Spinner';
 import { deleteUserBodyProgress } from '../lib/body-progress-service';
+import { useParams } from 'next/navigation';
 
-type DeleteProgressButtonProps = {
-  entry: BodyProgressEntry;
-  clientId?: string;
-};
+type DeleteProgressButtonProps = { entry: BodyProgressEntry };
 
-function DeleteProgressButton({ entry, clientId }: DeleteProgressButtonProps) {
+function DeleteProgressButton({ entry }: DeleteProgressButtonProps) {
+  const params = useParams<{ clientId?: string }>();
+  const isCoachView = !!params?.clientId;
+
   const [isDeleting, startDeleting] = useTransition();
 
   async function handleDelete(entry: BodyProgressEntry) {
     startDeleting(async () => {
       try {
-        await deleteUserBodyProgress(entry, clientId);
+        await deleteUserBodyProgress(entry, params?.clientId);
         toast({
           title: 'Entry Deleted',
-          description: 'Your progress entry has been successfully removed.',
+          description: isCoachView
+            ? 'Client progress entry has been successfully removed.'
+            : 'Your progress entry has been successfully removed.',
         });
       } catch (error) {
         toast({

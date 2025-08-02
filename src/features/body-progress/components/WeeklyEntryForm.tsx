@@ -22,13 +22,16 @@ import { entryFormSchema, EntryFormValues } from '../types/schema';
 import { BodyProgressEntry } from '../types';
 import CustomDatePicker from '@/components/ui/CustomDatePicker';
 import { saveUserBodyProgress } from '../lib/body-progress-service';
+import { useParams } from 'next/navigation';
 
 type WeeklyEntryFormProps = {
   entries: BodyProgressEntry[];
-  clientId?: string;
 };
 
-export function WeeklyEntryForm({ entries, clientId }: WeeklyEntryFormProps) {
+export function WeeklyEntryForm({ entries }: WeeklyEntryFormProps) {
+  const params = useParams<{ clientId?: string }>();
+  const isCoachView = !!params?.clientId;
+
   const form = useForm<EntryFormValues>({
     resolver: zodResolver(entryFormSchema),
     defaultValues: {
@@ -44,9 +47,11 @@ export function WeeklyEntryForm({ entries, clientId }: WeeklyEntryFormProps) {
 
   async function onSubmit(data: EntryFormValues) {
     try {
-      await saveUserBodyProgress(data, clientId);
+      await saveUserBodyProgress(data, params?.clientId);
       toast({
-        title: 'Progress Entry Added!',
+        title: isCoachView
+          ? 'Client Progress Entry Added!'
+          : 'Progress Entry Added!',
         description: `Weight: ${data.weight_kg}kg, Body Fat: ${data.bf_percentage}%, Waist: ${data.waist_cm}cm`,
       });
 
@@ -75,7 +80,9 @@ export function WeeklyEntryForm({ entries, clientId }: WeeklyEntryFormProps) {
         <CardHeader>
           <CardTitle className='text-xl flex items-center gap-2'>
             <Plus className='h-5 w-5' />
-            Add Weekly Progress Entry
+            {isCoachView
+              ? 'Add Client Weekly Progress Entry'
+              : 'Add Weekly Progress Entry'}
           </CardTitle>
         </CardHeader>
 
@@ -218,7 +225,11 @@ export function WeeklyEntryForm({ entries, clientId }: WeeklyEntryFormProps) {
                   </FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder='How are you feeling? Any observations about your progress...'
+                      placeholder={
+                        isCoachView
+                          ? 'How is the client feeling? Any observations about their progress...'
+                          : 'How are you feeling? Any observations about your progress...'
+                      }
                       rows={3}
                       {...field}
                     />
@@ -229,10 +240,14 @@ export function WeeklyEntryForm({ entries, clientId }: WeeklyEntryFormProps) {
             />
 
             <SubmitButton
-              loadingLabel='Adding...'
+              loadingLabel={
+                isCoachView ? 'Adding Client Entry...' : 'Adding...'
+              }
               isLoading={form.formState.isSubmitting}
-              icon={<Plus className='h-4 w-4 mr-2' />}
-              label='Add Progress Entry'
+              icon={<Plus />}
+              label={
+                isCoachView ? 'Add Client Progress Entry' : 'Add Progress Entry'
+              }
               className='w-full md:w-auto'
             />
           </form>

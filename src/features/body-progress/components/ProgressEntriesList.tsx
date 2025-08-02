@@ -10,16 +10,14 @@ import DeleteProgressButton from './DeleteProgressButton';
 import EditProgressButton from './EditProgressButton';
 import EmptyProgressEntryCard from './EmptyProgressEntryCard';
 
-interface ProgressEntriesListProps {
+type ProgressEntriesListProps = {
   entries: BodyProgressEntry[];
   selectedMonth: string;
-  clientId?: string;
-}
+};
 
 export function ProgressEntriesList({
   entries,
   selectedMonth,
-  clientId,
 }: ProgressEntriesListProps) {
   const monthLabel =
     selectedMonth === 'all_months'
@@ -66,11 +64,8 @@ export function ProgressEntriesList({
                       </div>
 
                       <div className='flex items-center gap-1'>
-                        <EditProgressButton entry={entry} clientId={clientId} />
-                        <DeleteProgressButton
-                          entry={entry}
-                          clientId={clientId}
-                        />
+                        <EditProgressButton entry={entry} />
+                        <DeleteProgressButton entry={entry} />
                       </div>
                     </div>
 
