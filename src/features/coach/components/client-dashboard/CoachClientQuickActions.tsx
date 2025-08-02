@@ -1,12 +1,13 @@
 import { Button } from '@/components/ui/button';
 import {
-  Activity,
-  BarChart4,
-  ChefHat,
-  ClipboardList,
-  FileBarChart,
-  Settings2,
-  UserRound,
+  Calculator,
+  Calendar,
+  FileText,
+  PieChart,
+  Sparkles,
+  TrendingUp,
+  User,
+  Utensils,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -14,37 +15,42 @@ function CoachClientQuickActions({ clientId }: { clientId: string }) {
   const clientLinks = [
     {
       href: `/coach-dashboard/clients/${clientId}/profile`,
-      icon: <UserRound />,
+      icon: <User />,
       text: 'Client Profile',
     },
     {
       href: `/coach-dashboard/clients/${clientId}/meal-plan/current`,
-      icon: <ClipboardList />,
+      icon: <Calendar />,
       text: 'Current Meal Plan',
     },
     {
       href: `/coach-dashboard/clients/${clientId}/meal-plan/optimized`,
-      icon: <ChefHat />,
+      icon: <Sparkles />,
       text: 'Generate Optimized Plan',
     },
     {
       href: `/coach-dashboard/clients/${clientId}/tools/macro-splitter`,
-      icon: <Settings2 />,
-      text: 'Adjust Macro Targets',
+      icon: <PieChart />,
+      text: 'Macro Calculator',
     },
     {
       href: `/coach-dashboard/clients/${clientId}/tools/smart-calorie-planner`,
-      icon: <Activity />,
-      text: 'Smart Calorie Planner',
+      icon: <Calculator />,
+      text: 'Calorie Planner',
     },
     {
       href: `/coach-dashboard/clients/${clientId}/body-progress`,
-      icon: <BarChart4 />,
-      text: 'Track Body Progress',
+      icon: <TrendingUp />,
+      text: 'Body Progress',
+    },
+    {
+      href: `/coach-dashboard/clients/${clientId}/meal-progress`,
+      icon: <Utensils />,
+      text: 'Meal Progress',
     },
     {
       href: `/coach-dashboard/clients/${clientId}/reports`,
-      icon: <FileBarChart />,
+      icon: <FileText />,
       text: 'Progress Reports',
     },
   ];
