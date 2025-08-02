@@ -1,3 +1,4 @@
+
 "use server";
 
 import { geminiModel } from "@/ai/genkit";
@@ -10,6 +11,64 @@ import {
   type GeneratePersonalizedMealPlanOutput,
 } from "@/lib/schemas";
 import { z } from "zod";
+
+// Extended input schema for internal use
+const ExtendedGeneratePersonalizedMealPlanInputSchema = z.object({
+  age: z.number().int().min(1).max(120).default(30),
+  biological_sex: z.enum(["male", "female", "other"]).default("other"),
+  height_cm: z.number().min(50).max(300).default(170),
+  current_weight_kg: z.number().min(20).max(500).default(70),
+  target_weight_kg: z.number().min(20).max(500).default(70),
+  physical_activity_level: z.enum(["sedentary", "light", "moderate", "active", "extra_active"]).default("moderate"),
+  primary_diet_goal: z.enum(["fat_loss", "muscle_gain", "recomp"]).default("fat_loss"),
+  preferred_diet: z.enum(["Standard", "Vegetarian", "Vegan", "Keto"]).default("Standard"),
+  allergies: z.array(z.string()).default([]),
+  dispreferrred_ingredients: z.array(z.string()).default([]),
+  preferred_ingredients: z.array(z.string()).default([]),
+  medical_conditions: z.array(z.string()).default([]),
+  meal_data: z.object({
+    target_daily_calories: z.number().min(100).default(1200),
+    target_protein_g: z.number().min(0).default(90),
+    target_carbs_g: z.number().min(0).default(150),
+    target_fat_g: z.number().min(0).default(40),
+  }).default({
+    target_daily_calories: 1200,
+    target_protein_g: 90,
+    target_carbs_g: 150,
+    target_fat_g: 40,
+  }),
+  meal_distributions: z.array(
+    z.object({
+      mealName: z.enum(["Breakfast", "Morning Snack", "Lunch", "Afternoon Snack", "Dinner", "Evening Snack"]),
+      calories_pct: z.number().min(0).max(100),
+      protein_pct: z.number().min(0).max(100).optional(),
+      carbs_pct: z.number().min(0).max(100).optional(),
+      fat_pct: z.number().min(0).max(100).optional(),
+    })
+  ).length(6).default([
+    { mealName: "Breakfast", calories_pct: 25 },
+    { mealName: "Morning Snack", calories_pct: 10 },
+    { mealName: "Lunch", calories_pct: 30 },
+    { mealName: "Afternoon Snack", calories_pct: 10 },
+    { mealName: "Dinner", calories_pct: 20 },
+    { mealName: "Evening Snack", calories_pct: 5 },
+  ]),
+  calculatedMealTargets: z.array(
+    z.object({
+      mealName: z.string(),
+      calories: z.number(),
+      protein: z.number(),
+      carbs: z.number(),
+      fat: z.number(),
+    }),
+  ),
+  dailyTotals: z.object({
+    target_daily_calories: z.number(),
+    target_protein_g: z.number(),
+    target_carbs_g: z.number(),
+    target_fat_g: z.number(),
+  }),
+});
 
 export const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
   {
@@ -294,23 +353,7 @@ function calculateMealTargets(mealData: any, mealDistributions: any[]) {
 const prompt = geminiModel.definePrompt({
   name: "generatePersonalizedMealPlanPrompt",
   input: {
-    schema: GeneratePersonalizedMealPlanInputSchema.extend({
-      calculatedMealTargets: z.array(
-        z.object({
-          mealName: z.string(),
-          calories: z.number(),
-          protein: z.number(),
-          carbs: z.number(),
-          fat: z.number(),
-        }),
-      ),
-      dailyTotals: z.object({
-        target_daily_calories: z.number(),
-        target_protein_g: z.number(),
-        target_carbs_g: z.number(),
-        target_fat_g: z.number(),
-      }),
-    }),
+    schema: ExtendedGeneratePersonalizedMealPlanInputSchema,
   },
   output: { schema: GeneratePersonalizedMealPlanOutputSchema },
   prompt: `You are NutriMind, an AI nutritionist. Create a 7-day meal plan with exactly 6 meals per day that matches the provided macro targets within 5% tolerance.
@@ -396,23 +439,7 @@ Generate the complete 7-day meal plan now with exact macro calculations.`,
 const fallbackPrompt = geminiModel.definePrompt({
   name: "generatePersonalizedMealPlanFallbackPrompt",
   input: {
-    schema: GeneratePersonalizedMealPlanInputSchema.extend({
-      calculatedMealTargets: z.array(
-        z.object({
-          mealName: z.string(),
-          calories: z.number(),
-          protein: z.number(),
-          carbs: z.number(),
-          fat: z.number(),
-        }),
-      ),
-      dailyTotals: z.object({
-        target_daily_calories: z.number(),
-        target_protein_g: z.number(),
-        target_carbs_g: z.number(),
-        target_fat_g: z.number(),
-      }),
-    }),
+    schema: ExtendedGeneratePersonalizedMealPlanInputSchema,
   },
   output: { schema: GeneratePersonalizedMealPlanOutputSchema },
   prompt: `Generate a 7-day meal plan with 6 unique meals per day for a {{preferred_diet}} diet. 
