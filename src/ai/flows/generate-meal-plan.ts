@@ -10,7 +10,6 @@ import {
   type GeneratePersonalizedMealPlanOutput,
 } from "@/lib/schemas";
 import { z } from "zod";
-import { z } from "zod";
 
 export const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
   {
@@ -86,7 +85,10 @@ export const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
     }
 
     // Calculate meal targets from macro splitter data
-    const mealTargets = calculateMealTargets(mealData, input.meal_distributions);
+    const mealTargets = calculateMealTargets(
+      mealData,
+      input.meal_distributions,
+    );
     console.log("🎯 Calculated meal targets:", mealTargets);
 
     while (retryCount <= maxRetries) {
@@ -215,26 +217,68 @@ export const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
 );
 
 // Calculate exact meal targets from macro splitter
-function calculateMealTargets(
-  mealData: any,
-  mealDistributions: any[]
-) {
+function calculateMealTargets(mealData: any, mealDistributions: any[]) {
   const defaultDistributions = [
-    { mealName: "Breakfast", calories_pct: 25, protein_pct: 25, carbs_pct: 25, fat_pct: 25 },
-    { mealName: "Morning Snack", calories_pct: 10, protein_pct: 10, carbs_pct: 10, fat_pct: 10 },
-    { mealName: "Lunch", calories_pct: 30, protein_pct: 30, carbs_pct: 30, fat_pct: 30 },
-    { mealName: "Afternoon Snack", calories_pct: 10, protein_pct: 10, carbs_pct: 10, fat_pct: 10 },
-    { mealName: "Dinner", calories_pct: 20, protein_pct: 20, carbs_pct: 20, fat_pct: 20 },
-    { mealName: "Evening Snack", calories_pct: 5, protein_pct: 5, carbs_pct: 5, fat_pct: 5 },
+    {
+      mealName: "Breakfast",
+      calories_pct: 25,
+      protein_pct: 25,
+      carbs_pct: 25,
+      fat_pct: 25,
+    },
+    {
+      mealName: "Morning Snack",
+      calories_pct: 10,
+      protein_pct: 10,
+      carbs_pct: 10,
+      fat_pct: 10,
+    },
+    {
+      mealName: "Lunch",
+      calories_pct: 30,
+      protein_pct: 30,
+      carbs_pct: 30,
+      fat_pct: 30,
+    },
+    {
+      mealName: "Afternoon Snack",
+      calories_pct: 10,
+      protein_pct: 10,
+      carbs_pct: 10,
+      fat_pct: 10,
+    },
+    {
+      mealName: "Dinner",
+      calories_pct: 20,
+      protein_pct: 20,
+      carbs_pct: 20,
+      fat_pct: 20,
+    },
+    {
+      mealName: "Evening Snack",
+      calories_pct: 5,
+      protein_pct: 5,
+      carbs_pct: 5,
+      fat_pct: 5,
+    },
   ];
 
   const distributions = mealDistributions || defaultDistributions;
 
   return distributions.map((dist) => {
-    const calories = Math.round(mealData.target_daily_calories * dist.calories_pct / 100);
-    const protein = Math.round(mealData.target_protein_g * (dist.protein_pct || dist.calories_pct) / 100);
-    const carbs = Math.round(mealData.target_carbs_g * (dist.carbs_pct || dist.calories_pct) / 100);
-    const fat = Math.round(mealData.target_fat_g * (dist.fat_pct || dist.calories_pct) / 100);
+    const calories = Math.round(
+      (mealData.target_daily_calories * dist.calories_pct) / 100,
+    );
+    const protein = Math.round(
+      (mealData.target_protein_g * (dist.protein_pct || dist.calories_pct)) /
+        100,
+    );
+    const carbs = Math.round(
+      (mealData.target_carbs_g * (dist.carbs_pct || dist.calories_pct)) / 100,
+    );
+    const fat = Math.round(
+      (mealData.target_fat_g * (dist.fat_pct || dist.calories_pct)) / 100,
+    );
 
     return {
       mealName: dist.mealName,
@@ -249,15 +293,17 @@ function calculateMealTargets(
 // Main prompt (simplified without helper functions)
 const prompt = geminiModel.definePrompt({
   name: "generatePersonalizedMealPlanPrompt",
-  input: { 
+  input: {
     schema: GeneratePersonalizedMealPlanInputSchema.extend({
-      calculatedMealTargets: z.array(z.object({
-        mealName: z.string(),
-        calories: z.number(),
-        protein: z.number(),
-        carbs: z.number(),
-        fat: z.number(),
-      })),
+      calculatedMealTargets: z.array(
+        z.object({
+          mealName: z.string(),
+          calories: z.number(),
+          protein: z.number(),
+          carbs: z.number(),
+          fat: z.number(),
+        }),
+      ),
       dailyTotals: z.object({
         target_daily_calories: z.number(),
         target_protein_g: z.number(),
@@ -349,15 +395,17 @@ Generate the complete 7-day meal plan now with exact macro calculations.`,
 // Fallback prompt (even simpler)
 const fallbackPrompt = geminiModel.definePrompt({
   name: "generatePersonalizedMealPlanFallbackPrompt",
-  input: { 
+  input: {
     schema: GeneratePersonalizedMealPlanInputSchema.extend({
-      calculatedMealTargets: z.array(z.object({
-        mealName: z.string(),
-        calories: z.number(),
-        protein: z.number(),
-        carbs: z.number(),
-        fat: z.number(),
-      })),
+      calculatedMealTargets: z.array(
+        z.object({
+          mealName: z.string(),
+          calories: z.number(),
+          protein: z.number(),
+          carbs: z.number(),
+          fat: z.number(),
+        }),
+      ),
       dailyTotals: z.object({
         target_daily_calories: z.number(),
         target_protein_g: z.number(),
