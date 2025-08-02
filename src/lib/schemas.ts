@@ -1,7 +1,7 @@
-import * as z from 'zod';
+import * as z from "zod";
 
 export const preprocessOptionalNumber = (val: unknown) => {
-  if (val === '' || val === null || val === undefined) {
+  if (val === "" || val === null || val === undefined) {
     return undefined;
   }
   const num = Number(val);
@@ -9,11 +9,11 @@ export const preprocessOptionalNumber = (val: unknown) => {
 };
 
 export function preprocessDataForFirestore(
-  data: Record<string, any> | null | undefined
+  data: Record<string, any> | null | undefined,
 ): Record<string, any> | null | any[] {
   if (data === null || data === undefined) return null;
 
-  if (typeof data !== 'object' || data instanceof Date) {
+  if (typeof data !== "object" || data instanceof Date) {
     return data === undefined ? null : data;
   }
 
@@ -31,6 +31,96 @@ export function preprocessDataForFirestore(
   return processedData;
 }
 
+// Ingredient Schema
+export const IngredientSchema = z.object({
+  name: z.string().min(1, "Ingredient name is required"),
+  quantity: z.preprocess(
+    preprocessOptionalNumber,
+    z.number().min(0, "Quantity must be non-negative").nullable().default(null),
+  ),
+  unit: z.string().min(1, "Unit is required (e.g., g, ml, piece)"),
+  calories: z.preprocess(
+    preprocessOptionalNumber,
+    z.number().min(0).nullable().default(null),
+  ),
+  protein: z.preprocess(
+    preprocessOptionalNumber,
+    z.number().min(0).nullable().default(null),
+  ),
+  carbs: z.preprocess(
+    preprocessOptionalNumber,
+    z.number().min(0).nullable().default(null),
+  ),
+  fat: z.preprocess(
+    preprocessOptionalNumber,
+    z.number().min(0).nullable().default(null),
+  ),
+});
+
+export type Ingredient = z.infer<typeof IngredientSchema>;
+
+// Meal Schema
+export const MealSchema = z.object({
+  name: z.string().min(1, "Meal name is required"),
+  custom_name: z.string().optional().default(""),
+  ingredients: z.array(IngredientSchema).default([]),
+  total_calories: z.preprocess(
+    preprocessOptionalNumber,
+    z.number().min(0).nullable().default(null),
+  ),
+  total_protein: z.preprocess(
+    preprocessOptionalNumber,
+    z.number().min(0).nullable().default(null),
+  ),
+  total_carbs: z.preprocess(
+    preprocessOptionalNumber,
+    z.number().min(0).nullable().default(null),
+  ),
+  total_fat: z.preprocess(
+    preprocessOptionalNumber,
+    z.number().min(0).nullable().default(null),
+  ),
+});
+
+export type Meal = z.infer<typeof MealSchema>;
+
+// Daily Meal Plan Schema
+export const DailyMealPlanSchema = z.object({
+  day_of_week: z.enum([
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ]),
+  meals: z.array(MealSchema).length(6),
+  daily_totals: z.object({
+    calories: z.number().min(0),
+    protein: z.number().min(0),
+    carbs: z.number().min(0),
+    fat: z.number().min(0),
+  }),
+});
+
+export type DailyMealPlan = z.infer<typeof DailyMealPlanSchema>;
+
+// Weekly Meal Plan Schema
+export const WeeklyMealPlanSchema = z.object({
+  days: z.array(DailyMealPlanSchema).length(7),
+  weekly_summary: z
+    .object({
+      total_calories: z.number().min(0),
+      total_protein: z.number().min(0),
+      total_carbs: z.number().min(0),
+      total_fat: z.number().min(0),
+    })
+    .optional(),
+});
+
+export type WeeklyMealPlan = z.infer<typeof WeeklyMealPlanSchema>;
+
 // User Profile Schema and Types
 export const UserProfileSchema = z.object({
   id: z.number().optional(),
@@ -38,19 +128,19 @@ export const UserProfileSchema = z.object({
   created_at: z.string(),
   updated_at: z.string(),
   is_onboarding_complete: z.boolean().default(false),
-  user_role: z.enum(['client', 'coach']).nullable().optional(),
+  user_role: z.enum(["client", "coach"]).nullable().optional(),
   age: z.number().int().min(1).max(120),
-  biological_sex: z.enum(['male', 'female', 'other']),
+  biological_sex: z.enum(["male", "female", "other"]),
   height_cm: z.number().min(50).max(300).nullable().optional(),
   current_weight_kg: z.number().min(20).max(500).nullable().optional(),
   target_weight_1month_kg: z.number().min(20).max(500).nullable().optional(),
   long_term_goal_weight_kg: z.number().min(20).max(500).nullable().optional(),
   physical_activity_level: z
-    .enum(['sedentary', 'light', 'moderate', 'active', 'extra_active'])
+    .enum(["sedentary", "light", "moderate", "active", "extra_active"])
     .nullable()
     .optional(),
   primary_diet_goal: z
-    .enum(['fat_loss', 'muscle_gain', 'recomp'])
+    .enum(["fat_loss", "muscle_gain", "recomp"])
     .nullable()
     .optional(),
   pain_mobility_issues: z.array(z.string()).nullable().optional(),
@@ -59,16 +149,16 @@ export const UserProfileSchema = z.object({
   exercise_goals: z.array(z.string()).nullable().optional(),
   preferred_exercise_types: z.array(z.string()).nullable().optional(),
   exercise_frequency: z
-    .enum(['1-2_days', '3-4_days', '5-6_days', 'daily'])
+    .enum(["1-2_days", "3-4_days", "5-6_days", "daily"])
     .nullable()
     .optional(),
   typical_exercise_intensity: z
-    .enum(['light', 'moderate', 'vigorous'])
+    .enum(["light", "moderate", "vigorous"])
     .nullable()
     .optional(),
   equipment_access: z.array(z.string()).nullable().optional(),
   subscription_status: z
-    .enum(['free', 'premium', 'premium_annual', 'trial', 'trial_ended'])
+    .enum(["free", "premium", "premium_annual", "trial", "trial_ended"])
     .nullable()
     .optional(),
   bf_current: z.number().min(0).max(100).nullable().optional(),
@@ -103,7 +193,7 @@ export const UserProfileSchema = z.object({
       z.object({
         mealName: z.string(),
         calories_pct: z.number(),
-      })
+      }),
     )
     .nullable()
     .optional(),
@@ -151,82 +241,6 @@ export const UserPlanSchema = z.object({
 
 export type UserPlan = z.infer<typeof UserPlanSchema>;
 
-// Ingredient Schema
-export const IngredientSchema = z.object({
-  name: z.string().min(1, 'Ingredient name is required'),
-  quantity: z.preprocess(
-    preprocessOptionalNumber,
-    z.number().min(0, 'Quantity must be non-negative').nullable().default(null)
-  ),
-  unit: z.string().min(1, 'Unit is required (e.g., g, ml, piece)'),
-  calories: z.preprocess(
-    preprocessOptionalNumber,
-    z.number().min(0).nullable().default(null)
-  ),
-  protein: z.preprocess(
-    preprocessOptionalNumber,
-    z.number().min(0).nullable().default(null)
-  ),
-  carbs: z.preprocess(
-    preprocessOptionalNumber,
-    z.number().min(0).nullable().default(null)
-  ),
-  fat: z.preprocess(
-    preprocessOptionalNumber,
-    z.number().min(0).nullable().default(null)
-  ),
-});
-
-export type Ingredient = z.infer<typeof IngredientSchema>;
-
-// Meal Schema
-export const MealSchema = z.object({
-  name: z.string().min(1, 'Meal name is required'),
-  custom_name: z.string().optional().default(''),
-  ingredients: z.array(IngredientSchema).default([]),
-  total_calories: z.preprocess(
-    preprocessOptionalNumber,
-    z.number().min(0).nullable().default(null)
-  ),
-  total_protein: z.preprocess(
-    preprocessOptionalNumber,
-    z.number().min(0).nullable().default(null)
-  ),
-  total_carbs: z.preprocess(
-    preprocessOptionalNumber,
-    z.number().min(0).nullable().default(null)
-  ),
-  total_fat: z.preprocess(
-    preprocessOptionalNumber,
-    z.number().min(0).nullable().default(null)
-  ),
-});
-
-export type Meal = z.infer<typeof MealSchema>;
-
-// Daily Meal Plan Schema
-export const DailyMealPlanSchema = z.object({
-  day_of_week: z.string(),
-  meals: z.array(MealSchema),
-});
-
-export type DailyMealPlan = z.infer<typeof DailyMealPlanSchema>;
-
-// Weekly Meal Plan Schema
-export const WeeklyMealPlanSchema = z.object({
-  days: z.array(DailyMealPlanSchema),
-  weekly_summary: z
-    .object({
-      total_calories: z.number(),
-      total_protein: z.number(),
-      total_carbs: z.number(),
-      total_fat: z.number(),
-    })
-    .optional(),
-});
-
-export type WeeklyMealPlan = z.infer<typeof WeeklyMealPlanSchema>;
-
 // User Meal Plan Schema and Types
 export const UserMealPlanSchema = z.object({
   id: z.number().optional(),
@@ -234,7 +248,7 @@ export const UserMealPlanSchema = z.object({
   meal_data: WeeklyMealPlanSchema.nullable().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
-  ai_plan: z.any().nullable().optional(), // Will be typed more specifically for AI plans
+  ai_plan: z.any().nullable().optional(),
 });
 
 export type UserMealPlan = z.infer<typeof UserMealPlanSchema>;
@@ -311,8 +325,8 @@ export const CoachSchema = z.object({
   years_experience: z.number().min(0).nullable().optional(),
   joined_date: z.string().optional(),
   status: z
-    .enum(['pending_approval', 'approved', 'suspended'])
-    .default('pending_approval'),
+    .enum(["pending_approval", "approved", "suspended"])
+    .default("pending_approval"),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 });
@@ -324,7 +338,7 @@ export const CoachClientsSchema = z.object({
   id: z.number().optional(),
   coach_id: z.string(),
   client_id: z.string(),
-  status: z.enum(['pending', 'accepted', 'declined']).default('pending'),
+  status: z.enum(["pending", "accepted", "declined"]).default("pending"),
   requested_at: z.string().optional(),
   responded_at: z.string().nullable().optional(),
   created_at: z.string().optional(),
@@ -338,7 +352,7 @@ export const CoachClientRequestsSchema = z.object({
   coach_id: z.string(),
   client_email: z.string().email(),
   request_message: z.string().nullable().optional(),
-  status: z.enum(['pending', 'accepted', 'declined']).default('pending'),
+  status: z.enum(["pending", "accepted", "declined"]).default("pending"),
   requested_at: z.string().optional(),
   responded_at: z.string().nullable().optional(),
   response_message: z.string().nullable().optional(),
@@ -349,87 +363,78 @@ export const CoachClientRequestsSchema = z.object({
 
 export type CoachClientRequests = z.infer<typeof CoachClientRequestsSchema>;
 
-// Legacy type aliases for backward compatibility
-export type BaseProfileData = UserProfile;
-export type UserPlanType = UserPlan;
-export type MealPlans = UserMealPlan;
-
 // Form Schemas for UI components
 export const ProfileFormSchema = z.object({
-  full_name: z.string().min(1, 'Name is required.').optional(),
+  full_name: z.string().min(1, "Name is required.").optional(),
   user_role: z
-    .enum(['client', 'coach'], {
-      required_error: 'User role is required.',
+    .enum(["client", "coach"], {
+      required_error: "User role is required.",
     })
     .nullable()
     .optional(),
   subscription_status: z.string().nullable().optional(),
   age: z.coerce
     .number()
-    .int('Age must be a whole number.')
-    .min(1, 'Age is required')
+    .int("Age must be a whole number.")
+    .min(1, "Age is required")
     .max(120)
     .nullable()
     .optional(),
-  biological_sex: z.enum(['male', 'female', 'other']).nullable().optional(),
+  biological_sex: z.enum(["male", "female", "other"]).nullable().optional(),
   current_weight_kg: z.coerce
     .number()
-    .min(20, 'Weight must be at least 20kg')
+    .min(20, "Weight must be at least 20kg")
     .max(500)
     .nullable()
     .optional(),
   height_cm: z.coerce
     .number()
-    .min(50, 'Height must be at least 50cm')
+    .min(50, "Height must be at least 50cm")
     .max(300)
     .nullable()
     .optional(),
   target_weight_1month_kg: z.coerce
     .number()
-    .min(20, 'Target weight must be at least 20kg')
+    .min(20, "Target weight must be at least 20kg")
     .max(500)
     .nullable()
     .optional(),
   long_term_goal_weight_kg: z.coerce
     .number()
-    .min(20, 'Long-term goal weight must be at least 20kg')
+    .min(20, "Long-term goal weight must be at least 20kg")
     .max(500)
     .nullable()
     .optional(),
   physical_activity_level: z
-    .enum(['sedentary', 'light', 'moderate', 'active', 'extra_active'])
+    .enum(["sedentary", "light", "moderate", "active", "extra_active"])
     .nullable()
     .optional(),
   primary_diet_goal: z
-    .enum(['fat_loss', 'muscle_gain', 'recomp'])
+    .enum(["fat_loss", "muscle_gain", "recomp"])
     .nullable()
     .optional(),
-  // Medical Info & Physical Limitations
   pain_mobility_issues: z.array(z.string()).nullable().optional(),
   injuries: z.array(z.string()).nullable().optional(),
   surgeries: z.array(z.string()).nullable().optional(),
-  // Exercise Preferences
   exercise_goals: z.array(z.string()).nullable().optional(),
   preferred_exercise_types: z.array(z.string()).nullable().optional(),
   exercise_frequency: z.string().nullable().optional(),
   typical_exercise_intensity: z.string().nullable().optional(),
   equipment_access: z.array(z.string()).nullable().optional(),
-  // Diet and health
   preferred_diet: z.string().nullable().optional(),
   allergies: z.array(z.string()).nullable().optional(),
   medical_conditions: z.array(z.string()).nullable().optional(),
   medications: z.array(z.string()).nullable().optional(),
-  // Body composition
   bf_current: z.coerce
     .number()
-    .min(0, 'Must be >= 0')
-    .max(100, 'Body fat % must be between 0 and 100.')
+    .min(0, "Must be >= 0")
+    .max(100, "Body fat % must be between 0 and 100.")
     .nullable()
     .optional(),
   bf_target: z.coerce
     .number()
-    .min(0, 'Must be >= 0')
-    .max(100, 'Target body fat % must be between 0 and 100.')
+    .min(0, "Must be >= 0")
+    .max(100, "Target body fat % must be between 0 and 100.")
     .nullable()
     .optional(),
   waist_current: z.coerce.number().min(0).nullable().optional(),
@@ -442,39 +447,39 @@ export type ProfileFormValues = z.infer<typeof ProfileFormSchema>;
 export const SmartCaloriePlannerFormSchema = z.object({
   age: z.coerce
     .number()
-    .int('Age must be a whole number (e.g., 30, not 30.5).')
-    .positive('Age must be a positive number.')
+    .int("Age must be a whole number (e.g., 30, not 30.5).")
+    .positive("Age must be a positive number.")
     .nullable(),
   biological_sex: z
-    .enum(['male', 'female', 'other'], {
-      required_error: 'Biological sex is required.',
+    .enum(["male", "female", "other"], {
+      required_error: "Biological sex is required.",
     })
     .nullable(),
   height_cm: z.coerce
     .number()
-    .positive('Height must be a positive number.')
+    .positive("Height must be a positive number.")
     .nullable(),
   current_weight_kg: z.coerce
     .number()
-    .positive('Current weight must be a positive number.')
+    .positive("Current weight must be a positive number.")
     .nullable(),
   target_weight_1month_kg: z.coerce
     .number()
-    .positive('Target weight must be a positive number.')
+    .positive("Target weight must be a positive number.")
     .nullable(),
   long_term_goal_weight_kg: z.coerce
     .number()
-    .positive('Long-term goal weight must be a positive number.')
+    .positive("Long-term goal weight must be a positive number.")
     .optional()
     .nullable(),
   physical_activity_level: z
-    .enum(['sedentary', 'light', 'moderate', 'active', 'extra_active'], {
-      required_error: 'Activity level is required.',
+    .enum(["sedentary", "light", "moderate", "active", "extra_active"], {
+      required_error: "Activity level is required.",
     })
     .nullable(),
   primary_diet_goal: z
-    .enum(['fat_loss', 'muscle_gain', 'recomp'], {
-      required_error: 'Diet goal is required.',
+    .enum(["fat_loss", "muscle_gain", "recomp"], {
+      required_error: "Diet goal is required.",
     })
     .nullable(),
   bf_current: z
@@ -482,9 +487,9 @@ export const SmartCaloriePlannerFormSchema = z.object({
       preprocessOptionalNumber,
       z.coerce
         .number()
-        .min(0, 'Must be >= 0')
-        .max(100, 'Body fat % must be between 0 and 100.')
-        .optional()
+        .min(0, "Must be >= 0")
+        .max(100, "Body fat % must be between 0 and 100.")
+        .optional(),
     )
     .nullable(),
   bf_target: z
@@ -492,9 +497,9 @@ export const SmartCaloriePlannerFormSchema = z.object({
       preprocessOptionalNumber,
       z.coerce
         .number()
-        .min(0, 'Must be >= 0')
-        .max(100, 'Target body fat % must be between 0 and 100.')
-        .optional()
+        .min(0, "Must be >= 0")
+        .max(100, "Target body fat % must be between 0 and 100.")
+        .optional(),
     )
     .nullable(),
   bf_ideal: z
@@ -502,9 +507,9 @@ export const SmartCaloriePlannerFormSchema = z.object({
       preprocessOptionalNumber,
       z.coerce
         .number()
-        .min(0, 'Must be >= 0')
-        .max(100, 'Ideal body fat % must be between 0 and 100.')
-        .optional()
+        .min(0, "Must be >= 0")
+        .max(100, "Ideal body fat % must be between 0 and 100.")
+        .optional(),
     )
     .nullable(),
   mm_current: z
@@ -512,9 +517,9 @@ export const SmartCaloriePlannerFormSchema = z.object({
       preprocessOptionalNumber,
       z.coerce
         .number()
-        .min(0, 'Must be >= 0')
-        .max(100, 'Muscle mass % must be between 0 and 100.')
-        .optional()
+        .min(0, "Must be >= 0")
+        .max(100, "Muscle mass % must be between 0 and 100.")
+        .optional(),
     )
     .nullable(),
   mm_target: z
@@ -522,9 +527,9 @@ export const SmartCaloriePlannerFormSchema = z.object({
       preprocessOptionalNumber,
       z.coerce
         .number()
-        .min(0, 'Must be >= 0')
-        .max(100, 'Target muscle mass % must be between 0 and 100.')
-        .optional()
+        .min(0, "Must be >= 0")
+        .max(100, "Target muscle mass % must be between 0 and 100.")
+        .optional(),
     )
     .nullable(),
   mm_ideal: z
@@ -532,9 +537,9 @@ export const SmartCaloriePlannerFormSchema = z.object({
       preprocessOptionalNumber,
       z.coerce
         .number()
-        .min(0, 'Must be >= 0')
-        .max(100, 'Ideal muscle mass % must be between 0 and 100.')
-        .optional()
+        .min(0, "Must be >= 0")
+        .max(100, "Ideal muscle mass % must be between 0 and 100.")
+        .optional(),
     )
     .nullable(),
   bw_current: z
@@ -542,9 +547,9 @@ export const SmartCaloriePlannerFormSchema = z.object({
       preprocessOptionalNumber,
       z.coerce
         .number()
-        .min(0, 'Must be >= 0')
-        .max(100, 'Body water % must be between 0 and 100.')
-        .optional()
+        .min(0, "Must be >= 0")
+        .max(100, "Body water % must be between 0 and 100.")
+        .optional(),
     )
     .nullable(),
   bw_target: z
@@ -552,9 +557,9 @@ export const SmartCaloriePlannerFormSchema = z.object({
       preprocessOptionalNumber,
       z.coerce
         .number()
-        .min(0, 'Must be >= 0')
-        .max(100, 'Target body water % must be between 0 and 100.')
-        .optional()
+        .min(0, "Must be >= 0")
+        .max(100, "Target body water % must be between 0 and 100.")
+        .optional(),
     )
     .nullable(),
   bw_ideal: z
@@ -562,9 +567,9 @@ export const SmartCaloriePlannerFormSchema = z.object({
       preprocessOptionalNumber,
       z.coerce
         .number()
-        .min(0, 'Must be >= 0')
-        .max(100, 'Ideal body water % must be between 0 and 100.')
-        .optional()
+        .min(0, "Must be >= 0")
+        .max(100, "Ideal body water % must be between 0 and 100.")
+        .optional(),
     )
     .nullable(),
   waist_current: z
@@ -625,26 +630,26 @@ export const SmartCaloriePlannerFormSchema = z.object({
     preprocessOptionalNumber,
     z.coerce
       .number()
-      .int('Custom calories must be a whole number if provided.')
-      .positive('Custom calories must be positive if provided.')
-      .optional()
+      .int("Custom calories must be a whole number if provided.")
+      .positive("Custom calories must be positive if provided.")
+      .optional(),
   ),
   custom_protein_per_kg: z.preprocess(
     preprocessOptionalNumber,
     z.coerce
       .number()
-      .min(0, 'Protein per kg must be non-negative if provided.')
-      .optional()
+      .min(0, "Protein per kg must be non-negative if provided.")
+      .optional(),
   ),
   remaining_calories_carbs_percentage: z.preprocess(
     preprocessOptionalNumber,
     z.coerce
       .number()
-      .int('Carb percentage must be a whole number.')
-      .min(0, 'Carb percentage must be between 0 and 100.')
-      .max(100, 'Carb percentage must be between 0 and 100.')
+      .int("Carb percentage must be a whole number.")
+      .min(0, "Carb percentage must be between 0 and 100.")
+      .max(100, "Carb percentage must be between 0 and 100.")
       .default(50)
-      .optional()
+      .optional(),
   ),
 });
 
@@ -691,15 +696,11 @@ export interface GlobalCalculatedTargets {
   custom_protein_g?: number | null;
   custom_carbs_g?: number | null;
   custom_fat_g?: number | null;
-
-  // Additional calculated fields
   estimated_weekly_weight_change_kg?: number | null;
   protein_calories?: number | null;
   carb_calories?: number | null;
   fat_calories?: number | null;
   current_weight_for_custom_calc?: number | null;
-
-  // Percentage fields
   target_protein_percentage?: number | null;
   target_carbs_percentage?: number | null;
   target_fat_percentage?: number | null;
@@ -714,8 +715,8 @@ export const MealMacroDistributionSchema = z.object({
   mealName: z.string(),
   calories_pct: z.coerce
     .number()
-    .min(0, '% must be >= 0')
-    .max(100, '% must be <= 100')
+    .min(0, "% must be >= 0")
+    .max(100, "% must be <= 100")
     .default(0),
 });
 
@@ -730,78 +731,80 @@ export const MacroSplitterFormSchema = z
   })
   .superRefine((data, ctx) => {
     const checkSum = (
-      macroKey: keyof Omit<MealMacroDistribution, 'mealName'>,
-      macroName: string
+      macroKey: keyof Omit<MealMacroDistribution, "mealName">,
+      macroName: string,
     ) => {
       const sum = data.meal_distributions.reduce(
         (acc, meal) => acc + (Number(meal[macroKey]) || 0),
-        0
+        0,
       );
       if (Math.abs(sum - 100) > 0.01) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `Total ${macroName} percentages must sum to 100%. Current sum: ${sum.toFixed(
-            0
+            0,
           )}%`,
-          path: ['mealDistributions'],
+          path: ["mealDistributions"],
         });
       }
     };
-    checkSum('calories_pct', 'Calorie');
+    checkSum("calories_pct", "Calorie");
   });
 
 export type MacroSplitterFormValues = z.infer<typeof MacroSplitterFormSchema>;
 
 // Onboarding Form Schema
 export const OnboardingFormSchema = z.object({
-  user_role: z.enum(['client', 'coach'], {
-    required_error: 'User role is required.',
+  user_role: z.enum(["client", "coach"], {
+    required_error: "User role is required.",
   }),
   age: z.coerce
     .number()
-    .int('Age must be a whole number.')
-    .min(1, 'Age is required')
+    .int("Age must be a whole number.")
+    .min(1, "Age is required")
     .max(120),
-  biological_sex: z.enum(['male', 'female', 'other'], {
-    required_error: 'Biological sex is required.',
+  biological_sex: z.enum(["male", "female", "other"], {
+    required_error: "Biological sex is required.",
   }),
-  height_cm: z.coerce.number().min(50, 'Height must be at least 50cm').max(300),
+  height_cm: z.coerce.number().min(50, "Height must be at least 50cm").max(300),
   current_weight_kg: z.coerce
     .number()
-    .min(20, 'Weight must be at least 20kg')
+    .min(20, "Weight must be at least 20kg")
     .max(500),
   target_weight_1month_kg: z.coerce
     .number()
-    .min(20, 'Target weight must be at least 20kg')
-    .max(500),
+    .min(20, "Target weight must be at least 20kg")
+    .max(500)
+    .optional()
+    .nullable(),
   long_term_goal_weight_kg: z.coerce
     .number()
-    .min(20, 'Long-term goal weight must be at least 20kg')
+    .min(20, "Long-term goal weight must be at least 20kg")
     .max(500)
     .optional()
     .nullable(),
   physical_activity_level: z.enum(
-    ['sedentary', 'light', 'moderate', 'active', 'extra_active'],
-    { required_error: 'Activity level is required.' }
+    ["sedentary", "light", "moderate", "active", "extra_active"],
+    { required_error: "Activity level is required." },
   ),
-  primary_diet_goal: z.enum(['fat_loss', 'muscle_gain', 'recomp'], {
-    required_error: 'Diet goal is required.',
+  primary_diet_goal: z.enum(["fat_loss", "muscle_gain", "recomp"], {
+    required_error: "Diet goal is required.",
   }),
   bf_current: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().min(0).max(100).optional()
+    z.coerce.number().min(0).max(100).optional(),
   ),
   bf_target: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().min(0).max(100).optional()
+    z.coerce.number().min(0).max(100).optional(),
   ),
   waist_current: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
+    z.coerce.number().min(0).optional(),
   ),
   waist_target: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().min(0).optional()
+    z.coerce.number().min(0).optional(),
   ),
   preferred_diet: z.string().optional(),
   allergies: z.string().or(z.array(z.string())).optional(),
@@ -811,43 +814,46 @@ export const OnboardingFormSchema = z.object({
     preprocessOptionalNumber,
     z.coerce
       .number()
-      .positive('Custom calories must be positive if provided.')
-      .optional()
+      .positive("Custom calories must be positive if provided.")
+      .optional(),
   ),
   custom_protein_per_kg: z.preprocess(
     preprocessOptionalNumber,
     z.coerce
       .number()
-      .min(0, 'Protein per kg must be non-negative if provided.')
-      .optional()
+      .min(0, "Protein per kg must be non-negative if provided.")
+      .optional(),
   ),
   custom_protein_g: z.preprocess(
     preprocessOptionalNumber,
     z.coerce
       .number()
-      .min(0, 'Protein must be non-negative if provided.')
-      .optional()
+      .min(0, "Protein must be non-negative if provided.")
+      .optional(),
   ),
   custom_carbs_g: z.preprocess(
     preprocessOptionalNumber,
     z.coerce
       .number()
-      .min(0, 'Carbs must be non-negative if provided.')
-      .optional()
+      .min(0, "Carbs must be non-negative if provided.")
+      .optional(),
   ),
   custom_fat_g: z.preprocess(
     preprocessOptionalNumber,
-    z.coerce.number().min(0, 'Fat must be non-negative if provided.').optional()
+    z.coerce
+      .number()
+      .min(0, "Fat must be non-negative if provided.")
+      .optional(),
   ),
   remaining_calories_carbs_percentage: z.preprocess(
     preprocessOptionalNumber,
     z.coerce
       .number()
-      .int('Carb percentage must be a whole number.')
-      .min(0, 'Carb percentage must be between 0 and 100.')
-      .max(100, 'Carb percentage must be between 0 and 100.')
+      .int("Carb percentage must be a whole number.")
+      .min(0, "Carb percentage must be between 0 and 100.")
+      .max(100, "Carb percentage must be between 0 and 100.")
       .default(50)
-      .optional()
+      .optional(),
   ),
   systemCalculatedTargets: z.any().optional(),
   userCustomizedTargets: z.any().optional(),
@@ -893,6 +899,43 @@ export type SuggestMealsForMacrosOutput = z.infer<
 >;
 
 export const SuggestMealsForMacrosInputSchema = z.object({
+  protein: z.number().min(0, "Protein must be non-negative").optional(),
+  carbs: z.number().min(0, "Carbs must be non-negative").optional(),
+  fat: z.number().min(0, "Fat must be non-negative").optional(),
+  calories: z.number().min(0, "Calories must be non-negative").optional(),
+  preferences: z.string().optional(),
+  meal_name: z.string().optional(),
+  target_calories: z
+    .number()
+    .positive()
+    .min(100, "Calories must be at least 100 kcal"),
+  target_protein_grams: z
+    .number()
+    .nonnegative()
+    .min(0, "Protein cannot be negative"),
+  target_carbs_grams: z
+    .number()
+    .nonnegative()
+    .min(0, "Carbs cannot be negative"),
+  target_fat_grams: z.number().nonnegative().min(0, "Fat cannot be negative"),
+  age: z.number().nullable().optional(),
+  gender: z.string().nullable().optional(),
+  activity_level: z.string().nullable().optional(),
+  diet_goal: z.string().nullable().optional(),
+  preferred_diet: z.string().nullable().optional(),
+  preferred_cuisines: z.array(z.string()).nullable().optional(),
+  dispreferrred_cuisines: z.array(z.string()).nullable().optional(),
+  preferred_ingredients: z.array(z.string()).nullable().optional(),
+  dispreferrred_ingredients: z.array(z.string()).nullable().optional(),
+  allergies: z.array(z.string()).nullable().optional(),
+  medical_conditions: z.array(z.string()).nullable().optional(),
+});
+
+export type SuggestMealsForMacrosInput = z.infer<
+  typeof SuggestMealsForMacrosInputSchema
+>;
+
+export const SuggestMealsForMacrosSimpleInputSchema = z.object({
   meal_name: z.string(),
   target_calories: z.number(),
   target_protein_grams: z.number(),
@@ -908,8 +951,8 @@ export const SuggestMealsForMacrosInputSchema = z.object({
   medications: z.array(z.string()).optional(),
 });
 
-export type SuggestMealsForMacrosInput = z.infer<
-  typeof SuggestMealsForMacrosInputSchema
+export type SuggestMealsForMacrosSimpleInput = z.infer<
+  typeof SuggestMealsForMacrosSimpleInputSchema
 >;
 
 // AI Service Schemas
@@ -996,34 +1039,75 @@ export const AIGeneratedMealSchema = z.object({
 export type AIGeneratedMeal = z.infer<typeof AIGeneratedMealSchema>;
 
 export const DayPlanSchema = z.object({
-  day_of_week: z.string(),
-  meals: z.array(AIGeneratedMealSchema),
+  day_of_week: z.enum([
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ]),
+  meals: z.array(AIGeneratedMealSchema).length(6),
+  daily_totals: z.object({
+    calories: z.number().min(0),
+    protein: z.number().min(0),
+    carbs: z.number().min(0),
+    fat: z.number().min(0),
+  }),
 });
 
 export type DayPlan = z.infer<typeof DayPlanSchema>;
 
 export const GeneratePersonalizedMealPlanInputSchema = z.object({
-  age: z.number().optional(),
-  biological_sex: z.string().optional(),
-  height_cm: z.number().optional(),
-  current_weight_kg: z.number().optional(),
-  target_weight_kg: z.number().optional(),
-  physical_activity_level: z.string().optional(),
-  primary_diet_goal: z.string().optional(),
-  bf_current: z.number().optional(),
-  bf_target: z.number().optional(),
-  waist_current: z.number().optional(),
-  waist_target: z.number().optional(),
-  pain_mobility_issues: z.array(z.string()).optional(),
-  exercise_goals: z.array(z.string()).optional(),
-  preferred_exercise_types: z.array(z.string()).optional(),
-  exercise_frequency: z.string().optional(),
-  equipment_access: z.array(z.string()).optional(),
-  preferred_diet: z.string().optional(),
-  allergies: z.array(z.string()).optional(),
-  medical_conditions: z.array(z.string()).optional(),
-  medications: z.array(z.string()).optional(),
-  meal_data: WeeklyMealPlanSchema,
+  age: z.number().int().min(1).max(120).default(30),
+  biological_sex: z.enum(["male", "female", "other"]).default("other"),
+  height_cm: z.number().min(50).max(300).default(170),
+  current_weight_kg: z.number().min(20).max(500).default(70),
+  target_weight_kg: z.number().min(20).max(500).default(70),
+  physical_activity_level: z.enum(["sedentary", "light", "moderate", "active", "extra_active"]).default("moderate"),
+  primary_diet_goal: z.enum(["fat_loss", "muscle_gain", "recomp"]).default("fat_loss"),
+  preferred_diet: z.enum(["Standard", "Vegetarian", "Vegan", "Keto"]).default("Standard"),
+  allergies: z.array(z.string()).default([]),
+  dispreferrred_ingredients: z.array(z.string()).default([]),
+  preferred_ingredients: z.array(z.string()).default([]),
+  medical_conditions: z.array(z.string()).default([]),
+  meal_data: z.object({
+    target_daily_calories: z.number().min(100).default(1200),
+    target_protein_g: z.number().min(0).default(90),
+    target_carbs_g: z.number().min(0).default(150),
+    target_fat_g: z.number().min(0).default(40),
+  }).default({
+    target_daily_calories: 1200,
+    target_protein_g: 90,
+    target_carbs_g: 150,
+    target_fat_g: 40,
+  }),
+  meal_distributions: z.array(
+    z.object({
+      mealName: z.enum(["Breakfast", "Morning Snack", "Lunch", "Afternoon Snack", "Dinner", "Evening Snack"]),
+      calories_pct: z.number().min(0).max(100),
+      protein_pct: z.number().min(0).max(100).optional(),
+      carbs_pct: z.number().min(0).max(100).optional(),
+      fat_pct: z.number().min(0).max(100).optional(),
+    })
+  ).length(6).default([
+    { mealName: "Breakfast", calories_pct: 25 },
+    { mealName: "Morning Snack", calories_pct: 10 },
+    { mealName: "Lunch", calories_pct: 30 },
+    { mealName: "Afternoon Snack", calories_pct: 10 },
+    { mealName: "Dinner", calories_pct: 20 },
+    { mealName: "Evening Snack", calories_pct: 5 },
+  ]),
+}).superRefine((data, ctx) => {
+  const sumCalories = data.meal_distributions.reduce((acc, meal) => acc + meal.calories_pct, 0);
+  if (Math.abs(sumCalories - 100) > 0.01) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Total calorie percentages must sum to 100%. Current sum: ${sumCalories.toFixed(0)}%`,
+      path: ["meal_distributions"],
+    });
+  }
 });
 
 export type GeneratePersonalizedMealPlanInput = z.infer<
@@ -1031,15 +1115,44 @@ export type GeneratePersonalizedMealPlanInput = z.infer<
 >;
 
 export const GeneratePersonalizedMealPlanOutputSchema = z.object({
-  days: z.array(DayPlanSchema),
-  weekly_summary: z
-    .object({
-      total_calories: z.number(),
-      total_protein: z.number(),
-      total_carbs: z.number(),
-      total_fat: z.number(),
+  days: z.array(
+    z.object({
+      day_of_week: z.enum(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]),
+      meals: z.array(
+        z.object({
+          meal_name: z.enum(["Breakfast", "Morning Snack", "Lunch", "Afternoon Snack", "Dinner", "Evening Snack"]),
+          custom_name: z.string(),
+          ingredients: z.array(
+            z.object({
+              name: z.string(),
+              quantity: z.number().min(0),
+              unit: z.string(),
+              calories: z.number().min(0),
+              protein: z.number().min(0),
+              carbs: z.number().min(0),
+              fat: z.number().min(0),
+            })
+          ).min(3).max(8),
+          total_calories: z.number().min(0),
+          total_protein: z.number().min(0),
+          total_carbs: z.number().min(0),
+          total_fat: z.number().min(0),
+        })
+      ).length(6),
+      daily_totals: z.object({
+        calories: z.number().min(0),
+        protein: z.number().min(0),
+        carbs: z.number().min(0),
+        fat: z.number().min(0),
+      }),
     })
-    .optional(),
+  ).length(7),
+  weekly_summary: z.object({
+    total_calories: z.number().min(0),
+    total_protein: z.number().min(0),
+    total_carbs: z.number().min(0),
+    total_fat: z.number().min(0),
+  }),
 });
 
 export type GeneratePersonalizedMealPlanOutput = z.infer<
@@ -1069,7 +1182,7 @@ export const SuggestIngredientSwapInputSchema = z.object({
       caloriesPer100g: z.number(),
       proteinPer100g: z.number(),
       fatPer100g: z.number(),
-    })
+    }),
   ),
   dietaryPreferences: z.string(),
   dislikedIngredients: z.array(z.string()),
@@ -1090,7 +1203,7 @@ export const SuggestIngredientSwapOutputSchema = z.array(
   z.object({
     ingredientName: z.string(),
     reason: z.string(),
-  })
+  }),
 );
 
 export type SuggestIngredientSwapOutput = z.infer<

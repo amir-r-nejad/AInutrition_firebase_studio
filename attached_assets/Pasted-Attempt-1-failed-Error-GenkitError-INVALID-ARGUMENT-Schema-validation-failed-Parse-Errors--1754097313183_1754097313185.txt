@@ -1,0 +1,2004 @@
+Attempt 1 failed: Error [GenkitError]: INVALID_ARGUMENT: Schema validation failed. Parse Errors:
+
+- days.4.meals.4: must have required property 'meal_name'
+
+Provided data:
+
+{
+  "days": [
+    {
+      "day_of_week": "Monday",
+      "meals": [
+        {
+          "ingredients": [
+            {
+              "calories": 97,
+              "carbs": 4,
+              "fat": 4,
+              "name": "Greek Yogurt",
+              "protein": 11,
+              "quantity": 200,
+              "unit": "g"
+            },
+            {
+              "calories": 300,
+              "carbs": 50,
+              "fat": 10,
+              "name": "Honey",
+              "protein": 0,
+              "quantity": 40,
+              "unit": "g"
+            },
+            {
+              "calories": 654,
+              "carbs": 14,
+              "fat": 65,
+              "name": "Walnuts",
+              "protein": 15,
+              "quantity": 30,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Breakfast",
+          "custom_name": "Greek Yogurt with Honey and Walnuts",
+          "total_calories": 458,
+          "total_carbs": 38,
+          "total_fat": 25,
+          "total_protein": 37
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 130,
+              "carbs": 0,
+              "fat": 13,
+              "name": "Olive Oil",
+              "protein": 0,
+              "quantity": 10,
+              "unit": "ml"
+            },
+            {
+              "calories": 100,
+              "carbs": 3,
+              "fat": 5,
+              "name": "Olives",
+              "protein": 1,
+              "quantity": 30,
+              "unit": "g"
+            },
+            {
+              "calories": 10,
+              "carbs": 2,
+              "fat": 0,
+              "name": "Cucumber",
+              "protein": 0,
+              "quantity": 50,
+              "unit": "g"
+            },
+            {
+              "calories": 100,
+              "carbs": 4,
+              "fat": 7,
+              "name": "Feta Cheese",
+              "protein": 8,
+              "quantity": 30,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Morning Snack",
+          "custom_name": "Mediterranean Snack Plate",
+          "total_calories": 340,
+          "total_carbs": 9,
+          "total_fat": 25,
+          "total_protein": 9
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 164,
+              "carbs": 28,
+              "fat": 2,
+              "name": "Quinoa",
+              "protein": 6,
+              "quantity": 150,
+              "unit": "g"
+            },
+            {
+              "calories": 150,
+              "carbs": 0,
+              "fat": 7,
+              "name": "Olive oil",
+              "protein": 0,
+              "quantity": 15,
+              "unit": "ml"
+            },
+            {
+              "calories": 165,
+              "carbs": 0,
+              "fat": 10,
+              "name": "Salmon",
+              "protein": 17,
+              "quantity": 80,
+              "unit": "g"
+            },
+            {
+              "calories": 20,
+              "carbs": 4,
+              "fat": 0,
+              "name": "Lemon juice",
+              "protein": 0,
+              "quantity": 20,
+              "unit": "ml"
+            }
+          ],
+          "meal_name": "Lunch",
+          "custom_name": "Mediterranean Salmon Quinoa Bowl",
+          "total_calories": 499,
+          "total_carbs": 32,
+          "total_fat": 19,
+          "total_protein": 23
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 150,
+              "carbs": 10,
+              "fat": 10,
+              "name": "Hummus",
+              "protein": 5,
+              "quantity": 60,
+              "unit": "g"
+            },
+            {
+              "calories": 30,
+              "carbs": 6,
+              "fat": 0,
+              "name": "Carrots",
+              "protein": 1,
+              "quantity": 80,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Afternoon Snack",
+          "custom_name": "Hummus and Carrots",
+          "total_calories": 180,
+          "total_carbs": 16,
+          "total_fat": 10,
+          "total_protein": 6
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 120,
+              "carbs": 15,
+              "fat": 5,
+              "name": "Pasta",
+              "protein": 4,
+              "quantity": 100,
+              "unit": "g"
+            },
+            {
+              "calories": 150,
+              "carbs": 2,
+              "fat": 10,
+              "name": "Pesto",
+              "protein": 5,
+              "quantity": 50,
+              "unit": "g"
+            },
+            {
+              "calories": 130,
+              "carbs": 0,
+              "fat": 7,
+              "name": "Olive Oil",
+              "protein": 0,
+              "quantity": 10,
+              "unit": "ml"
+            },
+            {
+              "calories": 200,
+              "carbs": 0,
+              "fat": 5,
+              "name": "Chicken Breast",
+              "protein": 40,
+              "quantity": 100,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Dinner",
+          "custom_name": "Pesto Pasta with Chicken",
+          "total_calories": 600,
+          "total_carbs": 17,
+          "total_fat": 27,
+          "total_protein": 49
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 80,
+              "carbs": 5,
+              "fat": 5,
+              "name": "Cottage Cheese",
+              "protein": 10,
+              "quantity": 100,
+              "unit": "g"
+            },
+            {
+              "calories": 50,
+              "carbs": 10,
+              "fat": 0,
+              "name": "Berries",
+              "protein": 0,
+              "quantity": 75,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Evening Snack",
+          "custom_name": "Cottage Cheese with Berries",
+          "total_calories": 130,
+          "total_carbs": 15,
+          "total_fat": 5,
+          "total_protein": 10
+        }
+      ]
+    },
+    {
+      "day_of_week": "Tuesday",
+      "meals": [
+        {
+          "ingredients": [
+            {
+              "calories": 25,
+              "carbs": 4,
+              "fat": 1,
+              "name": "Tofu",
+              "protein": 2,
+              "quantity": 20,
+              "unit": "g"
+            },
+            {
+              "calories": 30,
+              "carbs": 5,
+              "fat": 0,
+              "name": "Seaweed",
+              "protein": 1,
+              "quantity": 5,
+              "unit": "g"
+            },
+            {
+              "calories": 15,
+              "carbs": 2,
+              "fat": 1,
+              "name": "Green Onion",
+              "protein": 1,
+              "quantity": 10,
+              "unit": "g"
+            },
+            {
+              "calories": 5,
+              "carbs": 1,
+              "fat": 0,
+              "name": "Miso Paste",
+              "protein": 0,
+              "quantity": 2,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Breakfast",
+          "custom_name": "Miso Soup",
+          "total_calories": 75,
+          "total_carbs": 12,
+          "total_fat": 2,
+          "total_protein": 4
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 140,
+              "carbs": 20,
+              "fat": 5,
+              "name": "Edamame",
+              "protein": 12,
+              "quantity": 100,
+              "unit": "g"
+            },
+            {
+              "calories": 150,
+              "carbs": 0,
+              "fat": 15,
+              "name": "Peanut Sauce",
+              "protein": 7,
+              "quantity": 30,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Morning Snack",
+          "custom_name": "Edamame with Peanut Sauce",
+          "total_calories": 290,
+          "total_carbs": 20,
+          "total_fat": 20,
+          "total_protein": 19
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 180,
+              "carbs": 30,
+              "fat": 3,
+              "name": "Sushi Rice",
+              "protein": 4,
+              "quantity": 120,
+              "unit": "g"
+            },
+            {
+              "calories": 120,
+              "carbs": 0,
+              "fat": 5,
+              "name": "Avocado",
+              "protein": 2,
+              "quantity": 40,
+              "unit": "g"
+            },
+            {
+              "calories": 170,
+              "carbs": 0,
+              "fat": 10,
+              "name": "Tuna",
+              "protein": 20,
+              "quantity": 80,
+              "unit": "g"
+            },
+            {
+              "calories": 20,
+              "carbs": 4,
+              "fat": 0,
+              "name": "Soy Sauce",
+              "protein": 2,
+              "quantity": 20,
+              "unit": "ml"
+            }
+          ],
+          "meal_name": "Lunch",
+          "custom_name": "Tuna Avocado Sushi Bowl",
+          "total_calories": 490,
+          "total_carbs": 34,
+          "total_fat": 18,
+          "total_protein": 28
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 100,
+              "carbs": 15,
+              "fat": 2,
+              "name": "Rice Paper Wraps",
+              "protein": 3,
+              "quantity": 2,
+              "unit": "wraps"
+            },
+            {
+              "calories": 60,
+              "carbs": 4,
+              "fat": 0,
+              "name": "Shredded Carrots",
+              "protein": 1,
+              "quantity": 80,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Afternoon Snack",
+          "custom_name": "Rice Paper Spring Rolls",
+          "total_calories": 160,
+          "total_carbs": 19,
+          "total_fat": 2,
+          "total_protein": 4
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 150,
+              "carbs": 20,
+              "fat": 5,
+              "name": "Brown Rice",
+              "protein": 3,
+              "quantity": 120,
+              "unit": "g"
+            },
+            {
+              "calories": 200,
+              "carbs": 10,
+              "fat": 10,
+              "name": "Chicken Breast",
+              "protein": 30,
+              "quantity": 100,
+              "unit": "g"
+            },
+            {
+              "calories": 120,
+              "carbs": 10,
+              "fat": 6,
+              "name": "Coconut Milk",
+              "protein": 2,
+              "quantity": 60,
+              "unit": "ml"
+            },
+            {
+              "calories": 30,
+              "carbs": 5,
+              "fat": 1,
+              "name": "Curry Paste",
+              "protein": 1,
+              "quantity": 10,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Dinner",
+          "custom_name": "Thai Green Curry with Chicken and Rice",
+          "total_calories": 500,
+          "total_carbs": 45,
+          "total_fat": 22,
+          "total_protein": 36
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 70,
+              "carbs": 10,
+              "fat": 2,
+              "name": "Mango",
+              "protein": 1,
+              "quantity": 100,
+              "unit": "g"
+            },
+            {
+              "calories": 60,
+              "carbs": 10,
+              "fat": 1,
+              "name": "Sticky Rice",
+              "protein": 1,
+              "quantity": 50,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Evening Snack",
+          "custom_name": "Mango Sticky Rice",
+          "total_calories": 130,
+          "total_carbs": 20,
+          "total_fat": 3,
+          "total_protein": 2
+        }
+      ]
+    },
+    {
+      "day_of_week": "Wednesday",
+      "meals": [
+        {
+          "ingredients": [
+            {
+              "calories": 100,
+              "carbs": 3,
+              "fat": 9,
+              "name": "Mozzarella",
+              "protein": 9,
+              "quantity": 40,
+              "unit": "g"
+            },
+            {
+              "calories": 20,
+              "carbs": 4,
+              "fat": 0,
+              "name": "Balsamic Glaze",
+              "protein": 0,
+              "quantity": 20,
+              "unit": "ml"
+            },
+            {
+              "calories": 15,
+              "carbs": 0,
+              "fat": 1,
+              "name": "Basil",
+              "protein": 1,
+              "quantity": 5,
+              "unit": "g"
+            },
+            {
+              "calories": 20,
+              "carbs": 4,
+              "fat": 0,
+              "name": "Tomatoes",
+              "protein": 1,
+              "quantity": 80,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Breakfast",
+          "custom_name": "Caprese Skewers",
+          "total_calories": 155,
+          "total_carbs": 11,
+          "total_fat": 10,
+          "total_protein": 11
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 200,
+              "carbs": 20,
+              "fat": 10,
+              "name": "Bruschetta Bread",
+              "protein": 4,
+              "quantity": 80,
+              "unit": "g"
+            },
+            {
+              "calories": 10,
+              "carbs": 2,
+              "fat": 0,
+              "name": "Diced Tomatoes",
+              "protein": 1,
+              "quantity": 40,
+              "unit": "g"
+            },
+            {
+              "calories": 5,
+              "carbs": 0,
+              "fat": 1,
+              "name": "Basil",
+              "protein": 0,
+              "quantity": 2,
+              "unit": "g"
+            },
+            {
+              "calories": 40,
+              "carbs": 0,
+              "fat": 5,
+              "name": "Olive Oil",
+              "protein": 0,
+              "quantity": 4,
+              "unit": "ml"
+            }
+          ],
+          "meal_name": "Morning Snack",
+          "custom_name": "Bruschetta",
+          "total_calories": 255,
+          "total_carbs": 22,
+          "total_fat": 16,
+          "total_protein": 5
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 170,
+              "carbs": 25,
+              "fat": 4,
+              "name": "Pasta",
+              "protein": 6,
+              "quantity": 140,
+              "unit": "g"
+            },
+            {
+              "calories": 120,
+              "carbs": 5,
+              "fat": 8,
+              "name": "Meat Sauce",
+              "protein": 10,
+              "quantity": 80,
+              "unit": "g"
+            },
+            {
+              "calories": 20,
+              "carbs": 4,
+              "fat": 0,
+              "name": "Parmesan Cheese",
+              "protein": 2,
+              "quantity": 5,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Lunch",
+          "custom_name": "Spaghetti with Meat Sauce",
+          "total_calories": 310,
+          "total_carbs": 34,
+          "total_fat": 12,
+          "total_protein": 18
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 150,
+              "carbs": 10,
+              "fat": 10,
+              "name": "Ricotta Cheese",
+              "protein": 10,
+              "quantity": 75,
+              "unit": "g"
+            },
+            {
+              "calories": 50,
+              "carbs": 10,
+              "fat": 0,
+              "name": "Peach",
+              "protein": 1,
+              "quantity": 80,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Afternoon Snack",
+          "custom_name": "Ricotta Cheese and Peach",
+          "total_calories": 200,
+          "total_carbs": 20,
+          "total_fat": 10,
+          "total_protein": 11
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 200,
+              "carbs": 5,
+              "fat": 10,
+              "name": "Beef Shank",
+              "protein": 25,
+              "quantity": 100,
+              "unit": "g"
+            },
+            {
+              "calories": 60,
+              "carbs": 10,
+              "fat": 0,
+              "name": "Vegetables",
+              "protein": 1,
+              "quantity": 100,
+              "unit": "g"
+            },
+            {
+              "calories": 30,
+              "carbs": 5,
+              "fat": 0,
+              "name": "Tomato Paste",
+              "protein": 2,
+              "quantity": 10,
+              "unit": "g"
+            },
+            {
+              "calories": 50,
+              "carbs": 0,
+              "fat": 5,
+              "name": "Olive Oil",
+              "protein": 0,
+              "quantity": 5,
+              "unit": "ml"
+            }
+          ],
+          "meal_name": "Dinner",
+          "custom_name": "Osso Buco",
+          "total_calories": 340,
+          "total_carbs": 20,
+          "total_fat": 15,
+          "total_protein": 28
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 80,
+              "carbs": 5,
+              "fat": 5,
+              "name": "Mascarpone Cheese",
+              "protein": 2,
+              "quantity": 40,
+              "unit": "g"
+            },
+            {
+              "calories": 80,
+              "carbs": 15,
+              "fat": 1,
+              "name": "Lady Fingers",
+              "protein": 2,
+              "quantity": 20,
+              "unit": "g"
+            },
+            {
+              "calories": 20,
+              "carbs": 4,
+              "fat": 0,
+              "name": "Espresso",
+              "protein": 0,
+              "quantity": 20,
+              "unit": "ml"
+            }
+          ],
+          "meal_name": "Evening Snack",
+          "custom_name": "Tiramisu (Small)",
+          "total_calories": 180,
+          "total_carbs": 24,
+          "total_fat": 6,
+          "total_protein": 4
+        }
+      ]
+    },
+    {
+      "day_of_week": "Thursday",
+      "meals": [
+        {
+          "ingredients": [
+            {
+              "calories": 140,
+              "carbs": 20,
+              "fat": 6,
+              "name": "Corn Tortillas",
+              "protein": 3,
+              "quantity": 2,
+              "unit": "tortilla"
+            },
+            {
+              "calories": 100,
+              "carbs": 3,
+              "fat": 7,
+              "name": "Fried Eggs",
+              "protein": 7,
+              "quantity": 1,
+              "unit": "egg"
+            },
+            {
+              "calories": 30,
+              "carbs": 5,
+              "fat": 0,
+              "name": "Salsa",
+              "protein": 1,
+              "quantity": 40,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Breakfast",
+          "custom_name": "Huevos Rancheros",
+          "total_calories": 270,
+          "total_carbs": 28,
+          "total_fat": 13,
+          "total_protein": 11
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 120,
+              "carbs": 10,
+              "fat": 5,
+              "name": "Avocado",
+              "protein": 2,
+              "quantity": 50,
+              "unit": "g"
+            },
+            {
+              "calories": 110,
+              "carbs": 2,
+              "fat": 9,
+              "name": "Guacamole",
+              "protein": 2,
+              "quantity": 50,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Morning Snack",
+          "custom_name": "Guacamole and Avocado",
+          "total_calories": 230,
+          "total_carbs": 12,
+          "total_fat": 14,
+          "total_protein": 4
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 140,
+              "carbs": 20,
+              "fat": 6,
+              "name": "Corn Tortillas",
+              "protein": 3,
+              "quantity": 2,
+              "unit": "tortilla"
+            },
+            {
+              "calories": 100,
+              "carbs": 0,
+              "fat": 4,
+              "name": "Cod",
+              "protein": 17,
+              "quantity": 50,
+              "unit": "g"
+            },
+            {
+              "calories": 10,
+              "carbs": 2,
+              "fat": 0,
+              "name": "Lime Juice",
+              "protein": 0,
+              "quantity": 20,
+              "unit": "ml"
+            },
+            {
+              "calories": 10,
+              "carbs": 2,
+              "fat": 0,
+              "name": "Shredded Cabbage",
+              "protein": 0,
+              "quantity": 30,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Lunch",
+          "custom_name": "Fish Tacos",
+          "total_calories": 260,
+          "total_carbs": 24,
+          "total_fat": 10,
+          "total_protein": 20
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 180,
+              "carbs": 30,
+              "fat": 5,
+              "name": "Fruit Salad",
+              "protein": 2,
+              "quantity": 180,
+              "unit": "g"
+            },
+            {
+              "calories": 20,
+              "carbs": 2,
+              "fat": 0,
+              "name": "Lime Juice",
+              "protein": 0,
+              "quantity": 20,
+              "unit": "ml"
+            }
+          ],
+          "meal_name": "Afternoon Snack",
+          "custom_name": "Mexican Fruit Salad",
+          "total_calories": 200,
+          "total_carbs": 32,
+          "total_fat": 5,
+          "total_protein": 2
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 170,
+              "carbs": 5,
+              "fat": 5,
+              "name": "Chicken Thigh",
+              "protein": 30,
+              "quantity": 100,
+              "unit": "g"
+            },
+            {
+              "calories": 120,
+              "carbs": 10,
+              "fat": 6,
+              "name": "Mole Sauce",
+              "protein": 2,
+              "quantity": 60,
+              "unit": "g"
+            },
+            {
+              "calories": 150,
+              "carbs": 20,
+              "fat": 5,
+              "name": "Rice",
+              "protein": 3,
+              "quantity": 120,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Dinner",
+          "custom_name": "Mole Chicken with Rice",
+          "total_calories": 440,
+          "total_carbs": 35,
+          "total_fat": 16,
+          "total_protein": 35
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 120,
+              "carbs": 15,
+              "fat": 5,
+              "name": "Mexican Hot Chocolate",
+              "protein": 5,
+              "quantity": 240,
+              "unit": "ml"
+            },
+            {
+              "calories": 40,
+              "carbs": 1,
+              "fat": 4,
+              "name": "Cinnamon",
+              "protein": 1,
+              "quantity": 10,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Evening Snack",
+          "custom_name": "Mexican Hot Chocolate with Cinnamon",
+          "total_calories": 160,
+          "total_carbs": 16,
+          "total_fat": 9,
+          "total_protein": 6
+        }
+      ]
+    },
+    {
+      "day_of_week": "Friday",
+      "meals": [
+        {
+          "ingredients": [
+            {
+              "calories": 120,
+              "carbs": 20,
+              "fat": 2,
+              "name": "Dosa",
+              "protein": 5,
+              "quantity": 1,
+              "unit": "dosa"
+            },
+            {
+              "calories": 80,
+              "carbs": 10,
+              "fat": 2,
+              "name": "Sambar",
+              "protein": 5,
+              "quantity": 100,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Breakfast",
+          "custom_name": "Masala Dosa with Sambar",
+          "total_calories": 200,
+          "total_carbs": 30,
+          "total_fat": 4,
+          "total_protein": 10
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 150,
+              "carbs": 15,
+              "fat": 8,
+              "name": "Raita",
+              "protein": 5,
+              "quantity": 100,
+              "unit": "g"
+            },
+            {
+              "calories": 30,
+              "carbs": 5,
+              "fat": 0,
+              "name": "Cucumber",
+              "protein": 1,
+              "quantity": 100,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Morning Snack",
+          "custom_name": "Raita with Cucumber",
+          "total_calories": 180,
+          "total_carbs": 20,
+          "total_fat": 8,
+          "total_protein": 6
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 200,
+              "carbs": 15,
+              "fat": 10,
+              "name": "Chicken",
+              "protein": 30,
+              "quantity": 100,
+              "unit": "g"
+            },
+            {
+              "calories": 150,
+              "carbs": 10,
+              "fat": 10,
+              "name": "Butter Chicken Sauce",
+              "protein": 5,
+              "quantity": 80,
+              "unit": "g"
+            },
+            {
+              "calories": 140,
+              "carbs": 20,
+              "fat": 4,
+              "name": "Basmati Rice",
+              "protein": 3,
+              "quantity": 100,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Lunch",
+          "custom_name": "Butter Chicken with Basmati Rice",
+          "total_calories": 490,
+          "total_carbs": 45,
+          "total_fat": 24,
+          "total_protein": 38
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 160,
+              "carbs": 20,
+              "fat": 8,
+              "name": "Naan Bread",
+              "protein": 4,
+              "quantity": 1,
+              "unit": "naan"
+            },
+            {
+              "calories": 30,
+              "carbs": 5,
+              "fat": 0,
+              "name": "Mint Chutney",
+              "protein": 1,
+              "quantity": 20,
+              "unit": "g"
+            }
+          ],
+          "meal_name": "Afternoon Snack",
+          "custom_name": "Naan Bread with Mint Chutney",
+          "total_calories": 190,
+          "total_carbs": 25,
+          "total_fat": 8,
+          "total_protein": 5
+        },
+        {
+          "ingredients": [
+            {
+              "calories": 180,
+              "carbs": 15,
+              "fat": 10,
+              "name": "Lentils",
+              "protein": 12,
+              "quantity": 100,
+              "unit": "g"
+            },
+            {
+              "calories": 130,
+              "carbs": 10,
+              "fat": 7,
+              "name": "Spinach",
+              "protein": 4,
+              "quantity": 80,
+              "unit": "g"
+            },
+            {
+              "calories": 10
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+Required JSON schema:
+
+{
+  "type": "object",
+  "properties": {
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "day_of_week": {
+            "type": "string"
+          },
+          "meals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "meal_name": {
+                  "type": "string"
+                },
+                "custom_name": {
+                  "type": "string"
+                },
+                "ingredients": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "type": "number"
+                      },
+                      "unit": {
+                        "type": "string"
+                      },
+                      "calories": {
+                        "type": "number"
+                      },
+                      "protein": {
+                        "type": "number"
+                      },
+                      "carbs": {
+                        "type": "number"
+                      },
+                      "fat": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "calories",
+                      "protein",
+                      "carbs",
+                      "fat"
+                    ],
+                    "additionalProperties": true
+                  }
+                },
+                "total_calories": {
+                  "type": "number"
+                },
+                "total_protein": {
+                  "type": "number"
+                },
+                "total_carbs": {
+                  "type": "number"
+                },
+                "total_fat": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "meal_name",
+                "ingredients"
+              ],
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "day_of_week",
+          "meals"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "weekly_summary": {
+      "type": "object",
+      "properties": {
+        "total_calories": {
+          "type": "number"
+        },
+        "total_protein": {
+          "type": "number"
+        },
+        "total_carbs": {
+          "type": "number"
+        },
+        "total_fat": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "total_calories",
+        "total_protein",
+        "total_carbs",
+        "total_fat"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "days"
+  ],
+  "additionalProperties": true,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
+    at async (src/ai/flows/generate-meal-plan.ts:36:27)
+  34 |     while (retryCount <= maxRetries) {
+  35 |       try {
+> 36 |         const { output } = await prompt(input);
+     |                           ^
+  37 |         if (!output) {
+  38 |           console.error("❌ AI did not return output");
+  39 |           throw new Error("AI did not return output"); {
+  source: undefined,
+  status: 'INVALID_ARGUMENT',
+  detail: [Object],
+  code: 400,
+  originalMessage: 'Schema validation failed. Parse Errors:\n' +
+    '\n' +
+    "- days.4.meals.4: must have required property 'meal_name'\n" +
+    '\n' +
+    'Provided data:\n' +
+    '\n' +
+    '{\n' +
+    '  "days": [\n' +
+    '    {\n' +
+    '      "day_of_week": "Monday",\n' +
+    '      "meals": [\n' +
+    '        {\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "calories": 97,\n' +
+    '              "carbs": 4,\n' +
+    '              "fat": 4,\n' +
+    '              "name": "Greek Yogurt",\n' +
+    '              "protein": 11,\n' +
+    '              "quantity": 200,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 300,\n' +
+    '              "carbs": 50,\n' +
+    '              "fat": 10,\n' +
+    '              "name": "Honey",\n' +
+    '              "protein": 0,\n' +
+    '              "quantity": 40,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 654,\n' +
+    '              "carbs": 14,\n' +
+    '              "fat": 65,\n' +
+    '              "name": "Walnuts",\n' +
+    '              "protein": 15,\n' +
+    '              "quantity": 30,\n' +
+    '              "unit": "g"\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "meal_name": "Breakfast",\n' +
+    '          "custom_name": "Greek Yogurt with Honey and Walnuts",\n' +
+    '          "total_calories": 458,\n' +
+    '          "total_carbs": 38,\n' +
+    '          "total_fat": 25,\n' +
+    '          "total_protein": 37\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "calories": 130,\n' +
+    '              "carbs": 0,\n' +
+    '              "fat": 13,\n' +
+    '              "name": "Olive Oil",\n' +
+    '              "protein": 0,\n' +
+    '              "quantity": 10,\n' +
+    '              "unit": "ml"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 100,\n' +
+    '              "carbs": 3,\n' +
+    '              "fat": 5,\n' +
+    '              "name": "Olives",\n' +
+    '              "protein": 1,\n' +
+    '              "quantity": 30,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 10,\n' +
+    '              "carbs": 2,\n' +
+    '              "fat": 0,\n' +
+    '              "name": "Cucumber",\n' +
+    '              "protein": 0,\n' +
+    '              "quantity": 50,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 100,\n' +
+    '              "carbs": 4,\n' +
+    '              "fat": 7,\n' +
+    '              "name": "Feta Cheese",\n' +
+    '              "protein": 8,\n' +
+    '              "quantity": 30,\n' +
+    '              "unit": "g"\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "meal_name": "Morning Snack",\n' +
+    '          "custom_name": "Mediterranean Snack Plate",\n' +
+    '          "total_calories": 340,\n' +
+    '          "total_carbs": 9,\n' +
+    '          "total_fat": 25,\n' +
+    '          "total_protein": 9\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "calories": 164,\n' +
+    '              "carbs": 28,\n' +
+    '              "fat": 2,\n' +
+    '              "name": "Quinoa",\n' +
+    '              "protein": 6,\n' +
+    '              "quantity": 150,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 150,\n' +
+    '              "carbs": 0,\n' +
+    '              "fat": 7,\n' +
+    '              "name": "Olive oil",\n' +
+    '              "protein": 0,\n' +
+    '              "quantity": 15,\n' +
+    '              "unit": "ml"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 165,\n' +
+    '              "carbs": 0,\n' +
+    '              "fat": 10,\n' +
+    '              "name": "Salmon",\n' +
+    '              "protein": 17,\n' +
+    '              "quantity": 80,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 20,\n' +
+    '              "carbs": 4,\n' +
+    '              "fat": 0,\n' +
+    '              "name": "Lemon juice",\n' +
+    '              "protein": 0,\n' +
+    '              "quantity": 20,\n' +
+    '              "unit": "ml"\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "meal_name": "Lunch",\n' +
+    '          "custom_name": "Mediterranean Salmon Quinoa Bowl",\n' +
+    '          "total_calories": 499,\n' +
+    '          "total_carbs": 32,\n' +
+    '          "total_fat": 19,\n' +
+    '          "total_protein": 23\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "calories": 150,\n' +
+    '              "carbs": 10,\n' +
+    '              "fat": 10,\n' +
+    '              "name": "Hummus",\n' +
+    '              "protein": 5,\n' +
+    '              "quantity": 60,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 30,\n' +
+    '              "carbs": 6,\n' +
+    '              "fat": 0,\n' +
+    '              "name": "Carrots",\n' +
+    '              "protein": 1,\n' +
+    '              "quantity": 80,\n' +
+    '              "unit": "g"\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "meal_name": "Afternoon Snack",\n' +
+    '          "custom_name": "Hummus and Carrots",\n' +
+    '          "total_calories": 180,\n' +
+    '          "total_carbs": 16,\n' +
+    '          "total_fat": 10,\n' +
+    '          "total_protein": 6\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "calories": 120,\n' +
+    '              "carbs": 15,\n' +
+    '              "fat": 5,\n' +
+    '              "name": "Pasta",\n' +
+    '              "protein": 4,\n' +
+    '              "quantity": 100,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 150,\n' +
+    '              "carbs": 2,\n' +
+    '              "fat": 10,\n' +
+    '              "name": "Pesto",\n' +
+    '              "protein": 5,\n' +
+    '              "quantity": 50,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 130,\n' +
+    '              "carbs": 0,\n' +
+    '              "fat": 7,\n' +
+    '              "name": "Olive Oil",\n' +
+    '              "protein": 0,\n' +
+    '              "quantity": 10,\n' +
+    '              "unit": "ml"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 200,\n' +
+    '              "carbs": 0,\n' +
+    '              "fat": 5,\n' +
+    '              "name": "Chicken Breast",\n' +
+    '              "protein": 40,\n' +
+    '              "quantity": 100,\n' +
+    '              "unit": "g"\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "meal_name": "Dinner",\n' +
+    '          "custom_name": "Pesto Pasta with Chicken",\n' +
+    '          "total_calories": 600,\n' +
+    '          "total_carbs": 17,\n' +
+    '          "total_fat": 27,\n' +
+    '          "total_protein": 49\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "calories": 80,\n' +
+    '              "carbs": 5,\n' +
+    '              "fat": 5,\n' +
+    '              "name": "Cottage Cheese",\n' +
+    '              "protein": 10,\n' +
+    '              "quantity": 100,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 50,\n' +
+    '              "carbs": 10,\n' +
+    '              "fat": 0,\n' +
+    '              "name": "Berries",\n' +
+    '              "protein": 0,\n' +
+    '              "quantity": 75,\n' +
+    '              "unit": "g"\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "meal_name": "Evening Snack",\n' +
+    '          "custom_name": "Cottage Cheese with Berries",\n' +
+    '          "total_calories": 130,\n' +
+    '          "total_carbs": 15,\n' +
+    '          "total_fat": 5,\n' +
+    '          "total_protein": 10\n' +
+    '        }\n' +
+    '      ]\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "day_of_week": "Tuesday",\n' +
+    '      "meals": [\n' +
+    '        {\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "calories": 25,\n' +
+    '              "carbs": 4,\n' +
+    '              "fat": 1,\n' +
+    '              "name": "Tofu",\n' +
+    '              "protein": 2,\n' +
+    '              "quantity": 20,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 30,\n' +
+    '              "carbs": 5,\n' +
+    '              "fat": 0,\n' +
+    '              "name": "Seaweed",\n' +
+    '              "protein": 1,\n' +
+    '              "quantity": 5,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 15,\n' +
+    '              "carbs": 2,\n' +
+    '              "fat": 1,\n' +
+    '              "name": "Green Onion",\n' +
+    '              "protein": 1,\n' +
+    '              "quantity": 10,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 5,\n' +
+    '              "carbs": 1,\n' +
+    '              "fat": 0,\n' +
+    '              "name": "Miso Paste",\n' +
+    '              "protein": 0,\n' +
+    '              "quantity": 2,\n' +
+    '              "unit": "g"\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "meal_name": "Breakfast",\n' +
+    '          "custom_name": "Miso Soup",\n' +
+    '          "total_calories": 75,\n' +
+    '          "total_carbs": 12,\n' +
+    '          "total_fat": 2,\n' +
+    '          "total_protein": 4\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "calories": 140,\n' +
+    '              "carbs": 20,\n' +
+    '              "fat": 5,\n' +
+    '              "name": "Edamame",\n' +
+    '              "protein": 12,\n' +
+    '              "quantity": 100,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 150,\n' +
+    '              "carbs": 0,\n' +
+    '              "fat": 15,\n' +
+    '              "name": "Peanut Sauce",\n' +
+    '              "protein": 7,\n' +
+    '              "quantity": 30,\n' +
+    '              "unit": "g"\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "meal_name": "Morning Snack",\n' +
+    '          "custom_name": "Edamame with Peanut Sauce",\n' +
+    '          "total_calories": 290,\n' +
+    '          "total_carbs": 20,\n' +
+    '          "total_fat": 20,\n' +
+    '          "total_protein": 19\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "calories": 180,\n' +
+    '              "carbs": 30,\n' +
+    '              "fat": 3,\n' +
+    '              "name": "Sushi Rice",\n' +
+    '              "protein": 4,\n' +
+    '              "quantity": 120,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 120,\n' +
+    '              "carbs": 0,\n' +
+    '              "fat": 5,\n' +
+    '              "name": "Avocado",\n' +
+    '              "protein": 2,\n' +
+    '              "quantity": 40,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 170,\n' +
+    '              "carbs": 0,\n' +
+    '              "fat": 10,\n' +
+    '              "name": "Tuna",\n' +
+    '              "protein": 20,\n' +
+    '              "quantity": 80,\n' +
+    '              "unit": "g"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 20,\n' +
+    '              "carbs": 4,\n' +
+    '              "fat": 0,\n' +
+    '              "name": "Soy Sauce",\n' +
+    '              "protein": 2,\n' +
+    '              "quantity": 20,\n' +
+    '              "unit": "ml"\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "meal_name": "Lunch",\n' +
+    '          "custom_name": "Tuna Avocado Sushi Bowl",\n' +
+    '          "total_calories": 490,\n' +
+    '          "total_carbs": 34,\n' +
+    '          "total_fat": 18,\n' +
+    '          "total_protein": 28\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "calories": 100,\n' +
+    '              "carbs": 15,\n' +
+    '              "fat": 2,\n' +
+    '              "name": "Rice Paper Wraps",\n' +
+    '              "protein": 3,\n' +
+    '              "quantity": 2,\n' +
+    '              "unit": "wraps"\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "calories": 60,\n' +
+    '              "carbs": 4,\n' +
+    '              "fat": 0,\n' +
+    '              "name": "Shredded Carrots",\n' +
+    '              "protein": 1,\n' +
+    '              "quantity": 80,\n' +
+    '              "unit": "g"\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "meal_name": "Afternoon Snack",\n' +
+    '          "custom_name": "Rice Paper Spring Rolls",\n' +
+    '          "total_calories": 160,\n' +
+    '          "total_carbs": 19,\n' +
+    '          "tot'... 20456 more characters,
+  ignoreFailedSpan: true
+}
+
+fix this code
+"use server";
+
+import { geminiModel } from "@/ai/genkit";
+import {
+  GeneratePersonalizedMealPlanInputSchema,
+  GeneratePersonalizedMealPlanOutputSchema,
+  type GeneratePersonalizedMealPlanInput,
+  type GeneratePersonalizedMealPlanOutput,
+} from "@/lib/schemas";
+
+export const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
+  {
+    name: "generatePersonalizedMealPlanFlow",
+    inputSchema: GeneratePersonalizedMealPlanInputSchema,
+    outputSchema: GeneratePersonalizedMealPlanOutputSchema,
+  },
+  async (
+    input: GeneratePersonalizedMealPlanInput,
+  ): Promise<GeneratePersonalizedMealPlanOutput> => {
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    // Log input details for debugging
+    console.log("🔄 Attempting to generate meal plan with Gemini...");
+    console.log("📊 Input validation:", {
+      hasMealDistributions: !!input.meal_distributions,
+      mealDistributionsCount: input.meal_distributions?.length || 0,
+      targetCalories: getMealDataValue(input, "target_daily_calories"),
+      targetProtein: getMealDataValue(input, "target_protein_g"),
+      targetCarbs: getMealDataValue(input, "target_carbs_g"),
+      targetFat: getMealDataValue(input, "target_fat_g"),
+    });
+
+    while (retryCount <= maxRetries) {
+      try {
+        const { output } = await prompt(input);
+        if (!output) {
+          console.error("❌ AI did not return output");
+          throw new Error("AI did not return output");
+        }
+
+        console.log("Raw AI output:", JSON.stringify(output, null, 2));
+
+        const transformedOutput = transformAIOutputToWeekSchema(output, input);
+        const validationResult =
+          GeneratePersonalizedMealPlanOutputSchema.safeParse(transformedOutput);
+
+        if (!validationResult.success) {
+          console.error(
+            "AI output validation error:",
+            JSON.stringify(validationResult.error.flatten(), null, 2),
+          );
+          throw new Error(
+            `AI returned data in an unexpected format. Details: ${validationResult.error.message}`,
+          );
+        }
+
+        console.log("✅ Successfully generated meal plan with Gemini");
+        return validationResult.data;
+      } catch (error: any) {
+        console.error(`Attempt ${retryCount + 1} failed:`, error);
+
+        // Specific error handling for Gemini API
+        if (error.message?.includes("403 Forbidden")) {
+          console.error("🔍 Gemini API 403 Forbidden Error Analysis:");
+          console.error("   - This usually means:");
+          console.error("     1. API key is incorrect or expired");
+          console.error("     2. Generative Language API is not enabled");
+          console.error("     3. API key has IP restrictions");
+          console.error("     4. Billing is not set up");
+          console.error("   - Please check your GEMINI_API_KEY in .env.local");
+          console.error(
+            "   - Ensure Generative Language API is enabled in Google Cloud",
+          );
+          console.error("   - Verify billing is set up for the project");
+        }
+
+        if (error.message?.includes("401")) {
+          console.error("🔍 Gemini API 401 Unauthorized Error:");
+          console.error("   - API key is invalid or expired");
+          console.error("   - Please regenerate your API key");
+        }
+
+        if (retryCount < maxRetries) {
+          console.log(`Retry ${retryCount + 1} of ${maxRetries}...`);
+          retryCount++;
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * Math.pow(2, retryCount)),
+          );
+          continue;
+        }
+
+        // Throw error if all retries fail
+        console.error("❌ All retries failed to generate meal plan");
+        throw new Error(
+          `Failed to generate meal plan after ${maxRetries + 1} attempts. Error: ${error.message}`,
+        );
+      }
+    }
+
+    // This line should never be reached due to the throw above, but included for completeness
+    throw new Error("Unexpected error: Retry loop exited without resolution");
+  },
+);
+
+const prompt = geminiModel.definePrompt({
+  name: "generatePersonalizedMealPlanPrompt",
+  input: { schema: GeneratePersonalizedMealPlanInputSchema },
+  output: { schema: GeneratePersonalizedMealPlanOutputSchema },
+  prompt: `You are NutriMind, an elite AI nutritionist with 15+ years of experience in personalized nutrition. Your task is to create a professional, coach-quality 7-day meal plan with 6 meals per day, tailored to the user's goals and preferences.
+
+**CRITICAL REQUIREMENTS - NO REPETITION:**
+1. **ABSOLUTELY NO REPETITION**: Each day must have COMPLETELY DIFFERENT meals from all other days. This is the MOST IMPORTANT requirement.
+2. **UNIQUE CUISINE THEMES**: Assign different cuisine themes to each day:
+   - Monday: Mediterranean (Greek, Italian, Spanish)
+   - Tuesday: Asian Fusion (Japanese, Chinese, Thai)
+   - Wednesday: Italian (Traditional Italian)
+   - Thursday: Mexican (Authentic Mexican)
+   - Friday: Indian (Traditional Indian)
+   - Saturday: French (Classic French)
+   - Sunday: American Comfort (American classics)
+3. **Analyze User Profile**: Evaluate dietary restrictions, allergies, medical conditions, and preferences to tailor the plan. Strictly avoid allergens and dispreferred ingredients/cuisines.
+4. **MEAL DISTRIBUTION FROM MACRO SPLITTER**: Use the provided meal_distributions to ensure each meal meets the exact macro percentages:
+   {{#if meal_distributions}}
+   **MEAL DISTRIBUTIONS:**
+   {{#each meal_distributions}}
+   - {{mealName}}: {{calories_pct}}% calories, {{protein_pct}}% protein, {{carbs_pct}}% carbs, {{fat_pct}}% fat
+   {{/each}}
+   {{else}}
+   **DEFAULT MEAL DISTRIBUTION:**
+   - Breakfast: 25% calories, 25% protein, 25% carbs, 25% fat
+   - Morning Snack: 10% calories, 10% protein, 10% carbs, 10% fat
+   - Lunch: 30% calories, 30% protein, 30% carbs, 30% fat
+   - Afternoon Snack: 10% calories, 10% protein, 10% carbs, 10% fat
+   - Dinner: 20% calories, 20% protein, 20% carbs, 20% fat
+   - Evening Snack: 5% calories, 5% protein, 5% carbs, 5% fat
+   {{/if}}
+5. **Generate 7-Day Plan**:
+   - Create 7 days (Monday-Sunday), each with 6 distinct meals.
+   - Each day must have UNIQUE meals that are different from all other days.
+   - Meals must be complete recipes with descriptive names (e.g., "Mediterranean Quinoa Bowl with Grilled Chicken").
+   - Each meal must have 3-8 ingredients with precise nutritional data (calories, protein, carbs, fat per 100g).
+   - Ensure variety (no repeated meals) and compliance with restrictions.
+   - Include a daily_totals object for each day with calories, protein, carbs, and fat.
+6. **Nutritional Accuracy**:
+   - Calculate exact nutritional values based on ingredient quantities.
+   - Daily totals must be within ±5% of targets.
+   - Sum weekly totals for the weekly_summary.
+   - **CRITICAL**: Each meal must match the macro percentages from meal_distributions within ±3%.
+
+**USER PROFILE ANALYSIS:**
+- Age: {{age}}
+- Biological Sex: {{biological_sex}}
+- Height: {{height_cm}} cm
+- Current Weight: {{current_weight_kg}} kg
+- Target Weight: {{target_weight_kg}} kg
+- Physical Activity Level: {{physical_activity_level}}
+- Primary Diet Goal: {{primary_diet_goal}}
+- Preferred Diet: {{preferred_diet}}
+- Allergies: {{#if allergies.length}}{{allergies}}{{else}}None{{/if}}
+- Dispreferred Ingredients: {{#if dispreferrred_ingredients.length}}{{dispreferrred_ingredients}}{{else}}None{{/if}}
+- Medical Conditions: {{#if medical_conditions.length}}{{medical_conditions}}{{else}}None{{/if}}
+- Preferred Cuisines: {{#if preferred_cuisines.length}}{{preferred_cuisines}}{{else}}None{{/if}}
+- Dispreferred Cuisines: {{#if dispreferrred_cuisines.length}}{{dispreferrred_cuisines}}{{else}}None{{/if}}
+- Preferred Ingredients: {{#if preferred_ingredients.length}}{{preferred_ingredients}}{{else}}None{{/if}}
+- Target Daily Calories: {{meal_data.target_daily_calories}}
+- Target Protein: {{meal_data.target_protein_g}}g
+- Target Carbs: {{meal_data.target_carbs_g}}g
+- Target Fat: {{meal_data.target_fat_g}}g
+
+**DAY-BY-DAY UNIQUE MEAL REQUIREMENTS:**
+- **Monday (Mediterranean)**: Greek yogurt breakfast, Mediterranean fish lunch, Italian-style dinner
+- **Tuesday (Asian)**: Miso soup breakfast, sushi-style lunch, Thai curry dinner
+- **Wednesday (Italian)**: Caprese breakfast, pasta lunch, osso buco dinner
+- **Thursday (Mexican)**: Huevos rancheros breakfast, fish tacos lunch, mole chicken dinner
+- **Friday (Indian)**: Masala dosa breakfast, butter chicken lunch, lentil curry dinner
+- **Saturday (French)**: Croissant breakfast, coq au vin lunch, beef bourguignon dinner
+- **Sunday (American)**: Pancakes breakfast, BBQ ribs lunch, meatloaf dinner
+
+**JSON OUTPUT RULES:**
+- Return ONLY valid JSON with no markdown, comments, or extra text.
+- Use double quotes for strings.
+- Use unquoted numbers (e.g., 155, not "155").
+- Root object MUST have a "days" property.
+- Each day MUST include "day_of_week", "meals", and "daily_totals".
+- No trailing commas or JavaScript-style comments.
+
+**OUTPUT FORMAT:**
+{
+  "days": [
+    {
+      "day_of_week": "Monday",
+      "meals": [
+        {
+          "meal_name": "Breakfast",
+          "custom_name": "Greek Yogurt with Honey and Walnuts",
+          "ingredients": [
+            {
+              "name": "Greek Yogurt",
+              "quantity": 150,
+              "unit": "g",
+              "calories": 90,
+              "protein": 15,
+              "carbs": 6,
+              "fat": 0.5
+            }
+          ],
+          "total_calories": 265,
+          "total_protein": 18,
+          "total_carbs": 20.7,
+          "total_fat": 13.5
+        }
+      ],
+      "daily_totals": {
+        "calories": 2000,
+        "protein": 150,
+        "carbs": 200,
+        "fat": 70
+      }
+    }
+  ],
+  "weekly_summary": {
+    "total_calories": 14000,
+    "total_protein": 1050,
+    "total_carbs": 1400,
+    "total_fat": 490
+  }
+}
+
+**VALIDATION CHECKLIST:**
+- Root object has "days" property.
+- 7 days, 6 meals each (42 unique meals total).
+- Each day has "daily_totals".
+- Each meal has 3-8 ingredients with complete nutritional data.
+- Daily totals within ±5% of targets.
+- Weekly summary matches sum of daily totals.
+- No allergens or dispreferred ingredients/cuisines.
+- **ABSOLUTELY NO REPETITION of meals across days.**
+- Each day follows its assigned cuisine theme.
+- **CRITICAL**: Each meal matches macro percentages from meal_distributions within ±3%.
+- Valid JSON with no trailing commas or comments.
+
+**RESPONSE**:
+- Start with { and end with }.
+- Include only the JSON object.
+- Ensure all numbers are unquoted.
+- Double-check commas and brackets.
+- Generate UNIQUE meals for each day following the cuisine themes and macro percentages.
+
+Generate the meal plan now.`,
+});
+
+// Calculate daily totals from meals
+function calculateDailyTotals(meals: any[]): any {
+  return meals.reduce(
+    (totals, meal) => ({
+      calories: totals.calories + (Number(meal.total_calories) || 0),
+      protein: totals.protein + (Number(meal.total_protein) || 0),
+      carbs: totals.carbs + (Number(meal.total_carbs) || 0),
+      fat: totals.fat + (Number(meal.total_fat) || 0),
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
+  );
+}
+
+// Calculate weekly summary from days
+function calculateWeeklySummary(week: any[]): any {
+  return week.reduce(
+    (totals, day) => ({
+      total_calories:
+        totals.total_calories + (Number(day.daily_totals?.calories) || 0),
+      total_protein:
+        totals.total_protein + (Number(day.daily_totals?.protein) || 0),
+      total_carbs: totals.total_carbs + (Number(day.daily_totals?.carbs) || 0),
+      total_fat: totals.total_fat + (Number(day.daily_totals?.fat) || 0),
+    }),
+    { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 },
+  );
+}
+
+// Helper function to safely access meal_data properties
+function getMealDataValue(
+  input: GeneratePersonalizedMealPlanInput,
+  key: string,
+): number {
+  if (input.meal_data && typeof input.meal_data === "object") {
+    const mealData = input.meal_data as {
+      target_daily_calories: number | null;
+      target_protein_g: number | null;
+      target_carbs_g: number | null;
+      target_fat_g: number | null;
+    };
+    const value = mealData[key as keyof typeof mealData];
+    return value !== null && value !== undefined ? value : 0;
+  }
+  return 0;
+}
+
+// Transform AI output to required schema
+function transformAIOutputToWeekSchema(
+  output: any,
+  input: GeneratePersonalizedMealPlanInput,
+): GeneratePersonalizedMealPlanOutput {
+  if (!output || typeof output !== "object") {
+    console.error("Invalid AI output: Output is not an object");
+    throw new Error("Invalid AI output: Output is not an object");
+  }
+
+  // Handle both "days" and "week" cases
+  const days = output.days || output.week || [];
+  if (!Array.isArray(days) || days.length !== 7) {
+    console.error(
+      "Invalid AI output: No valid week or days array, or incorrect number of days",
+    );
+    throw new Error(
+      "Invalid AI output: Expected 7 days, got invalid or incorrect number of days",
+    );
+  }
+
+  const week = days.map((dayObj: any) => {
+    const meals =
+      Array.isArray(dayObj.meals) && dayObj.meals.length === 6
+        ? dayObj.meals
+        : (() => {
+            console.error("Invalid meals array for day:", dayObj.day_of_week);
+            throw new Error(
+              `Invalid meals array for day ${dayObj.day_of_week || "Unknown"}: Expected 6 meals`,
+            );
+          })();
+    const dailyTotals = dayObj.daily_totals || calculateDailyTotals(meals);
+
+    // Filter out allergens and dispreferred ingredients
+    const safeMeals = meals.map((meal: any) => {
+      const safeIngredients =
+        Array.isArray(meal.ingredients) &&
+        meal.ingredients.length >= 3 &&
+        meal.ingredients.length <= 8
+          ? meal.ingredients.filter((ing: any) => {
+              const allergies = input.allergies || [];
+              const dispreferredIngredients =
+                input.dispreferrred_ingredients || [];
+              return (
+                !allergies.includes(ing.name) &&
+                !dispreferredIngredients.includes(ing.name)
+              );
+            })
+          : (() => {
+              console.error("Invalid ingredients for meal:", meal.meal_name);
+              throw new Error(
+                `Invalid ingredients for meal ${meal.meal_name || "Unknown"}: Expected 3-8 ingredients`,
+              );
+            })();
+
+      return {
+        meal_name: meal.meal_name || meal.meal_type || "Unknown",
+        custom_name: meal.custom_name || meal.name || "Unnamed Meal",
+        ingredients: safeIngredients.map((ing: any) => ({
+          name: ing.name || "Unknown",
+          quantity: Number(ing.quantity) || 0,
+          unit: ing.unit || "g",
+          calories: Number(ing.calories) || 0,
+          protein: Number(ing.protein) || 0,
+          carbs: Number(ing.carbs) || 0,
+          fat: Number(ing.fat) || 0,
+        })),
+        total_calories: Number(meal.total_calories) || 0,
+        total_protein: Number(meal.total_protein) || 0,
+        total_carbs: Number(meal.total_carbs) || 0,
+        total_fat: Number(meal.total_fat) || 0,
+      };
+    });
+
+    return {
+      day_of_week: dayObj.day_of_week || dayObj.day || "Unknown",
+      meals: safeMeals,
+      daily_totals: {
+        calories: Number(dailyTotals.calories) || 0,
+        protein: Number(dailyTotals.protein) || 0,
+        carbs: Number(dailyTotals.carbs) || 0,
+        fat: Number(dailyTotals.fat) || 0,
+      },
+    };
+  });
+
+  const weeklySummary = output.weekly_summary || calculateWeeklySummary(week);
+
+  return {
+    days: week,
+    weekly_summary: {
+      total_calories: Number(weeklySummary.total_calories) || 0,
+      total_protein: Number(weeklySummary.total_protein) || 0,
+      total_carbs: Number(weeklySummary.total_carbs) || 0,
+      total_fat: Number(weeklySummary.total_fat) || 0,
+    },
+  };
+}

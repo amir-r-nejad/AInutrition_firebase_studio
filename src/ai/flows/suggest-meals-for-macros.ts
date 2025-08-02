@@ -21,16 +21,16 @@ const prompt = geminiModel.definePrompt({
   name: "suggestMealsForMacrosPrompt",
   input: { schema: SuggestMealsForMacrosInputSchema },
   output: { schema: SuggestMealsForMacrosOutputSchema },
-  system: `You are NutriMind, an expert AI nutritionist. Propose ONE meal suggestion for the specified meal type and adjust ingredient quantities to match the target macros, prioritizing calories and protein within a 5% margin. Adhere to user preferences and restrictions. Return a single, valid JSON object.`,
+  system: `You are NutriMind, an expert AI nutritionist. Your PRIMARY task is to generate meal suggestions where the total calories, protein, carbs, and fat EXACTLY match the target macronutrients or are within a strict 5% margin of error. This is ABSOLUTELY NON-NEGOTIABLE. You MUST calculate and verify all macros before returning a response to ensure they meet the target. Adhere strictly to all user preferences and dietary restrictions. Your entire response MUST be a single, valid JSON object and nothing else.`,
 
   prompt: `
-Propose ONE meal for "{{meal_name}}" that matches the macro targets from the macro splitter, prioritizing calories and protein within a 5% margin (e.g., for 524.7 kcal, 498.47-550.94 kcal; for 46.1g protein, 43.795-48.405g). Carbs and fat should be close to targets.
+Generate 1-3 highly personalized meal suggestions for the user's profile and meal target below. The total calories, protein, carbs, and fat for each meal MUST EXACTLY match the target macros or be within a strict 5% margin of error (e.g., for 233.2 kcal, the meal must have 221.54-244.86 kcal; for 20.5g protein, 19.475-21.525g). Macro accuracy is the HIGHEST PRIORITY and MUST be achieved before returning any response.
 
 **User Profile:**
 - Age: {{age}}
 - Gender: {{gender}}
 - Activity Level: {{activity_level}}
-- Diet Goal: {{diet_goal}}
+- Primary Diet Goal: {{diet_goal}}
 - Dietary Preference: {{preferred_diet}}
 - Allergies: {{#if allergies.length}}{{allergies}}{{else}}None{{/if}}
 - Medical Conditions: {{#if medical_conditions.length}}{{medical_conditions}}{{else}}None{{/if}}
@@ -39,110 +39,86 @@ Propose ONE meal for "{{meal_name}}" that matches the macro targets from the mac
 - Liked Ingredients: {{#if preferred_ingredients.length}}{{preferred_ingredients}}{{else}}None{{/if}}
 - Disliked Ingredients: {{#if dispreferrred_ingredients.length}}{{dispreferrred_ingredients}}{{else}}None{{/if}}
 
-**Macro Targets:**
+**🎯 Target for "{{meal_name}}"**
 - Calories: {{target_calories}} kcal
 - Protein: {{target_protein_grams}}g
 - Carbohydrates: {{target_carbs_grams}}g
 - Fat: {{target_fat_grams}}g
 
-**Rules:**
+**CRITICAL RULES - NON-NEGOTIABLE:**
 1. **Macro Accuracy**:
-   - Prioritize calories and protein within 5% of targets. Carbs and fat should be close.
-   - Steps:
-     1. Select 2-3 ingredients based on meal type and preferences:
-        - Snack: Greek yogurt, nuts, fruit (e.g., blueberries).
-        - Lunch: Chicken, quinoa, vegetables (e.g., spinach).
-     2. Use nutritional data:
-        - Greek yogurt: 100 kcal, 10g protein, 4g carbs, 3g fat per 100g (100-200g)
-        - Oats: 70 kcal, 3.5g protein, 12g carbs, 1.5g fat per 20g (10-40g)
-        - Blueberries: 5.7 kcal, 0.07g protein, 1.4g carbs, 0.03g fat per 10g (10-50g)
-        - Chicken breast (cooked): 165 kcal, 31g protein, 0g carbs, 3.6g fat per 100g (50-150g)
-        - Quinoa (cooked): 120 kcal, 4.4g protein, 21.2g carbs, 1.9g fat per 100g (50-150g)
-        - Spinach: 23 kcal, 2.9g protein, 3.6g carbs, 0.4g fat per 100g (50-100g)
-        - Almonds: 57.9 kcal, 2.1g protein, 2.2g carbs, 5g fat per 10g (10-30g)
-     3. Start with the primary ingredient (e.g., chicken for Lunch) to match protein.
-     4. Adjust quantities to hit calorie and protein targets:
-        - Example for Lunch (524.7 kcal, 46.1g protein):
-          - Chicken 100g: 165 kcal, 31g protein, 0g carbs, 3.6g fat
-          - Quinoa 100g: 120 kcal, 4.4g protein, 21.2g carbs, 1.9g fat
-          - Spinach 100g: 23 kcal, 2.9g protein, 3.6g carbs, 0.4g fat
-          - Almonds 30g: 173.7 kcal, 6.3g protein, 6.6g carbs, 15g fat
-          - Total: 481.7 kcal, 44.6g protein, 31.4g carbs, 20.9g fat
-     5. Fine-tune secondary ingredients for carbs and fat.
-     6. If calories or protein are outside 5%, adjust or discard.
-   - Nutritional values MUST be numbers.
-2. **Meal Appropriateness**:
-   - Snack: Light options (e.g., Greek yogurt with fruit).
-   - Lunch: Hearty meals (e.g., chicken quinoa salad).
-   - Avoid repetitive names (e.g., no "Fallback" in title).
-3. **Personalization**: Respect all preferences and restrictions.
-4. **Description**:
-   - Be engaging, explaining why the meal suits the diet goal.
-   - Highlight ingredients’ benefits.
-   - Confirm macro calculations (e.g., "Chicken (31g protein), quinoa (4.4g) total 44.6g protein, within 5%").
-   - Do NOT include final macro totals (e.g., avoid "481.7 kcal, 44.6g protein...").
-   - Keep it concise and user-friendly.
+   - The total calories, protein, carbs, and fat for each meal MUST match the target macros EXACTLY or be within a 5% margin (e.g., for 233.2 kcal, acceptable range is 221.54-244.86 kcal; for 20.5g protein, 19.475-21.525g).
+   - Follow these steps to ensure macro accuracy:
+     1. Select ingredients that align with user preferences, dietary restrictions, and meal type.
+     2. Use standard nutritional data (e.g., eggs: 60 kcal, 6g protein, 1g carbs, 4g fat per piece; Greek yogurt: 100 kcal, 10g protein, 4g carbs, 3g fat per 100g; oats: 70 kcal, 3.5g protein, 12g carbs, 1.5g fat per 20g; blueberries: 5.7 kcal, 0.07g protein, 1.4g carbs, 0.03g fat per 10g) or user-provided preferences.
+     3. Calculate the macro contribution of each ingredient based on its quantity (e.g., for 200g Greek yogurt: 200 * 0.1 = 20g protein).
+     4. Iteratively adjust ingredient quantities to minimize the difference between total macros and targets, ensuring ALL macros are within the 5% margin.
+     5. Verify the final totals for calories, protein, carbs, and fat against the target ranges before returning the response.
+     6. If any macro is outside the 5% margin, adjust quantities and recalculate until ALL macros are within range or discard the meal suggestion.
+   - Do NOT return a meal suggestion if ANY macro exceeds the 5% margin.
+   - All nutritional values (calories, protein, carbs, fat) MUST be numbers, not null, undefined, or "n/a".
+2. **Meal Appropriateness**: Suggestions MUST be appropriate for the meal type (e.g., Greek yogurt or eggs for "Snack," not steak).
+3. **Strict Personalization**: Adhere to ALL allergies, medical conditions, preferred cuisines, liked ingredients, and disliked ingredients. No exceptions.
+4. **Expert Description**: The 'description' field MUST:
+   - Be engaging, conversational, and motivational, explaining why the meal is ideal for the user's diet goal, activity level, and preferences (e.g., "This snack fuels your fat loss with high protein and keeps your blood sugar steady for diabetes management").
+   - Highlight specific ingredients and their benefits (e.g., "Greek yogurt provides a creamy, protein-packed base, while blueberries add a burst of antioxidants").
+   - Concisely confirm macro calculations (e.g., "Greek yogurt (20g protein), oats (0.7g), and blueberries (0.2g) total 20.9g protein, within 5% of your target").
+   - Confirm all macros are within 5% of the target (e.g., "Delivers 233.2 kcal, 20.9g protein, 20.5g carbs, and 7.6g fat, perfectly aligned with your goals").
+   - Avoid overly technical or repetitive phrasing; keep it user-friendly and encouraging.
+   - Reference specific user data (e.g., diet goal, medical conditions, preferred cuisines) for personalization.
 
-**JSON Output:**
-- Return a JSON object with a "suggestions" array containing ONE meal.
-- Include:
-  - "mealTitle": Matches meal type (e.g., "Chicken Quinoa Salad" for Lunch).
-  - "description": Motivational, with calculations but no final totals.
-  - "ingredients": Array with accurate nutritional values.
-  - "totalCalories", "totalProtein", "totalCarbs", "totalFat": Numbers.
+**JSON OUTPUT INSTRUCTIONS:**
+- Respond with ONLY a raw JSON object with a single root key: "suggestions".
+- "suggestions" must be an array of 1 to 3 meal objects matching the required schema.
+- Each meal object must include:
+  - "mealTitle": A descriptive, appealing name for the meal.
+  - "description": An engaging, motivational explanation as described above, including macro calculations and 5% margin confirmation.
+  - "ingredients": An array of ingredients with accurate "calories", "protein", "carbs", and "fat" values (numbers, not null or "n/a").
+  - "totalCalories", "totalProtein", "totalCarbs", "totalFat": Numbers within 5% of the target macros.
+- Do NOT include any introductory text, explanations, or markdown wrappers like \`\`\`json.
 
-**Example Output:**
+**EXAMPLE OUTPUT:**
 {
   "suggestions": [
     {
-      "mealTitle": "Chicken Quinoa Energy Salad",
-      "description": "This hearty lunch fuels your fat loss goal with lean protein and complex carbs for sustained energy. Chicken breast provides a protein-packed base, quinoa adds fiber-rich carbs, and spinach offers nutrient-dense greens. Chicken (100g) contributes 31g protein, quinoa (100g) adds 4.4g, and spinach (100g) adds 2.9g, totaling 44.6g protein (within 5% of 46.1g). All macros align with your goals!",
+      "mealTitle": "Greek Yogurt Berry Power Snack",
+      "description": "This delicious snack is crafted for your fat loss goal and diabetes management, offering a perfect balance of protein, carbs, and healthy fats. Creamy Greek yogurt delivers a protein punch to keep you full, while oats provide steady energy and blueberries add antioxidant-rich flavor. Greek yogurt (200g) contributes 20g protein, oats (20g) add 0.7g, and blueberries (10g) add 0.2g, totaling 20.9g protein (within 5% of 20.5g: 19.475-21.525g). With 233.2 kcal (within 5% of 233.2: 221.54-244.86), 20.5g carbs (within 5% of 20.5: 19.475-21.525), and 7.6g fat (within 5% of 7.6: 7.22-7.98), this snack keeps your blood sugar stable and supports your goals!",
       "ingredients": [
         {
-          "name": "Chicken breast (cooked)",
-          "amount": "100",
+          "name": "Greek yogurt",
+          "amount": "200",
           "unit": "g",
-          "calories": 165,
-          "protein": 31,
-          "carbs": 0,
-          "fat": 3.6,
-          "macrosString": "165 cal, 31g protein, 0g carbs, 3.6g fat"
+          "calories": 200,
+          "protein": 20,
+          "carbs": 8,
+          "fat": 6,
+          "macrosString": "200 cal, 20g protein, 8g carbs, 6g fat"
         },
         {
-          "name": "Quinoa (cooked)",
-          "amount": "100",
+          "name": "oats",
+          "amount": "20",
           "unit": "g",
-          "calories": 120,
-          "protein": 4.4,
-          "carbs": 21.2,
-          "fat": 1.9,
-          "macrosString": "120 cal, 4.4g protein, 21.2g carbs, 1.9g fat"
+          "calories": 70,
+          "protein": 0.7,
+          "carbs": 12,
+          "fat": 1.5,
+          "macrosString": "70 cal, 0.7g protein, 12g carbs, 1.5g fat"
         },
         {
-          "name": "Spinach",
-          "amount": "100",
+          "name": "blueberries",
+          "amount": "10",
           "unit": "g",
-          "calories": 23,
-          "protein": 2.9,
-          "carbs": 3.6,
-          "fat": 0.4,
-          "macrosString": "23 cal, 2.9g protein, 3.6g carbs, 0.4g fat"
-        },
-        {
-          "name": "Almonds",
-          "amount": "30",
-          "unit": "g",
-          "calories": 173.7,
-          "protein": 6.3,
-          "carbs": 6.6,
-          "fat": 15,
-          "macrosString": "173.7 cal, 6.3g protein, 6.6g carbs, 15g fat"
+          "calories": 5.7,
+          "protein": 0.2,
+          "carbs": 1.4,
+          "fat": 0.03,
+          "macrosString": "5.7 cal, 0.2g protein, 1.4g carbs, 0.03g fat"
         }
       ],
-      "totalCalories": 481.7,
-      "totalProtein": 44.6,
-      "totalCarbs": 31.4,
-      "totalFat": 20.9
+      "totalCalories": 233.2,
+      "totalProtein": 20.9,
+      "totalCarbs": 20.5,
+      "totalFat": 7.6
     }
   ]
 }
@@ -168,48 +144,22 @@ const suggestMealsForMacrosFlow = geminiModel.defineFlow(
 
       let output;
       let attempts = 0;
-      const maxAttempts = 5;
-      let lastMacroErrors: string[] = [];
-      let lastApiError: string | null = null;
+      const maxAttempts = 3;
+      let lastMacroErrors: string[] = []; // Store errors from the last attempt
 
-      // Create a mutable copy of input
-      const mutableInput = {
-        ...input,
-        preferred_ingredients: input.preferred_diet
-          ? [...input.preferred_diet]
-          : [],
-      };
-
-      // Retry logic
+      // Retry logic to ensure valid output
       while (attempts < maxAttempts) {
         attempts++;
-        console.log(
-          `Attempt ${attempts} to generate valid meal suggestion for ${input.meal_name}`,
-        );
+        console.log(`Attempt ${attempts} to generate valid meal suggestions`);
 
-        let result;
-        try {
-          result = await prompt(mutableInput);
-          // Add delay to avoid rate limits
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        } catch (apiError: any) {
-          console.error(
-            `Attempt ${attempts}: API fetch error:`,
-            apiError.message,
-            apiError.stack,
-          );
-          lastApiError = apiError.message;
-          lastMacroErrors = [`API fetch failed: ${apiError.message}`];
-          continue;
-        }
-
+        const result = await prompt(input);
         if (!result.output) {
           console.warn(`Attempt ${attempts}: AI did not return output.`);
           lastMacroErrors = ["AI did not return output."];
           continue;
         }
 
-        // Log raw AI output
+        // Log raw AI output for debugging
         console.log(
           `Raw AI output (Attempt ${attempts}):`,
           JSON.stringify(result.output, null, 2),
@@ -274,22 +224,14 @@ const suggestMealsForMacrosFlow = geminiModel.defineFlow(
               `Fat: ${meal.totalFat}g (target: ${input.target_fat_grams}g, allowed: ${input.target_fat_grams - tolerances.fat}-${input.target_fat_grams + tolerances.fat})`,
             );
           }
-          if (
-            input.meal_name.toLowerCase() === "lunch" &&
-            meal.mealTitle.toLowerCase().includes("snack")
-          ) {
-            errors.push(
-              `Meal title "${meal.mealTitle}" is inappropriate for meal type "Lunch"`,
-            );
-          }
 
           if (errors.length > 0) {
             valid = false;
             macroErrors.push(
-              `Meal suggestion at index ${index} does not meet requirements: ${errors.join("; ")}`,
+              `Meal suggestion at index ${index} does not meet macro targets: ${errors.join("; ")}`,
             );
             console.error(
-              `Attempt ${attempts}: Meal suggestion at index ${index} does not meet requirements:`,
+              `Attempt ${attempts}: Meal suggestion at index ${index} does not meet macro targets within 5% margin:`,
               {
                 meal: {
                   mealTitle: meal.mealTitle,
@@ -307,7 +249,6 @@ const suggestMealsForMacrosFlow = geminiModel.defineFlow(
                   carbs: input.target_carbs_grams,
                   fat: input.target_fat_grams,
                 },
-                mealType: input.meal_name,
                 errors,
               },
             );
@@ -320,223 +261,15 @@ const suggestMealsForMacrosFlow = geminiModel.defineFlow(
         } else {
           lastMacroErrors = macroErrors;
           console.warn(
-            `Attempt ${attempts}: Invalid macros or meal type detected. Retrying...`,
+            `Attempt ${attempts}: Invalid macros detected. Retrying...`,
           );
-          if (attempts < maxAttempts) {
-            console.log(
-              `Attempt ${attempts}: Simplifying ingredient choices for ${input.meal_name}.`,
-            );
-            mutableInput.preferred_ingredients =
-              input.meal_name.toLowerCase() === "lunch"
-                ? ["chicken breast", "quinoa", "spinach"]
-                : mutableInput.preferred_ingredients.length
-                  ? mutableInput.preferred_ingredients.slice(0, 1)
-                  : ["Greek yogurt"];
-          }
         }
       }
 
       if (!output) {
-        console.warn(
-          `All attempts failed. Generating dynamic fallback meal for ${input.meal_name}.`,
+        throw new Error(
+          `Failed to generate valid meal suggestions after ${maxAttempts} attempts. Last error: ${lastMacroErrors.join("; ") || "No valid output generated."}`,
         );
-        const isLunch = input.meal_name.toLowerCase() === "lunch";
-
-        // Dynamic fallback meal
-        const primaryIngredient = isLunch
-          ? "Chicken breast (cooked)"
-          : "Greek yogurt";
-        const primaryNutrition = isLunch
-          ? {
-              kcalPer100g: 165,
-              proteinPer100g: 31,
-              carbsPer100g: 0,
-              fatPer100g: 3.6,
-            }
-          : {
-              kcalPer100g: 100,
-              proteinPer100g: 10,
-              carbsPer100g: 4,
-              fatPer100g: 3,
-            };
-
-        // Calculate primary ingredient amount to match ~80% of protein target
-        const proteinTarget = input.target_protein_grams;
-        const primaryAmount = Math.min(
-          Math.round(
-            ((proteinTarget * 0.8) / primaryNutrition.proteinPer100g) * 100,
-          ),
-          isLunch ? 150 : 200, // Max amounts
-        );
-        const primaryCalories =
-          (primaryAmount * primaryNutrition.kcalPer100g) / 100;
-        const primaryProtein =
-          (primaryAmount * primaryNutrition.proteinPer100g) / 100;
-        const primaryCarbs =
-          (primaryAmount * primaryNutrition.carbsPer100g) / 100;
-        const primaryFat = (primaryAmount * primaryNutrition.fatPer100g) / 100;
-
-        // Secondary ingredients to balance remaining macros
-        const secondaryIngredients = isLunch
-          ? [
-              {
-                name: "Quinoa (cooked)",
-                amount: 100,
-                kcalPer100g: 120,
-                proteinPer100g: 4.4,
-                carbsPer100g: 21.2,
-                fatPer100g: 1.9,
-              },
-              {
-                name: "Spinach",
-                amount: 100,
-                kcalPer100g: 23,
-                proteinPer100g: 2.9,
-                carbsPer100g: 3.6,
-                fatPer100g: 0.4,
-              },
-              {
-                name: "Almonds",
-                amount: 30,
-                kcalPer100g: 579,
-                proteinPer100g: 21,
-                carbsPer100g: 22,
-                fatPer100g: 50,
-              },
-            ]
-          : [
-              {
-                name: "Oats",
-                amount: 20,
-                kcalPer100g: 350,
-                proteinPer100g: 17.5,
-                carbsPer100g: 60,
-                fatPer100g: 7.5,
-              },
-              {
-                name: "Blueberries",
-                amount: 40,
-                kcalPer100g: 57,
-                proteinPer100g: 0.7,
-                carbsPer100g: 14,
-                fatPer100g: 0.3,
-              },
-            ];
-
-        // Calculate totals and adjust secondary amounts
-        let totalCalories = primaryCalories;
-        let totalProtein = primaryProtein;
-        let totalCarbs = primaryCarbs;
-        let totalFat = primaryFat;
-
-        const ingredients = [
-          {
-            name: primaryIngredient,
-            amount: primaryAmount.toString(),
-            unit: "g",
-            calories: primaryCalories,
-            protein: primaryProtein,
-            carbs: primaryCarbs,
-            fat: primaryFat,
-            macrosString: `${primaryCalories} cal, ${primaryProtein}g protein, ${primaryCarbs}g carbs, ${primaryFat}g fat`,
-          },
-        ];
-
-        for (const sec of secondaryIngredients) {
-          const amount = sec.amount;
-          const calories = (amount * sec.kcalPer100g) / 100;
-          const protein = (amount * sec.proteinPer100g) / 100;
-          const carbs = (amount * sec.carbsPer100g) / 100;
-          const fat = (amount * sec.fatPer100g) / 100;
-
-          totalCalories += calories;
-          totalProtein += protein;
-          totalCarbs += carbs;
-          totalFat += fat;
-
-          ingredients.push({
-            name: sec.name,
-            amount: amount.toString(),
-            unit: "g",
-            calories,
-            protein,
-            carbs,
-            fat,
-            macrosString: `${calories} cal, ${protein}g protein, ${carbs}g carbs, ${fat}g fat`,
-          });
-        }
-
-        // Adjust almonds or oats to get closer to calorie target
-        const calorieDiff = input.target_calories - totalCalories;
-        if (calorieDiff > 0) {
-          const adjustIngredient = isLunch
-            ? secondaryIngredients.find((i) => i.name === "Almonds")
-            : secondaryIngredients.find((i) => i.name === "Oats");
-          if (adjustIngredient) {
-            const adjustAmount = Math.min(
-              Math.round(calorieDiff / (adjustIngredient.kcalPer100g / 100)),
-              isLunch ? 30 : 40, // Max additional amount
-            );
-            const idx = ingredients.findIndex(
-              (i) => i.name === adjustIngredient.name,
-            );
-            const newAmount =
-              parseFloat(ingredients[idx].amount) + adjustAmount;
-            const calories = (newAmount * adjustIngredient.kcalPer100g) / 100;
-            const protein = (newAmount * adjustIngredient.proteinPer100g) / 100;
-            const carbs = (newAmount * adjustIngredient.carbsPer100g) / 100;
-            const fat = (newAmount * adjustIngredient.fatPer100g) / 100;
-
-            totalCalories += calories - ingredients[idx].calories;
-            totalProtein += protein - ingredients[idx].protein;
-            totalCarbs += carbs - ingredients[idx].carbs;
-            totalFat += fat - ingredients[idx].fat;
-
-            ingredients[idx] = {
-              name: adjustIngredient.name,
-              amount: newAmount.toString(),
-              unit: "g",
-              calories,
-              protein,
-              carbs,
-              fat,
-              macrosString: `${calories} cal, ${protein}g protein, ${carbs}g carbs, ${fat}g fat`,
-            };
-          }
-        }
-
-        const fallbackMeal = {
-          suggestions: [
-            {
-              mealTitle: isLunch
-                ? "Chicken Quinoa Energy Salad"
-                : "Greek Yogurt Power Snack",
-              description: `This ${isLunch ? "hearty lunch" : "light snack"} supports your ${input.diet_goal || "health"} goal${input.medical_conditions?.includes("diabetes") ? " and diabetes management" : ""}. ${isLunch ? "Lean chicken breast delivers a protein-packed base, quinoa provides sustained energy, and spinach adds nutrient-rich greens" : "Creamy Greek yogurt offers a protein-packed base, with oats for energy and blueberries for antioxidants"}. ${isLunch ? `Chicken (${primaryAmount}g) contributes ${primaryProtein}g protein, quinoa (100g) adds 4.4g, spinach (100g) adds 2.9g, totaling ${totalProtein.toFixed(1)}g protein` : `Greek yogurt (${primaryAmount}g) contributes ${primaryProtein}g protein, oats (20g) add 3.5g, totaling ${totalProtein.toFixed(1)}g protein`} (within 5% of ${input.target_protein_grams}g). All macros align with your goals!`,
-              ingredients,
-              totalCalories: parseFloat(totalCalories.toFixed(1)),
-              totalProtein: parseFloat(totalProtein.toFixed(1)),
-              totalCarbs: parseFloat(totalCarbs.toFixed(1)),
-              totalFat: parseFloat(totalFat.toFixed(1)),
-            },
-          ],
-        };
-
-        const validationResult =
-          SuggestMealsForMacrosOutputSchema.safeParse(fallbackMeal);
-        if (!validationResult.success) {
-          console.error(
-            "Fallback meal validation error:",
-            validationResult.error.flatten(),
-          );
-          throw new Error(
-            `Fallback meal invalid: ${validationResult.error.message}`,
-          );
-        }
-        console.log(
-          "Fallback suggestions:",
-          JSON.stringify(fallbackMeal, null, 2),
-        );
-        return fallbackMeal;
       }
 
       const validationResult =
@@ -551,7 +284,7 @@ const suggestMealsForMacrosFlow = geminiModel.defineFlow(
         );
       }
 
-      // Log final output
+      // Log final output for debugging
       console.log(
         "Final suggestions:",
         JSON.stringify(validationResult.data, null, 2),
@@ -560,9 +293,7 @@ const suggestMealsForMacrosFlow = geminiModel.defineFlow(
       return validationResult.data;
     } catch (error: any) {
       console.error("Error in suggestMealsForMacrosFlow:", error);
-      throw new Error(
-        `Failed to generate meal suggestion: ${getAIApiErrorMessage(error)}`,
-      );
+      throw new Error(getAIApiErrorMessage(error));
     }
   },
 );
