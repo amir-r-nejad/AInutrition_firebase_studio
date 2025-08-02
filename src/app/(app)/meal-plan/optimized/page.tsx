@@ -5,7 +5,7 @@ import MealPlanGenerator from "@/features/meal-plan/components/optimized/MealPla
 import MealPlanOverview from "@/features/meal-plan/components/optimized/MealPlanOverview";
 
 export default async function OptimizedMealPlanPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -25,13 +25,18 @@ export default async function OptimizedMealPlanPage() {
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold">AI Meal Plan Generator</h1>
         <p className="text-muted-foreground">
-          Generate personalized meal plans based on your profile and macro targets
+          Generate personalized meal plans based on your profile and macro
+          targets
         </p>
       </div>
 
-      <MealPlanGenerator profile={profile} userPlan={userPlan} />
+      <MealPlanGenerator
+        profile={profile}
+        userPlan={userPlan}
+        mealPlan={undefined}
+      />
 
-      <MealPlanOverview />
+      <MealPlanOverview mealPlan={undefined} />
     </div>
   );
 }
