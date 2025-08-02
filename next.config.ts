@@ -16,10 +16,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Explicitly set the app directory
-  experimental: {
-    appDir: true,
-  },
 };
 
 export default nextConfig;
