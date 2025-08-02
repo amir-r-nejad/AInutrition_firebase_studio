@@ -3,80 +3,13 @@
 import { geminiModel } from "@/ai/genkit";
 import { z } from "zod";
 
-// Input schema for meal plan generation
-const MealPlanInputSchema = z.object({
-  // User profile data
-  age: z.number().optional(),
-  biological_sex: z.string().optional(),
-  preferred_diet: z.string().default("Standard"),
-  allergies: z.array(z.string()).default([]),
-  dispreferrred_ingredients: z.array(z.string()).default([]),
-  preferred_ingredients: z.array(z.string()).default([]),
-  medical_conditions: z.array(z.string()).default([]),
-
-  // Daily macro targets from macro splitter
-  daily_targets: z.object({
-    calories: z.number(),
-    protein: z.number(),
-    carbs: z.number(),
-    fat: z.number(),
-  }),
-
-  // Meal distributions from macro splitter (6 meals)
-  meal_distributions: z.array(
-    z.object({
-      mealName: z.string(),
-      calories: z.number(),
-      protein: z.number(),
-      carbs: z.number(),
-      fat: z.number(),
-    }),
-  ),
-});
-
-// Output schema for generated meal plan
-const MealPlanOutputSchema = z.object({
-  weekly_plan: z.array(
-    z.object({
-      day: z.string(),
-      meals: z.array(
-        z.object({
-          meal_name: z.string(),
-          dish_name: z.string(),
-          ingredients: z.array(
-            z.object({
-              name: z.string(),
-              amount: z.number(),
-              unit: z.string(),
-              calories: z.number(),
-              protein: z.number(),
-              carbs: z.number(),
-              fat: z.number(),
-            }),
-          ),
-          totals: z.object({
-            calories: z.number(),
-            protein: z.number(),
-            carbs: z.number(),
-            fat: z.number(),
-          }),
-        }),
-      ),
-      daily_totals: z.object({
-        calories: z.number(),
-        protein: z.number(),
-        carbs: z.number(),
-        fat: z.number(),
-      }),
-    }),
-  ),
-});
+// Simplified approach without complex schema validation
 
 // Define the Gemini prompt for meal plan generation
 const generateMealPlanPrompt = geminiModel.definePrompt({
   name: "generateWeeklyMealPlan",
-  input: { schema: MealPlanInputSchema },
-  output: { schema: MealPlanOutputSchema },
+  input: { schema: null }, // Removed schema validation
+  output: { schema: null }, // Removed schema validation
   prompt: `You are a professional nutritionist creating a 7-day meal plan. 
 
 **REQUIREMENTS:**
@@ -125,65 +58,77 @@ export async function generatePersonalizedMealPlan(input: {
   macro_targets: any;
   meal_distributions: any[];
 }) {
-  try {
-    console.log("🚀 Starting AI meal plan generation...");
-    console.log("📊 Daily targets:", input.macro_targets);
-    console.log("🍽️ Meal distributions:", input.meal_distributions);
+  const maxRetries = 3;
+  let retryCount = 0;
 
-    // Prepare input for Gemini
-    const geminiInput = {
-      preferred_diet: input.profile.preferred_diet || "Standard",
-      allergies: input.profile.allergies || [],
-      dispreferrred_ingredients: input.profile.dispreferrred_ingredients || [],
-      preferred_ingredients: input.profile.preferred_ingredients || [],
-      medical_conditions: input.profile.medical_conditions || [],
-      daily_targets: {
-        calories: input.macro_targets.target_daily_calories,
-        protein: input.macro_targets.target_protein_g,
-        carbs: input.macro_targets.target_carbs_g,
-        fat: input.macro_targets.target_fat_g,
-      },
-      meal_distributions: input.meal_distributions.map((dist) => ({
-        mealName: dist.mealName,
-        calories: Math.round(
-          (input.macro_targets.target_daily_calories * dist.calories_pct) / 100,
-        ),
-        protein: Math.round(
-          (input.macro_targets.target_protein_g * dist.calories_pct) / 100,
-        ),
-        carbs: Math.round(
-          (input.macro_targets.target_carbs_g * dist.calories_pct) / 100,
-        ),
-        fat: Math.round(
-          (input.macro_targets.target_fat_g * dist.calories_pct) / 100,
-        ),
-      })),
-    };
+  while (retryCount < maxRetries) {
+    try {
+      console.log("🚀 Starting AI meal plan generation...");
+      console.log("📊 Daily targets:", input.macro_targets);
+      console.log("🍽️ Meal distributions:", input.meal_distributions);
 
-    console.log("📝 Sending request to Gemini...");
-    const { output } = await generateMealPlanPrompt(geminiInput);
+      // Prepare input for Gemini
+      const geminiInput = {
+        preferred_diet: input.profile.preferred_diet || "Standard",
+        allergies: input.profile.allergies || [],
+        dispreferrred_ingredients: input.profile.dispreferrred_ingredients || [],
+        preferred_ingredients: input.profile.preferred_ingredients || [],
+        medical_conditions: input.profile.medical_conditions || [],
+        daily_targets: {
+          calories: input.macro_targets.target_daily_calories,
+          protein: input.macro_targets.target_protein_g,
+          carbs: input.macro_targets.target_carbs_g,
+          fat: input.macro_targets.target_fat_g,
+        },
+        meal_distributions: input.meal_distributions.map((dist) => ({
+          mealName: dist.mealName,
+          calories: Math.round(
+            (input.macro_targets.target_daily_calories * dist.calories_pct) / 100,
+          ),
+          protein: Math.round(
+            (input.macro_targets.target_protein_g * dist.calories_pct) / 100,
+          ),
+          carbs: Math.round(
+            (input.macro_targets.target_carbs_g * dist.calories_pct) / 100,
+          ),
+          fat: Math.round(
+            (input.macro_targets.target_fat_g * dist.calories_pct) / 100,
+          ),
+        })),
+      };
 
-    if (!output) {
-      throw new Error("No response from Gemini AI");
-    }
+      console.log("📝 Sending request to Gemini...");
+      const { output } = await generateMealPlanPrompt(geminiInput);
 
-    console.log("✅ Successfully generated meal plan");
-    return output;
-  } catch (error: any) {
-    console.error("❌ Meal plan generation failed:", error);
+      if (!output) {
+        throw new Error("No response from Gemini AI");
+      }
 
-    if (error.message?.includes("400")) {
-      throw new Error(
-        "Invalid request to AI service. Please check your profile data.",
-      );
-    } else if (error.message?.includes("403")) {
-      throw new Error(
-        "AI service access denied. Please check your API configuration.",
-      );
-    } else {
-      throw new Error(`Meal plan generation failed: ${error.message}`);
+      console.log("✅ Successfully generated meal plan");
+      return output;
+    } catch (error: any) {
+      console.error(`❌ Meal plan generation failed (attempt ${retryCount + 1}):`, error);
+
+      if (error.message?.includes("400")) {
+        throw new Error(
+          "Invalid request to AI service. Please check your profile data.",
+        );
+      } else if (error.message?.includes("403")) {
+        throw new Error(
+          "AI service access denied. Please check your API configuration.",
+        );
+      } else if (error.message?.includes("503") && retryCount < maxRetries) {
+        console.log("⏳ Gemini service unavailable, retrying in 2 seconds...");
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+        retryCount++;
+      }
+       else {
+        throw new Error(`Meal plan generation failed: ${error.message}`);
+      }
     }
   }
+
+  throw new Error(`Meal plan generation failed after ${maxRetries} attempts.`);
 }
 
 // Helper to validate meal plan accuracy
