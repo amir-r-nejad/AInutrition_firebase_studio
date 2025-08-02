@@ -45,9 +45,26 @@ export function mapProfileToMealPlanInput(data: {
     { mealName: "Evening Snack", calories_pct: 5, protein_pct: 5, carbs_pct: 5, fat_pct: 5 },
   ];
 
-  // Extract user preferences
+  // Extract user preferences - map primary_diet_goal to preferred_diet correctly
+  let mappedDiet = "Standard";
+  if (data.preferred_diet) {
+    // If preferred_diet is explicitly set, use it
+    mappedDiet = data.preferred_diet;
+  } else if (data.primary_diet_goal) {
+    // Map primary_diet_goal to valid preferred_diet values
+    switch (data.primary_diet_goal) {
+      case "fat_loss":
+      case "muscle_gain":
+      case "recomp":
+        mappedDiet = "Standard"; // Default to Standard for all diet goals
+        break;
+      default:
+        mappedDiet = "Standard";
+    }
+  }
+
   const preferences = {
-    diet: data.preferred_diet || data.primary_diet_goal || "Standard",
+    diet: mappedDiet,
     allergies: data.allergies || [],
     disliked: data.dispreferrred_ingredients || [],
     preferred: data.preferred_ingredients || [],
@@ -60,6 +77,16 @@ export function mapProfileToMealPlanInput(data: {
   });
 
   return {
+    // Profile data with defaults
+    age: data.age || 30,
+    biological_sex: data.biological_sex || "other",
+    height_cm: data.height_cm || 170,
+    current_weight_kg: data.current_weight_kg || 70,
+    target_weight_kg: data.target_weight_kg || 70,
+    physical_activity_level: data.physical_activity_level || "moderate",
+    primary_diet_goal: data.primary_diet_goal || "fat_loss",
+    
+    // Meal and preference data
     meal_data: mealData,
     meal_distributions: mealDistributions,
     preferred_diet: preferences.diet,
