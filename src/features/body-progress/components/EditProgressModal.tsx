@@ -25,20 +25,22 @@ import { useForm } from 'react-hook-form';
 import { BodyProgressEntry } from '../types';
 import { entryFormSchema, EntryFormValues } from '../types/schema';
 import { updateUserBodyProgress } from '../lib/body-progress-service';
+import { useParams } from 'next/navigation';
 
 type EditProgressModalProps = {
   onClose: () => void;
   isOpen: boolean;
   progress: BodyProgressEntry;
-  clientId?: string;
 };
 
 function EditProgressModal({
   progress,
   onClose,
   isOpen,
-  clientId,
 }: EditProgressModalProps) {
+  const params = useParams<{ clientId?: string }>();
+  const isCoachView = !!params?.clientId;
+
   const form = useForm<EntryFormValues>({
     resolver: zodResolver(entryFormSchema),
     defaultValues: progress,
@@ -51,10 +53,12 @@ function EditProgressModal({
 
   async function onSubmit(data: EntryFormValues) {
     try {
-      await updateUserBodyProgress(data, clientId);
+      await updateUserBodyProgress(data, params?.clientId);
       toast({
-        title: 'Progress Updated',
-        description: 'Your progress has been successfully saved.',
+        title: isCoachView ? 'Client Progress Updated' : 'Progress Updated',
+        description: isCoachView
+          ? 'Client progress has been successfully saved.'
+          : 'Your progress has been successfully saved.',
       });
       onClose();
     } catch (error: any) {
@@ -72,11 +76,12 @@ function EditProgressModal({
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
           <DialogTitle className='text-xl font-semibold'>
-            Send Coaching Request
+            {isCoachView ? 'Edit Client Progress Entry' : 'Edit Progress Entry'}
           </DialogTitle>
           <DialogDescription>
-            Send a personalized coaching request to a potential client via
-            email.
+            {isCoachView
+              ? "Update the client's progress measurements and notes."
+              : 'Update your progress measurements and notes.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -212,7 +217,11 @@ function EditProgressModal({
                   </FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder='How are you feeling? Any observations about your progress...'
+                      placeholder={
+                        isCoachView
+                          ? 'How is the client feeling? Any observations about their progress...'
+                          : 'How are you feeling? Any observations about your progress...'
+                      }
                       rows={3}
                       {...field}
                     />
@@ -223,10 +232,14 @@ function EditProgressModal({
             />
 
             <SubmitButton
-              loadingLabel='Editing...'
+              loadingLabel={isCoachView ? 'Updating Client...' : 'Editing...'}
               isLoading={form.formState.isSubmitting}
               icon={<Plus />}
-              label='Edit Progress Entry'
+              label={
+                isCoachView
+                  ? 'Update Client Progress Entry'
+                  : 'Edit Progress Entry'
+              }
               className='w-full md:w-auto'
             />
           </form>
