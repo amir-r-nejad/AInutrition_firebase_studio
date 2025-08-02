@@ -179,9 +179,20 @@ export const IngredientSchema = z.object({
 
 export type Ingredient = z.infer<typeof IngredientSchema>;
 
+export const MealNameEnum = z.enum([
+  'Breakfast',
+  'Morning Snack',
+  'Lunch',
+  'Afternoon Snack',
+  'Dinner',
+  'Evening Snack',
+]);
+
+export type MealNameType = z.infer<typeof MealNameEnum>;
+
 // Meal Schema
 export const MealSchema = z.object({
-  name: z.string().min(1, 'Meal name is required'),
+  name: MealNameEnum,
   custom_name: z.string().optional().default(''),
   ingredients: z.array(IngredientSchema).default([]),
   total_calories: z.preprocess(
