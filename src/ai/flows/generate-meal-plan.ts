@@ -23,45 +23,53 @@ const MealPlanInputSchema = z.object({
   }),
 
   // Meal distributions from macro splitter (6 meals)
-  meal_distributions: z.array(z.object({
-    mealName: z.string(),
-    calories: z.number(),
-    protein: z.number(),
-    carbs: z.number(),
-    fat: z.number(),
-  })),
-});
-
-// Output schema for generated meal plan
-const MealPlanOutputSchema = z.object({
-  weekly_plan: z.array(z.object({
-    day: z.string(),
-    meals: z.array(z.object({
-      meal_name: z.string(),
-      dish_name: z.string(),
-      ingredients: z.array(z.object({
-        name: z.string(),
-        amount: z.number(),
-        unit: z.string(),
-        calories: z.number(),
-        protein: z.number(),
-        carbs: z.number(),
-        fat: z.number(),
-      })),
-      totals: z.object({
-        calories: z.number(),
-        protein: z.number(),
-        carbs: z.number(),
-        fat: z.number(),
-      }),
-    })),
-    daily_totals: z.object({
+  meal_distributions: z.array(
+    z.object({
+      mealName: z.string(),
       calories: z.number(),
       protein: z.number(),
       carbs: z.number(),
       fat: z.number(),
     }),
-  })),
+  ),
+});
+
+// Output schema for generated meal plan
+const MealPlanOutputSchema = z.object({
+  weekly_plan: z.array(
+    z.object({
+      day: z.string(),
+      meals: z.array(
+        z.object({
+          meal_name: z.string(),
+          dish_name: z.string(),
+          ingredients: z.array(
+            z.object({
+              name: z.string(),
+              amount: z.number(),
+              unit: z.string(),
+              calories: z.number(),
+              protein: z.number(),
+              carbs: z.number(),
+              fat: z.number(),
+            }),
+          ),
+          totals: z.object({
+            calories: z.number(),
+            protein: z.number(),
+            carbs: z.number(),
+            fat: z.number(),
+          }),
+        }),
+      ),
+      daily_totals: z.object({
+        calories: z.number(),
+        protein: z.number(),
+        carbs: z.number(),
+        fat: z.number(),
+      }),
+    }),
+  ),
 });
 
 // Define the Gemini prompt for meal plan generation
@@ -135,12 +143,20 @@ export async function generatePersonalizedMealPlan(input: {
         carbs: input.macro_targets.target_carbs_g,
         fat: input.macro_targets.target_fat_g,
       },
-      meal_distributions: input.meal_distributions.map(dist => ({
+      meal_distributions: input.meal_distributions.map((dist) => ({
         mealName: dist.mealName,
-        calories: Math.round((input.macro_targets.target_daily_calories * dist.calories_pct) / 100),
-        protein: Math.round((input.macro_targets.target_protein_g * dist.calories_pct) / 100),
-        carbs: Math.round((input.macro_targets.target_carbs_g * dist.calories_pct) / 100),
-        fat: Math.round((input.macro_targets.target_fat_g * dist.calories_pct) / 100),
+        calories: Math.round(
+          (input.macro_targets.target_daily_calories * dist.calories_pct) / 100,
+        ),
+        protein: Math.round(
+          (input.macro_targets.target_protein_g * dist.calories_pct) / 100,
+        ),
+        carbs: Math.round(
+          (input.macro_targets.target_carbs_g * dist.calories_pct) / 100,
+        ),
+        fat: Math.round(
+          (input.macro_targets.target_fat_g * dist.calories_pct) / 100,
+        ),
       })),
     };
 
@@ -153,14 +169,17 @@ export async function generatePersonalizedMealPlan(input: {
 
     console.log("✅ Successfully generated meal plan");
     return output;
-
   } catch (error: any) {
     console.error("❌ Meal plan generation failed:", error);
 
     if (error.message?.includes("400")) {
-      throw new Error("Invalid request to AI service. Please check your profile data.");
+      throw new Error(
+        "Invalid request to AI service. Please check your profile data.",
+      );
     } else if (error.message?.includes("403")) {
-      throw new Error("AI service access denied. Please check your API configuration.");
+      throw new Error(
+        "AI service access denied. Please check your API configuration.",
+      );
     } else {
       throw new Error(`Meal plan generation failed: ${error.message}`);
     }
@@ -168,7 +187,10 @@ export async function generatePersonalizedMealPlan(input: {
 }
 
 // Helper to validate meal plan accuracy
-export function validateMealPlanAccuracy(mealPlan: any, targets: any): boolean {
+export async function validateMealPlanAccuracy(
+  mealPlan: any,
+  targets: any,
+): Promise<boolean> {
   const tolerance = 0.05; // 5% tolerance
 
   for (const day of mealPlan.weekly_plan) {
@@ -176,8 +198,10 @@ export function validateMealPlanAccuracy(mealPlan: any, targets: any): boolean {
 
     // Check if daily totals are within 5% of targets
     if (
-      Math.abs(dailyTotals.calories - targets.calories) > targets.calories * tolerance ||
-      Math.abs(dailyTotals.protein - targets.protein) > targets.protein * tolerance ||
+      Math.abs(dailyTotals.calories - targets.calories) >
+        targets.calories * tolerance ||
+      Math.abs(dailyTotals.protein - targets.protein) >
+        targets.protein * tolerance ||
       Math.abs(dailyTotals.carbs - targets.carbs) > targets.carbs * tolerance ||
       Math.abs(dailyTotals.fat - targets.fat) > targets.fat * tolerance
     ) {

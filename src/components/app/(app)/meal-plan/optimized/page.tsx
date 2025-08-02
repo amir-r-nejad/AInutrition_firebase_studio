@@ -1,5 +1,4 @@
-
-import { getMealPlan } from "@/features/meal-plan/lib/data-service";
+//import { editMealPlan } from "@/features/meal-plan/lib/data-service";
 import { getUserProfile, getUserPlan } from "@/lib/supabase/data-service";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -9,8 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
 
 export default async function OptimizedMealPlanPage() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect("/login");
@@ -20,7 +21,6 @@ export default async function OptimizedMealPlanPage() {
   const [profile, userPlan, mealPlan] = await Promise.all([
     getUserProfile(),
     getUserPlan(),
-    getMealPlan(),
   ]);
 
   if (!profile) {
@@ -40,8 +40,8 @@ export default async function OptimizedMealPlanPage() {
           <h1 className="text-4xl font-bold">AI Meal Plan</h1>
         </div>
         <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-          Generate a personalized 7-day meal plan with precise macro distributions 
-          based on your profile and macro splitter settings.
+          Generate a personalized 7-day meal plan with precise macro
+          distributions based on your profile and macro splitter settings.
         </p>
       </div>
 
@@ -54,7 +54,8 @@ export default async function OptimizedMealPlanPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-muted/50 rounded-lg">
               <p className="text-2xl font-bold">
-                {userPlan.custom_total_calories ?? userPlan.target_daily_calories}
+                {userPlan.custom_total_calories ??
+                  userPlan.target_daily_calories}
               </p>
               <p className="text-sm text-muted-foreground">Daily Calories</p>
             </div>
@@ -77,13 +78,16 @@ export default async function OptimizedMealPlanPage() {
               <p className="text-sm text-muted-foreground">Fat</p>
             </div>
           </div>
-          
+
           {profile.meal_distributions && (
             <div className="mt-4">
               <h4 className="font-medium mb-2">Meal Distribution:</h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
                 {profile.meal_distributions.map((dist: any, index: number) => (
-                  <div key={index} className="flex justify-between p-2 bg-muted/30 rounded">
+                  <div
+                    key={index}
+                    className="flex justify-between p-2 bg-muted/30 rounded"
+                  >
                     <span>{dist.mealName}:</span>
                     <span>{dist.calories_pct}%</span>
                   </div>
@@ -102,9 +106,7 @@ export default async function OptimizedMealPlanPage() {
       />
 
       {/* Generated Meal Plan Overview */}
-      {mealPlan?.ai_plan && (
-        <MealPlanOverview mealPlan={mealPlan} />
-      )}
+      {mealPlan?.ai_plan && <MealPlanOverview mealPlan={mealPlan} />}
     </div>
   );
 }
