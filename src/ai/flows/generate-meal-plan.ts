@@ -89,7 +89,22 @@ export const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
       targetCarbs: mealData.target_carbs_g,
       targetFat: mealData.target_fat_g,
       preferredDiet: input.preferred_diet || "Standard",
+      allergies: input.allergies || [],
+      mealDistributionsDetails: input.meal_distributions,
     });
+    
+    // Log detailed meal distribution targets
+    if (input.meal_distributions) {
+      console.log("📋 Meal Distribution Targets:");
+      input.meal_distributions.forEach((dist, index) => {
+        const targetCal = (mealData.target_daily_calories * dist.calories_pct / 100).toFixed(1);
+        const targetProt = (mealData.target_protein_g * (dist.protein_pct || dist.calories_pct) / 100).toFixed(1);
+        const targetCarbs = (mealData.target_carbs_g * (dist.carbs_pct || dist.calories_pct) / 100).toFixed(1);
+        const targetFat = (mealData.target_fat_g * (dist.fat_pct || dist.calories_pct) / 100).toFixed(1);
+        
+        console.log(`   ${dist.mealName}: ${targetCal} cal, ${targetProt}g protein, ${targetCarbs}g carbs, ${targetFat}g fat`);
+      });
+    }
 
     while (retryCount <= maxRetries) {
       try {
@@ -205,50 +220,59 @@ export const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
   },
 );
 
-// Main prompt (simplified)
+// Main prompt (optimized for accuracy)
 const prompt = geminiModel.definePrompt({
   name: "generatePersonalizedMealPlanPrompt",
   input: { schema: GeneratePersonalizedMealPlanInputSchema },
   output: { schema: GeneratePersonalizedMealPlanOutputSchema },
-  prompt: `You are NutriMind, an AI nutritionist. Create a 7-day meal plan with 6 unique meals per day, tailored to the user's dietary preferences and nutritional goals.
+  prompt: `You are NutriMind, an AI nutritionist. Create a 7-day meal plan with 6 unique meals per day that EXACTLY matches macro targets within 5% tolerance.
 
-**Requirements:**
-1. **No Repeated Meals**: All 42 meals (6 meals × 7 days) must have unique names and ingredients.
-2. **Diet Compliance**: Follow the user's preferred diet ({{preferred_diet}}) and avoid allergens ({{#if allergies.length}}{{allergies}}{{else}}None{{/if}}) and dispreferred ingredients ({{#if dispreferrred_ingredients.length}}{{dispreferrred_ingredients}}{{else}}None{{/if}}).
-3. **Meal Distribution**:
-   {{#if meal_distributions}}
-   {{#each meal_distributions}}
-   - {{mealName}}: {{calories_pct}}% calories, {{protein_pct}}% protein, {{carbs_pct}}% carbs, {{fat_pct}}% fat
-   {{/each}}
-   {{else}}
-   - Breakfast: 25% calories, 25% protein, 25% carbs, 25% fat
-   - Morning Snack: 10% calories, 10% protein, 10% carbs, 10% fat
-   - Lunch: 30% calories, 30% protein, 30% carbs, 30% fat
-   - Afternoon Snack: 10% calories, 10% protein, 10% carbs, 10% fat
-   - Dinner: 20% calories, 20% protein, 20% carbs, 20% fat
-   - Evening Snack: 5% calories, 5% protein, 5% carbs, 5% fat
-   {{/if}}
-4. **Nutritional Targets**:
-   - Daily: {{meal_data.target_daily_calories}} calories, {{meal_data.target_protein_g}}g protein, {{meal_data.target_carbs_g}}g carbs, {{meal_data.target_fat_g}}g fat
-   - Each meal must match macro percentages within ±3%.
-   - Daily totals must match targets within ±5%.
-5. **Meal Structure**:
-   - 7 days (Monday-Sunday), each with 6 meals: Breakfast, Morning Snack, Lunch, Afternoon Snack, Dinner, Evening Snack.
-   - Each meal needs 3-8 ingredients with nutritional data (calories, protein, carbs, fat per unit).
-   - Include daily totals and a weekly summary.
+**CRITICAL REQUIREMENTS:**
+1. **Macro Accuracy (HIGHEST PRIORITY)**: Each meal must match its target macros within ±5%. Daily totals must match within ±3%.
+2. **No Repeated Meals**: All 42 meals must be unique in name and ingredient combination.
+3. **Systematic Calculation**: For each meal, calculate exact portions to meet targets.
 
-**User Profile**:
-- Age: {{age}}
-- Sex: {{biological_sex}}
-- Height: {{height_cm}} cm
-- Weight: {{current_weight_kg}} kg
-- Target Weight: {{target_weight_kg}} kg
-- Activity Level: {{physical_activity_level}}
-- Diet Goal: {{primary_diet_goal}}
-- Preferred Ingredients: {{#if preferred_ingredients.length}}{{preferred_ingredients}}{{else}}None{{/if}}
-- Medical Conditions: {{#if medical_conditions.length}}{{medical_conditions}}{{else}}None{{/if}}
+**Daily Targets**: {{meal_data.target_daily_calories}} cal, {{meal_data.target_protein_g}}g protein, {{meal_data.target_carbs_g}}g carbs, {{meal_data.target_fat_g}}g fat
 
-**Output Format**:
+**Meal Distribution from Macro Splitter**:
+{{#if meal_distributions}}
+{{#each meal_distributions}}
+- {{mealName}}: {{calories_pct}}% calories ({{#multiply ../meal_data.target_daily_calories calories_pct}}{{/multiply}} cal), {{protein_pct}}% protein ({{#multiply ../meal_data.target_protein_g protein_pct}}{{/multiply}}g), {{carbs_pct}}% carbs ({{#multiply ../meal_data.target_carbs_g carbs_pct}}{{/multiply}}g), {{fat_pct}}% fat ({{#multiply ../meal_data.target_fat_g fat_pct}}{{/multiply}}g)
+{{/each}}
+{{else}}
+**Default Distribution (if no custom distribution provided):**
+- Breakfast: 25% = {{#multiply meal_data.target_daily_calories 0.25}}{{/multiply}} cal, {{#multiply meal_data.target_protein_g 0.25}}{{/multiply}}g protein, {{#multiply meal_data.target_carbs_g 0.25}}{{/multiply}}g carbs, {{#multiply meal_data.target_fat_g 0.25}}{{/multiply}}g fat
+- Morning Snack: 10% = {{#multiply meal_data.target_daily_calories 0.10}}{{/multiply}} cal, {{#multiply meal_data.target_protein_g 0.10}}{{/multiply}}g protein, {{#multiply meal_data.target_carbs_g 0.10}}{{/multiply}}g carbs, {{#multiply meal_data.target_fat_g 0.10}}{{/multiply}}g fat
+- Lunch: 30% = {{#multiply meal_data.target_daily_calories 0.30}}{{/multiply}} cal, {{#multiply meal_data.target_protein_g 0.30}}{{/multiply}}g protein, {{#multiply meal_data.target_carbs_g 0.30}}{{/multiply}}g carbs, {{#multiply meal_data.target_fat_g 0.30}}{{/multiply}}g fat
+- Afternoon Snack: 10% = {{#multiply meal_data.target_daily_calories 0.10}}{{/multiply}} cal, {{#multiply meal_data.target_protein_g 0.10}}{{/multiply}}g protein, {{#multiply meal_data.target_carbs_g 0.10}}{{/multiply}}g carbs, {{#multiply meal_data.target_fat_g 0.10}}{{/multiply}}g fat
+- Dinner: 20% = {{#multiply meal_data.target_daily_calories 0.20}}{{/multiply}} cal, {{#multiply meal_data.target_protein_g 0.20}}{{/multiply}}g protein, {{#multiply meal_data.target_carbs_g 0.20}}{{/multiply}}g carbs, {{#multiply meal_data.target_fat_g 0.20}}{{/multiply}}g fat
+- Evening Snack: 5% = {{#multiply meal_data.target_daily_calories 0.05}}{{/multiply}} cal, {{#multiply meal_data.target_protein_g 0.05}}{{/multiply}}g protein, {{#multiply meal_data.target_carbs_g 0.05}}{{/multiply}}g carbs, {{#multiply meal_data.target_fat_g 0.05}}{{/multiply}}g fat
+{{/if}}
+
+**User Preferences**:
+- Diet: {{preferred_diet}}
+- Allergies: {{#if allergies.length}}{{allergies}}{{else}}None{{/if}}
+- Avoid: {{#if dispreferrred_ingredients.length}}{{dispreferrred_ingredients}}{{else}}None{{/if}}
+- Preferred: {{#if preferred_ingredients.length}}{{preferred_ingredients}}{{else}}None{{/if}}
+- Medical: {{#if medical_conditions.length}}{{medical_conditions}}{{else}}None{{/if}}
+
+**Calculation Method for Each Meal**:
+1. Identify target calories/protein/carbs/fat for the meal type
+2. Select appropriate base ingredients (protein source, carb source, fat source, vegetables)
+3. Calculate exact quantities to meet targets within 5% tolerance
+4. Verify totals before finalizing meal
+
+**Standard Nutritional Values (use these for consistency)**:
+- Chicken breast: 165 cal, 31g protein, 0g carbs, 3.6g fat per 100g
+- Rice (cooked): 130 cal, 2.7g protein, 28g carbs, 0.3g fat per 100g
+- Olive oil: 884 cal, 0g protein, 0g carbs, 100g fat per 100g
+- Eggs: 155 cal, 13g protein, 1.1g carbs, 11g fat per 100g
+- Greek yogurt: 59 cal, 10g protein, 3.6g carbs, 0.4g fat per 100g
+- Oats: 389 cal, 16.9g protein, 66.3g carbs, 6.9g fat per 100g
+- Banana: 89 cal, 1.1g protein, 22.8g carbs, 0.3g fat per 100g
+- Almonds: 579 cal, 21.2g protein, 21.6g carbs, 49.9g fat per 100g
+
+**Output Format (EXACT JSON)**:
 {
   "days": [
     {
@@ -256,49 +280,48 @@ const prompt = geminiModel.definePrompt({
       "meals": [
         {
           "meal_name": "Breakfast",
-          "custom_name": "Unique Meal Name",
+          "custom_name": "Power Protein Bowl",
           "ingredients": [
             {
-              "name": "Ingredient",
-              "quantity": 100,
+              "name": "Greek yogurt",
+              "quantity": 150,
               "unit": "g",
-              "calories": 100,
-              "protein": 5,
-              "carbs": 10,
-              "fat": 3
+              "calories": 88.5,
+              "protein": 15,
+              "carbs": 5.4,
+              "fat": 0.6
             }
           ],
-          "total_calories": 100,
-          "total_protein": 5,
-          "total_carbs": 10,
-          "total_fat": 3
+          "total_calories": 88.5,
+          "total_protein": 15,
+          "total_carbs": 5.4,
+          "total_fat": 0.6
         }
       ],
       "daily_totals": {
-        "calories": 1200,
-        "protein": 90,
-        "carbs": 150,
-        "fat": 40
+        "calories": 1500,
+        "protein": 120,
+        "carbs": 180,
+        "fat": 50
       }
     }
   ],
   "weekly_summary": {
-    "total_calories": 8400,
-    "total_protein": 630,
-    "total_carbs": 1050,
-    "total_fat": 280
+    "total_calories": 10500,
+    "total_protein": 840,
+    "total_carbs": 1260,
+    "total_fat": 350
   }
 }
 
-**Rules**:
-- Return valid JSON only.
-- Use unquoted numbers.
-- Ensure 7 days, 6 meals per day, 3-8 ingredients per meal.
-- No allergens or dispreferred ingredients.
-- No repeated meals.
-- Match macro and daily targets.
+**VALIDATION RULES**:
+- Each meal total must be within 5% of target
+- Daily totals must be within 3% of targets  
+- All numbers must be precise (use decimals)
+- No repeated meal names across the week
+- Include variety in ingredients and cooking methods
 
-Generate the meal plan now.`,
+Generate the precise meal plan now with exact calculations.`,
 });
 
 // Fallback prompt (even simpler)
@@ -579,11 +602,13 @@ function transformAIOutputToWeekSchema(
         ),
       };
 
-      // Validate macro distribution
+      // Validate macro distribution with improved accuracy
       const targetCalories = mealData.target_daily_calories;
       const targetProtein = mealData.target_protein_g;
       const targetCarbs = mealData.target_carbs_g;
       const targetFat = mealData.target_fat_g;
+      
+      // Use actual meal distributions from macro splitter or defaults
       const mealDistributions = input.meal_distributions || [
         {
           mealName: "Breakfast",
@@ -593,7 +618,7 @@ function transformAIOutputToWeekSchema(
           fat_pct: 25,
         },
         {
-          mealName: "Morning Snack",
+          mealName: "Morning Snack", 
           calories_pct: 10,
           protein_pct: 10,
           carbs_pct: 10,
@@ -628,19 +653,20 @@ function transformAIOutputToWeekSchema(
           fat_pct: 5,
         },
       ];
+      
       const distribution = mealDistributions[mealIndex];
-      const targetMealCalories =
-        (targetCalories * distribution.calories_pct) / 100;
-      const targetMealProtein =
-        (targetProtein *
-          (distribution.protein_pct || distribution.calories_pct)) /
-        100;
-      const targetMealCarbs =
-        (targetCarbs * (distribution.carbs_pct || distribution.calories_pct)) /
-        100;
-      const targetMealFat =
-        (targetFat * (distribution.fat_pct || distribution.calories_pct)) / 100;
-      const tolerance = 0.03; // ±3%
+      if (!distribution) {
+        console.error(`No distribution found for meal index ${mealIndex}`);
+        throw new Error(`No distribution found for meal ${meal.meal_name}`);
+      }
+      
+      // Calculate precise target macros for this meal
+      const targetMealCalories = Number((targetCalories * distribution.calories_pct / 100).toFixed(1));
+      const targetMealProtein = Number((targetProtein * (distribution.protein_pct || distribution.calories_pct) / 100).toFixed(1));
+      const targetMealCarbs = Number((targetCarbs * (distribution.carbs_pct || distribution.calories_pct) / 100).toFixed(1));
+      const targetMealFat = Number((targetFat * (distribution.fat_pct || distribution.calories_pct) / 100).toFixed(1));
+      
+      const tolerance = 0.05; // ±5% tolerance for meal-level accuracy
 
       if (
         mealTotals.total_calories < targetMealCalories * (1 - tolerance) ||
@@ -685,32 +711,64 @@ function transformAIOutputToWeekSchema(
 
     const dailyTotals = calculateDailyTotals(safeMeals);
 
-    // Validate daily totals
+    // Validate daily totals with precise calculations
     const targetCalories = mealData.target_daily_calories;
     const targetProtein = mealData.target_protein_g;
     const targetCarbs = mealData.target_carbs_g;
     const targetFat = mealData.target_fat_g;
-    const dailyTolerance = 0.05; // ±5%
+    const dailyTolerance = 0.03; // ±3% for daily accuracy
 
-    if (
-      dailyTotals.calories < targetCalories * (1 - dailyTolerance) ||
-      dailyTotals.calories > targetCalories * (1 + dailyTolerance) ||
-      dailyTotals.protein < targetProtein * (1 - dailyTolerance) ||
-      dailyTotals.protein > targetProtein * (1 + dailyTolerance) ||
-      dailyTotals.carbs < targetCarbs * (1 - dailyTolerance) ||
-      dailyTotals.carbs > targetCarbs * (1 + dailyTolerance) ||
-      dailyTotals.fat < targetFat * (1 - dailyTolerance) ||
-      dailyTotals.fat > targetFat * (1 + dailyTolerance)
-    ) {
-      console.error(
-        `Daily totals for ${dayObj.day_of_week} out of range:
-        Calories: ${dailyTotals.calories} (expected: ${targetCalories} ±${targetCalories * dailyTolerance}),
-        Protein: ${dailyTotals.protein} (expected: ${targetProtein} ±${targetProtein * dailyTolerance}),
-        Carbs: ${dailyTotals.carbs} (expected: ${targetCarbs} ±${targetCarbs * dailyTolerance}),
-        Fat: ${dailyTotals.fat} (expected: ${targetFat} ±${targetFat * dailyTolerance}).`,
-      );
-      throw new Error(`Daily totals out of range for ${dayObj.day_of_week}`);
+    // Round daily totals to 1 decimal place for consistency
+    const roundedDailyTotals = {
+      calories: Number(dailyTotals.calories.toFixed(1)),
+      protein: Number(dailyTotals.protein.toFixed(1)),
+      carbs: Number(dailyTotals.carbs.toFixed(1)),
+      fat: Number(dailyTotals.fat.toFixed(1)),
+    };
+
+    // Calculate acceptable ranges
+    const ranges = {
+      calories: {
+        min: Number((targetCalories * (1 - dailyTolerance)).toFixed(1)),
+        max: Number((targetCalories * (1 + dailyTolerance)).toFixed(1)),
+      },
+      protein: {
+        min: Number((targetProtein * (1 - dailyTolerance)).toFixed(1)),
+        max: Number((targetProtein * (1 + dailyTolerance)).toFixed(1)),
+      },
+      carbs: {
+        min: Number((targetCarbs * (1 - dailyTolerance)).toFixed(1)),
+        max: Number((targetCarbs * (1 + dailyTolerance)).toFixed(1)),
+      },
+      fat: {
+        min: Number((targetFat * (1 - dailyTolerance)).toFixed(1)),
+        max: Number((targetFat * (1 + dailyTolerance)).toFixed(1)),
+      },
+    };
+
+    // Check if daily totals are within acceptable ranges
+    const violations = [];
+    
+    if (roundedDailyTotals.calories < ranges.calories.min || roundedDailyTotals.calories > ranges.calories.max) {
+      violations.push(`Calories: ${roundedDailyTotals.calories} (expected: ${targetCalories}, range: ${ranges.calories.min}-${ranges.calories.max})`);
     }
+    if (roundedDailyTotals.protein < ranges.protein.min || roundedDailyTotals.protein > ranges.protein.max) {
+      violations.push(`Protein: ${roundedDailyTotals.protein}g (expected: ${targetProtein}g, range: ${ranges.protein.min}-${ranges.protein.max})`);
+    }
+    if (roundedDailyTotals.carbs < ranges.carbs.min || roundedDailyTotals.carbs > ranges.carbs.max) {
+      violations.push(`Carbs: ${roundedDailyTotals.carbs}g (expected: ${targetCarbs}g, range: ${ranges.carbs.min}-${ranges.carbs.max})`);
+    }
+    if (roundedDailyTotals.fat < ranges.fat.min || roundedDailyTotals.fat > ranges.fat.max) {
+      violations.push(`Fat: ${roundedDailyTotals.fat}g (expected: ${targetFat}g, range: ${ranges.fat.min}-${ranges.fat.max})`);
+    }
+
+    if (violations.length > 0) {
+      console.error(`Daily totals for ${dayObj.day_of_week} out of acceptable 3% range:`, violations.join(', '));
+      throw new Error(`Daily totals accuracy violation for ${dayObj.day_of_week}: ${violations.join('; ')}`);
+    }
+
+    // Log successful validation
+    console.log(`✅ Daily totals for ${dayObj.day_of_week} validated successfully:`, roundedDailyTotals);
 
     return {
       day_of_week: dayObj.day_of_week,

@@ -45,9 +45,15 @@ function MealPlanGenerator({
         return;
       }
 
+      // Prepare comprehensive input data for meal plan generation
       const input = mapProfileToMealPlanInput({
         ...profile,
         meal_data: mealPlan.meal_data || { days: [] },
+        target_daily_calories: userPlan.custom_total_calories ?? userPlan.target_daily_calories,
+        target_protein_g: userPlan.custom_protein_g ?? userPlan.target_protein_g,
+        target_carbs_g: userPlan.custom_carbs_g ?? userPlan.target_carbs_g,
+        target_fat_g: userPlan.custom_fat_g ?? userPlan.target_fat_g,
+        meal_distributions: profile.meal_distributions, // Include macro splitter data
         ...userPlan,
       });
 

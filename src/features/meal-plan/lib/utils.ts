@@ -11,13 +11,42 @@ import {
 import { DailyTargetsTypes, MealToOptimizeTypes } from '../types';
 import { requiredFields } from './config';
 
-export function mapProfileToMealPlanInput(
-  profile: Record<string, any>
-): GeneratePersonalizedMealPlanInput {
-  const input = profile;
-  Object.keys(input).forEach((key) => !input[key] && delete input[key]);
+export function mapProfileToMealPlanInput(data: any): GeneratePersonalizedMealPlanInput {
+  // Extract meal data with proper validation
+  const mealData = {
+    target_daily_calories: data.target_daily_calories || data.custom_total_calories || 2000,
+    target_protein_g: data.target_protein_g || data.custom_protein_g || 150,
+    target_carbs_g: data.target_carbs_g || data.custom_carbs_g || 250,
+    target_fat_g: data.target_fat_g || data.custom_fat_g || 67,
+  };
 
-  return input as GeneratePersonalizedMealPlanInput;
+  console.log('Mapping profile to meal plan input:', {
+    mealData,
+    mealDistributions: data.meal_distributions,
+    preferences: {
+      diet: data.preferred_diet,
+      allergies: data.allergies,
+      disliked: data.dispreferrred_ingredients,
+      preferred: data.preferred_ingredients,
+    }
+  });
+
+  return {
+    age: data.age || 25,
+    biological_sex: data.biological_sex || 'Male',
+    height_cm: data.height_cm || 175,
+    current_weight_kg: data.current_weight_kg || 70,
+    target_weight_kg: data.target_weight_kg || data.current_weight_kg || 70,
+    physical_activity_level: data.physical_activity_level || 'Moderate',
+    primary_diet_goal: data.primary_diet_goal || 'Maintain Weight',
+    preferred_diet: data.preferred_diet || 'Standard',
+    allergies: data.allergies || [],
+    medical_conditions: data.medical_conditions || [],
+    dispreferrred_ingredients: data.dispreferrred_ingredients || [],
+    preferred_ingredients: data.preferred_ingredients || [],
+    meal_data: mealData,
+    meal_distributions: data.meal_distributions || null, // Include macro splitter data
+  };
 }
 
 export function getAdjustedMealInput(
