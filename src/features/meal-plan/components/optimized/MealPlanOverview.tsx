@@ -1,276 +1,172 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { chartConfig } from '@/features/meal-plan/lib/config';
-import { daysOfWeek } from '@/lib/constants';
-import { GeneratePersonalizedMealPlanOutput } from '@/lib/schemas';
-import { formatNumber } from '@/lib/utils';
-import { BarChart3, ChefHat } from 'lucide-react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  LabelList,
-  XAxis,
-  YAxis,
-} from 'recharts';
+"use client";
 
-type MealPlanOverviewProps = {
-  mealPlan: GeneratePersonalizedMealPlanOutput | null;
-};
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
-  if (!mealPlan) return null;
+interface MealPlanOverviewProps {
+  mealPlan: any;
+}
+
+export default function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
+  if (!mealPlan?.ai_plan?.days) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p className="text-muted-foreground">No AI meal plan generated yet.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const { days, weekly_summary } = mealPlan.ai_plan;
 
   return (
-    <div className='space-y-8 mt-6'>
-      {mealPlan.weekly_summary && (
-        <Card>
-          <CardHeader>
-            <CardTitle className='text-2xl flex items-center'>
-              <BarChart3 className='mr-2 h-6 w-6 text-primary' />
-              Weekly Nutritional Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className='grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-6'>
-              <div>
-                <p className='text-sm text-muted-foreground'>Total Calories</p>
-                <p className='text-xl font-bold'>
-                  {formatNumber(mealPlan.weekly_summary.total_calories, {
-                    maximumFractionDigits: 0,
-                  })}{' '}
-                  kcal
-                </p>
-              </div>
-              <div>
-                <p className='text-sm text-muted-foreground'>Total Protein</p>
-                <p className='text-xl font-bold'>
-                  {formatNumber(mealPlan.weekly_summary.total_protein, {
-                    maximumFractionDigits: 1,
-                  })}{' '}
-                  g
-                </p>
-              </div>
-              <div>
-                <p className='text-sm text-muted-foreground'>Total Carbs</p>
-                <p className='text-xl font-bold'>
-                  {formatNumber(mealPlan.weekly_summary.total_carbs, {
-                    maximumFractionDigits: 1,
-                  })}{' '}
-                  g
-                </p>
-              </div>
-              <div>
-                <p className='text-sm text-muted-foreground'>Total Fat</p>
-                <p className='text-xl font-bold'>
-                  {formatNumber(mealPlan.weekly_summary.total_fat, {
-                    maximumFractionDigits: 1,
-                  })}{' '}
-                  g
-                </p>
-              </div>
+    <div className="space-y-6">
+      {/* Weekly Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Weekly Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-primary">
+                {weekly_summary.total_calories.toLocaleString()}
+              </p>
+              <p className="text-sm text-muted-foreground">Total Calories</p>
             </div>
-            <ChartContainer config={chartConfig} className='w-full h-[250px]'>
-              <BarChart
-                accessibilityLayer
-                data={[
-                  {
-                    name: 'Protein',
-                    value: mealPlan.weekly_summary.total_protein,
-                    fill: 'var(--color-protein)',
-                  },
-                  {
-                    name: 'Carbs',
-                    value: mealPlan.weekly_summary.total_carbs,
-                    fill: 'var(--color-carbs)',
-                  },
-                  {
-                    name: 'Fat',
-                    value: mealPlan.weekly_summary.total_fat,
-                    fill: 'var(--color-fat)',
-                  },
-                ]}
-                margin={{ top: 20, right: 0, left: -20, bottom: 5 }}
-              >
-                <CartesianGrid vertical={false} strokeDasharray='3 3' />
-                <XAxis
-                  dataKey='name'
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                />
-                <YAxis tickLine={false} axisLine={false} tickMargin={8} />
-                <ChartTooltip content={<ChartTooltipContent hideIndicator />} />
-                <Bar dataKey='value' radius={5}>
-                  <LabelList
-                    position='top'
-                    offset={8}
-                    className='fill-foreground text-xs'
-                    formatter={(value: number) =>
-                      `${formatNumber(value, { maximumFractionDigits: 0 })}g`
-                    }
-                  />
-                </Bar>
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      )}
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600">
+                {weekly_summary.total_protein.toFixed(1)}g
+              </p>
+              <p className="text-sm text-muted-foreground">Total Protein</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-600">
+                {weekly_summary.total_carbs.toFixed(1)}g
+              </p>
+              <p className="text-sm text-muted-foreground">Total Carbs</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-orange-600">
+                {weekly_summary.total_fat.toFixed(1)}g
+              </p>
+              <p className="text-sm text-muted-foreground">Total Fat</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <Tabs
-        defaultValue={mealPlan.days[0]?.day_of_week || daysOfWeek[0]}
-        className='w-full'
-      >
-        <ScrollArea className='w-full whitespace-nowrap rounded-md border'>
-          <TabsList className='inline-flex h-auto bg-muted p-1'>
-            {mealPlan.days.map((dayPlan) => (
-              <TabsTrigger
-                key={dayPlan.day_of_week}
-                value={dayPlan.day_of_week}
-                className='px-4 py-2 text-base data-[state=active]:bg-background data-[state=active]:shadow-sm'
-              >
-                {dayPlan.day_of_week}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <ScrollBar orientation='horizontal' />
-        </ScrollArea>
-
-        {mealPlan.days.map((dayPlan) => (
-          <TabsContent
-            key={dayPlan.day_of_week}
-            value={dayPlan.day_of_week}
-            className='mt-6'
-          >
-            <div className='space-y-6'>
-              {dayPlan.meals.map((meal, mealIndex) => (
-                <Card key={mealIndex} className='shadow-md'>
-                  <CardHeader>
-                    <CardTitle className='text-xl font-semibold flex items-center'>
-                      <ChefHat className='mr-2 h-5 w-5 text-accent' />
-                      {meal.meal_name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <h4 className='font-medium text-md mb-2 text-primary'>
-                      Ingredients:
-                    </h4>
-                    <ScrollArea className='w-full mb-4'>
-                      <Table className='min-w-[500px]'>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className='w-[40%]'>
-                              Ingredient
-                            </TableHead>
-                            <TableHead className='text-right w-[15%]'>
-                              Qty (g)
-                            </TableHead>
-                            <TableHead className='text-right w-[15%]'>
-                              Calories
-                            </TableHead>
-                            <TableHead className='text-right w-[15%]'>
-                              Protein (g)
-                            </TableHead>
-                            <TableHead className='text-right w-[15%]'>
-                              Fat (g)
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {meal.ingredients.map((ing, ingIndex) => {
-                            return (
-                              <TableRow key={ingIndex}>
-                                <TableCell className='font-medium py-1.5'>
-                                  {ing.name}
-                                </TableCell>
-                                <TableCell className='text-right py-1.5'>
-                                  {ing.quantity
-                                    ? formatNumber(ing.quantity, {
-                                        maximumFractionDigits: 0,
-                                      })
-                                    : 'N/A'}
-                                </TableCell>
-                                <TableCell className='text-right py-1.5'>
-                                  {ing.calories && ing.quantity
-                                    ? formatNumber(
-                                        (ing.calories * ing.quantity) / 100,
-                                        {
-                                          maximumFractionDigits: 0,
-                                        }
-                                      )
-                                    : 'N/A'}
-                                </TableCell>
-                                <TableCell className='text-right py-1.5'>
-                                  {ing.protein && ing.quantity
-                                    ? formatNumber(
-                                        (ing.protein * ing.quantity) / 100,
-                                        {
-                                          maximumFractionDigits: 1,
-                                        }
-                                      )
-                                    : 'N/A'}
-                                </TableCell>
-                                <TableCell className='text-right py-1.5'>
-                                  {ing.fat && ing.quantity
-                                    ? formatNumber(
-                                        (ing.fat * ing.quantity) / 100,
-                                        {
-                                          maximumFractionDigits: 1,
-                                        }
-                                      )
-                                    : 'N/A'}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                      <ScrollBar orientation='horizontal' />
-                    </ScrollArea>
-                    <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
-                      Total:{' '}
-                      {meal.total_calories
-                        ? formatNumber(meal.total_calories, {
-                            maximumFractionDigits: 0,
-                          })
-                        : 'N/A'}{' '}
-                      kcal | Protein:{' '}
-                      {meal.total_protein
-                        ? formatNumber(meal.total_protein, {
-                            maximumFractionDigits: 1,
-                          })
-                        : 'N/A'}
-                      g | Fat:{' '}
-                      {meal.total_fat
-                        ? formatNumber(meal.total_fat, {
-                            maximumFractionDigits: 1,
-                          })
-                        : 'N/A'}
-                      g
-                    </div>
-                  </CardContent>
-                </Card>
+      {/* Daily Meal Plans */}
+      <Card>
+        <CardHeader>
+          <CardTitle>7-Day Meal Plan</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue={days[0]?.day_of_week || "Monday"} className="w-full">
+            <TabsList className="grid w-full grid-cols-7">
+              {days.map((day: any) => (
+                <TabsTrigger key={day.day_of_week} value={day.day_of_week}>
+                  {day.day_of_week.slice(0, 3)}
+                </TabsTrigger>
               ))}
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+            </TabsList>
+
+            {days.map((day: any) => (
+              <TabsContent key={day.day_of_week} value={day.day_of_week} className="space-y-4">
+                {/* Daily totals */}
+                <div className="grid grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+                  <div className="text-center">
+                    <p className="text-lg font-semibold">{day.daily_totals.calories}</p>
+                    <p className="text-xs text-muted-foreground">Calories</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-green-600">{day.daily_totals.protein}g</p>
+                    <p className="text-xs text-muted-foreground">Protein</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-blue-600">{day.daily_totals.carbs}g</p>
+                    <p className="text-xs text-muted-foreground">Carbs</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-orange-600">{day.daily_totals.fat}g</p>
+                    <p className="text-xs text-muted-foreground">Fat</p>
+                  </div>
+                </div>
+
+                {/* Meals */}
+                <div className="space-y-4">
+                  {day.meals.map((meal: any, index: number) => (
+                    <Card key={index}>
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-center">
+                          <CardTitle className="text-lg">{meal.meal_name}</CardTitle>
+                          <Badge variant="outline">{meal.custom_name}</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <ScrollArea className="w-full">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Ingredient</TableHead>
+                                <TableHead className="text-right">Amount</TableHead>
+                                <TableHead className="text-right">Unit</TableHead>
+                                <TableHead className="text-right">Calories</TableHead>
+                                <TableHead className="text-right">Protein</TableHead>
+                                <TableHead className="text-right">Carbs</TableHead>
+                                <TableHead className="text-right">Fat</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {meal.ingredients.map((ingredient: any, ingIndex: number) => (
+                                <TableRow key={ingIndex}>
+                                  <TableCell className="font-medium">{ingredient.name}</TableCell>
+                                  <TableCell className="text-right">{ingredient.amount}</TableCell>
+                                  <TableCell className="text-right">{ingredient.unit}</TableCell>
+                                  <TableCell className="text-right">{ingredient.calories.toFixed(1)}</TableCell>
+                                  <TableCell className="text-right">{ingredient.protein.toFixed(1)}g</TableCell>
+                                  <TableCell className="text-right">{ingredient.carbs.toFixed(1)}g</TableCell>
+                                  <TableCell className="text-right">{ingredient.fat.toFixed(1)}g</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </ScrollArea>
+
+                        {/* Meal totals */}
+                        <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+                          <div className="grid grid-cols-4 gap-4 text-center">
+                            <div>
+                              <p className="font-semibold">{meal.total_calories}</p>
+                              <p className="text-xs text-muted-foreground">Cal</p>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-green-600">{meal.total_protein}g</p>
+                              <p className="text-xs text-muted-foreground">Protein</p>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-blue-600">{meal.total_carbs}g</p>
+                              <p className="text-xs text-muted-foreground">Carbs</p>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-orange-600">{meal.total_fat}g</p>
+                              <p className="text-xs text-muted-foreground">Fat</p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
-export default MealPlanOverview;
