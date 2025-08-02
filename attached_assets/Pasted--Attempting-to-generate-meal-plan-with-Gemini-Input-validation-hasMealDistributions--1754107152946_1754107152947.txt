@@ -1,0 +1,121 @@
+🔄 Attempting to generate meal plan with Gemini...
+📊 Input validation: {
+  hasMealDistributions: true,
+  mealDistributionsCount: 6,
+  targetCalories: 2332,
+  targetProtein: 204.05,
+  targetCarbs: 204.05,
+  targetFat: 77.7333333333333,
+  preferredDiet: 'Standard',
+  allergies: [],
+  mealDistributionsDetails: [
+    { mealName: 'Breakfast', calories_pct: 22.5 },
+    { mealName: 'Morning Snack', calories_pct: 10 },
+    { mealName: 'Lunch', calories_pct: 22.5 },
+    { mealName: 'Afternoon Snack', calories_pct: 10 },
+    { mealName: 'Dinner', calories_pct: 20 },
+    { mealName: 'Evening Snack', calories_pct: 15 }
+  ]
+}
+📋 Meal Distribution Targets:
+   Breakfast: 524.7 cal, 45.9g protein, 45.9g carbs, 17.5g fat
+   Morning Snack: 233.2 cal, 20.4g protein, 20.4g carbs, 7.8g fat
+   Lunch: 524.7 cal, 45.9g protein, 45.9g carbs, 17.5g fat
+   Afternoon Snack: 233.2 cal, 20.4g protein, 20.4g carbs, 7.8g fat
+   Dinner: 466.4 cal, 40.8g protein, 40.8g carbs, 15.5g fat
+   Evening Snack: 349.8 cal, 30.6g protein, 30.6g carbs, 11.7g fat
+Attempt 1 failed: Error: You specified knownHelpersOnly, but used the unknown helper multiply - 13:44
+    at <unknown> (Error: You specified knownHelpersOnly, but used the unknown helper multiply - 13:44)
+    at async (src/ai/flows/generate-meal-plan.ts:111:27)
+  109 |     while (retryCount <= maxRetries) {
+  110 |       try {
+> 111 |         const { output } = await prompt(input);
+      |                           ^
+  112 |         if (!output) {
+  113 |           console.error("❌ AI did not return output");
+  114 |           throw new Error("AI did not return output"); {
+  description: undefined,
+  fileName: undefined,
+  lineNumber: 13,
+  endLineNumber: 13,
+  number: undefined,
+  column: 44,
+  endColumn: 118,
+  ignoreFailedSpan: true
+}
+Retry 1 of 3...
+Attempt 2 failed: Error: You specified knownHelpersOnly, but used the unknown helper multiply - 13:44
+    at <unknown> (Error: You specified knownHelpersOnly, but used the unknown helper multiply - 13:44)
+    at async (src/ai/flows/generate-meal-plan.ts:111:27)
+  109 |     while (retryCount <= maxRetries) {
+  110 |       try {
+> 111 |         const { output } = await prompt(input);
+      |                           ^
+  112 |         if (!output) {
+  113 |           console.error("❌ AI did not return output");
+  114 |           throw new Error("AI did not return output"); {
+  description: undefined,
+  fileName: undefined,
+  lineNumber: 13,
+  endLineNumber: 13,
+  number: undefined,
+  column: 44,
+  endColumn: 118,
+  ignoreFailedSpan: true
+}
+Retry 2 of 3...
+Attempt 3 failed: Error: You specified knownHelpersOnly, but used the unknown helper multiply - 13:44
+    at <unknown> (Error: You specified knownHelpersOnly, but used the unknown helper multiply - 13:44)
+    at async (src/ai/flows/generate-meal-plan.ts:111:27)
+  109 |     while (retryCount <= maxRetries) {
+  110 |       try {
+> 111 |         const { output } = await prompt(input);
+      |                           ^
+  112 |         if (!output) {
+  113 |           console.error("❌ AI did not return output");
+  114 |           throw new Error("AI did not return output"); {
+  description: undefined,
+  fileName: undefined,
+  lineNumber: 13,
+  endLineNumber: 13,
+  number: undefined,
+  column: 44,
+  endColumn: 118,
+  ignoreFailedSpan: true
+}
+Retry 3 of 3...
+Attempt 4 failed: Error: You specified knownHelpersOnly, but used the unknown helper multiply - 13:44
+    at <unknown> (Error: You specified knownHelpersOnly, but used the unknown helper multiply - 13:44)
+    at async (src/ai/flows/generate-meal-plan.ts:111:27)
+  109 |     while (retryCount <= maxRetries) {
+  110 |       try {
+> 111 |         const { output } = await prompt(input);
+      |                           ^
+  112 |         if (!output) {
+  113 |           console.error("❌ AI did not return output");
+  114 |           throw new Error("AI did not return output"); {
+  description: undefined,
+  fileName: undefined,
+  lineNumber: 13,
+  endLineNumber: 13,
+  number: undefined,
+  column: 44,
+  endColumn: 118,
+  ignoreFailedSpan: true
+}
+❌ All retries failed to generate meal plan
+ ⨯ Error: Failed to generate meal plan after 4 attempts. Error: You specified knownHelpersOnly, but used the unknown helper multiply - 13:44
+    at <unknown> (Error: Failed to generate meal plan after 4 attempts. Error: You specified knownHelpersOnly, but used the unknown helper multiply - 13:44)
+    at <unknown> (src/ai/flows/generate-meal-plan.ts:213:14)
+  211 |
+  212 |         console.error("❌ All retries failed to generate meal plan");
+> 213 |         throw new Error(
+      |              ^
+  214 |           `Failed to generate meal plan after ${maxRetries + 1} attempts. Error: ${error.message}`,
+  215 |         );
+  216 |       } {
+  traceId: '63465a0d63f78ad61648e42d385a549b',
+  ignoreFailedSpan: true,
+  digest: '2957196774'
+}
+ POST /meal-plan/optimized 500 in 17150ms
