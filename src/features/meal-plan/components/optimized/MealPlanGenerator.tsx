@@ -58,7 +58,7 @@ export default function MealPlanGenerator({
         setLoadingPlan(false);
       }
     }
-    
+
     // Only fetch if we don't have an initial plan and we're not currently loading
     if (!initialMealPlan?.ai_plan && !generatedPlan && !isLoading && loadingPlan) {
       fetchInitialPlan();
@@ -285,131 +285,140 @@ export default function MealPlanGenerator({
   const canGenerate =
     hasProfile && hasMacroDistributions && hasValidPercentages;
 
+  const totalPercentage = profile?.meal_distributions?.reduce(
+    (sum: number, dist: any) => sum + (dist.calories_pct || 0),
+    0,
+  );
+
   return (
-    <div>
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            AI Meal Plan Generator
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              {hasProfile ? (
-                <div className="w-2 h-2 bg-green-500 rounded-full" />
-              ) : (
-                <div className="w-2 h-2 bg-red-500 rounded-full" />
-              )}
-              <span className={hasProfile ? "text-green-700" : "text-red-700"}>
-                Profile completed
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {hasMacroDistributions ? (
-                <div className="w-2 h-2 bg-green-500 rounded-full" />
-              ) : (
-                <div className="w-2 h-2 bg-red-500 rounded-full" />
-              )}
-              <span
-                className={
-                  hasMacroDistributions ? "text-green-700" : "text-red-700"
-                }
-              >
-                Macro distributions configured (6 meals)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {hasValidPercentages ? (
-                <div className="w-2 h-2 bg-green-500 rounded-full" />
-              ) : (
-                <div className="w-2 h-2 bg-red-500 rounded-full" />
-              )}
-              <span
-                className={
-                  hasValidPercentages ? "text-green-700" : "text-red-700"
-                }
-              >
-                Percentages sum to 100%
-              </span>
-            </div>
-          </div>
-          {!canGenerate && (
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
-                <div className="text-sm text-amber-800">
-                  <p className="font-medium">Requirements not met:</p>
-                  <ul className="mt-1 space-y-1 text-xs">
-                    {!hasProfile && (
-                      <li>• Complete your profile in onboarding</li>
-                    )}
-                    {!hasMacroDistributions && (
-                      <li>• Configure meal distributions in Macro Splitter</li>
-                    )}
-                    {!hasValidPercentages && (
-                      <li>• Ensure meal percentages sum to 100%</li>
-                    )}
-                  </ul>
+    <div className="w-full max-w-none">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Left Column - Generator Controls */}
+        <div className="space-y-6">
+          {error && (
+            <Card className="border-destructive">
+              <CardHeader>
+                <CardTitle className="text-destructive flex items-center">
+                  <AlertTriangle className="mr-2 h-5 w-5" />
+                  Generation Failed
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{error}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Sparkles className="mr-2 h-5 w-5 text-primary" />
+                AI Meal Plan Generator
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-2">
+                <div className="flex items-center space-x-2">
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      profile ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  />
+                  <span className="text-sm">
+                    {profile ? "Profile completed" : "Profile incomplete"}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      profile?.meal_distributions?.length === 6
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                    }`}
+                  />
+                  <span className="text-sm">
+                    {profile?.meal_distributions?.length === 6
+                      ? `Macro distributions configured (${profile.meal_distributions.length} meals)`
+                      : "Macro distributions not configured"}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      totalPercentage === 100 ? "bg-green-500" : "bg-yellow-500"
+                    }`}
+                  />
+                  <span className="text-sm">
+                    Percentages sum to {totalPercentage?.toFixed(1) || 0}%
+                  </span>
                 </div>
               </div>
-            </div>
-          )}
-          <Button
-            onClick={handleGeneratePlan}
-            disabled={!canGenerate || isLoading}
-            className="w-full"
-            size="lg"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating AI meal plan...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate AI Meal Plan
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={async () => {
-              startTransition(async () => {
-                try {
-                  console.log("Refreshing meal plan...");
-                  const newMealPlan = await loadMealPlan(); // به جای editMealPlan
-                  console.log(
-                    "Refreshed meal plan:",
-                    JSON.stringify(newMealPlan, null, 2),
-                  );
-                  setGeneratedPlan(newMealPlan);
-                } catch (e) {
-                  setError(
-                    e instanceof Error
-                      ? e.message
-                      : "Unknown error refreshing meal plan",
-                  );
-                  console.error("Failed to refresh meal plan:", e);
-                  toast({
-                    title: "Refresh Failed",
-                    description: error || "Unable to refresh meal plan",
-                    variant: "destructive",
-                  });
+
+              <Button
+                onClick={handleGeneratePlan}
+                disabled={
+                  isLoading ||
+                  !profile ||
+                  !userPlan ||
+                  profile?.meal_distributions?.length !== 6 ||
+                  totalPercentage !== 100
                 }
-              });
-            }}
-            className="mt-4 w-full"
-            variant="outline"
-          >
-            Refresh Meal Plan
-          </Button>
+                className="w-full"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating AI meal plan...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate AI Meal Plan
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={async () => {
+                  startTransition(async () => {
+                    try {
+                      console.log("Refreshing meal plan...");
+                      const newMealPlan = await loadMealPlan();
+                      console.log(
+                        "Refreshed meal plan:",
+                        JSON.stringify(newMealPlan, null, 2),
+                      );
+                      setGeneratedPlan(newMealPlan);
+                    } catch (e) {
+                      setError(
+                        e instanceof Error
+                          ? e.message
+                          : "Unknown error refreshing meal plan",
+                      );
+                      console.error("Failed to refresh meal plan:", e);
+                      toast({
+                        title: "Refresh Failed",
+                        description: error || "Unable to refresh meal plan",
+                        variant: "destructive",
+                      });
+                    }
+                  });
+                }}
+                className="w-full"
+                variant="outline"
+              >
+                Refresh Meal Plan
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Meal Plan Display */}
+        <div className="xl:col-span-1">
           {(generatedPlan || loadingPlan) && (
             <MealPlanOverview mealPlan={{ ai_plan: generatedPlan }} />
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

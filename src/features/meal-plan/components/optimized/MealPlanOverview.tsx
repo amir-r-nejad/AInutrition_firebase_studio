@@ -48,34 +48,34 @@ export default function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
       {/* Weekly Summary */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Weekly Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-primary">
+              <p className="text-xl lg:text-2xl font-bold text-primary break-words">
                 {safeWeeklySummary.totalCalories.toLocaleString()}
               </p>
               <p className="text-sm text-muted-foreground">Total Calories</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-xl lg:text-2xl font-bold text-green-600">
                 {safeWeeklySummary.totalProtein.toFixed(1)}g
               </p>
               <p className="text-sm text-muted-foreground">Total Protein</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-xl lg:text-2xl font-bold text-blue-600">
                 {safeWeeklySummary.totalCarbs.toFixed(1)}g
               </p>
               <p className="text-sm text-muted-foreground">Total Carbs</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-orange-600">
+              <p className="text-xl lg:text-2xl font-bold text-orange-600">
                 {safeWeeklySummary.totalFat.toFixed(1)}g
               </p>
               <p className="text-sm text-muted-foreground">Total Fat</p>
@@ -85,44 +85,46 @@ export default function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
       </Card>
 
       {/* Daily Meal Plans */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>7-Day Meal Plan</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           <Tabs defaultValue={days[0]?.day || "Monday"} className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
-              {days.map((day: any) => (
-                <TabsTrigger key={day.day} value={day.day}>
-                  {day.day.slice(0, 3)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <div className="px-6 pb-4 sm:px-0">
+              <TabsList className="grid w-full grid-cols-7 text-xs sm:text-sm">
+                {days.map((day: any) => (
+                  <TabsTrigger key={day.day} value={day.day} className="px-1 sm:px-3">
+                    {day.day.slice(0, 3)}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
             {days.map((day: any) => (
-              <TabsContent key={day.day} value={day.day} className="space-y-4">
+              <TabsContent key={day.day} value={day.day} className="space-y-4 px-6 sm:px-0">
                 {/* Daily totals */}
-                <div className="grid grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
                   <div className="text-center">
-                    <p className="text-lg font-semibold">
+                    <p className="text-base sm:text-lg font-semibold">
                       {day.daily_totals?.calories || 0}
                     </p>
                     <p className="text-xs text-muted-foreground">Calories</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-lg font-semibold text-green-600">
+                    <p className="text-base sm:text-lg font-semibold text-green-600">
                       {day.daily_totals?.protein || 0}g
                     </p>
                     <p className="text-xs text-muted-foreground">Protein</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-lg font-semibold text-blue-600">
+                    <p className="text-base sm:text-lg font-semibold text-blue-600">
                       {day.daily_totals?.carbs || 0}g
                     </p>
                     <p className="text-xs text-muted-foreground">Carbs</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-lg font-semibold text-orange-600">
+                    <p className="text-base sm:text-lg font-semibold text-orange-600">
                       {day.daily_totals?.fat || 0}g
                     </p>
                     <p className="text-xs text-muted-foreground">Fat</p>
@@ -145,30 +147,31 @@ export default function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
                       </CardHeader>
                       <CardContent>
                         <ScrollArea className="w-full">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Ingredient</TableHead>
-                                <TableHead className="text-right">
-                                  Amount
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  Unit
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  Calories
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  Protein
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  Carbs
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  Fat
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
+                          <div className="min-w-[600px]">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="min-w-[120px]">Ingredient</TableHead>
+                                  <TableHead className="text-right min-w-[80px]">
+                                    Amount
+                                  </TableHead>
+                                  <TableHead className="text-right min-w-[60px]">
+                                    Unit
+                                  </TableHead>
+                                  <TableHead className="text-right min-w-[80px]">
+                                    Calories
+                                  </TableHead>
+                                  <TableHead className="text-right min-w-[80px]">
+                                    Protein
+                                  </TableHead>
+                                  <TableHead className="text-right min-w-[80px]">
+                                    Carbs
+                                  </TableHead>
+                                  <TableHead className="text-right min-w-[80px]">
+                                    Fat
+                                  </TableHead>
+                                </TableRow>
+                              </TableHeader>
                             <TableBody>
                               {(meal.ingredients || []).map(
                                 (ingredient: any, ingIndex: number) => (
@@ -200,12 +203,13 @@ export default function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
                                 ),
                               )}
                             </TableBody>
-                          </Table>
+                            </Table>
+                          </div>
                         </ScrollArea>
 
                         {/* Meal totals */}
                         <div className="mt-4 p-3 bg-muted/30 rounded-lg">
-                          <div className="grid grid-cols-4 gap-4 text-center">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                             <div>
                               <p className="font-semibold">
                                 {meal.total_calories || 0}
