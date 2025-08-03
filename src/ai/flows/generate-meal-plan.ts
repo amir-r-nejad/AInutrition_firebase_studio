@@ -14,7 +14,7 @@ import { daysOfWeek } from "@/lib/constants";
 import { getAIApiErrorMessage } from "@/lib/utils";
 import { z } from "zod";
 import { getUser } from "@/features/profile/lib/data-services";
-import { saveAiMealPlan } from "@/features/meal-plan/lib/data-service";
+import { editAiPlan } from "@/features/meal-plan/lib/data-service";
 
 export type { GeneratePersonalizedMealPlanOutput };
 
@@ -306,7 +306,7 @@ export async function generatePersonalizedMealPlan(
 
     // Save the AI plan to database
     try {
-      await saveAiMealPlan(result, userId);
+      await editAiPlan({ ai_plan: result }, userId);
       console.log("AI meal plan saved to database successfully");
     } catch (saveError) {
       console.error("Error saving AI meal plan to database:", saveError);
