@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
                     "name": "Dynamic Arm Circles",
                     "duration": ${Math.max(
                       2,
-                      Math.floor(preferences.available_time_per_session * 0.1),
+                      Math.floor(preferences.available_time_per_session * 0.08),
                     )},
                     "instructions": "Stand with feet shoulder-width apart. Extend arms and perform small circles forward for 30 seconds, then backward for 30 seconds."
                   }
@@ -117,8 +117,8 @@ export async function POST(request: NextRequest) {
                   {
                     "name": "Upper Body Stretches",
                     "duration": ${Math.max(
-                      3,
-                      Math.floor(preferences.available_time_per_session * 0.1),
+                      2,
+                      Math.floor(preferences.available_time_per_session * 0.08),
                     )},
                     "instructions": "Perform chest, shoulder, and arm stretches, holding each for 20-30 seconds."
                   }

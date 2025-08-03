@@ -124,9 +124,6 @@ const exercisePlannerSchema = z.object({
     .refine((val) => val !== '', {
       message: 'Please select space availability',
     }),
-  want_to_track_progress: z.boolean(),
-  weekly_checkins_enabled: z.boolean(),
-  accountability_support: z.boolean(),
   preferred_difficulty_level: z
     .enum(['Low', 'Medium', 'High', ''])
     .refine((val) => val !== '', { message: 'Please select difficulty level' }),
@@ -239,10 +236,11 @@ export default function ExercisePlannerPage() {
     if (savedFormData) {
       try {
         const parsedFormData = JSON.parse(savedFormData);
-        // Set form data after component mounts
+        // Set form data immediately and also with a small delay to ensure proper loading
+        form.reset(parsedFormData);
         setTimeout(() => {
           form.reset(parsedFormData);
-        }, 100);
+        }, 200);
       } catch (error) {
         console.error('Error parsing saved form data:', error);
         localStorage.removeItem('workoutPlannerFormData');
@@ -277,19 +275,25 @@ export default function ExercisePlannerPage() {
       available_equipment_other: '',
       machines_access: false,
       space_availability: undefined,
-      want_to_track_progress: true,
-      weekly_checkins_enabled: true,
-      accountability_support: true,
       preferred_difficulty_level: undefined,
       sleep_quality: undefined,
     },
     mode: 'onChange',
   });
 
-  // Auto-save form data on changes
+  // Auto-save form data on changes with debounce
   useEffect(() => {
     const subscription = form.watch((value) => {
-      localStorage.setItem('workoutPlannerFormData', JSON.stringify(value));
+      // Debounce the save to avoid too frequent saves
+      const timeoutId = setTimeout(() => {
+        try {
+          localStorage.setItem('workoutPlannerFormData', JSON.stringify(value));
+        } catch (error) {
+          console.error('Error saving form data to localStorage:', error);
+        }
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
     });
     return () => subscription.unsubscribe();
   }, [form]);
@@ -355,9 +359,6 @@ export default function ExercisePlannerPage() {
               savedData.available_equipment_other || '',
             machines_access: savedData.machines_access || false,
             space_availability: savedData.space_availability || undefined,
-            want_to_track_progress: savedData.want_to_track_progress ?? true,
-            weekly_checkins_enabled: savedData.weekly_checkins_enabled ?? true,
-            accountability_support: savedData.accountability_support ?? true,
             preferred_difficulty_level:
               savedData.preferred_difficulty_level || undefined,
             sleep_quality: savedData.sleep_quality || undefined,
@@ -1517,65 +1518,7 @@ export default function ExercisePlannerPage() {
                         />
                       </div>
 
-                      <div className='space-y-3'>
-                        <FormField
-                          control={form.control}
-                          name='want_to_track_progress'
-                          render={({ field }) => (
-                            <FormItem className='flex flex-row items-start space-x-3 space-y-0'>
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className='space-y-1 leading-none'>
-                                <FormLabel>
-                                  I want to track my progress
-                                </FormLabel>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name='weekly_checkins_enabled'
-                          render={({ field }) => (
-                            <FormItem className='flex flex-row items-start space-x-3 space-y-0'>
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className='space-y-1 leading-none'>
-                                <FormLabel>Enable weekly check-ins</FormLabel>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name='accountability_support'
-                          render={({ field }) => (
-                            <FormItem className='flex flex-row items-start space-x-3 space-y-0'>
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className='space-y-1 leading-none'>
-                                <FormLabel>
-                                  I want accountability support and reminders
-                                </FormLabel>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      
                     </CardContent>
                   </Card>
                 </AccordionContent>
@@ -1671,35 +1614,7 @@ export default function ExercisePlannerPage() {
                   </div>
                 </Button>
               )}
-              <Button
-                type='button'
-                onClick={() => {
-                  if (confirm('آیا می‌خواهید تمام داده‌های فرم را پاک کنید؟')) {
-                    form.reset();
-                    localStorage.removeItem('workoutPlannerFormData');
-                    alert('فرم با موفقیت پاک شد!');
-                  }
-                }}
-                variant='outline'
-                className='border-gray-300 text-gray-600 hover:bg-gray-50 px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200'
-              >
-                <div className='flex items-center gap-2'>
-                  <svg
-                    className='w-4 h-4'
-                    fill='none'
-                    stroke='currentColor'
-                    viewBox='0 0 24 24'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                    />
-                  </svg>
-                  پاک کردن فرم
-                </div>
-              </Button>
+              
             </div>
           </form>
         </Form>
