@@ -1731,6 +1731,10 @@ export default function ExercisePlannerPage() {
                         const dayOrder = ['Day1', 'Day2', 'Day3', 'Day4', 'Day5', 'Day6', 'Day7'];
                         return dayOrder.indexOf(aKey) - dayOrder.indexOf(bKey);
                       })
+                      .filter(([dayKey, dayPlan]: [string, any]) => {
+                        // Filter out rest days (duration 0 or isWorkoutDay false)
+                        return dayPlan.duration > 0 && dayPlan.isWorkoutDay !== false;
+                      })
                       .map(([dayKey, dayPlan]: [string, any]) => (
                         <Card
                           key={dayKey}
@@ -2091,7 +2095,7 @@ export default function ExercisePlannerPage() {
                 </div>
 
                 <div className='grid md:grid-cols-3 gap-6 mt-12'>
-                  {generatedPlan.progressionTips && (
+                  {generatedPlan.progressionTips && generatedPlan.progressionTips.length > 0 && (
                     <Card className='border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100'>
                       <CardHeader>
                         <CardTitle className='text-blue-800 flex items-center gap-2'>
@@ -2117,7 +2121,7 @@ export default function ExercisePlannerPage() {
                     </Card>
                   )}
 
-                  {generatedPlan.safetyNotes && (
+                  {generatedPlan.safetyNotes && generatedPlan.safetyNotes.length > 0 && (
                     <Card className='border-red-200 bg-gradient-to-br from-red-50 to-red-100'>
                       <CardHeader>
                         <CardTitle className='text-red-800 flex items-center gap-2'>
@@ -2143,7 +2147,7 @@ export default function ExercisePlannerPage() {
                     </Card>
                   )}
 
-                  {generatedPlan.nutritionTips && (
+                  {generatedPlan.nutritionTips && generatedPlan.nutritionTips.length > 0 && (
                     <Card className='border-green-200 bg-gradient-to-br from-green-50 to-green-100'>
                       <CardHeader>
                         <CardTitle className='text-green-800 flex items-center gap-2'>

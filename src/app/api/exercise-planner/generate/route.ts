@@ -146,12 +146,21 @@ export async function POST(request: NextRequest) {
             }
             // Continue for all 7 days
           },
-          "progressionPlan": [
+          "progressionTips": [
             "Week 2: Increase reps by 2-3 per set or add 5-10 seconds to holds.",
-            "Week 3: Increase sets by 1 for 1-2 exercises per session."
+            "Week 3: Increase sets by 1 for 1-2 exercises per session.",
+            "Week 4: Consider adding new exercises or increasing weights/difficulty.",
+            "Track your performance weekly and adjust intensity based on your progress."
+          ],
+          "safetyNotes": [
+            "Always warm up before exercising and cool down afterward.",
+            "Stop immediately if you experience pain or discomfort.",
+            "Maintain proper form over speed or heavy weights.",
+            "Stay hydrated throughout your workout.",
+            "Rest adequately between sets and training days."
           ],
           "nutritionTips": [
-            "For ${preferences.primary_goal}: [e.g., High-protein diet for muscle gain, balanced meals for weight loss].",
+            "For ${preferences.primary_goal}: High-protein diet supports muscle growth and recovery.",
             "Stay hydrated with 2-3 liters of water daily.",
             "Eat a small meal/snack 1-2 hours before workouts."
           ],
