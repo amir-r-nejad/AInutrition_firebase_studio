@@ -13,6 +13,8 @@ import {
 import { daysOfWeek } from "@/lib/constants";
 import { getAIApiErrorMessage } from "@/lib/utils";
 import { z } from "zod";
+import { getUser } from "@/features/profile/lib/data-services";
+import { saveAiMealPlan } from "@/features/meal-plan/lib/data-service";
 
 export type { GeneratePersonalizedMealPlanOutput };
 
@@ -276,6 +278,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
 
 export async function generatePersonalizedMealPlan(
   input: GeneratePersonalizedMealPlanInput,
+  userId: string,
 ): Promise<GeneratePersonalizedMealPlanOutput> {
   try {
     console.log(
@@ -299,7 +302,17 @@ export async function generatePersonalizedMealPlan(
     const parsedInput =
       GeneratePersonalizedMealPlanInputSchema.parse(processedInput);
     const result = await generatePersonalizedMealPlanFlow(parsedInput);
-    console.log("10. Final result:", JSON.stringify(result, null, 2));
+    console.log("Final meal plan generated successfully:", JSON.stringify(result, null, 2));
+
+    // Save the AI plan to database
+    try {
+      await saveAiMealPlan(result, userId);
+      console.log("AI meal plan saved to database successfully");
+    } catch (saveError) {
+      console.error("Error saving AI meal plan to database:", saveError);
+      // Don't throw error here, just log it - we still want to return the generated plan
+    }
+
     return result;
   } catch (e) {
     console.error("❌ Input validation failed:", e);

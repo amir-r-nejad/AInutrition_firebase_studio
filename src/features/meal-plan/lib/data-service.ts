@@ -13,7 +13,7 @@ export async function editMealPlan(
   mealPlan: { meal_data: WeeklyMealPlan },
   userId?: string,
 ): Promise<DailyMealPlan> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const targetUserId = userId || (await getUser()).id;
 
   if (!targetUserId) throw new Error("User not authenticated");
@@ -51,7 +51,7 @@ export async function editAiPlan(
   },
   userId?: string,
 ): Promise<GeneratePersonalizedMealPlanOutput> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const user = await getUser();
   const targetUserId = userId || user.id;
 
@@ -89,7 +89,7 @@ export async function editAiPlan(
         "Error updating/inserting ai_plan:",
         JSON.stringify(error, null, 2),
       );
-      
+
       // Try insert if upsert failed
       if (error.code === "PGRST116" || error.code === "42P01") {
         console.log("Attempting direct insert...");
@@ -98,18 +98,18 @@ export async function editAiPlan(
           .insert(upsertData)
           .select("ai_plan")
           .single();
-          
+
         if (insertError) {
           console.error("Insert error:", JSON.stringify(insertError, null, 2));
           throw new Error(`Failed to create AI-generated plan: ${insertError.message}`);
         }
-        
+
         console.log("Successfully inserted ai_plan:", JSON.stringify(insertData.ai_plan, null, 2));
         revalidatePath("/meal-plan/current");
         revalidateTag("meal_plan");
         return insertData.ai_plan as GeneratePersonalizedMealPlanOutput;
       }
-      
+
       throw new Error(`Failed to update AI-generated plan: ${error.message}`);
     }
 
@@ -129,7 +129,7 @@ export async function editAiPlan(
 export async function loadMealPlan(
   userId?: string,
 ): Promise<GeneratePersonalizedMealPlanOutput> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const targetUserId = userId || (await getUser()).id;
 
   if (!targetUserId) {

@@ -56,8 +56,10 @@ export async function getUserPlan(userId?: string): Promise<UserPlanType> {
   const supabase = await createClient();
   const targetUserId = userId || (await getUser()).id;
 
+  if (!targetUserId) throw new Error('User not authenticated');
+
   const { data, error } = await supabase
-    .from('user_plans')
+    .from('smart_plan')
     .select('*')
     .eq('user_id', targetUserId)
     .single();
@@ -68,22 +70,6 @@ export async function getUserPlan(userId?: string): Promise<UserPlanType> {
     
     throw new Error(`Failed to fetch user plan: ${error.message}`);
   }
-
-  return data as UserPlanType;
-
-  return data as MealPlans;
-}
-export async function getUserPlan(userId?: string): Promise<UserPlanType> {
-  const supabase = await createClient();
-  const targetUserId = userId || (await getUser()).id;
-
-  if (!targetUserId) throw new Error('User not authenticated');
-
-  const { data } = await supabase
-    .from('smart_plan')
-    .select('*')
-    .eq('user_id', targetUserId)
-    .single();
 
   if (!data) throw new Error('User plan not found');
 
