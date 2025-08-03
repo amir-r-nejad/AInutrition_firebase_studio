@@ -26,9 +26,8 @@ function ClientsList({ clients }: { clients: ClientData[] }) {
           <div className='flex items-center gap-4'>
             <Avatar className='h-12 w-12'>
               <AvatarImage src={client?.avatar_url} />
-              <AvatarFallback className='bg-primary/10 text-primary font-medium'>
-                {client.full_name.split(' ').at(0)?.at(0)}
-                {client.full_name.split(' ').at(-1)?.at(0)}
+              <AvatarFallback className='bg-primary/10 text-primary font-medium uppercase'>
+                {client?.email?.split('').slice(0, 2)}
               </AvatarFallback>
             </Avatar>
 
