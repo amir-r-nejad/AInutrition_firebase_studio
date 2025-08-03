@@ -46,23 +46,23 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
 - Fat: {{target_fat_grams}}g
 
 **CRITICAL RULES - NON-NEGOTIABLE:**
-1. **Macro Accuracy**:
-   - The total calories, protein, carbs, and fat for each meal MUST match the target macros EXACTLY or be within a 5% margin (e.g., for 233.2 kcal, acceptable range is 221.54-244.86 kcal; for 20.5g protein, 19.475-21.525g).
-   - Follow these steps to ensure macro accuracy:
-     1. Select ingredients that align with user preferences, dietary restrictions, and meal type.
-     2. Use standard nutritional data (e.g., eggs: 60 kcal, 6g protein, 1g carbs, 4g fat per piece; Greek yogurt: 100 kcal, 10g protein, 4g carbs, 3g fat per 100g; oats: 70 kcal, 3.5g protein, 12g carbs, 1.5g fat per 20g; blueberries: 5.7 kcal, 0.07g protein, 1.4g carbs, 0.03g fat per 10g) or user-provided preferences.
-     3. Calculate the macro contribution of each ingredient based on its quantity (e.g., for 200g Greek yogurt: 200 * 0.1 = 20g protein).
-     4. Iteratively adjust ingredient quantities to minimize the difference between total macros and targets, ensuring ALL macros are within the 5% margin.
-     5. Verify the final totals for calories, protein, carbs, and fat against the target ranges before returning the response.
-     6. If any macro is outside the 5% margin, adjust quantities and recalculate until ALL macros are within range or discard the meal suggestion.
+1. **Meal Generation and Macro Accuracy**:
+   - First, generate a meal concept that aligns with the user's dietary preferences, restrictions, meal type (e.g., snack, breakfast), and ingredient preferences/avoidances.
+   - Do NOT suggest specific food types or cuisines unless explicitly aligned with user preferences (e.g., preferred_cuisines or preferred_ingredients).
+   - Select ingredients from a broad nutritional database, prioritizing user-preferred ingredients and avoiding disliked ingredients or allergens.
+   - Use standard nutritional data for ingredients (e.g., provide accurate kcal, protein, carbs, and fat per unit, such as per 100g or per piece).
+   - Calculate the macro contribution of each ingredient based on its quantity (e.g., for 100g of an ingredient with 0.1g protein per gram, contribution is 100 * 0.1 = 10g protein).
+   - Iteratively adjust ingredient quantities to minimize the difference between total macros and targets, ensuring ALL macros are within the 5% margin.
+   - Verify the final totals for calories, protein, carbs, and fat against the target ranges before returning the response.
+   - If any macro is outside the 5% margin, adjust quantities and recalculate until ALL macros are within range or discard the meal suggestion.
    - Do NOT return a meal suggestion if ANY macro exceeds the 5% margin.
    - All nutritional values (calories, protein, carbs, fat) MUST be numbers, not null, undefined, or "n/a".
-2. **Meal Appropriateness**: Suggestions MUST be appropriate for the meal type (e.g., Greek yogurt or eggs for "Snack," not steak).
+2. **Meal Appropriateness**: Suggestions MUST be appropriate for the meal type (e.g., light and quick for "Snack," substantial for "Dinner").
 3. **Strict Personalization**: Adhere to ALL allergies, medical conditions, preferred cuisines, liked ingredients, and disliked ingredients. No exceptions.
 4. **Expert Description**: The 'description' field MUST:
-   - Be engaging, conversational, and motivational, explaining why the meal is ideal for the user's diet goal, activity level, and preferences (e.g., "This snack fuels your fat loss with high protein and keeps your blood sugar steady for diabetes management").
-   - Highlight specific ingredients and their benefits (e.g., "Greek yogurt provides a creamy, protein-packed base, while blueberries add a burst of antioxidants").
-   - Concisely confirm macro calculations (e.g., "Greek yogurt (20g protein), oats (0.7g), and blueberries (0.2g) total 20.9g protein, within 5% of your target").
+   - Be engaging, conversational, and motivational, explaining why the meal is ideal for the user's diet goal, activity level, and preferences (e.g., "This meal supports your muscle gain with high protein and keeps energy steady for your active lifestyle").
+   - Highlight specific ingredients and their benefits (e.g., "This ingredient provides sustained energy, while another boosts recovery with high protein").
+   - Concisely confirm macro calculations (e.g., "Ingredient A contributes 10g protein, Ingredient B adds 5g, totaling 15g protein, within 5% of your target").
    - Confirm all macros are within 5% of the target (e.g., "Delivers 233.2 kcal, 20.9g protein, 20.5g carbs, and 7.6g fat, perfectly aligned with your goals").
    - Avoid overly technical or repetitive phrasing; keep it user-friendly and encouraging.
    - Reference specific user data (e.g., diet goal, medical conditions, preferred cuisines) for personalization.
@@ -71,7 +71,7 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
 - Respond with ONLY a raw JSON object with a single root key: "suggestions".
 - "suggestions" must be an array of 1 to 3 meal objects matching the required schema.
 - Each meal object must include:
-  - "mealTitle": A descriptive, appealing name for the meal.
+  - "mealTitle": A descriptive, appealing name for the meal, generated based on ingredients and user preferences.
   - "description": An engaging, motivational explanation as described above, including macro calculations and 5% margin confirmation.
   - "ingredients": An array of ingredients with accurate "calories", "protein", "carbs", and "fat" values (numbers, not null or "n/a").
   - "totalCalories", "totalProtein", "totalCarbs", "totalFat": Numbers within 5% of the target macros.
@@ -81,44 +81,44 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
 {
   "suggestions": [
     {
-      "mealTitle": "Greek Yogurt Berry Power Snack",
-      "description": "This delicious snack is crafted for your fat loss goal and diabetes management, offering a perfect balance of protein, carbs, and healthy fats. Creamy Greek yogurt delivers a protein punch to keep you full, while oats provide steady energy and blueberries add antioxidant-rich flavor. Greek yogurt (200g) contributes 20g protein, oats (20g) add 0.7g, and blueberries (10g) add 0.2g, totaling 20.9g protein (within 5% of 20.5g: 19.475-21.525g). With 233.2 kcal (within 5% of 233.2: 221.54-244.86), 20.5g carbs (within 5% of 20.5: 19.475-21.525), and 7.6g fat (within 5% of 7.6: 7.22-7.98), this snack keeps your blood sugar stable and supports your goals!",
+      "mealTitle": "Personalized Protein-Packed Snack",
+      "description": "This snack is tailored for your fat loss goal, providing high protein to keep you full and steady carbs for energy. Ingredient A delivers 10g protein, Ingredient B adds 5g, and Ingredient C contributes 0.5g, totaling 15.5g protein (within 5% of 15g: 14.25-15.75g). With 200 kcal (within 5% of 200: 190-210), 20g carbs (within 5% of 20: 19-21), and 7g fat (within 5% of 7: 6.65-7.35), this snack supports your active lifestyle and dietary preferences!",
       "ingredients": [
         {
-          "name": "Greek yogurt",
-          "amount": "200",
+          "name": "Ingredient A",
+          "amount": "100",
           "unit": "g",
-          "calories": 200,
-          "protein": 20,
-          "carbs": 8,
-          "fat": 6,
-          "macrosString": "200 cal, 20g protein, 8g carbs, 6g fat"
+          "calories": 100,
+          "protein": 10,
+          "carbs": 10,
+          "fat": 4,
+          "macrosString": "100 cal, 10g protein, 10g carbs, 4g fat"
         },
         {
-          "name": "oats",
+          "name": "Ingredient B",
+          "amount": "50",
+          "unit": "g",
+          "calories": 80,
+          "protein": 5,
+          "carbs": 8,
+          "fat": 2.5,
+          "macrosString": "80 cal, 5g protein, 8g carbs, 2.5g fat"
+        },
+        {
+          "name": "Ingredient C",
           "amount": "20",
           "unit": "g",
-          "calories": 70,
-          "protein": 0.7,
-          "carbs": 12,
-          "fat": 1.5,
-          "macrosString": "70 cal, 0.7g protein, 12g carbs, 1.5g fat"
-        },
-        {
-          "name": "blueberries",
-          "amount": "10",
-          "unit": "g",
-          "calories": 5.7,
-          "protein": 0.2,
-          "carbs": 1.4,
-          "fat": 0.03,
-          "macrosString": "5.7 cal, 0.2g protein, 1.4g carbs, 0.03g fat"
+          "calories": 20,
+          "protein": 0.5,
+          "carbs": 2,
+          "fat": 0.5,
+          "macrosString": "20 cal, 0.5g protein, 2g carbs, 0.5g fat"
         }
       ],
-      "totalCalories": 233.2,
-      "totalProtein": 20.9,
-      "totalCarbs": 20.5,
-      "totalFat": 7.6
+      "totalCalories": 200,
+      "totalProtein": 15.5,
+      "totalCarbs": 20,
+      "totalFat": 7
     }
   ]
 }
