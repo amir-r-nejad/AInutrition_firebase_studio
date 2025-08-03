@@ -1,0 +1,43 @@
+🚀 Starting AI meal plan generation...
+📊 Daily targets: {
+  target_daily_calories: 2332,
+  target_protein_g: 205,
+  target_carbs_g: 200,
+  target_fat_g: 79
+}
+🍽️ Meal distributions: [
+  { mealName: 'Breakfast', calories_pct: 22.5 },
+  { mealName: 'Morning Snack', calories_pct: 10 },
+  { mealName: 'Lunch', calories_pct: 22.5 },
+  { mealName: 'Afternoon Snack', calories_pct: 10 },
+  { mealName: 'Dinner', calories_pct: 20 },
+  { mealName: 'Evening Snack', calories_pct: 15 }
+]
+📝 Sending request to Gemini...
+❌ Meal plan generation failed (attempt 1): Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent: [400 Bad Request] The specified schema produces a constraint that has too many states for serving.  Typical causes of this error are schemas with lots of text (for example, very long property or enum names), schemas with long array length limits (especially when nested), or schemas using complex value matchers (for example, integers or numbers with minimum/maximum bounds or strings with complex formats like date-time)
+    at async generatePersonalizedMealPlan (src/ai/flows/generate-meal-plan.ts:151:25)
+  149 |
+  150 |       console.log("📝 Sending request to Gemini...");
+> 151 |       const { output } = await generateMealPlanPrompt(validatedInput);
+      |                         ^
+  152 |
+  153 |       if (!output) {
+  154 |         throw new Error("No response from Gemini AI"); {
+  status: 400,
+  statusText: 'Bad Request',
+  errorDetails: undefined,
+  traceId: '2fed832a84e7c9c0660cc19aa568908f',
+  ignoreFailedSpan: true
+}
+ ⨯ Error: Invalid request to AI service. Please check your profile data.
+    at generatePersonalizedMealPlan (src/ai/flows/generate-meal-plan.ts:166:14)
+  164 |
+  165 |       if (error.message?.includes("400")) {
+> 166 |         throw new Error(
+      |              ^
+  167 |           "Invalid request to AI service. Please check your profile data.",
+  168 |         );
+  169 |       } else if (error.message?.includes("403")) { {
+  digest: '1357751754'
+}
+ POST /meal-plan/optimized 500 in 1649ms

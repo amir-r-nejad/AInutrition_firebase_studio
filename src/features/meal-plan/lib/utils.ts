@@ -2,34 +2,37 @@ import {
   daysOfWeek,
   defaultMacroPercentages,
   mealNames,
-} from '@/lib/constants';
+} from "@/lib/constants";
 import {
-  BaseProfileData,
+  UserProfile,
   GeneratePersonalizedMealPlanInput,
   WeeklyMealPlan,
-  UserPlanType,
-  MealPlans,
-} from '@/lib/schemas';
-import { DailyTargetsTypes, MealToOptimizeTypes } from '../types';
-import { requiredFields } from './config';
+  UserPlan,
+  UserMealPlan,
+} from "@/lib/schemas";
+import { DailyTargetsTypes, MealToOptimizeTypes } from "../types";
+import { requiredFields } from "./config";
 
-export function mapProfileToMealPlanInput(data: {
-  meal_data?: MealPlans["meal_data"];
-  target_daily_calories?: number;
-  target_protein_g?: number;
-  target_carbs_g?: number;
-  target_fat_g?: number;
-  meal_distributions?: BaseProfileData["meal_distributions"];
-  preferred_diet?: string;
-  allergies?: string[];
-  dispreferrred_ingredients?: string[];
-  preferred_ingredients?: string[];
-  medical_conditions?: string[];
-} & Partial<BaseProfileData> & Partial<UserPlanType>): GeneratePersonalizedMealPlanInput {
-
+export function mapProfileToMealPlanInput(
+  data: {
+    meal_data?: UserMealPlan["meal_data"];
+    target_daily_calories?: number;
+    target_protein_g?: number;
+    target_carbs_g?: number;
+    target_fat_g?: number;
+    meal_distributions?: UserProfile["meal_distributions"];
+    preferred_diet?: string;
+    allergies?: string[];
+    dispreferred_ingredients?: string[];
+    preferred_ingredients?: string[];
+    medical_conditions?: string[];
+  } & Partial<UserProfile> &
+    Partial<UserPlan>,
+): GeneratePersonalizedMealPlanInput {
   // Extract meal data with proper fallbacks
   const mealData = {
-    target_daily_calories: data.target_daily_calories || data.custom_total_calories || 2000,
+    target_daily_calories:
+      data.target_daily_calories || data.custom_total_calories || 2000,
     target_protein_g: data.target_protein_g || data.custom_protein_g || 150,
     target_carbs_g: data.target_carbs_g || data.custom_carbs_g || 200,
     target_fat_g: data.target_fat_g || data.custom_fat_g || 65,
@@ -37,26 +40,86 @@ export function mapProfileToMealPlanInput(data: {
 
   // Get meal distributions from macro splitter
   const mealDistributions = data.meal_distributions || [
-    { mealName: "Breakfast", calories_pct: 25, protein_pct: 25, carbs_pct: 25, fat_pct: 25 },
-    { mealName: "Morning Snack", calories_pct: 10, protein_pct: 10, carbs_pct: 10, fat_pct: 10 },
-    { mealName: "Lunch", calories_pct: 30, protein_pct: 30, carbs_pct: 30, fat_pct: 30 },
-    { mealName: "Afternoon Snack", calories_pct: 10, protein_pct: 10, carbs_pct: 10, fat_pct: 10 },
-    { mealName: "Dinner", calories_pct: 20, protein_pct: 20, carbs_pct: 20, fat_pct: 20 },
-    { mealName: "Evening Snack", calories_pct: 5, protein_pct: 5, carbs_pct: 5, fat_pct: 5 },
+    {
+      mealName: "Breakfast",
+      calories_pct: 25,
+      protein_pct: 25,
+      carbs_pct: 25,
+      fat_pct: 25,
+    },
+    {
+      mealName: "Morning Snack",
+      calories_pct: 10,
+      protein_pct: 10,
+      carbs_pct: 10,
+      fat_pct: 10,
+    },
+    {
+      mealName: "Lunch",
+      calories_pct: 30,
+      protein_pct: 30,
+      carbs_pct: 30,
+      fat_pct: 30,
+    },
+    {
+      mealName: "Afternoon Snack",
+      calories_pct: 10,
+      protein_pct: 10,
+      carbs_pct: 10,
+      fat_pct: 10,
+    },
+    {
+      mealName: "Dinner",
+      calories_pct: 20,
+      protein_pct: 20,
+      carbs_pct: 20,
+      fat_pct: 20,
+    },
+    {
+      mealName: "Evening Snack",
+      calories_pct: 5,
+      protein_pct: 5,
+      carbs_pct: 5,
+      fat_pct: 5,
+    },
   ];
 
-  // Extract user preferences - map primary_diet_goal to preferred_diet correctly
+  // Validate meal distributions
+  for (const meal of mealDistributions) {
+    if (
+      !meal.mealName ||
+      typeof meal.calories_pct !== "number" ||
+      meal.calories_pct <= 0
+    ) {
+      console.error("Invalid meal distribution:", meal);
+      throw new Error(
+        `Invalid meal distribution for ${meal.mealName || "a meal"}: mealName and calories_pct must be valid (calories_pct > 0)`,
+      );
+    }
+  }
+
+  // Check sum of calories_pct
+  const totalCaloriesPct = mealDistributions.reduce(
+    (sum, meal) => sum + meal.calories_pct,
+    0,
+  );
+  if (Math.abs(totalCaloriesPct - 100) > 0.01) {
+    console.error("Invalid total calories_pct:", totalCaloriesPct);
+    throw new Error(
+      `Total calories_pct must sum to 100%. Current sum: ${totalCaloriesPct.toFixed(0)}%`,
+    );
+  }
+
+  // Extract user preferences
   let mappedDiet = "Standard";
   if (data.preferred_diet) {
-    // If preferred_diet is explicitly set, use it
     mappedDiet = data.preferred_diet;
   } else if (data.primary_diet_goal) {
-    // Map primary_diet_goal to valid preferred_diet values
     switch (data.primary_diet_goal) {
       case "fat_loss":
       case "muscle_gain":
       case "recomp":
-        mappedDiet = "Standard"; // Default to Standard for all diet goals
+        mappedDiet = "Standard";
         break;
       default:
         mappedDiet = "Standard";
@@ -66,58 +129,94 @@ export function mapProfileToMealPlanInput(data: {
   const preferences = {
     diet: mappedDiet,
     allergies: data.allergies || [],
-    disliked: data.dispreferrred_ingredients || [],
+    disliked: data.dispreferred_ingredients || [],
     preferred: data.preferred_ingredients || [],
   };
+
+  // Generate mealTargets array
+  const mealTargets = mealDistributions.map((meal) => {
+    const calories = mealData.target_daily_calories * (meal.calories_pct / 100);
+    // Use calories_pct as fallback for protein, carbs, and fat if not provided
+    const proteinPct = meal.protein_pct ?? meal.calories_pct;
+    const carbsPct = meal.carbs_pct ?? meal.calories_pct;
+    const fatPct = meal.fat_pct ?? meal.calories_pct;
+
+    const protein = mealData.target_protein_g * (proteinPct / 100);
+    const carbs = mealData.target_carbs_g * (carbsPct / 100);
+    const fat = mealData.target_fat_g * (fatPct / 100);
+
+    if (
+      !Number.isFinite(calories) ||
+      calories <= 0 ||
+      !Number.isFinite(protein) ||
+      !Number.isFinite(carbs) ||
+      !Number.isFinite(fat)
+    ) {
+      console.error("Invalid calculated macros for meal:", meal);
+      throw new Error(
+        `Invalid calculated macros for meal ${meal.mealName}: Calories, protein, carbs, and fat must be valid positive numbers`,
+      );
+    }
+
+    return {
+      mealName: meal.mealName,
+      calories,
+      protein,
+      carbs,
+      fat,
+    };
+  });
 
   console.log("Mapping profile to meal plan input:", {
     mealData,
     mealDistributions,
+    mealTargets,
     preferences,
   });
 
   return {
-    // Profile data with defaults
     age: data.age || 30,
     biological_sex: data.biological_sex || "other",
     height_cm: data.height_cm || 170,
-    current_weight_kg: data.current_weight_kg || 70,
-    target_weight_kg: data.target_weight_kg || 70,
+    current_weight: data.current_weight_kg || 70,
+    target_weight: data.target_weight || 70,
     physical_activity_level: data.physical_activity_level || "moderate",
     primary_diet_goal: data.primary_diet_goal || "fat_loss",
-    
-    // Meal and preference data
-    meal_data: mealData,
-    meal_distributions: mealDistributions,
+    mealTargets,
     preferred_diet: preferences.diet,
     allergies: preferences.allergies,
     dispreferrred_ingredients: preferences.disliked,
     preferred_ingredients: preferences.preferred,
     medical_conditions: data.medical_conditions || [],
+    medications: data.medications || [],
   };
 }
 
 export function getAdjustedMealInput(
-  profileData: Partial<BaseProfileData>,
+  profileData: Partial<UserProfile>,
   dailyTargets: DailyTargetsTypes,
-  mealToOptimize: MealToOptimizeTypes
+  mealToOptimize: MealToOptimizeTypes,
 ) {
   let mealDistribution;
   const userMealDistributions = (profileData as any).meal_distributions;
-  if (!userMealDistributions)
+  if (!userMealDistributions) {
     mealDistribution = defaultMacroPercentages[mealToOptimize.name];
-  else
-    mealDistribution = userMealDistributions.filter(
-      (meal: any) => meal.mealName === mealToOptimize.name
-    )[0];
+  } else {
+    mealDistribution = userMealDistributions.find(
+      (meal: any) => meal.mealName === mealToOptimize.name,
+    );
+    if (!mealDistribution) {
+      console.error("Meal not found in distributions:", mealToOptimize.name);
+      mealDistribution = defaultMacroPercentages[mealToOptimize.name];
+    }
+  }
 
   const targetMacrosForMeal = {
     calories:
       dailyTargets.targetCalories! * (mealDistribution.calories_pct / 100),
-    protein:
-      dailyTargets.targetProtein! * (mealDistribution.calories_pct / 100),
-    carbs: dailyTargets.targetCarbs! * (mealDistribution.calories_pct / 100),
-    fat: dailyTargets.targetFat! * (mealDistribution.calories_pct / 100),
+    protein: dailyTargets.targetProtein! * (mealDistribution.protein_pct / 100),
+    carbs: dailyTargets.targetCarbs! * (mealDistribution.carbs_pct / 100),
+    fat: dailyTargets.targetFat! * (mealDistribution.fat_pct / 100),
   };
 
   const preparedIngredients = mealToOptimize.ingredients.map((ing) => ({
@@ -133,7 +232,7 @@ export function getAdjustedMealInput(
   return {
     originalMeal: {
       name: mealToOptimize.name,
-      custom_name: mealToOptimize.custom_name || '',
+      custom_name: mealToOptimize.custom_name || "",
       ingredients: preparedIngredients,
       total_calories: Number(mealToOptimize.total_calories) || 0,
       total_protein: Number(mealToOptimize.total_protein) || 0,
@@ -153,25 +252,34 @@ export function getAdjustedMealInput(
     },
   };
 }
+
 export function getMissingProfileFields(
-  profile: Partial<BaseProfileData>
-): (keyof Partial<BaseProfileData>)[] {
-  return requiredFields.filter((field) => !profile[field]);
+  profile: Partial<UserProfile>,
+): (keyof Partial<UserProfile>)[] {
+  return requiredFields.filter(
+    (field) => !profile[field as keyof UserProfile],
+  ) as (keyof UserProfile)[];
 }
 
 export function generateInitialWeeklyPlan(): WeeklyMealPlan {
   return {
     days: daysOfWeek.map((day) => ({
-      day_of_week: day,
+      dayOfWeek: day,
       meals: mealNames.map((mealName) => ({
         name: mealName,
-        custom_name: '',
+        custom_name: "",
         ingredients: [],
         total_calories: null,
         total_protein: null,
         total_carbs: null,
         total_fat: null,
       })),
+      daily_totals: {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+      },
     })),
   };
 }

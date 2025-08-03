@@ -1,42 +1,23 @@
-import { getUserProfile, getUserPlan } from "@/lib/supabase/data-service";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import MealPlanGenerator from "@/features/meal-plan/components/optimized/MealPlanGenerator";
-import MealPlanOverview from "@/features/meal-plan/components/optimized/MealPlanOverview";
+import { Card } from "@/components/ui/card";
+import LoadingScreen from "@/components/ui/LoadingScreen";
+import SectionHeader from "@/components/ui/SectionHeader";
+import AiPlanSection from "@/features/meal-plan/components/optimized/AiPlanSection";
+import { Suspense } from "react";
 
-export default async function OptimizedMealPlanPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  // Get user data
-  const [profile, userPlan] = await Promise.all([
-    getUserProfile(),
-    getUserPlan(),
-  ]);
-
+export default function OptimizedMealPlanPage() {
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold">AI Meal Plan Generator</h1>
-        <p className="text-muted-foreground">
-          Generate personalized meal plans based on your profile and macro
-          targets
-        </p>
-      </div>
+    <div className="container mx-auto py-8">
+      <Card className="shadow-xl flex flex-col lg:grid grid-cols-2">
+        <SectionHeader
+          className="text-3xl font-bold"
+          title="AI-Optimized Weekly Meal Plan"
+          description="Generate a personalized meal plan based on your profile, goals, and preferences."
+        />
 
-      <MealPlanGenerator
-        profile={profile}
-        userPlan={userPlan}
-        mealPlan={undefined}
-      />
-
-      <MealPlanOverview mealPlan={undefined} />
+        <Suspense fallback={<LoadingScreen />}>
+          <AiPlanSection />
+        </Suspense>
+      </Card>
     </div>
   );
 }

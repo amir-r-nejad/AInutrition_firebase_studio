@@ -1,137 +1,255 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { generatePersonalizedMealPlan } from "@/ai/flows/generate-meal-plan";
-import { editAiPlan } from "@/features/meal-plan/lib/data-service";
+import {
+  editAiPlan,
+  editMealPlan,
+  loadMealPlan,
+} from "@/features/meal-plan/lib/data-service";
 import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
+import MealPlanOverview from "./MealPlanOverview";
+import {
+  GeneratePersonalizedMealPlanOutput,
+  DailyMealPlan,
+  WeeklyMealPlan,
+} from "@/lib/schemas";
 
 interface MealPlanGeneratorProps {
   profile: any;
   userPlan: any;
-  mealPlan: any;
+  initialMealPlan?: { ai_plan?: GeneratePersonalizedMealPlanOutput } | null;
 }
 
 export default function MealPlanGenerator({
   profile,
   userPlan,
-  mealPlan,
+  initialMealPlan,
 }: MealPlanGeneratorProps) {
   const { toast } = useToast();
   const [isLoading, startTransition] = useTransition();
-  const [generatedPlan, setGeneratedPlan] = useState(null);
+  const [generatedPlan, setGeneratedPlan] =
+    useState<GeneratePersonalizedMealPlanOutput | null>(
+      initialMealPlan?.ai_plan || null,
+    );
+  const [loadingPlan, setLoadingPlan] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // لود اولیه داده‌ها
+  useEffect(() => {
+    async function fetchInitialPlan() {
+      try {
+        setLoadingPlan(true);
+        const plan = await loadMealPlan(); // لود داده‌ها از Supabase
+        setGeneratedPlan(plan);
+      } catch (e) {
+        setError(
+          e instanceof Error ? e.message : "Unknown error loading meal plan",
+        );
+        console.error("Failed to load initial meal plan:", e);
+      } finally {
+        setLoadingPlan(false);
+      }
+    }
+    if (!generatedPlan && !isLoading) fetchInitialPlan();
+  }, [generatedPlan, isLoading]);
 
   async function handleGeneratePlan() {
     startTransition(async () => {
       try {
-        // Validate profile completeness
-        if (!profile || Object.keys(profile).length === 0) {
-          toast({
-            title: "Profile Required",
-            description: "Please complete your profile in the onboarding section first.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // Validate macro splitter data
-        if (!profile.meal_distributions || profile.meal_distributions.length !== 6) {
-          toast({
-            title: "Macro Distribution Required",
-            description: "Please configure your meal distributions in the Macro Splitter tool first.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // Validate percentages sum to 100%
-        const totalPercentage = profile.meal_distributions.reduce(
-          (sum: number, dist: any) => sum + (dist.calories_pct || 0),
-          0
+        console.log(
+          "Starting handleGeneratePlan with profile:",
+          JSON.stringify(profile, null, 2),
+        );
+        console.log(
+          "Starting handleGeneratePlan with userPlan:",
+          JSON.stringify(userPlan, null, 2),
         );
 
-        if (Math.abs(totalPercentage - 100) > 0.01) {
-          toast({
-            title: "Invalid Distribution",
-            description: `Meal percentages must sum to 100%. Current total: ${totalPercentage.toFixed(1)}%`,
-            variant: "destructive",
-          });
-          return;
+        // Validate profile
+        if (!profile || Object.keys(profile).length === 0) {
+          throw new Error("Profile is incomplete");
         }
 
-        // Prepare macro targets
+        // Validate meal distributions
+        if (
+          !profile.meal_distributions ||
+          !Array.isArray(profile.meal_distributions) ||
+          profile.meal_distributions.length !== 6
+        ) {
+          throw new Error("Meal distributions must be configured for 6 meals");
+        }
+
+        // Validate percentages
+        const totalPercentage = profile.meal_distributions.reduce(
+          (sum: number, dist: any) => sum + (dist.calories_pct || 0),
+          0,
+        );
+        if (Math.abs(totalPercentage - 100) > 0.01) {
+          throw new Error(
+            `Meal percentages must sum to 100%. Current total: ${totalPercentage.toFixed(1)}%`,
+          );
+        }
+
+        // Validate meal distributions
+        for (const dist of profile.meal_distributions) {
+          if (
+            !dist.mealName ||
+            typeof dist.calories_pct !== "number" ||
+            dist.calories_pct <= 0
+          ) {
+            throw new Error(
+              `Invalid meal distribution for ${dist.mealName || "a meal"}: mealName and calories_pct must be valid (calories_pct > 0)`,
+            );
+          }
+        }
+
+        // Validate user plan
+        if (!userPlan) {
+          throw new Error("User plan is missing");
+        }
         const macroTargets = {
-          target_daily_calories: userPlan.custom_total_calories ?? userPlan.target_daily_calories,
-          target_protein_g: userPlan.custom_protein_g ?? userPlan.target_protein_g,
-          target_carbs_g: userPlan.custom_carbs_g ?? userPlan.target_carbs_g,
-          target_fat_g: userPlan.custom_fat_g ?? userPlan.target_fat_g,
+          target_dailyCalories:
+            userPlan.custom_total_calories ??
+            userPlan.target_daily_calories ??
+            0,
+          target_protein_g:
+            userPlan.custom_protein_g ?? userPlan.target_protein_g ?? 0,
+          target_carbs_g:
+            userPlan.custom_carbs_g ?? userPlan.target_carbs_g ?? 0,
+          target_fat_g: userPlan.custom_fat_g ?? userPlan.target_fat_g ?? 0,
         };
 
-        console.log("🚀 Generating AI meal plan...");
-        
-        // Generate meal plan using new AI system
-        const result = await generatePersonalizedMealPlan({
-          profile,
-          macro_targets: macroTargets,
-          meal_distributions: profile.meal_distributions,
+        // Validate macro targets
+        if (
+          !Number.isFinite(macroTargets.target_dailyCalories) ||
+          macroTargets.target_dailyCalories <= 0 ||
+          !Number.isFinite(macroTargets.target_protein_g) ||
+          macroTargets.target_protein_g < 0 ||
+          !Number.isFinite(macroTargets.target_carbs_g) ||
+          macroTargets.target_carbs_g < 0 ||
+          !Number.isFinite(macroTargets.target_fat_g) ||
+          macroTargets.target_fat_g < 0
+        ) {
+          throw new Error(
+            "Invalid macro targets: Calories, protein, carbs, and fat must be valid positive numbers",
+          );
+        }
+
+        console.log(
+          "🚀 Generating AI meal plan with macroTargets:",
+          JSON.stringify(macroTargets, null, 2),
+        );
+        console.log(
+          "Meal distributions:",
+          JSON.stringify(profile.meal_distributions, null, 2),
+        );
+
+        // Generate meal targets
+        const mealTargets = profile.meal_distributions.map((dist: any) => {
+          const calories =
+            (macroTargets.target_dailyCalories * dist.calories_pct) / 100;
+          const protein =
+            (macroTargets.target_protein_g * dist.calories_pct) / 100;
+          const carbs = (macroTargets.target_carbs_g * dist.calories_pct) / 100;
+          const fat = (macroTargets.target_fat_g * dist.calories_pct) / 100;
+
+          if (
+            !Number.isFinite(calories) ||
+            calories <= 0 ||
+            !Number.isFinite(protein) ||
+            !Number.isFinite(carbs) ||
+            !Number.isFinite(fat)
+          ) {
+            throw new Error(
+              `Invalid calculated macros for meal ${dist.mealName}: Calories, protein, carbs, and fat must be valid positive numbers`,
+            );
+          }
+
+          return {
+            mealName: dist.mealName,
+            calories,
+            protein,
+            carbs,
+            fat,
+          };
         });
 
-        if (!result) {
-          throw new Error("No meal plan generated");
+        console.log(
+          "Prepared mealTargets:",
+          JSON.stringify(mealTargets, null, 2),
+        );
+
+        const result = await generatePersonalizedMealPlan({
+          mealTargets,
+          age: profile.age,
+          biological_sex: profile.biological_sex,
+          height_cm: profile.height_cm,
+          current_weight: profile.current_weight_kg,
+          target_weight: profile.target_weight_1month_kg,
+          physical_activity_level: profile.physical_activity_level,
+          primary_diet_goal: profile.primary_diet_goal,
+          preferred_diet: profile.preferred_diet,
+          allergies: profile.allergies || [],
+          dispreferrred_ingredients: profile.dispreferred_ingredients || [],
+          preferred_ingredients: profile.preferred_ingredients || [],
+          preferredCuisines: profile.preferred_cuisines || [],
+          dispreferredCuisines: profile.dispreferred_cuisines || [],
+          medical_conditions: profile.medical_conditions || [],
+          medications: profile.medications || [],
+        });
+
+        console.log(
+          "Generated meal plan from generatePersonalizedMealPlan:",
+          JSON.stringify(result, null, 2),
+        );
+
+        if (!result || !result.weeklyMealPlan || !result.weeklySummary) {
+          throw new Error("Invalid meal plan data returned from API");
         }
 
-        // Transform result to match expected format
-        const transformedResult = {
-          days: result.weekly_plan.map((day: any) => ({
-            day_of_week: day.day,
-            meals: day.meals.map((meal: any) => ({
-              meal_name: meal.meal_name,
-              custom_name: meal.dish_name,
-              ingredients: meal.ingredients,
-              total_calories: meal.totals.calories,
-              total_protein: meal.totals.protein,
-              total_carbs: meal.totals.carbs,
-              total_fat: meal.totals.fat,
-            })),
-            daily_totals: day.daily_totals,
-          })),
-          weekly_summary: result.weekly_plan.reduce(
-            (summary: any, day: any) => ({
-              total_calories: summary.total_calories + day.daily_totals.calories,
-              total_protein: summary.total_protein + day.daily_totals.protein,
-              total_carbs: summary.total_carbs + day.daily_totals.carbs,
-              total_fat: summary.total_fat + day.daily_totals.fat,
-            }),
-            { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 }
-          ),
-        };
-
-        setGeneratedPlan(transformedResult);
-        
         // Save to database
-        await editAiPlan({ ai_plan: transformedResult });
+        console.log(
+          "Calling editAiPlan with:",
+          JSON.stringify({ ai_plan: result }, null, 2),
+        );
+        const savedPlan = await editAiPlan({
+          ai_plan: {
+            weeklyMealPlan: result.weeklyMealPlan,
+            weeklySummary: result.weeklySummary,
+          },
+        });
+
+        console.log(
+          "Saved plan from editAiPlan:",
+          JSON.stringify(savedPlan, null, 2),
+        );
+
+        // لود داده‌های به‌روز
+        const updatedPlan = await loadMealPlan(); // به جای editMealPlan
+        console.log(
+          "Loaded updated meal plan:",
+          JSON.stringify(updatedPlan, null, 2),
+        );
+        setGeneratedPlan(updatedPlan);
 
         toast({
           title: "Success!",
-          description: "Your AI meal plan has been generated with precise macro distributions.",
+          description:
+            "Your AI meal plan has been generated with precise macro distributions.",
         });
-
       } catch (error: any) {
         console.error("❌ Meal plan generation error:", error);
-        
         let errorMessage = "Failed to generate meal plan.";
-        
-        if (error.message?.includes("API")) {
-          errorMessage = "AI service error. Please check your configuration.";
-        } else if (error.message?.includes("profile")) {
-          errorMessage = "Please complete your profile and macro distributions first.";
+        if (error instanceof TypeError && error.message.includes("fetch")) {
+          errorMessage =
+            "Network error: Failed to connect to AI service or database.";
         } else if (error.message) {
           errorMessage = error.message;
         }
-
         toast({
           title: "Generation Failed",
           description: errorMessage,
@@ -144,102 +262,143 @@ export default function MealPlanGenerator({
   // Check if requirements are met
   const hasProfile = profile && Object.keys(profile).length > 0;
   const hasMacroDistributions = profile?.meal_distributions?.length === 6;
-  const hasValidPercentages = hasMacroDistributions && 
-    Math.abs(profile.meal_distributions.reduce((sum: number, dist: any) => sum + (dist.calories_pct || 0), 0) - 100) < 0.01;
+  const hasValidPercentages =
+    hasMacroDistributions &&
+    Math.abs(
+      profile.meal_distributions.reduce(
+        (sum: number, dist: any) => sum + (dist.calories_pct || 0),
+        0,
+      ) - 100,
+    ) < 0.01;
 
-  const canGenerate = hasProfile && hasMacroDistributions && hasValidPercentages;
+  const canGenerate =
+    hasProfile && hasMacroDistributions && hasValidPercentages;
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5" />
-          AI Meal Plan Generator
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Requirements checklist */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            {hasProfile ? (
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-            ) : (
-              <div className="w-2 h-2 bg-red-500 rounded-full" />
-            )}
-            <span className={hasProfile ? "text-green-700" : "text-red-700"}>
-              Profile completed
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {hasMacroDistributions ? (
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-            ) : (
-              <div className="w-2 h-2 bg-red-500 rounded-full" />
-            )}
-            <span className={hasMacroDistributions ? "text-green-700" : "text-red-700"}>
-              Macro distributions configured (6 meals)
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {hasValidPercentages ? (
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-            ) : (
-              <div className="w-2 h-2 bg-red-500 rounded-full" />
-            )}
-            <span className={hasValidPercentages ? "text-green-700" : "text-red-700"}>
-              Percentages sum to 100%
-            </span>
-          </div>
-        </div>
-
-        {!canGenerate && (
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
-              <div className="text-sm text-amber-800">
-                <p className="font-medium">Requirements not met:</p>
-                <ul className="mt-1 space-y-1 text-xs">
-                  {!hasProfile && <li>• Complete your profile in onboarding</li>}
-                  {!hasMacroDistributions && <li>• Configure meal distributions in Macro Splitter</li>}
-                  {!hasValidPercentages && <li>• Ensure meal percentages sum to 100%</li>}
-                </ul>
-              </div>
+    <div>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            AI Meal Plan Generator
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              {hasProfile ? (
+                <div className="w-2 h-2 bg-green-500 rounded-full" />
+              ) : (
+                <div className="w-2 h-2 bg-red-500 rounded-full" />
+              )}
+              <span className={hasProfile ? "text-green-700" : "text-red-700"}>
+                Profile completed
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasMacroDistributions ? (
+                <div className="w-2 h-2 bg-green-500 rounded-full" />
+              ) : (
+                <div className="w-2 h-2 bg-red-500 rounded-full" />
+              )}
+              <span
+                className={
+                  hasMacroDistributions ? "text-green-700" : "text-red-700"
+                }
+              >
+                Macro distributions configured (6 meals)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasValidPercentages ? (
+                <div className="w-2 h-2 bg-green-500 rounded-full" />
+              ) : (
+                <div className="w-2 h-2 bg-red-500 rounded-full" />
+              )}
+              <span
+                className={
+                  hasValidPercentages ? "text-green-700" : "text-red-700"
+                }
+              >
+                Percentages sum to 100%
+              </span>
             </div>
           </div>
-        )}
-
-        <Button
-          onClick={handleGeneratePlan}
-          disabled={!canGenerate || isLoading}
-          className="w-full"
-          size="lg"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating AI meal plan...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generate AI Meal Plan
-            </>
+          {!canGenerate && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-medium">Requirements not met:</p>
+                  <ul className="mt-1 space-y-1 text-xs">
+                    {!hasProfile && (
+                      <li>• Complete your profile in onboarding</li>
+                    )}
+                    {!hasMacroDistributions && (
+                      <li>• Configure meal distributions in Macro Splitter</li>
+                    )}
+                    {!hasValidPercentages && (
+                      <li>• Ensure meal percentages sum to 100%</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </div>
           )}
-        </Button>
-
-        {generatedPlan && (
-          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-800 font-medium">
-              ✅ Meal plan generated successfully!
-            </p>
-            <p className="text-green-700 text-sm mt-1">
-              Your 7-day meal plan with precise macro distributions is ready.
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          <Button
+            onClick={handleGeneratePlan}
+            disabled={!canGenerate || isLoading}
+            className="w-full"
+            size="lg"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating AI meal plan...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate AI Meal Plan
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={async () => {
+              startTransition(async () => {
+                try {
+                  console.log("Refreshing meal plan...");
+                  const newMealPlan = await loadMealPlan(); // به جای editMealPlan
+                  console.log(
+                    "Refreshed meal plan:",
+                    JSON.stringify(newMealPlan, null, 2),
+                  );
+                  setGeneratedPlan(newMealPlan);
+                } catch (e) {
+                  setError(
+                    e instanceof Error
+                      ? e.message
+                      : "Unknown error refreshing meal plan",
+                  );
+                  console.error("Failed to refresh meal plan:", e);
+                  toast({
+                    title: "Refresh Failed",
+                    description: error || "Unable to refresh meal plan",
+                    variant: "destructive",
+                  });
+                }
+              });
+            }}
+            className="mt-4 w-full"
+            variant="outline"
+          >
+            Refresh Meal Plan
+          </Button>
+          {(generatedPlan || loadingPlan) && (
+            <MealPlanOverview mealPlan={{ ai_plan: generatedPlan }} />
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

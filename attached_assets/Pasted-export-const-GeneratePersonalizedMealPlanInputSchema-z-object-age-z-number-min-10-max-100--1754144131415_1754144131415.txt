@@ -1,0 +1,102 @@
+export const GeneratePersonalizedMealPlanInputSchema = z.object({
+  age: z.number().min(10).max(100).optional(),
+  biological_sex: z.enum(["male", "female", "other"]).optional(),
+  height_cm: z.number().min(100).max(250).optional(),
+  current_weight_kg: z.number().min(30).max(300).optional(),
+  target_weight_kg: z.number().min(30).max(300).optional(),
+  physical_activity_level: z
+    .enum(["sedentary", "light", "moderate", "vigorous", "extra_active"])
+    .optional(),
+  primary_diet_goal: z
+    .enum(["fat_loss", "muscle_gain", "recomp", "maintenance"])
+    .optional(),
+  preferred_diet: z
+    .enum(["Standard", "Vegetarian", "Vegan", "Ketogenic", "Paleo"])
+    .optional(),
+  allergies: z.string().array().optional(),
+  dispreferrred_ingredients: z.string().array().optional(),
+  preferred_ingredients: z.string().array().optional(),
+  medical_conditions: z.string().array().optional(),
+  meal_data: z.object({
+    target_daily_calories: z.number().min(1000).max(5000).optional(),
+    target_protein_g: z.number().min(50).max(400).optional(),
+    target_carbs_g: z.number().min(50).max(600).optional(),
+    target_fat_g: z.number().min(20).max(200).optional(),
+  }),
+  meal_distributions: z
+    .array(
+      z.object({
+        mealName: z.enum([
+          "Breakfast",
+          "Morning Snack",
+          "Lunch",
+          "Afternoon Snack",
+          "Dinner",
+          "Evening Snack",
+        ]),
+        calories_pct: z.number().min(0.05).max(0.5),
+      })
+    )
+    .min(1)
+    .max(6),
+});
+export type GeneratePersonalizedMealPlanInput = z.infer<
+  typeof GeneratePersonalizedMealPlanInputSchema
+>;
+export const GeneratePersonalizedMealPlanOutputSchema = z.object({
+  days: z.array(
+    z.object({
+      day_of_week: z.enum([
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+      ]),
+      meals: z.array(
+        z.object({
+          meal_name: z.enum([
+            "Breakfast",
+            "Morning Snack",
+            "Lunch",
+            "Afternoon Snack",
+            "Dinner",
+            "Evening Snack",
+          ]),
+          custom_name: z.string().optional(),
+          ingredients: z
+            .array(
+              z.object({
+                name: z.string(),
+                quantity: z.number().min(0).optional(),
+                unit: z.string().optional(),
+                calories: z.number().min(0).optional(),
+                protein: z.number().min(0).optional(),
+                carbs: z.number().min(0).optional(),
+                fat: z.number().min(0).optional(),
+              })
+            )
+            .min(1)
+            .max(5),
+          total_calories: z.number().optional(),
+          total_protein: z.number().optional(),
+          total_carbs: z.number().optional(),
+          total_fat: z.number().optional(),
+        })
+      ),
+      daily_totals: z
+        .object({
+          calories: z.number().min(0).optional(),
+          protein: z.number().min(0).optional(),
+          carbs: z.number().min(0).optional(),
+          fat: z.number().min(0).optional(),
+        })
+        .optional(),
+    })
+  ),
+});
+export type GeneratePersonalizedMealPlanOutput = z.infer<
+  typeof GeneratePersonalizedMealPlanOutputSchema
+>;

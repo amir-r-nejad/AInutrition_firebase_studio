@@ -86,15 +86,7 @@ export type Meal = z.infer<typeof MealSchema>;
 
 // Daily Meal Plan Schema
 export const DailyMealPlanSchema = z.object({
-  day_of_week: z.enum([
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ]),
+  dayOfWeek: z.string(),
   meals: z.array(MealSchema).length(6),
   daily_totals: z.object({
     calories: z.number().min(0),
@@ -192,9 +184,23 @@ export const UserProfileSchema = z.object({
     .array(
       z.object({
         mealName: z.string(),
-        calories_pct: z.number(),
+        calories_pct: z.number().min(0).max(100),
+        protein_pct: z.number().min(0).max(100).optional(),
+        carbs_pct: z.number().min(0).max(100).optional(),
+        fat_pct: z.number().min(0).max(100).optional(),
       }),
     )
+    .length(6, "Must have 6 meal distributions")
+    .superRefine((data, ctx) => {
+      const sum = data.reduce((acc, meal) => acc + (meal.calories_pct || 0), 0);
+      if (Math.abs(sum - 100) > 0.01) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Total calories_pct must sum to 100%. Current sum: ${sum.toFixed(0)}%`,
+          path: ["meal_distributions"],
+        });
+      }
+    })
     .nullable()
     .optional(),
   preferred_diet: z.string().nullable().optional(),
@@ -225,6 +231,7 @@ export const UserPlanSchema = z.object({
   target_carbs_percentage: z.number().nullable().optional(),
   target_fat_g: z.number().nullable().optional(),
   target_fat_percentage: z.number().nullable().optional(),
+  target_weight: z.number().nullable().optional(), // Add this line
   custom_total_calories: z.number().nullable().optional(),
   custom_protein_per_kg: z.number().nullable().optional(),
   remaining_calories_carbs_percentage: z.number().nullable().optional(),
@@ -1028,6 +1035,7 @@ export type AIGeneratedIngredient = z.infer<typeof AIGeneratedIngredientSchema>;
 
 export const AIGeneratedMealSchema = z.object({
   meal_name: z.string(),
+  meal_title: z.string(), // Add this line
   custom_name: z.string().optional(),
   ingredients: z.array(AIGeneratedIngredientSchema),
   total_calories: z.number().optional(),
@@ -1039,15 +1047,7 @@ export const AIGeneratedMealSchema = z.object({
 export type AIGeneratedMeal = z.infer<typeof AIGeneratedMealSchema>;
 
 export const DayPlanSchema = z.object({
-  day_of_week: z.enum([
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ]),
+  day: z.string(),
   meals: z.array(AIGeneratedMealSchema).length(6),
   daily_totals: z.object({
     calories: z.number().min(0),
@@ -1059,55 +1059,114 @@ export const DayPlanSchema = z.object({
 
 export type DayPlan = z.infer<typeof DayPlanSchema>;
 
+export const AIDailyMealSchema = z.object({
+  meal_title: z
+    .string()
+    .describe(
+      "A short, appetizing name for the meal. E.g., 'Sunrise Scramble' or 'Zesty Salmon Salad'.",
+    ),
+  ingredients: z
+    .array(
+      z.object({
+        name: z
+          .string()
+          .describe(
+            "The name of the ingredient, e.g., 'Large Egg' or 'Rolled Oats'.",
+          ),
+        calories: z
+          .number()
+          .describe("Total calories for the quantity of this ingredient."),
+        protein: z.number().describe("Grams of protein."),
+        carbs: z.number().describe("Grams of carbohydrates."),
+        fat: z.number().describe("Grams of fat."),
+      }),
+    )
+    .min(1, "Each meal must have at least one ingredient."),
+});
+
+export const AIDailyPlanOutputSchema = z.object({
+  meals: z
+    .array(AIDailyMealSchema)
+    .describe("An array of all meals for this one day."),
+});
+export type AIDailyPlanOutput = z.infer<typeof AIDailyPlanOutputSchema>;
+
 export const GeneratePersonalizedMealPlanInputSchema = z.object({
-  age: z.number().int().min(1).max(120).default(30),
-  biological_sex: z.enum(["male", "female", "other"]).default("other"),
-  height_cm: z.number().min(50).max(300).default(170),
-  current_weight_kg: z.number().min(20).max(500).default(70),
-  target_weight_kg: z.number().min(20).max(500).default(70),
-  physical_activity_level: z.enum(["sedentary", "light", "moderate", "active", "extra_active"]).default("moderate"),
-  primary_diet_goal: z.enum(["fat_loss", "muscle_gain", "recomp"]).default("fat_loss"),
-  preferred_diet: z.enum(["Standard", "Vegetarian", "Vegan", "Keto"]).default("Standard"),
-  allergies: z.array(z.string()).default([]),
-  dispreferrred_ingredients: z.array(z.string()).default([]),
-  preferred_ingredients: z.array(z.string()).default([]),
-  medical_conditions: z.array(z.string()).default([]),
-  meal_data: z.object({
-    target_daily_calories: z.number().min(100).default(1200),
-    target_protein_g: z.number().min(0).default(90),
-    target_carbs_g: z.number().min(0).default(150),
-    target_fat_g: z.number().min(0).default(40),
-  }).default({
-    target_daily_calories: 1200,
-    target_protein_g: 90,
-    target_carbs_g: 150,
-    target_fat_g: 40,
-  }),
-  meal_distributions: z.array(
+  age: z.number().optional(),
+  gender: z.string().optional(),
+  height_cm: z.number().optional(),
+  biological_sex: z.string(), // ADDED THIS LINE
+  target_weight: z.number().optional(), // Add this line
+  current_weight: z.number().optional(),
+  goal_weight_1m: z.number().optional(),
+  activityLevel: z.string().optional(),
+  dietGoalOnboarding: z.string().optional(),
+  target_daily_calories: z.number().nullable().optional(),
+  target_protein_g: z.number().nullable().optional(),
+  target_carbs_g: z.number().nullable().optional(),
+  target_fat_g: z.number().nullable().optional(),
+  ideal_goal_weight: z.number().optional(),
+  physical_activity_level: z.string(),
+  primary_diet_goal: z.string(),
+  meal_distributions: z
+    .array(
+      z.object({
+        mealName: z.string(),
+        calories_pct: z.number(),
+      }),
+    )
+    .nullable()
+    .optional(),
+  bf_current: z.number().optional(),
+  bf_target: z.number().optional(),
+  bf_ideal: z.number().optional(),
+  mm_current: z.number().optional(),
+  mm_target: z.number().optional(),
+  mm_ideal: z.number().optional(),
+  bw_current: z.number().optional(),
+  bw_target: z.number().optional(),
+  bw_ideal: z.number().optional(),
+  waist_current: z.number().optional(),
+  waist_goal_1m: z.number().optional(),
+  waist_ideal: z.number().optional(),
+  hips_current: z.number().optional(),
+  hips_goal_1m: z.number().optional(),
+  hips_ideal: z.number().optional(),
+  right_leg_current: z.number().optional(),
+  right_leg_goal_1m: z.number().optional(),
+  right_leg_ideal: z.number().optional(),
+  left_leg_current: z.number().optional(),
+  left_leg_goal_1m: z.number().optional(),
+  left_leg_ideal: z.number().optional(),
+  right_arm_current: z.number().optional(),
+  right_arm_goal_1m: z.number().optional(),
+  right_arm_ideal: z.number().optional(),
+  left_arm_current: z.number().optional(),
+  left_arm_goal_1m: z.number().optional(),
+  left_arm_ideal: z.number().optional(),
+  preferredDiet: z.string().optional(),
+  allergies: z.array(z.string()).optional(),
+  preferred_ingredients: z.array(z.string()).nullable().optional(),
+  dispreferrred_ingredients: z.array(z.string()).nullable().optional(),
+  medical_conditions: z.array(z.string()).nullable().optional(),
+  dispreferredCuisines: z.array(z.string()).optional(),
+  preferredCuisines: z.array(z.string()).optional(),
+  preferred_diet: z.string().nullable().optional(),
+  dispreferredIngredients: z.array(z.string()).optional(),
+  preferredIngredients: z.array(z.string()).optional(),
+  medicalConditions: z.array(z.string()).optional(),
+  medications: z.array(z.string()).optional(),
+  preferredMicronutrients: z.array(z.string()).optional(),
+  typicalMealsDescription: z.string().optional(),
+  mealTargets: z.array(
     z.object({
-      mealName: z.enum(["Breakfast", "Morning Snack", "Lunch", "Afternoon Snack", "Dinner", "Evening Snack"]),
-      calories_pct: z.number().min(0).max(100),
-      protein_pct: z.number().min(0).max(100).optional(),
-      carbs_pct: z.number().min(0).max(100).optional(),
-      fat_pct: z.number().min(0).max(100).optional(),
-    })
-  ).length(6).default([
-    { mealName: "Breakfast", calories_pct: 25 },
-    { mealName: "Morning Snack", calories_pct: 10 },
-    { mealName: "Lunch", calories_pct: 30 },
-    { mealName: "Afternoon Snack", calories_pct: 10 },
-    { mealName: "Dinner", calories_pct: 20 },
-    { mealName: "Evening Snack", calories_pct: 5 },
-  ]),
-}).superRefine((data, ctx) => {
-  const sumCalories = data.meal_distributions.reduce((acc, meal) => acc + meal.calories_pct, 0);
-  if (Math.abs(sumCalories - 100) > 0.01) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Total calorie percentages must sum to 100%. Current sum: ${sumCalories.toFixed(0)}%`,
-      path: ["meal_distributions"],
-    });
-  }
+      mealName: z.string(),
+      calories: z.number(),
+      protein: z.number(),
+      carbs: z.number(),
+      fat: z.number(),
+    }),
+  ),
 });
 
 export type GeneratePersonalizedMealPlanInput = z.infer<
@@ -1115,46 +1174,14 @@ export type GeneratePersonalizedMealPlanInput = z.infer<
 >;
 
 export const GeneratePersonalizedMealPlanOutputSchema = z.object({
-  days: z.array(
-    z.object({
-      day_of_week: z.enum(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]),
-      meals: z.array(
-        z.object({
-          meal_name: z.enum(["Breakfast", "Morning Snack", "Lunch", "Afternoon Snack", "Dinner", "Evening Snack"]),
-          custom_name: z.string(),
-          ingredients: z.array(
-            z.object({
-              name: z.string(),
-              quantity: z.number().min(0),
-              unit: z.string(),
-              calories: z.number().min(0),
-              protein: z.number().min(0),
-              carbs: z.number().min(0),
-              fat: z.number().min(0),
-            })
-          ).min(3).max(8),
-          total_calories: z.number().min(0),
-          total_protein: z.number().min(0),
-          total_carbs: z.number().min(0),
-          total_fat: z.number().min(0),
-        })
-      ).length(6),
-      daily_totals: z.object({
-        calories: z.number().min(0),
-        protein: z.number().min(0),
-        carbs: z.number().min(0),
-        fat: z.number().min(0),
-      }),
-    })
-  ).length(7),
-  weekly_summary: z.object({
-    total_calories: z.number().min(0),
-    total_protein: z.number().min(0),
-    total_carbs: z.number().min(0),
-    total_fat: z.number().min(0),
+  weeklyMealPlan: z.array(DayPlanSchema),
+  weeklySummary: z.object({
+    totalCalories: z.number(),
+    totalProtein: z.number(),
+    totalCarbs: z.number(),
+    totalFat: z.number(),
   }),
 });
-
 export type GeneratePersonalizedMealPlanOutput = z.infer<
   typeof GeneratePersonalizedMealPlanOutputSchema
 >;
