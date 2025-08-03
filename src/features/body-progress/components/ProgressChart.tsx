@@ -22,11 +22,12 @@ import {
   NameType,
   ValueType,
 } from 'recharts/types/component/DefaultTooltipContent';
+import { useParams } from 'next/navigation';
 
-interface ProgressChartProps {
+type ProgressChartProps = {
   entries: BodyProgressEntry[];
   selectedMonth: string;
-}
+};
 
 const chartConfig = {
   weight: {
@@ -44,6 +45,9 @@ const chartConfig = {
 };
 
 export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
+  const params = useParams<{ clientId?: string }>();
+  const isCoachView = !!params?.clientId;
+
   const chartData = entries
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map((entry) => ({
@@ -73,7 +77,8 @@ export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
         <CardHeader>
           <CardTitle className='text-xl flex items-center gap-2 text-primary'>
             <TrendingDown className='h-5 w-5' />
-            Weight Progress - {monthLabel}
+            {isCoachView ? 'Client Weight Progress' : 'Weight Progress'} -{' '}
+            {monthLabel}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -82,7 +87,9 @@ export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
               <TrendingDown className='h-12 w-12 mx-auto mb-4 opacity-50' />
               <p className='text-lg'>No progress data for {monthLabel}</p>
               <p className='text-sm'>
-                Add your first weekly measurement below!
+                {isCoachView
+                  ? "Add the client's first weekly measurement below!"
+                  : 'Add your first weekly measurement below!'}
               </p>
             </div>
           </div>
@@ -96,7 +103,8 @@ export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
       <CardHeader>
         <CardTitle className='text-xl flex items-center gap-2 text-primary'>
           <TrendingDown className='h-5 w-5' />
-          Weight Progress - {monthLabel}
+          {isCoachView ? 'Client Weight Progress' : 'Weight Progress'} -{' '}
+          {monthLabel}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -151,6 +159,7 @@ export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
     </Card>
   );
 }
+
 function CustomTooltip({
   active,
   payload,

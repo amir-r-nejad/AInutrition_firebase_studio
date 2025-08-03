@@ -45,7 +45,7 @@ export async function saveUserBodyProgress(
 
     if (error) throw new Error(`Something wen't wrong: ${error.message}`);
 
-    revalidatePath('/progress');
+    revalidatePath('/body_progress');
   } catch (error) {
     throw error;
   }
@@ -73,7 +73,7 @@ export async function updateUserBodyProgress(
 
     if (error) throw new Error(`Something wen't wrong: ${error.message}`);
 
-    revalidatePath('/progress');
+    revalidatePath('/body_progress');
   } catch (error) {
     throw error;
   }
@@ -101,7 +101,7 @@ export async function deleteUserBodyProgress(
 
     if (error) throw new Error(`Something wen't wrong: ${error.message}`);
 
-    revalidatePath('/progress');
+    revalidatePath('/body_progress');
   } catch (error) {
     throw error;
   }

@@ -248,6 +248,17 @@ export const UserPlanSchema = z.object({
 
 export type UserPlan = z.infer<typeof UserPlanSchema>;
 
+export const MealNameEnum = z.enum([
+  "Breakfast",
+  "Morning Snack",
+  "Lunch",
+  "Afternoon Snack",
+  "Dinner",
+  "Evening Snack",
+]);
+
+export type MealNameType = z.infer<typeof MealNameEnum>;
+
 // User Meal Plan Schema and Types
 export const UserMealPlanSchema = z.object({
   id: z.number().optional(),
