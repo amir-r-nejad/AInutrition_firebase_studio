@@ -6,6 +6,7 @@ import {
 import {
   BaseProfileData,
   GeneratePersonalizedMealPlanInput,
+  MealNameType,
   WeeklyMealPlan,
 } from '@/lib/schemas';
 import { DailyTargetsTypes, MealToOptimizeTypes } from '../types';
@@ -55,7 +56,7 @@ export function getAdjustedMealInput(
 
   return {
     originalMeal: {
-      name: mealToOptimize.name,
+      name: mealToOptimize.name as MealNameType,
       custom_name: mealToOptimize.custom_name || '',
       ingredients: preparedIngredients,
       total_calories: Number(mealToOptimize.total_calories) || 0,
@@ -87,7 +88,7 @@ export function generateInitialWeeklyPlan(): WeeklyMealPlan {
     days: daysOfWeek.map((day) => ({
       day_of_week: day,
       meals: mealNames.map((mealName) => ({
-        name: mealName,
+        name: mealName as MealNameType,
         custom_name: '',
         ingredients: [],
         total_calories: null,
