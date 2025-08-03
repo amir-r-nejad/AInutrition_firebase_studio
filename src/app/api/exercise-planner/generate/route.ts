@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { GoogleGenerativeAI } from "@google/generative-ai"; // Correct import
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_KEY || "");
@@ -43,72 +43,38 @@ export async function POST(request: NextRequest) {
       .eq("user_id", user.id)
       .single();
 
-    // Generate AI exercise plan using Gemini
-    const dayNames = [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "Sunday",
-    ];
-    const focusAreas = [
-      "Upper Body Strength",
-      "Lower Body Strength",
-      "Core & Cardio",
-      "Full Body Circuit",
-      "Flexibility & Recovery",
-      "Strength Training",
-      "Active Recovery",
-    ] as const; // TypeScript const assertion for literal types
-
-    const prompt = `You are a professional fitness trainer creating a personalized exercise plan.
+    // Optimized Prompt
+    const prompt = `You are a professional fitness trainer tasked with creating a personalized weekly exercise plan in JSON format.
 
         CRITICAL INSTRUCTIONS:
-        1. Generate a COMPLETE weekly workout plan with proper day distribution
-        2. Create exercise plan for ${preferences.exercise_days_per_week} workout days per week
-        3. Distribute workouts across specific weekdays (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday)
-        4. Each workout day must have 6-8 exercises in the main workout section
-        5. Calculate realistic durations: warm-up = 10-15% of total time, cool-down = 10-15% of total time
-        6. Include rest days between workout days for recovery
-        7. DO NOT use comments or incomplete sections - provide COMPLETE exercises for every specified day
-        8. Return ONLY valid JSON without any comments or additional text
+        - Return ONLY valid JSON without comments, explanations, or additional text.
+        - Ensure JSON is properly formatted with no trailing commas or syntax errors.
+        - Generate a complete 7-day weekly plan, with workouts distributed across ${preferences.exercise_days_per_week} days, including rest days.
+        - Distribute workout days evenly (e.g., 3 days: Monday, Wednesday, Friday; 4 days: Monday, Tuesday, Thursday, Friday; 5 days: Monday to Friday).
+        - Each workout day must include:
+          - 6-8 main exercises tailored to user preferences, equipment, and limitations.
+          - Warm-up (10-15% of session duration, 5-8 minutes total).
+          - Cool-down (10-15% of session duration, 3-5 minutes total).
+        - Exercises must align with:
+          - Fitness level: ${preferences.fitness_level}
+          - Primary goal: ${preferences.primary_goal}
+          - Secondary goal: ${preferences.secondary_goal || "None"}
+          - Available equipment: ${
+            preferences.available_equipment?.join(", ") || "Bodyweight only"
+          }
+          - Space availability: ${preferences.space_availability || "Any space"}
+          - Machines access: ${preferences.machines_access ? "Yes" : "No"}
+          - Medical conditions: ${
+            preferences.existing_medical_conditions?.join(", ") || "None"
+          }
+          - Injuries/limitations: ${
+            preferences.injuries_or_limitations || "None"
+          }
+        - Assign appropriate focus areas (e.g., Upper Body Strength, Lower Body Strength, Core & Cardio, Full Body Circuit, Flexibility & Recovery) for each workout day.
+        - Ensure exercises are safe, considering medical conditions and injuries.
+        - Provide detailed instructions and YouTube search terms for each exercise and its alternatives.
 
-        WEEKLY SCHEDULE REQUIREMENTS:
-        - User wants to exercise ${preferences.exercise_days_per_week} days per week
-        - Preferred time: ${preferences.preferred_time_of_day || "Any time"}
-        - Each session duration: ${preferences.available_time_per_session} minutes
-        - Please distribute workout days evenly throughout the week with proper rest days
-
-        User preferences:
-        - Fitness level: ${preferences.fitness_level}
-        - Primary goal: ${preferences.primary_goal}
-        - Secondary goal: ${preferences.secondary_goal || "None"}
-        - Available time per session: ${
-          preferences.available_time_per_session
-        } minutes
-        - Exercise days per week: ${preferences.exercise_days_per_week}
-        - Medical conditions: ${
-          preferences.existing_medical_conditions?.join(", ") || "None"
-        }
-        - Injuries/limitations: ${preferences.injuries_or_limitations || "None"}
-        - Available equipment: ${
-          preferences.available_equipment?.join(", ") || "Bodyweight only"
-        }
-        - Space availability: ${preferences.space_availability || "Any space"}
-        - Machines access: ${preferences.machines_access ? "Yes" : "No"}
-        - Target muscle groups: ${preferences.muscle_groups_focus?.join(", ") || "All muscle groups"}
-
-        Create a comprehensive weekly workout plan in JSON format with proper day distribution.
-        
-        EXAMPLE WEEKLY DISTRIBUTION:
-        - For 3 days/week: Monday, Wednesday, Friday (with rest days Tuesday, Thursday, Weekend)
-        - For 4 days/week: Monday, Tuesday, Thursday, Friday (with rest Wednesday, Weekend)
-        - For 5 days/week: Monday through Friday (with weekend rest)
-        
-        Structure your response as follows:
-
+        JSON STRUCTURE:
         {
           "weeklyPlan": {
             "Day1": {
@@ -124,15 +90,7 @@ export async function POST(request: NextRequest) {
                       2,
                       Math.floor(preferences.available_time_per_session * 0.1),
                     )},
-                    "instructions": "Stand with feet shoulder-width apart. Extend arms to sides and make small circles forward for 30 seconds, then backward for 30 seconds."
-                  },
-                  {
-                    "name": "Dynamic Stretches",
-                    "duration": ${Math.max(
-                      3,
-                      Math.floor(preferences.available_time_per_session * 0.15),
-                    )},
-                    "instructions": "Perform leg swings, torso twists, and shoulder rolls to prepare your body for exercise."
+                    "instructions": "Stand with feet shoulder-width apart. Extend arms and perform small circles forward for 30 seconds, then backward for 30 seconds."
                   }
                 ]
               },
@@ -143,140 +101,13 @@ export async function POST(request: NextRequest) {
                   "sets": 3,
                   "reps": "8-12",
                   "restSeconds": 60,
-                  "instructions": "Start in a plank position with hands slightly wider than shoulders. Lower your body until your chest nearly touches the floor, then push back up. Keep your body in a straight line throughout the movement.",
+                  "instructions": "Start in a plank position with hands slightly wider than shoulders. Lower your body until your chest nearly touches the floor, then push back up.",
                   "youtubeSearchTerm": "push ups proper form tutorial beginner",
                   "alternatives": [
                     {
                       "name": "Incline Push-ups",
-                      "instructions": "Place your hands on an elevated surface like a bench, step, or wall. The higher the surface, the easier the exercise.",
-                      "youtubeSearchTerm": "incline push ups tutorial proper form"
-                    },
-                    {
-                      "name": "Wall Push-ups",
-                      "instructions": "Stand arm's length from a wall and perform push-ups against the wall.",
-                      "youtubeSearchTerm": "wall push ups beginner tutorial"
-                    },
-                    {
-                      "name": "Knee Push-ups",
-                      "instructions": "Start in a plank position but drop your knees to the ground for easier variation.",
-                      "youtubeSearchTerm": "knee push ups proper form tutorial"
-                    }
-                  ]
-                },
-                {
-                  "exerciseName": "Squats",
-                  "targetMuscles": ["Quadriceps", "Glutes", "Hamstrings"],
-                  "sets": 3,
-                  "reps": "10-15",
-                  "restSeconds": 60,
-                  "instructions": "Stand with feet shoulder-width apart. Lower your hips back and down as if sitting in a chair, keeping your chest up and knees behind your toes. Push through your heels to return to standing.",
-                  "youtubeSearchTerm": "bodyweight squats proper form",
-                  "alternatives": [
-                    {
-                      "name": "Chair Squats",
-                      "instructions": "Use a chair for support. Sit down and stand up from the chair repeatedly.",
-                      "youtubeSearchTerm": "chair squats beginner"
-                    },
-                    {
-                      "name": "Wall Squats",
-                      "instructions": "Stand with your back against a wall. Slide down until thighs are parallel to floor.",
-                      "youtubeSearchTerm": "wall squats proper form"
-                    }
-                  ]
-                },
-                {
-                  "exerciseName": "Dumbbell Rows",
-                  "targetMuscles": ["Back", "Biceps"],
-                  "sets": 3,
-                  "reps": "8-12 each arm",
-                  "restSeconds": 60,
-                  "instructions": "Hold dumbbell in one hand, support yourself with the other. Pull weight toward your hip, squeezing shoulder blade.",
-                  "youtubeSearchTerm": "dumbbell rows proper form",
-                  "alternatives": [
-                    {
-                      "name": "Resistance Band Rows",
-                      "instructions": "Use resistance band for similar pulling motion.",
-                      "youtubeSearchTerm": "resistance band rows"
-                    }
-                  ]
-                },
-                {
-                  "exerciseName": "Shoulder Press",
-                  "targetMuscles": ["Shoulders", "Triceps"],
-                  "sets": 3,
-                  "reps": "8-12",
-                  "restSeconds": 60,
-                  "instructions": "Hold dumbbells at shoulder height, press overhead until arms are fully extended.",
-                  "youtubeSearchTerm": "dumbbell shoulder press form",
-                  "alternatives": [
-                    {
-                      "name": "Pike Push-ups",
-                      "instructions": "Start in downward dog position and perform push-up motion.",
-                      "youtubeSearchTerm": "pike push ups shoulders"
-                    }
-                  ]
-                },
-                {
-                  "exerciseName": "Plank",
-                  "targetMuscles": ["Core", "Shoulders", "Back"],
-                  "sets": 3,
-                  "reps": "30-60 seconds",
-                  "restSeconds": 60,
-                  "instructions": "Hold your body in a straight line from head to heels, engaging your core muscles.",
-                  "youtubeSearchTerm": "plank exercise proper form",
-                  "alternatives": [
-                    {
-                      "name": "Knee Plank",
-                      "instructions": "Perform plank with knees on the ground for easier variation.",
-                      "youtubeSearchTerm": "modified plank knees"
-                    }
-                  ]
-                },
-                {
-                  "exerciseName": "Lunges",
-                  "targetMuscles": ["Quadriceps", "Glutes", "Hamstrings"],
-                  "sets": 3,
-                  "reps": "8-12 each leg",
-                  "restSeconds": 60,
-                  "instructions": "Step forward with one leg, lower your hips until both knees are bent at 90 degrees.",
-                  "youtubeSearchTerm": "lunges proper form tutorial",
-                  "alternatives": [
-                    {
-                      "name": "Reverse Lunges",
-                      "instructions": "Step backward instead of forward, easier on the knees.",
-                      "youtubeSearchTerm": "reverse lunges proper form"
-                    }
-                  ]
-                },
-                {
-                  "exerciseName": "Bicep Curls",
-                  "targetMuscles": ["Biceps"],
-                  "sets": 3,
-                  "reps": "10-15",
-                  "restSeconds": 60,
-                  "instructions": "Hold dumbbells at your sides, curl up toward shoulders keeping elbows stationary.",
-                  "youtubeSearchTerm": "dumbbell bicep curls form",
-                  "alternatives": [
-                    {
-                      "name": "Resistance Band Curls",
-                      "instructions": "Use resistance band for similar curling motion.",
-                      "youtubeSearchTerm": "resistance band bicep curls"
-                    }
-                  ]
-                },
-                {
-                  "exerciseName": "Tricep Dips",
-                  "targetMuscles": ["Triceps", "Shoulders"],
-                  "sets": 3,
-                  "reps": "8-12",
-                  "restSeconds": 60,
-                  "instructions": "Use a chair or bench, lower your body by bending elbows, then push back up.",
-                  "youtubeSearchTerm": "tricep dips proper form",
-                  "alternatives": [
-                    {
-                      "name": "Wall Tricep Push-ups",
-                      "instructions": "Stand close to wall, hands close together, perform push-up motion.",
-                      "youtubeSearchTerm": "wall tricep pushups"
+                      "instructions": "Place hands on an elevated surface like a bench. Perform push-ups with proper form.",
+                      "youtubeSearchTerm": "incline push ups tutorial"
                     }
                   ]
                 }
@@ -289,50 +120,40 @@ export async function POST(request: NextRequest) {
                       3,
                       Math.floor(preferences.available_time_per_session * 0.1),
                     )},
-                    "instructions": "Stretch chest, shoulders, and arms. Hold each stretch for 20-30 seconds."
-                  },
-                  {
-                    "name": "Lower Body Stretches",
-                    "duration": ${Math.max(
-                      2,
-                      Math.floor(preferences.available_time_per_session * 0.1),
-                    )},
-                    "instructions": "Stretch quadriceps, hamstrings, and calves. Hold each stretch for 20-30 seconds."
+                    "instructions": "Perform chest, shoulder, and arm stretches, holding each for 20-30 seconds."
                   }
                 ]
               }
+            },
+            "Day2": {
+              "dayName": "Tuesday",
+              "focus": "Rest",
+              "isWorkoutDay": false,
+              "duration": 0,
+              "warmup": { "exercises": [] },
+              "mainWorkout": [],
+              "cooldown": { "exercises": [] }
             }
+            // Continue for all 7 days
           }
         }
 
-        IMPORTANT: Generate complete workout plans for ALL 7 days. Each day should have:
-        - Appropriate focus area (Upper Body, Lower Body, Cardio, Full Body, etc.)
-        - 6-8 main exercises minimum
-        - Realistic warm-up (5-8 minutes total)
-        - Realistic cool-down (3-5 minutes total)
-        - Consider user's limitations: ${
-          preferences.injuries_or_limitations || "None"
-        }  
-        - Available equipment: ${
-          preferences.available_equipment?.join(", ") || "Bodyweight only"
+        USER PREFERENCES:
+        - Exercise days per week: ${preferences.exercise_days_per_week}
+        - Session duration: ${preferences.available_time_per_session} minutes
+        - Preferred time: ${preferences.preferred_time_of_day || "Any time"}
+        - Target muscle groups: ${
+          preferences.muscle_groups_focus?.join(", ") || "All muscle groups"
         }
-        - Space availability: ${preferences.space_availability || "Any space"}
-        - Machines access: ${preferences.machines_access ? "Yes" : "No"}
         - Exercise location: ${preferences.exercise_location || "Any location"}
-        - Medical conditions: ${
-          preferences.existing_medical_conditions?.join(", ") || "None"
+        - Job type/activity level: ${
+          preferences.job_type || "Moderate activity"
         }
         - Current medications: ${
           preferences.current_medications?.join(", ") || "None"
         }
-        - Preferred time of day: ${
-          preferences.preferred_time_of_day || "Any time"
-        }
-        - Job type/activity level: ${
-          preferences.job_type || "Moderate activity"
-        }
 
-        Return ONLY the JSON object with NO additional text, comments, or explanations.`;
+        Ensure the plan is complete, balanced, and tailored to the user's needs.`;
 
     console.log("Sending request to Gemini API...");
 
@@ -347,7 +168,7 @@ export async function POST(request: NextRequest) {
         generatedPlan = response.text();
 
         if (generatedPlan && generatedPlan.length > 100) {
-          break; // Got a reasonable response
+          break;
         }
 
         if (retryCount < maxRetries) {
@@ -382,10 +203,13 @@ export async function POST(request: NextRequest) {
     // Try to parse the JSON to validate it
     let parsedPlan;
     try {
-      // Additional cleanup for common JSON issues
-      let cleanedPlan = generatedPlan;
+      let cleanedPlan = generatedPlan
+        .replace(/,\s*}/g, "}")
+        .replace(/,\s*]/g, "]")
+        .replace(/\n/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 
-      // Remove any trailing incomplete content
       if (!cleanedPlan.endsWith("}")) {
         const lastCompleteObject = cleanedPlan.lastIndexOf("}");
         if (lastCompleteObject > -1) {
@@ -393,46 +217,32 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Fix common JSON issues
-      cleanedPlan = cleanedPlan
-        .replace(/,\s*}/g, "}") // Remove trailing commas before closing braces
-        .replace(/,\s*]/g, "]") // Remove trailing commas before closing brackets
-        .replace(/\n/g, " ") // Replace newlines with spaces
-        .replace(/\s+/g, " ") // Normalize whitespace
-        .trim();
-
       parsedPlan = JSON.parse(cleanedPlan);
       console.log("Successfully parsed JSON from Gemini");
     } catch (parseError) {
       console.error("Failed to parse JSON from Gemini:", parseError);
       console.log("Raw response length:", generatedPlan.length);
       console.log("Raw response preview:", generatedPlan.substring(0, 500));
-      console.log(
-        "Raw response ending:",
-        generatedPlan.substring(Math.max(0, generatedPlan.length - 500)),
-      );
 
-      // Define the type for exercisesByFocus
-      type Exercise = {
-        exerciseName: string;
-        targetMuscles: string[];
-        sets: number;
-        reps: string;
-        restSeconds: number;
-        instructions: string;
-        youtubeSearchTerm: string;
-        alternatives: {
-          name: string;
-          instructions: string;
-          youtubeSearchTerm: string;
-        }[];
-      };
+      // Fallback plan
+      const dayNames = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+      ];
+      const focusAreas = [
+        "Upper Body Strength",
+        "Lower Body Strength",
+        "Core & Cardio",
+        "Full Body Circuit",
+        "Flexibility & Recovery",
+      ];
 
-      type FocusExercises = {
-        [key: string]: Exercise[];
-      };
-
-      const exercisesByFocus: FocusExercises = {
+      const exercisesByFocus: { [key: string]: any[] } = {
         "Upper Body Strength": [
           {
             exerciseName: "Push-ups",
@@ -449,12 +259,6 @@ export async function POST(request: NextRequest) {
                 instructions:
                   "Place hands on an elevated surface like a bench or step. Perform push-up motion with easier angle.",
                 youtubeSearchTerm: "incline push ups tutorial",
-              },
-              {
-                name: "Wall Push-ups",
-                instructions:
-                  "Stand arm's length from wall, place palms flat against wall, and perform push-up motion.",
-                youtubeSearchTerm: "wall push ups beginner",
               },
             ],
           },
@@ -476,87 +280,87 @@ export async function POST(request: NextRequest) {
                   "Use a chair behind you for support and guidance. Sit back until you lightly touch the chair, then stand up.",
                 youtubeSearchTerm: "chair assisted squats",
               },
-              {
-                name: "Wall Squats",
-                instructions:
-                  "Lean your back against a wall and slide down into squat position, holding for 15-30 seconds.",
-                youtubeSearchTerm: "wall squats exercise",
-              },
             ],
           },
         ],
       };
 
-      // Create fallback plan
       const fallbackWeeklyPlan: { [key: string]: any } = {};
-      for (let i = 1; i <= preferences.exercise_days_per_week; i++) {
-        const focusArea = focusAreas[(i - 1) % focusAreas.length];
-        const dayExercises = exercisesByFocus[focusArea] || [
-          {
-            exerciseName: "Full Body Movement",
-            targetMuscles: ["Full Body"],
-            sets: 3,
-            reps: "8-12",
-            restSeconds: 60,
-            instructions:
-              "Perform movements appropriate for your fitness level and available equipment. Focus on proper form over speed or intensity.",
-            youtubeSearchTerm: `${
-              preferences.primary_goal?.toLowerCase() || "general"
-            } ${
-              preferences.fitness_level?.toLowerCase() || "beginner"
-            } workout ${
-              preferences.available_equipment?.join(" ").toLowerCase() ||
-              "bodyweight"
-            }`,
-            alternatives: [
-              {
-                name: "Beginner Modification",
-                instructions:
-                  "Reduce intensity and take longer rest periods as needed.",
-                youtubeSearchTerm: "beginner workout modifications",
-              },
-              {
-                name: "Equipment-Free Version",
-                instructions:
-                  "Use bodyweight exercises that target similar muscle groups.",
-                youtubeSearchTerm: "bodyweight exercises no equipment",
-              },
-            ],
-          },
-        ];
+      for (let i = 1; i <= 7; i++) {
+        if (i <= preferences.exercise_days_per_week) {
+          const focusArea = focusAreas[(i - 1) % focusAreas.length];
+          const dayExercises = exercisesByFocus[focusArea] || [
+            {
+              exerciseName: "Full Body Movement",
+              targetMuscles: ["Full Body"],
+              sets: 3,
+              reps: "8-12",
+              restSeconds: 60,
+              instructions:
+                "Perform movements appropriate for your fitness level and available equipment. Focus on proper form over speed or intensity.",
+              youtubeSearchTerm: `${
+                preferences.primary_goal?.toLowerCase() || "general"
+              } ${
+                preferences.fitness_level?.toLowerCase() || "beginner"
+              } workout ${
+                preferences.available_equipment?.join(" ").toLowerCase() ||
+                "bodyweight"
+              }`,
+              alternatives: [
+                {
+                  name: "Beginner Modification",
+                  instructions:
+                    "Reduce intensity and take longer rest periods as needed.",
+                  youtubeSearchTerm: "beginner workout modifications",
+                },
+              ],
+            },
+          ];
 
-        fallbackWeeklyPlan[`Day${i}`] = {
-          dayName: dayNames[i - 1],
-          focus: `${focusArea} - ${preferences.primary_goal}`,
-          duration: preferences.available_time_per_session,
-          warmup: {
-            exercises: [
-              {
-                name: "Dynamic Warm-up",
-                duration: Math.max(
-                  5,
-                  Math.floor(preferences.available_time_per_session * 0.12),
-                ),
-                instructions:
-                  "Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise. Start slowly and gradually increase range of motion.",
-              },
-            ],
-          },
-          mainWorkout: dayExercises,
-          cooldown: {
-            exercises: [
-              {
-                name: "Cool-down Stretches",
-                duration: Math.max(
-                  3,
-                  Math.floor(preferences.available_time_per_session * 0.08),
-                ),
-                instructions:
-                  "Perform gentle static stretches holding each position for 15-30 seconds. Focus on the muscle groups worked during the session and breathe deeply.",
-              },
-            ],
-          },
-        };
+          fallbackWeeklyPlan[`Day${i}`] = {
+            dayName: dayNames[i - 1],
+            focus: `${focusArea} - ${preferences.primary_goal}`,
+            isWorkoutDay: true,
+            duration: preferences.available_time_per_session,
+            warmup: {
+              exercises: [
+                {
+                  name: "Dynamic Warm-up",
+                  duration: Math.max(
+                    5,
+                    Math.floor(preferences.available_time_per_session * 0.12),
+                  ),
+                  instructions:
+                    "Perform light movements like arm circles, leg swings, and gentle stretches to prepare your body for exercise.",
+                },
+              ],
+            },
+            mainWorkout: dayExercises,
+            cooldown: {
+              exercises: [
+                {
+                  name: "Cool-down Stretches",
+                  duration: Math.max(
+                    3,
+                    Math.floor(preferences.available_time_per_session * 0.08),
+                  ),
+                  instructions:
+                    "Perform gentle static stretches holding each position for 15-30 seconds.",
+                },
+              ],
+            },
+          };
+        } else {
+          fallbackWeeklyPlan[`Day${i}`] = {
+            dayName: dayNames[i - 1],
+            focus: "Rest",
+            isWorkoutDay: false,
+            duration: 0,
+            warmup: { exercises: [] },
+            mainWorkout: [],
+            cooldown: { exercises: [] },
+          };
+        }
       }
 
       parsedPlan = {
@@ -611,7 +415,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Also update the planner data with the generated plan
+    // Update planner data
     const { error: updateError } = await supabase
       .from("exercise_planner_data")
       .update({
