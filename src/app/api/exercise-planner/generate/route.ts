@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { GoogleGenerativeAI } from "@google/generative-ai"; // Correct import
 import { NextRequest, NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_KEY || "");
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,12 +22,12 @@ export async function POST(request: NextRequest) {
     const { prompt: userPrompt, preferences } = await request.json();
 
     // Check if Gemini API key is available
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.NEXT_PUBLIC_GEMINI_KEY) {
       console.error("Gemini API key not found");
       return NextResponse.json(
         {
           error: "Gemini API key not configured",
-          details: "Please set GEMINI_API_KEY environment variable",
+          details: "Please set NEXT_PUBLIC_GEMINI_KEY environment variable",
         },
         { status: 500 },
       );

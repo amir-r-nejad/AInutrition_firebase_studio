@@ -298,7 +298,9 @@ export default function ExercisePlannerPage() {
         const result = await response.json();
         if (result.success && result.data) {
           const savedData = result.data;
-          form.reset({
+          // Use setTimeout to ensure form is fully initialized
+          setTimeout(() => {
+            form.reset({
             fitness_level: savedData.fitness_level || undefined,
             exercise_experience: savedData.exercise_experience || [],
             exercise_experience_other:
@@ -336,6 +338,7 @@ export default function ExercisePlannerPage() {
               savedData.preferred_difficulty_level || undefined,
             sleep_quality: savedData.sleep_quality || undefined,
           });
+          }, 100);
           console.log('Loaded saved preferences:', savedData);
         }
       }
