@@ -6,6 +6,7 @@ import {
 import {
   UserProfile,
   GeneratePersonalizedMealPlanInput,
+  MealNameType,
   WeeklyMealPlan,
   UserPlan,
   UserMealPlan,

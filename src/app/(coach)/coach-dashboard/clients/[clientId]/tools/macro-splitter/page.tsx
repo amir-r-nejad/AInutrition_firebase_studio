@@ -21,7 +21,7 @@ async function CoachMacroSplitterPage({
 
   return (
     <div className='container mx-auto py-8 space-y-6'>
-      <Card className='shadow-lg'>
+      <Card>
         <SectionHeader
           className='text-3xl font-bold flex items-center'
           title='Macro Splitter Tool'

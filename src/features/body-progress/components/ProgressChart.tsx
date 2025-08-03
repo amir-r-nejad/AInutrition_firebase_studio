@@ -73,7 +73,7 @@ export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
 
   if (entries.length === 0) {
     return (
-      <Card className='shadow-lg'>
+      <Card>
         <CardHeader>
           <CardTitle className='text-xl flex items-center gap-2 text-primary'>
             <TrendingDown className='h-5 w-5' />
@@ -99,7 +99,7 @@ export function ProgressChart({ entries, selectedMonth }: ProgressChartProps) {
   }
 
   return (
-    <Card className='shadow-lg'>
+    <Card>
       <CardHeader>
         <CardTitle className='text-xl flex items-center gap-2 text-primary'>
           <TrendingDown className='h-5 w-5' />

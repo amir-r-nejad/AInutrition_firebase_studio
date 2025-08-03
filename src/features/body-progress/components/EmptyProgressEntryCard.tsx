@@ -3,7 +3,7 @@ import { FileText } from 'lucide-react';
 
 function EmptyProgressEntryCard({ monthLabel }: { monthLabel: string }) {
   return (
-    <Card className='shadow-lg'>
+    <Card>
       <CardHeader>
         <CardTitle className='text-xl flex items-center gap-2 text-primary'>
           <FileText className='h-5 w-5' />
