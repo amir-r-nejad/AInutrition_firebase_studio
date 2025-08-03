@@ -1,7 +1,9 @@
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import SectionHeader from '@/components/ui/SectionHeader';
+import { Tabs } from '@/components/ui/tabs';
 import { MealProgressSection } from '@/features/meal-progress/components/MealProgressSection';
+import MealProgressTabs from '@/features/meal-progress/components/MealProgressTabs';
 import { Activity } from 'lucide-react';
 import { Suspense } from 'react';
 
@@ -26,14 +28,23 @@ async function CoachMealProgressPage({
           description="Review your clients' meal tracking data and compare it against their personalized nutrition plans. Monitor adherence and make informed adjustments as needed."
         />
 
-        <Suspense
-          fallback={<LoadingScreen loadingLabel='Loading meal progress...' />}
-        >
-          <MealProgressSection
-            searchParams={searchParams}
-            clientId={clientId}
-          />
-        </Suspense>
+        <CardContent className='space-y-6'>
+          <Tabs defaultValue='daily-tracking' className='w-full'>
+            <MealProgressTabs />
+
+            <Suspense
+              key='meal-progress-suspense'
+              fallback={
+                <LoadingScreen loadingLabel='Loading meal progress...' />
+              }
+            >
+              <MealProgressSection
+                searchParams={searchParams}
+                clientId={clientId}
+              />
+            </Suspense>
+          </Tabs>
+        </CardContent>
       </Card>
     </div>
   );
