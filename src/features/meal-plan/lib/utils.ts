@@ -250,6 +250,8 @@ export function getAdjustedMealInput(
       allergies: profileData.allergies ?? [],
       medical_conditions: profileData.medical_conditions ?? [],
       medications: profileData.medications ?? [],
+      dispreferred_ingredients: profileData.dispreferred_ingredients ?? [], // Add this
+      preferred_ingredients: profileData.preferred_ingredients ?? [], // Add this
     },
   };
 }

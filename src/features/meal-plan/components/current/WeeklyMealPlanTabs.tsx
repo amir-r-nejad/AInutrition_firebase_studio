@@ -1,6 +1,6 @@
 'use client';
 
-import { adjustMealIngredients } from '@/ai/flows/adjust-meal-ingredients';
+import { adjustMealIngredientsDirect } from '@/ai/flows/adjust-meal-ingredients-direct';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MealCardItem from '@/features/meal-plan/components/current/MealCardItem';
@@ -80,7 +80,42 @@ function WeeklyMealPlanTabs({
         mealToOptimize
       );
 
-      const result = await adjustMealIngredients(aiInput);
+      // Fix type compatibility for direct API
+      const directApiInput = {
+        ...aiInput,
+        userProfile: {
+          ...aiInput.userProfile,
+          age: aiInput.userProfile.age ?? 30, // Default age instead of null
+          primary_diet_goal: aiInput.userProfile.primary_diet_goal ?? "balanced",
+          preferred_diet: aiInput.userProfile.preferred_diet ?? "",
+          allergies: aiInput.userProfile.allergies ?? [],
+          dispreferrred_ingredients: aiInput.userProfile.dispreferrred_ingredients ?? [],
+          preferred_ingredients: aiInput.userProfile.preferred_ingredients ?? [],
+        },
+        // Ensure targetMacros values are numbers
+        targetMacros: {
+          calories: Number(aiInput.targetMacros.calories),
+          protein: Number(aiInput.targetMacros.protein),
+          carbs: Number(aiInput.targetMacros.carbs),
+          fat: Number(aiInput.targetMacros.fat),
+        },
+        // Ensure originalMeal has all required properties
+        originalMeal: {
+          ...aiInput.originalMeal,
+          custom_name: aiInput.originalMeal.custom_name || "",
+          ingredients: aiInput.originalMeal.ingredients.map(ing => ({
+            ...ing,
+            quantity: Number(ing.quantity) || 0,
+            unit: ing.unit || "g",
+            calories: Number(ing.calories) || 0,
+            protein: Number(ing.protein) || 0,
+            carbs: Number(ing.carbs) || 0,
+            fat: Number(ing.fat) || 0,
+          }))
+        }
+      };
+
+      const result = await adjustMealIngredientsDirect(directApiInput);
       if (!result.adjustedMeal)
         throw new Error(
           'AI did not return an adjusted meal or an unexpected format was received.'
@@ -88,7 +123,8 @@ function WeeklyMealPlanTabs({
 
       const newWeeklyPlan = { ...meal_data };
       const updatedMealData = {
-        ...result.adjustedMeal,
+        name: mealToOptimize.name,
+        custom_name: result.adjustedMeal.custom_name || mealToOptimize.custom_name || '',
         total_calories: result.adjustedMeal.total_calories
           ? Number(result.adjustedMeal.total_calories)
           : null,
@@ -102,8 +138,9 @@ function WeeklyMealPlanTabs({
           ? Number(result.adjustedMeal.total_fat)
           : null,
         ingredients: result.adjustedMeal.ingredients.map((ing) => ({
-          ...ing,
+          name: ing.name,
           quantity: ing.quantity ? Number(ing.quantity) : 0,
+          unit: ing.unit || 'g',
           calories: ing.calories ? Number(ing.calories) : null,
           protein: ing.protein ? Number(ing.protein) : null,
           carbs: ing.carbs ? Number(ing.carbs) : null,

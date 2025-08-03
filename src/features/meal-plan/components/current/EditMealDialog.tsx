@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueryParams } from '@/hooks/useQueryParams';
 import type { Ingredient, Meal, MealPlans } from '@/lib/schemas';
 import { PlusCircle, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { editMealPlan } from '../../lib/data-service';
 
 function EditMealDialog({
@@ -27,45 +27,79 @@ function EditMealDialog({
   userId?: string;
 }) {
   const { toast } = useToast();
-
   const { getQueryParams, removeQueryParams } = useQueryParams();
-
   const [meal, setMeal] = useState<Meal | null>(null);
+
+  // استفاده از useMemo برای جلوگیری از تغییر مرجع calculateTotals
+  const calculateTotals = useMemo(() => {
+    return (ingredients: Ingredient[]) => {
+      return ingredients.reduce(
+        (acc, ing) => ({
+          total_calories: acc.total_calories + (Number(ing.calories) || 0),
+          total_protein: acc.total_protein + (Number(ing.protein) || 0),
+          total_carbs: acc.total_carbs + (Number(ing.carbs) || 0),
+          total_fat: acc.total_fat + (Number(ing.fat) || 0),
+        }),
+        {
+          total_calories: 0,
+          total_protein: 0,
+          total_carbs: 0,
+          total_fat: 0,
+        }
+      );
+    };
+  }, []);
+
+  // مقادیر query params را در متغیرهای جداگانه ذخیره می‌کنیم
+  const selectedDay = getQueryParams('selected_day');
+  const selectedMealName = getQueryParams('selected_meal');
 
   function handleIngredientChange(
     index: number,
     field: keyof Ingredient,
     value: string | number
   ) {
-    if (!meal) return null;
+    if (!meal) return;
 
-    const newIngredients = [...meal.ingredients];
-    const targetIngredient = { ...newIngredients[index] };
+    setMeal((prevMeal) => {
+      if (!prevMeal) return null;
+      
+      const newIngredients = [...prevMeal.ingredients];
+      const targetIngredient = { ...newIngredients[index] };
 
-    if (
-      field === 'quantity' ||
-      field === 'calories' ||
-      field === 'protein' ||
-      field === 'carbs' ||
-      field === 'fat'
-    ) {
-      const numValue = Number(value);
-      (targetIngredient as any)[field] =
-        value === '' || value === undefined || Number.isNaN(numValue)
-          ? null
-          : numValue;
-    } else {
-      (targetIngredient as any)[field] = value;
-    }
-    newIngredients[index] = targetIngredient;
-    setMeal((prev) => ({ ...prev!, ingredients: newIngredients }));
+      if (
+        field === 'quantity' ||
+        field === 'calories' ||
+        field === 'protein' ||
+        field === 'carbs' ||
+        field === 'fat'
+      ) {
+        const numValue = Number(value);
+        (targetIngredient as any)[field] =
+          value === '' || value === undefined || Number.isNaN(numValue)
+            ? null
+            : numValue;
+      } else {
+        (targetIngredient as any)[field] = value;
+      }
+      
+      newIngredients[index] = targetIngredient;
+      const totals = calculateTotals(newIngredients);
+      
+      return {
+        ...prevMeal,
+        ingredients: newIngredients,
+        ...totals,
+      };
+    });
   }
 
   function addIngredient() {
-    setMeal((prev) => ({
-      ...prev!,
-      ingredients: [
-        ...(prev?.ingredients ?? []),
+    setMeal((prev) => {
+      if (!prev) return null;
+      
+      const newIngredients = [
+        ...(prev.ingredients ?? []),
         {
           name: '',
           quantity: null,
@@ -75,58 +109,68 @@ function EditMealDialog({
           carbs: null,
           fat: null,
         },
-      ],
-    }));
+      ];
+      
+      const totals = calculateTotals(newIngredients);
+      
+      return {
+        ...prev,
+        ingredients: newIngredients,
+        ...totals,
+      };
+    });
   }
 
   function removeIngredient(index: number) {
-    setMeal((prev) => ({
-      ...prev!,
-      ingredients: prev ? prev.ingredients.filter((_, i) => i !== index) : [],
-    }));
+    setMeal((prev) => {
+      if (!prev) return null;
+      
+      const newIngredients = prev.ingredients.filter((_, i) => i !== index);
+      const totals = calculateTotals(newIngredients);
+      
+      return {
+        ...prev,
+        ingredients: newIngredients,
+        ...totals,
+      };
+    });
   }
 
   async function handleSubmit() {
-    if (!meal) return null;
-
-    let finalTotalCalories = 0,
-      finalTotalProtein = 0,
-      finalTotalCarbs = 0,
-      finalTotalFat = 0;
-    meal.ingredients.forEach((ing) => {
-      finalTotalCalories += Number(ing.calories) || 0;
-      finalTotalProtein += Number(ing.protein) || 0;
-      finalTotalCarbs += Number(ing.carbs) || 0;
-      finalTotalFat += Number(ing.fat) || 0;
-    });
-
-    const mealToSave: Meal = {
-      ...meal,
-      total_calories: finalTotalCalories,
-      total_protein: finalTotalProtein,
-      total_carbs: finalTotalCarbs,
-      total_fat: finalTotalFat,
-    };
+    if (!meal) return;
 
     const { meal_data } = mealPlan;
 
-    const selectedDay = mealPlan
-      ?.meal_data!.days.filter(
-        (plan) => plan.day_of_week === getQueryParams('selected_day')
-      )
-      .at(0);
+    if (!selectedDay || !selectedMealName) {
+      toast({
+        title: 'Error',
+        description: 'No meal selected for editing.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    const dayIndex = mealPlan?.meal_data!.days.findIndex(
-      (plan) => plan.day_of_week === getQueryParams('selected_day')
+    const dayIndex = meal_data?.days?.findIndex(
+      (plan) => plan.day_of_week === selectedDay
     );
 
-    const mealIndex = selectedDay?.meals.findIndex(
-      (meal) => meal.name === getQueryParams('selected_meal')
-    ) as number;
+    const mealIndex = meal_data?.days?.[dayIndex!]?.meals?.findIndex(
+      (meal) => meal.name === decodeURIComponent(selectedMealName)
+    );
 
-    const newWeeklyPlan = meal_data;
-    if (!newWeeklyPlan) return;
-    newWeeklyPlan.days[dayIndex].meals[mealIndex] = mealToSave;
+    if (!meal_data || dayIndex === undefined || dayIndex < 0 || mealIndex === undefined || mealIndex < 0) {
+      toast({
+        title: 'Error',
+        description: 'Could not find the meal to update.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const newWeeklyPlan = { ...meal_data };
+    if (newWeeklyPlan.days && newWeeklyPlan.days[dayIndex] && newWeeklyPlan.days[dayIndex].meals && newWeeklyPlan.days[dayIndex].meals[mealIndex]) {
+      newWeeklyPlan.days[dayIndex].meals[mealIndex] = meal;
+    }
 
     try {
       await editMealPlan({ meal_data: newWeeklyPlan }, userId);
@@ -135,54 +179,59 @@ function EditMealDialog({
         description: `${meal.custom_name || meal.name} has been updated.`,
       });
       removeQueryParams(['selected_meal', 'is_edit']);
-    } catch {
+    } catch (error: any) {
+      console.error('Save error:', error);
       toast({
         title: 'Save Error',
-        description: 'Could not save meal plan.',
+        description: error.message || 'Could not save meal plan.',
         variant: 'destructive',
       });
     }
   }
 
-  const calculateTotals = useCallback(() => {
-    const totalMacros = meal?.ingredients.reduce(
-      function (acc, ing) {
-        return {
-          total_calories: (acc.total_protein += Number(ing.calories) || 0),
-          total_protein: (acc.total_protein += Number(ing.protein) || 0),
-          total_carbs: (acc.total_carbs += Number(ing.carbs) || 0),
-          total_fat: (acc.total_fat += Number(ing.fat) || 0),
-        };
-      },
-      {
-        total_calories: 0,
-        total_protein: 0,
-        total_carbs: 0,
-        total_fat: 0,
-      }
+  function handleRecalculateManually() {
+    if (!meal) return;
+    const totals = calculateTotals(meal.ingredients);
+    setMeal(prev => prev ? { ...prev, ...totals } : null);
+  }
+
+  // اصلاح useEffect - فقط یک بار اجرا شود و dependency های ثابت داشته باشد
+  useEffect(() => {
+    if (!selectedDay || !selectedMealName || !mealPlan.meal_data?.days) {
+      setMeal(null);
+      return;
+    }
+
+    const selectedDayPlan = mealPlan.meal_data.days.find(
+      (plan) => plan.day_of_week === selectedDay
+    );
+    
+    const selectedMeal = selectedDayPlan?.meals?.find(
+      (meal) => meal.name === decodeURIComponent(selectedMealName)
     );
 
-    setMeal((prev) => ({ ...prev!, ...totalMacros }));
-  }, [meal?.ingredients]);
+    if (!selectedMeal) {
+      setMeal(null);
+      return;
+    }
 
-  useEffect(function () {
-    const selectedDay = mealPlan.meal_data?.days
-      .filter((plan) => plan.day_of_week === getQueryParams('selected_day'))
-      .at(0);
-    const selectedMeal = selectedDay?.meals
-      .filter((meal) => meal.name === getQueryParams('selected_meal'))
-      .at(0);
+    // فقط اگر meal واقعاً تغییر کرده باشد
+    const mealWithIngredients = {
+      ...selectedMeal,
+      ingredients: selectedMeal.ingredients || [],
+    };
+    
+    const totals = calculateTotals(mealWithIngredients.ingredients);
+    
+    const finalMeal = {
+      ...mealWithIngredients,
+      ...totals,
+    };
 
-    if (!selectedMeal) return;
-    setMeal(selectedMeal);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setMeal(finalMeal);
+  }, [selectedDay, selectedMealName, mealPlan.meal_data, calculateTotals]);
 
-  useEffect(() => {
-    calculateTotals();
-  }, [calculateTotals]);
-
-  if (!meal) return;
+  if (!meal) return null;
 
   return (
     <Dialog
@@ -207,14 +256,14 @@ function EditMealDialog({
               id='customMealName'
               value={meal.custom_name || ''}
               onChange={(e) =>
-                setMeal({ ...meal, custom_name: e.target.value })
+                setMeal(prev => prev ? { ...prev, custom_name: e.target.value } : null)
               }
               placeholder='Optional: e.g., Greek Yogurt with Berries'
               onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
             />
           </div>
           <Label>Ingredients</Label>
-          {meal?.ingredients.map((ing, index) => (
+          {meal.ingredients.map((ing, index) => (
             <Card key={index} className='p-3 space-y-2'>
               <div className='flex justify-between items-center gap-2'>
                 <Input
@@ -232,8 +281,7 @@ function EditMealDialog({
                   onClick={() => removeIngredient(index)}
                   className='shrink-0'
                 >
-                  {' '}
-                  <Trash2 className='h-4 w-4 text-destructive' />{' '}
+                  <Trash2 className='h-4 w-4 text-destructive' />
                 </Button>
               </div>
               <div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
@@ -316,7 +364,7 @@ function EditMealDialog({
               Fat: {meal.total_fat?.toFixed(1) ?? '0.0'}g
             </p>
             <Button
-              onClick={calculateTotals}
+              onClick={handleRecalculateManually}
               size='sm'
               variant='ghost'
               className='mt-1 text-xs'

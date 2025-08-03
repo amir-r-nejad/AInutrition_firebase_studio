@@ -72,7 +72,11 @@ function MealCardItem({
           onClick={() =>
             updateQueryParams(
               ['selected_day', 'selected_meal', 'is_edit'],
-              [dayPlan.day_of_week, meal.name, 'true']
+              [
+                dayPlan.day_of_week,
+                encodeURIComponent(meal.name), // encode meal name for URL
+                'true'
+              ]
             )
           }
           disabled={isOptimizing}
