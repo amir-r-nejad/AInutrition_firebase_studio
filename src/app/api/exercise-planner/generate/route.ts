@@ -66,15 +66,25 @@ export async function POST(request: NextRequest) {
     const prompt = `You are a professional fitness trainer creating a personalized exercise plan.
 
         CRITICAL INSTRUCTIONS:
-        1. Generate a COMPLETE 7-day workout plan for ALL 7 days
-        2. Each day must have 6-8 exercises in the main workout section
-        3. Calculate realistic durations: warm-up = 10-15% of total time, cool-down = 10-15% of total time
-        4. DO NOT use comments or incomplete sections - provide COMPLETE exercises for every day
-        5. Return ONLY valid JSON without any comments or additional text
+        1. Generate a COMPLETE weekly workout plan with proper day distribution
+        2. Create exercise plan for ${preferences.exercise_days_per_week} workout days per week
+        3. Distribute workouts across specific weekdays (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday)
+        4. Each workout day must have 6-8 exercises in the main workout section
+        5. Calculate realistic durations: warm-up = 10-15% of total time, cool-down = 10-15% of total time
+        6. Include rest days between workout days for recovery
+        7. DO NOT use comments or incomplete sections - provide COMPLETE exercises for every specified day
+        8. Return ONLY valid JSON without any comments or additional text
+
+        WEEKLY SCHEDULE REQUIREMENTS:
+        - User wants to exercise ${preferences.exercise_days_per_week} days per week
+        - Preferred time: ${preferences.preferred_time_of_day || "Any time"}
+        - Each session duration: ${preferences.available_time_per_session} minutes
+        - Please distribute workout days evenly throughout the week with proper rest days
 
         User preferences:
         - Fitness level: ${preferences.fitness_level}
         - Primary goal: ${preferences.primary_goal}
+        - Secondary goal: ${preferences.secondary_goal || "None"}
         - Available time per session: ${
           preferences.available_time_per_session
         } minutes
@@ -88,14 +98,23 @@ export async function POST(request: NextRequest) {
         }
         - Space availability: ${preferences.space_availability || "Any space"}
         - Machines access: ${preferences.machines_access ? "Yes" : "No"}
+        - Target muscle groups: ${preferences.muscle_groups_focus?.join(", ") || "All muscle groups"}
 
-        Create a comprehensive weekly workout plan in JSON format with the following structure:
+        Create a comprehensive weekly workout plan in JSON format with proper day distribution.
+        
+        EXAMPLE WEEKLY DISTRIBUTION:
+        - For 3 days/week: Monday, Wednesday, Friday (with rest days Tuesday, Thursday, Weekend)
+        - For 4 days/week: Monday, Tuesday, Thursday, Friday (with rest Wednesday, Weekend)
+        - For 5 days/week: Monday through Friday (with weekend rest)
+        
+        Structure your response as follows:
 
         {
           "weeklyPlan": {
             "Day1": {
               "dayName": "Monday",
               "focus": "Upper Body Strength",
+              "isWorkoutDay": true,
               "duration": ${preferences.available_time_per_session},
               "warmup": {
                 "exercises": [
