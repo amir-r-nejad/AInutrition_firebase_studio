@@ -51,6 +51,28 @@ export async function getMealPlan(userId?: string): Promise<MealPlans> {
 
   return data as MealPlans;
 }
+
+export async function getUserPlan(userId?: string): Promise<UserPlanType> {
+  const supabase = await createClient();
+  const targetUserId = userId || (await getUser()).id;
+
+  const { data, error } = await supabase
+    .from('user_plans')
+    .select('*')
+    .eq('user_id', targetUserId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116')
+      throw new Error('No user plan found for this user');
+    
+    throw new Error(`Failed to fetch user plan: ${error.message}`);
+  }
+
+  return data as UserPlanType;
+
+  return data as MealPlans;
+}
 export async function getUserPlan(userId?: string): Promise<UserPlanType> {
   const supabase = await createClient();
   const targetUserId = userId || (await getUser()).id;

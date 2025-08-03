@@ -67,30 +67,20 @@ export async function editAiPlan(
   );
 
   try {
-    const { data: existingData, error: selectError } = await supabase
-      .from("meal_plans")
-      .select("user_id, ai_plan")
-      .eq("user_id", targetUserId)
-      .single();
-
-    if (selectError) {
-      console.error(
-        "Error checking existing meal plan:",
-        JSON.stringify(selectError, null, 2),
-      );
-      if (selectError.code !== "PGRST116") {
-        throw new Error(
-          `Failed to check existing meal plan: ${selectError.message}`,
-        );
-      }
-    }
+    // Create the upsert data with proper structure
+    const upsertData = {
+      user_id: targetUserId,
+      ai_plan: aiPlan.ai_plan,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
     const { data, error } = await supabase
       .from("meal_plans")
-      .upsert(
-        { user_id: targetUserId, ai_plan: aiPlan.ai_plan },
-        { onConflict: "user_id" },
-      )
+      .upsert(upsertData, { 
+        onConflict: "user_id",
+        ignoreDuplicates: false 
+      })
       .select("ai_plan")
       .single();
 
@@ -99,10 +89,27 @@ export async function editAiPlan(
         "Error updating/inserting ai_plan:",
         JSON.stringify(error, null, 2),
       );
-      if (error.code === "PGRST116")
-        throw new Error("No meal plan found to update for this user");
-      if (error.code === "23505")
-        throw new Error("AI plan update conflict - please try again");
+      
+      // Try insert if upsert failed
+      if (error.code === "PGRST116" || error.code === "42P01") {
+        console.log("Attempting direct insert...");
+        const { data: insertData, error: insertError } = await supabase
+          .from("meal_plans")
+          .insert(upsertData)
+          .select("ai_plan")
+          .single();
+          
+        if (insertError) {
+          console.error("Insert error:", JSON.stringify(insertError, null, 2));
+          throw new Error(`Failed to create AI-generated plan: ${insertError.message}`);
+        }
+        
+        console.log("Successfully inserted ai_plan:", JSON.stringify(insertData.ai_plan, null, 2));
+        revalidatePath("/meal-plan/current");
+        revalidateTag("meal_plan");
+        return insertData.ai_plan as GeneratePersonalizedMealPlanOutput;
+      }
+      
       throw new Error(`Failed to update AI-generated plan: ${error.message}`);
     }
 
@@ -125,6 +132,10 @@ export async function loadMealPlan(
   const supabase = createClient();
   const targetUserId = userId || (await getUser()).id;
 
+  if (!targetUserId) {
+    throw new Error("User not authenticated");
+  }
+
   const { data, error } = await supabase
     .from("meal_plans")
     .select("ai_plan")
@@ -138,12 +149,26 @@ export async function loadMealPlan(
     throw new Error(`Failed to load meal plan: ${error.message}`);
   }
 
+  if (!data || !data.ai_plan) {
+    throw new Error("No AI plan data found");
+  }
+
   let parsedPlan: GeneratePersonalizedMealPlanOutput;
   try {
-    parsedPlan =
-      typeof data.ai_plan === "string"
-        ? JSON.parse(data.ai_plan)
-        : data.ai_plan;
+    // Handle both string and object formats
+    if (typeof data.ai_plan === "string") {
+      parsedPlan = JSON.parse(data.ai_plan);
+    } else if (typeof data.ai_plan === "object" && data.ai_plan !== null) {
+      parsedPlan = data.ai_plan;
+    } else {
+      throw new Error("Invalid ai_plan data type");
+    }
+
+    // Validate the structure
+    if (!parsedPlan.weeklyMealPlan || !parsedPlan.weeklySummary) {
+      throw new Error("Invalid meal plan structure - missing required fields");
+    }
+
   } catch (parseError) {
     console.error(
       "Error parsing ai_plan:",

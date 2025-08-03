@@ -43,19 +43,30 @@ export default function MealPlanGenerator({
     async function fetchInitialPlan() {
       try {
         setLoadingPlan(true);
+        setError(null);
         const plan = await loadMealPlan(); // لود داده‌ها از Supabase
         setGeneratedPlan(plan);
+        console.log("Successfully loaded initial plan:", plan);
       } catch (e) {
-        setError(
-          e instanceof Error ? e.message : "Unknown error loading meal plan",
-        );
-        console.error("Failed to load initial meal plan:", e);
+        const errorMessage = e instanceof Error ? e.message : "Unknown error loading meal plan";
+        // Don't set error if no meal plan exists - this is expected for new users
+        if (!errorMessage.includes("No meal plan found")) {
+          setError(errorMessage);
+        }
+        console.log("No existing meal plan found or error:", errorMessage);
       } finally {
         setLoadingPlan(false);
       }
     }
-    if (!generatedPlan && !isLoading) fetchInitialPlan();
-  }, [generatedPlan, isLoading]);
+    
+    // Only fetch if we don't have an initial plan and we're not currently loading
+    if (!initialMealPlan?.ai_plan && !generatedPlan && !isLoading && loadingPlan) {
+      fetchInitialPlan();
+    } else if (initialMealPlan?.ai_plan && !generatedPlan) {
+      setGeneratedPlan(initialMealPlan.ai_plan);
+      setLoadingPlan(false);
+    }
+  }, [initialMealPlan, generatedPlan, isLoading, loadingPlan]);
 
   async function handleGeneratePlan() {
     startTransition(async () => {

@@ -86,14 +86,14 @@ const DailyPromptInputSchema = z.object({
       fat: z.number(),
     }),
   ),
-  preferredDiet: z.string().optional(),
-  allergies: z.array(z.string()).optional(),
-  dispreferredIngredients: z.array(z.string()).optional(),
-  preferredIngredients: z.array(z.string()).optional(),
-  preferredCuisines: z.array(z.string()).optional(),
-  dispreferredCuisines: z.array(z.string()).optional(),
-  medicalConditions: z.array(z.string()).optional(),
-  medications: z.array(z.string()).optional(),
+  preferredDiet: z.string().nullable().optional(),
+  allergies: z.array(z.string()).nullable().optional(),
+  dispreferredIngredients: z.array(z.string()).nullable().optional(),
+  preferredIngredients: z.array(z.string()).nullable().optional(),
+  preferredCuisines: z.array(z.string()).nullable().optional(),
+  dispreferredCuisines: z.array(z.string()).nullable().optional(),
+  medicalConditions: z.array(z.string()).nullable().optional(),
+  medications: z.array(z.string()).nullable().optional(),
 });
 
 type DailyPromptInput = z.infer<typeof DailyPromptInputSchema>;
@@ -158,14 +158,14 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
         const dailyPromptInput: DailyPromptInput = {
           dayOfWeek,
           mealTargets: input.mealTargets,
-          preferredDiet: input.preferredDiet,
-          allergies: input.allergies,
-          dispreferredIngredients: input.dispreferredIngredients,
-          preferredIngredients: input.preferredIngredients,
-          preferredCuisines: input.preferredCuisines,
-          dispreferredCuisines: input.dispreferredCuisines,
-          medicalConditions: input.medicalConditions,
-          medications: input.medications,
+          preferredDiet: input.preferred_diet || input.preferredDiet || null,
+          allergies: input.allergies || [],
+          dispreferredIngredients: input.dispreferrred_ingredients || input.dispreferredIngredients || [],
+          preferredIngredients: input.preferred_ingredients || input.preferredIngredients || [],
+          preferredCuisines: input.preferredCuisines || [],
+          dispreferredCuisines: input.dispreferredCuisines || [],
+          medicalConditions: input.medical_conditions || input.medicalConditions || [],
+          medications: input.medications || [],
         };
 
         console.log(

@@ -8,7 +8,19 @@ import MealPlanGenerator from "./MealPlanGenerator";
 
 async function AiPlanSection({ clientId }: { clientId?: string }) {
   try {
-    const mealPlan = await getMealPlan(clientId);
+    let mealPlan = null;
+    try {
+      mealPlan = await getMealPlan(clientId);
+    } catch (error: any) {
+      // If no meal plan exists, that's ok - we'll create one
+      if (error.message?.includes("No meal plan found")) {
+        console.log("No existing meal plan found - will create new one");
+        mealPlan = null;
+      } else {
+        throw error;
+      }
+    }
+
     const profile = await getUserProfile(clientId);
     const userPlan = await getUserPlan(clientId);
 
@@ -18,7 +30,7 @@ async function AiPlanSection({ clientId }: { clientId?: string }) {
 
     return (
       <MealPlanGenerator
-        mealPlan={mealPlan}
+        initialMealPlan={mealPlan}
         profile={profile}
         userPlan={userPlan}
       />
