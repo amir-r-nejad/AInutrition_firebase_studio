@@ -1,13 +1,14 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import EmptyState from '@/components/ui/EmptyState';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { getMealPlan } from '@/lib/supabase/data-service';
 import { formatDate } from 'date-fns';
-import { TrainTrackIcon } from 'lucide-react';
+import { TrainTrackIcon, UtensilsCrossed } from 'lucide-react';
 import { generateChartData } from '../lib/utils';
+import { MealProgressEntry } from '../types';
 import { DatePicker } from './DatePicker';
 import { MealProgressGrid } from './MealProgressGrid';
 import { ProgressChart } from './ProgressChart';
-import { MealProgressEntry } from '../types';
 
 type DailyTrackProgressTabProps = {
   progressPlan: MealProgressEntry[];
@@ -34,7 +35,14 @@ async function DailyTrackProgressTab({
     (meal) => formatDate(meal.date, 'EEEE') === formatDate(date, 'EEEE')
   );
 
-  if (!selectedMeals || !selectedProgressMeals) return;
+  if (!selectedMeals || !selectedProgressMeals)
+    return (
+      <EmptyState
+        icon={UtensilsCrossed}
+        title='No meal data available'
+        description='We couldn’t find any meal plan or progress data for the selected day. Try picking another date or make sure your plan is properly set up.'
+      />
+    );
 
   const chartData = generateChartData(
     selectedMeals.meals,

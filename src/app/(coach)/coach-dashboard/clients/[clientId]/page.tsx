@@ -20,7 +20,7 @@ export default async function CoachClientDashboardPage({
 
   return (
     <div className='space-y-6'>
-      <Card className='shadow-lg'>
+      <Card>
         <SectionHeader
           className='text-3xl font-bold'
           title='Client Dashboard'

@@ -154,7 +154,7 @@ function MacroForm({ plan, profile, clientId }: MacroFormProps) {
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
-          <Card className='shadow-lg'>
+          <Card>
             <SectionHeader
               className='text-2xl'
               title='Meal Macro Percentage & Value Distribution'
