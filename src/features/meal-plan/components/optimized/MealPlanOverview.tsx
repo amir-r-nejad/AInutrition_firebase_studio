@@ -174,33 +174,69 @@ export default function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
                               </TableHeader>
                             <TableBody>
                               {(meal.ingredients || []).map(
-                                (ingredient: any, ingIndex: number) => (
-                                  <TableRow key={ingIndex}>
-                                    <TableCell className="font-medium">
-                                      {ingredient.name || "Unknown"}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {ingredient.quantity ||
-                                        ingredient.amount ||
-                                        0}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {ingredient.unit || "-"}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {(ingredient.calories || 0).toFixed(1)}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {(ingredient.protein || 0).toFixed(1)}g
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {(ingredient.carbs || 0).toFixed(1)}g
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {(ingredient.fat || 0).toFixed(1)}g
-                                    </TableCell>
-                                  </TableRow>
-                                ),
+                                (ingredient: any, ingIndex: number) => {
+                                  // Parse ingredient name to extract amount and unit
+                                  const parseIngredientName = (name: string) => {
+                                    // Look for patterns like "Oatmeal (1 cup cooked)" or "Almonds (20 whole)"
+                                    const match = name.match(/^(.+?)\s*\((.+?)\)$/);
+                                    if (match) {
+                                      const cleanName = match[1].trim();
+                                      const amountUnit = match[2].trim();
+                                      
+                                      // Try to extract number and unit from the parentheses
+                                      const amountMatch = amountUnit.match(/^(\d+\.?\d*)\s*(.+)$/);
+                                      if (amountMatch) {
+                                        return {
+                                          name: cleanName,
+                                          amount: parseFloat(amountMatch[1]),
+                                          unit: amountMatch[2].trim()
+                                        };
+                                      }
+                                      
+                                      // If no number found, treat the whole thing as unit
+                                      return {
+                                        name: cleanName,
+                                        amount: 1,
+                                        unit: amountUnit
+                                      };
+                                    }
+                                    
+                                    // Return original name if no pattern found
+                                    return {
+                                      name: name,
+                                      amount: ingredient.quantity || ingredient.amount || null,
+                                      unit: ingredient.unit || null
+                                    };
+                                  };
+
+                                  const parsedIngredient = parseIngredientName(ingredient.name || "Unknown");
+
+                                  return (
+                                    <TableRow key={ingIndex}>
+                                      <TableCell className="font-medium">
+                                        {parsedIngredient.name}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {parsedIngredient.amount || "-"}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {parsedIngredient.unit || "-"}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {(ingredient.calories || 0).toFixed(1)}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {(ingredient.protein || 0).toFixed(1)}g
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {(ingredient.carbs || 0).toFixed(1)}g
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {(ingredient.fat || 0).toFixed(1)}g
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                }
                               )}
                             </TableBody>
                             </Table>

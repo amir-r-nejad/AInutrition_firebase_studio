@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { generatePersonalizedMealPlan } from "@/ai/flows/generate-meal-plan";
 import {
@@ -9,7 +9,7 @@ import {
   editMealPlan,
   loadMealPlan,
 } from "@/features/meal-plan/lib/data-service";
-import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
+import { Loader2, Sparkles, AlertTriangle, RefreshCw } from "lucide-react";
 import { useState, useTransition, useEffect } from "react";
 import MealPlanOverview from "./MealPlanOverview";
 import {
@@ -292,68 +292,68 @@ export default function MealPlanGenerator({
 
   return (
     <div className="w-full max-w-none">
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Left Column - Generator Controls */}
-        <div className="space-y-6">
-          {error && (
-            <Card className="border-destructive">
-              <CardHeader>
-                <CardTitle className="text-destructive flex items-center">
-                  <AlertTriangle className="mr-2 h-5 w-5" />
-                  Generation Failed
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>{error}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
+      <div className="space-y-6">
+        {error && (
+          <Card className="border-destructive">
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Sparkles className="mr-2 h-5 w-5 text-primary" />
-                AI Meal Plan Generator
+              <CardTitle className="text-destructive flex items-center">
+                <AlertTriangle className="mr-2 h-5 w-5" />
+                Generation Failed
               </CardTitle>
             </CardHeader>
+            <CardContent>
+              <p>{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Generator Controls */}
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                AI Meal Plan Generator
+              </CardTitle>
+              <CardDescription>
+                Generate a personalized meal plan based on your profile, goals,
+                and preferences.
+              </CardDescription>
+            </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-2">
-                <div className="flex items-center space-x-2">
+              {/* Status checks */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
                   <div
                     className={`h-2 w-2 rounded-full ${
                       profile ? "bg-green-500" : "bg-red-500"
                     }`}
                   />
-                  <span className="text-sm">
-                    {profile ? "Profile completed" : "Profile incomplete"}
-                  </span>
+                  <span className="text-sm">Profile completed</span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2">
                   <div
                     className={`h-2 w-2 rounded-full ${
-                      profile?.meal_distributions?.length === 6
+                      userPlan && hasMacroDistributions
                         ? "bg-green-500"
                         : "bg-red-500"
                     }`}
                   />
                   <span className="text-sm">
-                    {profile?.meal_distributions?.length === 6
-                      ? `Macro distributions configured (${profile.meal_distributions.length} meals)`
-                      : "Macro distributions not configured"}
+                    Macro distributions configured (6 meals)
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2">
                   <div
                     className={`h-2 w-2 rounded-full ${
                       totalPercentage === 100 ? "bg-green-500" : "bg-yellow-500"
                     }`}
                   />
-                  <span className="text-sm">
-                    Percentages sum to {totalPercentage?.toFixed(1) || 0}%
-                  </span>
+                  <span className="text-sm">Percentages sum to {totalPercentage?.toFixed(1) || 0}%</span>
                 </div>
               </div>
 
+              {/* Generate button */}
               <Button
                 onClick={handleGeneratePlan}
                 disabled={
@@ -406,14 +406,15 @@ export default function MealPlanGenerator({
                 className="w-full"
                 variant="outline"
               >
+                <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh Meal Plan
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column - Meal Plan Display */}
-        <div className="xl:col-span-1">
+        {/* Meal Plan Display */}
+        <div>
           {(generatedPlan || loadingPlan) && (
             <MealPlanOverview mealPlan={{ ai_plan: generatedPlan }} />
           )}
