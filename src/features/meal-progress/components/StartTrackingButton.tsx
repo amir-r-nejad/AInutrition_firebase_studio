@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Meal } from '@/lib/schemas';
-import { Edit, Plus } from 'lucide-react';
+import { Ban, Edit, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { MealProgressEntry } from '../types';
 import { TrackMealModal } from './TrackMealModal';
@@ -16,15 +16,26 @@ function StartTrackingButton({ meal, progressMeal }: StartTrackingButtonProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const isTracked = !!progressMeal;
 
+  const isTrackingDisabled =
+    !meal.total_calories || meal.ingredients.length === 0;
+
   return (
     <>
       <Button
-        onClick={() => setIsOpen(true)}
-        variant={isTracked ? 'outline' : 'default'}
+        disabled={isTrackingDisabled}
+        onClick={() => setIsOpen(() => !isTrackingDisabled && true)}
+        variant={
+          isTrackingDisabled ? 'secondary' : isTracked ? 'outline' : 'default'
+        }
         size='sm'
         className='w-full mt-4'
       >
-        {isTracked ? (
+        {isTrackingDisabled ? (
+          <>
+            <Ban className='h-4 w-4' />
+            Tracking Unavailable
+          </>
+        ) : isTracked ? (
           <>
             <Edit className='h-4 w-4' />
             Edit Tracking
@@ -37,7 +48,7 @@ function StartTrackingButton({ meal, progressMeal }: StartTrackingButtonProps) {
         )}
       </Button>
 
-      {isOpen && (
+      {!isTrackingDisabled && isOpen && (
         <TrackMealModal
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}

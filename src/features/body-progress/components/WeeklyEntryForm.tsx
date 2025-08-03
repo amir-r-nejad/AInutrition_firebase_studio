@@ -35,7 +35,7 @@ export function WeeklyEntryForm({ entries }: WeeklyEntryFormProps) {
   const form = useForm<EntryFormValues>({
     resolver: zodResolver(entryFormSchema),
     defaultValues: {
-      date: new Date().toISOString().split('T')[0],
+      date: undefined,
       weight_kg: undefined,
       bf_percentage: undefined,
       waist_cm: undefined,
@@ -101,8 +101,9 @@ export function WeeklyEntryForm({ entries }: WeeklyEntryFormProps) {
                     <FormControl>
                       <CustomDatePicker
                         {...field}
+                        placeholderText={'Select a date'}
                         maxDate={new Date()}
-                        selected={new Date(field.value)}
+                        selected={field.value ? new Date(field.value) : null}
                         excludeDates={disabledDates}
                         onChange={(date) => {
                           field.onChange(date?.toISOString().slice(0, 10));
