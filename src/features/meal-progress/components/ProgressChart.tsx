@@ -63,7 +63,7 @@ export function ProgressChart({ data }: MealProgressChartProps) {
   });
 
   return (
-    <Card className='shadow-lg'>
+    <Card>
       <CardHeader>
         <CardTitle className='text-xl flex items-center gap-2 text-primary'>
           <TrendingUp className='h-5 w-5' />
