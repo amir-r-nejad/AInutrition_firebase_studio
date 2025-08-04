@@ -172,7 +172,7 @@ async function fallbackAdjustMealIngredients(
   
   return {
     adjustedMeal: {
-      meal_name: originalMeal.name,
+      name: originalMeal.name,
       custom_name: originalMeal.custom_name,
       ingredients: adjustedIngredients,
       total_calories: targetMacros.calories,

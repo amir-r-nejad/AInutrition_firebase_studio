@@ -32,7 +32,7 @@ function MealCardItem({
 }: MealCardItemProps) {
   const { updateQueryParams } = useQueryParams();
 
-  const mealKey = `${dayPlan.day_of_week}-${meal.name}-${mealIndex}`;
+  const mealKey = `${dayPlan.dayOfWeek}-${meal.name}-${mealIndex}`;
   const isOptimizing = optimizingKey === mealKey;
 
   return (

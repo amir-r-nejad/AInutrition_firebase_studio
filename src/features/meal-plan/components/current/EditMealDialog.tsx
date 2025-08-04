@@ -17,7 +17,7 @@ import { useQueryParams } from '@/hooks/useQueryParams';
 import type { Ingredient, Meal, UserMealPlan } from '@/lib/schemas';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { editMealPlan } from '../../lib/data-service';
+import { editMealPlan } from '../../lib/data-service-current';
 
 function EditMealDialog({
   mealPlan,

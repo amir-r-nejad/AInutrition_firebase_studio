@@ -37,7 +37,7 @@ export async function getMealPlan(userId?: string): Promise<UserMealPlan> {
   if (!targetUserId) throw new Error('User not authenticated');
 
   const { data, error } = await supabase
-    .from('meal_plans')
+    .from('meal_plans_current')
     .select('*')
     .eq('user_id', targetUserId)
     .single();

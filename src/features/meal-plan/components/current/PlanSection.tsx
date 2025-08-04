@@ -3,7 +3,7 @@ import {
   getMealPlan,
   getUserPlan,
   getUserProfile,
-} from '@/lib/supabase/data-service';
+} from '@/lib/supabase/data-service-current';
 import EditMealDialog from './EditMealDialog';
 import WeeklyMealPlanTabs from './WeeklyMealPlanTabs';
 
