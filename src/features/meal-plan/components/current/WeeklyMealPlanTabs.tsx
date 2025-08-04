@@ -4,7 +4,7 @@ import { adjustMealIngredientsDirect } from "@/ai/flows/adjust-meal-ingredients-
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MealCardItem from "@/features/meal-plan/components/current/MealCardItem";
-import { editMealPlan } from "@/features/meal-plan/lib/data-service-current";
+import { editMealPlan } from "@/features/meal-plan/lib/data-service";
 import { getAdjustedMealInput } from "@/features/meal-plan/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryParams } from "@/hooks/useQueryParams";
@@ -46,7 +46,7 @@ function WeeklyMealPlanTabs({
     }
 
     const mealToOptimize = meal_data.days[dayIndex].meals[mealIndex];
-    const mealKey = `${meal_data.days[dayIndex].dayOfWeek}-${mealToOptimize.name}-${mealIndex}`;
+    const mealKey = `${meal_data.days[dayIndex].dayOfWeek || meal_data.days[dayIndex].dayOfWeek}-${mealToOptimize.name}-${mealIndex}`;
     setOptimizingMealKey(mealKey);
 
     try {
@@ -117,49 +117,41 @@ function WeeklyMealPlanTabs({
           })),
         },
       };
+      const optimizationData = getAdjustedMealInput(
+        profile,
+        dailyTargets,
+        mealToOptimize,
+      );
 
-      const result = await adjustMealIngredientsDirect(directApiInput);
-      if (!result.adjustedMeal)
-        throw new Error(
-          "AI did not return an adjusted meal or an unexpected format was received.",
-        );
+      // Deep copy to avoid mutation
+      const newWeeklyPlan = JSON.parse(JSON.stringify(meal_data));
 
-      const newWeeklyPlan = { ...meal_data };
-      const updatedMealData = {
-        name: mealToOptimize.name,
-        custom_name:
-          result.adjustedMeal.custom_name || mealToOptimize.custom_name || "",
-        total_calories: result.adjustedMeal.total_calories
-          ? Number(result.adjustedMeal.total_calories)
-          : null,
-        total_protein: result.adjustedMeal.total_protein
-          ? Number(result.adjustedMeal.total_protein)
-          : null,
-        total_carbs: result.adjustedMeal.total_carbs
-          ? Number(result.adjustedMeal.total_carbs)
-          : null,
-        total_fat: result.adjustedMeal.total_fat
-          ? Number(result.adjustedMeal.total_fat)
-          : null,
-        ingredients: result.adjustedMeal.ingredients.map((ing) => ({
-          name: ing.name,
-          quantity: ing.quantity ? Number(ing.quantity) : 0,
-          unit: ing.unit || "g",
-          calories: ing.calories ? Number(ing.calories) : null,
-          protein: ing.protein ? Number(ing.protein) : null,
-          carbs: ing.carbs ? Number(ing.carbs) : null,
-          fat: ing.fat ? Number(ing.fat) : null,
-        })),
-      };
+      const response = await fetch('/api/meal-plan/optimize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          optimizationData,
+          mealPlan: { dayIndex, mealIndex, newWeeklyPlan },
+          userId
+        }),
+      });
 
-      newWeeklyPlan.days[dayIndex].meals[mealIndex] = updatedMealData;
+      const result = await response.json();
 
-      await editMealPlan({ meal_data: newWeeklyPlan }, userId);
-      setMealPlanState((meal) => ({ ...meal!, meal_data: newWeeklyPlan }));
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to optimize meal');
+      }
+
+      setMealPlanState((meal) => ({ 
+        ...meal!, 
+        meal_data: result.updatedMealPlan 
+      }));
 
       toast({
         title: `Meal Optimized: ${mealToOptimize.name}`,
-        description: result.explanation || "AI has adjusted the ingredients.",
+        description: result.data.explanation || "AI has adjusted the ingredients.",
       });
     } catch (error: any) {
       console.error("Error optimizing meal:", error);
@@ -175,7 +167,7 @@ function WeeklyMealPlanTabs({
       setOptimizingMealKey(null);
     }
   }
-  
+
   // Handle empty meal plan
   if (!mealPlanState?.meal_data?.days || mealPlanState.meal_data.days.length === 0) {
     return (
@@ -216,8 +208,8 @@ function WeeklyMealPlanTabs({
 
       {mealPlanState?.meal_data?.days.map((dayPlan, dayIndex) => (
         <TabsContent
-          key={dayPlan.dayOfWeek}
-          value={dayPlan.dayOfWeek}
+          key={dayPlan.dayOfWeek || dayPlan.dayOfWeek}
+          value={dayPlan.dayOfWeek || dayPlan.dayOfWeek}
           className="mt-6"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

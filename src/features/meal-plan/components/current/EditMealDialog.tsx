@@ -17,7 +17,7 @@ import { useQueryParams } from "@/hooks/useQueryParams";
 import type { Ingredient, Meal, UserMealPlan } from "@/lib/schemas";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { editMealPlan } from "../../lib/data-service-current";
+// Remove server action import
 
 function EditMealDialog({
   mealPlan,
@@ -151,7 +151,7 @@ function EditMealDialog({
     }
 
     const dayIndex = meal_data?.days?.findIndex(
-      (plan) => plan.dayOfWeek === selectedDay,
+      (plan) => plan.dayOfWeek === selectedDay || plan.dayOfWeek === selectedDay,
     );
 
     const mealIndex = meal_data?.days?.[dayIndex!]?.meals?.findIndex(
@@ -173,7 +173,8 @@ function EditMealDialog({
       return;
     }
 
-    const newWeeklyPlan = { ...meal_data };
+    // Create deep copy to avoid mutation issues
+    const newWeeklyPlan = JSON.parse(JSON.stringify(meal_data));
     if (
       newWeeklyPlan.days &&
       newWeeklyPlan.days[dayIndex] &&
@@ -185,14 +186,33 @@ function EditMealDialog({
 
     try {
       console.log("Attempting to save meal plan:", { meal_data: newWeeklyPlan });
-      await editMealPlan({ meal_data: newWeeklyPlan }, userId);
+      
+      const response = await fetch('/api/meal-plan/edit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mealPlan: { meal_data: newWeeklyPlan },
+          userId
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save meal plan');
+      }
+
       toast({
         title: "Meal Saved",
         description: `${meal.custom_name || meal.name} has been updated.`,
       });
       removeQueryParams(["selected_meal", "is_edit"]);
+      
+      // Refresh the page to show updated data
+      window.location.reload();
     } catch (error: any) {
-      console.error("Save error:", error);
       console.error("Save error details:", error);
       const errorMessage = error?.message || error?.toString() || "Could not save meal plan.";
       toast({
@@ -217,7 +237,7 @@ function EditMealDialog({
     }
 
     const selectedDayPlan = mealPlan.meal_data.days.find(
-      (plan) => plan.dayOfWeek === selectedDay,
+      (plan) => plan.dayOfWeek === selectedDay || plan.dayOfWeek === selectedDay,
     );
 
     const selectedMeal = selectedDayPlan?.meals?.find(
