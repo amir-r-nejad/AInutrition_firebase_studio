@@ -10,47 +10,46 @@ import { createClient } from "@/lib/supabase/client";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function editMealPlan(
-    mealPlan: { meal_data: WeeklyMealPlan },
-    userId?: string,
-  ): Promise<any> {
-    const supabase = await createClient();
-    const targetUserId = userId || (await getUser()).id;
-  
-    if (!targetUserId) throw new Error("User not authenticated");
-  
-    console.log(
-      "Upserting meal_plans_current for user:",
-      targetUserId,
-      JSON.stringify(mealPlan, null, 2),
-    );
-  
-    const upsertData = {
-      user_id: targetUserId,
-      meal_data: mealPlan.meal_data,
-      updated_at: new Date().toISOString(),
-    };
-  
-    const { data, error } = await supabase
-      .from("meal_plans_current")
-      .upsert(upsertData, {
-        onConflict: "user_id",
-        ignoreDuplicates: false,
-      })
-      .select()
-      .single();
-  
-    if (error) {
-      console.error("Error upserting meal_plan:", JSON.stringify(error, null, 2));
-      throw new Error(`Failed to upsert meal plan: ${error.message}`);
-    }
-  
-    console.log("Upserted meal_plan:", JSON.stringify(data, null, 2));
-    revalidatePath("/meal-plan/current");
-    revalidatePath("/meal-plan");
-  
-    return data;
+  mealPlan: { meal_data: WeeklyMealPlan },
+  userId?: string,
+): Promise<any> {
+  const supabase = await createClient();
+  const targetUserId = userId || (await getUser()).id;
+
+  if (!targetUserId) throw new Error("User not authenticated");
+
+  console.log(
+    "Upserting meal_plans_current for user:",
+    targetUserId,
+    JSON.stringify(mealPlan, null, 2),
+  );
+
+  const upsertData = {
+    user_id: targetUserId,
+    meal_data: mealPlan.meal_data,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from("meal_plans_current")
+    .upsert(upsertData, {
+      onConflict: "user_id",
+      ignoreDuplicates: false,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error upserting meal_plan:", JSON.stringify(error, null, 2));
+    throw new Error(`Failed to upsert meal plan: ${error.message}`);
   }
-  
+
+  console.log("Upserted meal_plan:", JSON.stringify(data, null, 2));
+  revalidatePath("/meal-plan/current");
+  revalidatePath("/meal-plan");
+
+  return data;
+}
 
 export async function editAiPlan(
   aiPlan: {
@@ -84,9 +83,9 @@ export async function editAiPlan(
 
     const { data, error } = await supabase
       .from("meal_plans_current")
-      .upsert(upsertData, { 
+      .upsert(upsertData, {
         onConflict: "user_id",
-        ignoreDuplicates: false 
+        ignoreDuplicates: false,
       })
       .select("ai_plan")
       .single();
@@ -108,10 +107,15 @@ export async function editAiPlan(
 
         if (insertError) {
           console.error("Insert error:", JSON.stringify(insertError, null, 2));
-          throw new Error(`Failed to create AI-generated plan: ${insertError.message}`);
+          throw new Error(
+            `Failed to create AI-generated plan: ${insertError.message}`,
+          );
         }
 
-        console.log("Successfully inserted ai_plan:", JSON.stringify(insertData.ai_plan, null, 2));
+        console.log(
+          "Successfully inserted ai_plan:",
+          JSON.stringify(insertData.ai_plan, null, 2),
+        );
         revalidatePath("/meal-plan/current");
         revalidateTag("meal_plan");
         return insertData.ai_plan as GeneratePersonalizedMealPlanOutput;
@@ -175,7 +179,6 @@ export async function loadMealPlan(
     if (!parsedPlan.weeklyMealPlan || !parsedPlan.weeklySummary) {
       throw new Error("Invalid meal plan structure - missing required fields");
     }
-
   } catch (parseError) {
     console.error(
       "Error parsing ai_plan:",
