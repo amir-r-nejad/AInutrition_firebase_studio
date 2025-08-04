@@ -48,14 +48,34 @@ export async function getMealPlan(
     .eq("user_id", targetUserId)
     .single();
 
-  if (error) {
-    if (error.code === "PGRST116") {
-      // No meal plan found, create a default empty one
-      const defaultMealPlan = {
-        user_id: targetUserId,
-        meal_data: null,
-        ai_plan: null,
-      };
+    if (error) {
+        if (error.code === "PGRST116") {
+          // No meal plan found, create a default empty one with proper structure
+          const defaultMealData = {
+            days: [
+              "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+            ].map(day => ({
+              dayOfWeek: day,
+              day_of_week: day, // for backward compatibility
+              meals: [
+                "Breakfast", "Morning Snack", "Lunch", "Afternoon Snack", "Dinner", "Evening Snack"
+              ].map(mealName => ({
+                name: mealName,
+                custom_name: "",
+                ingredients: [],
+                total_calories: null,
+                total_protein: null,
+                total_carbs: null,
+                total_fat: null,
+              }))
+            }))
+          };
+    
+          const defaultMealPlan = {
+            user_id: targetUserId,
+            meal_data: defaultMealData,
+            ai_plan: null,
+          };
 
       const { data: newPlan, error: createError } = await supabase
         .from("meal_plans_current")
