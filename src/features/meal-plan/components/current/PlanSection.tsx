@@ -11,7 +11,7 @@ async function PlanSection({
   searchParams,
   clientId,
 }: {
-  searchParams: Promise<{ [key: string]: string | undefined }>;
+  searchParams: { [key: string]: string | undefined }
   clientId?: string;
 }) {
   try {

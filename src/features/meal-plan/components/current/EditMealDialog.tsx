@@ -143,87 +143,87 @@ function EditMealDialog({
   const [isSaving, setIsSaving] = useState(false);
 
   async function handleSubmit() {
-    if (!meal || isSaving) return;
-  
-    setIsSaving(true);
-  
-    const { meal_data } = mealPlan;
-  
-    if (!selectedDay || !selectedMealName) {
-      toast({
-        title: "Error",
-        description: "No meal selected for editing.",
-        variant: "destructive",
-      });
-      setIsSaving(false);
-      return;
-    }
-  
-    const dayIndex = meal_data?.days?.findIndex(
-      (plan) => plan.dayOfWeek === selectedDay,
-    );
-  
-    const mealIndex = meal_data?.days?.[dayIndex!]?.meals?.findIndex(
-      (meal) => meal.name === decodeURIComponent(selectedMealName),
-    );
-  
-    if (
-      !meal_data ||
-      dayIndex === undefined ||
-      dayIndex < 0 ||
-      mealIndex === undefined ||
-      mealIndex < 0
-    ) {
-      toast({
-        title: "Error",
-        description: "Could not find the meal to update.",
-        variant: "destructive",
-      });
-      setIsSaving(false);
-      return;
-    }
-  
-    const newWeeklyPlan = JSON.parse(JSON.stringify(meal_data));
-    newWeeklyPlan.days[dayIndex].meals[mealIndex] = meal;
-  
-    try {
-      const response = await fetch('/api/meal-plan/edit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          mealPlan: { meal_data: newWeeklyPlan },
-          userId,
-        }),
-      });
-  
-      const result = await response.json();
-  
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to save meal plan');
-      }
-  
-      toast({
-        title: "Meal Saved",
-        description: `${meal.custom_name || meal.name} has been updated.`,
-      });
-  
-      // حذف پارامترها و رفرش
-      removeQueryParams(["selected_meal", "is_edit"]);
-      router.refresh(); // ✅ به‌جای reload
-  
-    } catch (error: any) {
-      console.error("Save error details:", error);
-      toast({
-        title: "Save Error",
-        description: error?.message || "Could not save meal plan.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
+  if (!meal || isSaving) return;
+
+  setIsSaving(true);
+
+  const { meal_data } = mealPlan;
+
+  if (!selectedDay || !selectedMealName) {
+    toast({
+      title: "Error",
+      description: "No meal selected for editing.",
+      variant: "destructive",
+    });
+    setIsSaving(false);
+    return;
   }
+
+  const dayIndex = meal_data?.days?.findIndex(
+    (plan) => plan.dayOfWeek === selectedDay,
+  );
+
+  const mealIndex = meal_data?.days?.[dayIndex!]?.meals?.findIndex(
+    (meal) => meal.name === decodeURIComponent(selectedMealName),
+  );
+
+  if (
+    !meal_data ||
+    dayIndex === undefined ||
+    dayIndex < 0 ||
+    mealIndex === undefined ||
+    mealIndex < 0
+  ) {
+    toast({
+      title: "Error",
+      description: "Could not find the meal to update.",
+      variant: "destructive",
+    });
+    setIsSaving(false);
+    return;
+  }
+
+  const newWeeklyPlan = JSON.parse(JSON.stringify(meal_data));
+  newWeeklyPlan.days[dayIndex].meals[mealIndex] = meal;
+
+  try {
+    const response = await fetch('/api/meal-plan/edit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        mealPlan: { meal_data: newWeeklyPlan },
+        userId,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to save meal plan');
+    }
+
+    toast({
+      title: "Meal Saved",
+      description: `${meal.custom_name || meal.name} has been updated.`,
+    });
+
+    // حذف پارامترها و رفرش
+    removeQueryParams(["selected_meal", "is_edit"]);
+    router.refresh(); // ✅ به‌جای reload
+
+  } catch (error: any) {
+    console.error("Save error details:", error);
+    toast({
+      title: "Save Error",
+      description: error?.message || "Could not save meal plan.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSaving(false);
+  }
+}
 
   function handleRecalculateManually() {
     if (!meal) return;

@@ -21,7 +21,7 @@ export default async function CurrentMealPlanPage({
         />
         <CardContent>
           <Suspense fallback={<LoadingScreen />}>
-            <PlanSection searchParams={Promise.resolve(resolvedSearchParams)} />
+            <PlanSection searchParams={resolvedSearchParams} />
           </Suspense>
         </CardContent>
       </Card>
