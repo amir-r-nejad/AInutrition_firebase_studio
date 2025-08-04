@@ -175,6 +175,18 @@ function WeeklyMealPlanTabs({
       setOptimizingMealKey(null);
     }
   }
+  
+  // Handle empty meal plan
+  if (!mealPlanState?.meal_data?.days || mealPlanState.meal_data.days.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-semibold mb-2">No Meal Plan Found</h3>
+        <p className="text-muted-foreground mb-4">
+          You haven't created a meal plan yet. Go to the Optimized section to generate your first AI meal plan.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <Tabs

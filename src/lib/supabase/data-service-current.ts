@@ -1,3 +1,4 @@
+
 'use server';
 
 import { UserProfile, UserMealPlan, UserPlan } from '@/lib/schemas';
@@ -30,29 +31,53 @@ export async function getUserProfile(
   return data as UserProfile;
 }
 
-export async function getMealPlan(userId?: string): Promise<UserMealPlan> {
+export async function getMealPlan(
+  userId?: string,
+): Promise<UserMealPlan> {
   const supabase = await createClient();
-  const targetUserId = userId || (await getUser()).id;
+  const user = await getUser();
+  const targetUserId = userId || user.id;
 
-  if (!targetUserId) throw new Error('User not authenticated');
+  if (!targetUserId) {
+    throw new Error("User not authenticated");
+  }
 
   const { data, error } = await supabase
-    .from('meal_plans_current')
-    .select('*')
-    .eq('user_id', targetUserId)
+    .from("meal_plans_current")
+    .select("*")
+    .eq("user_id", targetUserId)
     .single();
 
   if (error) {
-    if (error.code === 'PGRST116')
-      throw new Error('No meal plan found for this user');
+    if (error.code === "PGRST116") {
+      // No meal plan found, create a default empty one
+      const defaultMealPlan = {
+        user_id: targetUserId,
+        meal_data: null,
+        ai_plan: null,
+      };
 
+      const { data: newPlan, error: createError } = await supabase
+        .from("meal_plans_current")
+        .insert(defaultMealPlan)
+        .select("*")
+        .single();
+
+      if (createError) {
+        throw new Error(`Failed to create default meal plan: ${createError.message}`);
+      }
+
+      return newPlan as UserMealPlan;
+    }
     throw new Error(`Failed to fetch meal plan: ${error.message}`);
   }
 
   return data as UserMealPlan;
 }
 
-export async function getUserPlan(userId?: string): Promise<UserPlan> {
+export async function getUserPlan(
+  userId?: string,
+): Promise<UserPlan> {
   const supabase = await createClient();
   const targetUserId = userId || (await getUser()).id;
 
@@ -67,7 +92,7 @@ export async function getUserPlan(userId?: string): Promise<UserPlan> {
   if (error) {
     if (error.code === 'PGRST116')
       throw new Error('No user plan found for this user');
-    
+
     throw new Error(`Failed to fetch user plan: ${error.message}`);
   }
 
