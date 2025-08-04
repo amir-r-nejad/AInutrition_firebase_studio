@@ -3,11 +3,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { UserAttributes, UserMetadata } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
-import { BaseProfileData } from '@/lib/schemas';
+import { UserProfile } from '@/lib/schemas';
 import { editPlan } from './apiUserPlan';
 
 export async function editProfile(
-  newProfile: Partial<BaseProfileData>,
+  newProfile: Partial<UserProfile>,
   newUser?: UserAttributes | UserMetadata,
   userId?: string
 ) {

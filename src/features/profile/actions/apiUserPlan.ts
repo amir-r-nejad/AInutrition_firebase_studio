@@ -2,10 +2,10 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { UserPlanType } from '@/lib/schemas';
+import { UserPlan} from '@/lib/schemas';
 
 export async function editPlan(
-  newPlan: Partial<UserPlanType>,
+  newPlan: Partial<UserPlan>,
   clientId?: string
 ) {
   try {
@@ -19,7 +19,7 @@ export async function editPlan(
         data: { user },
         error: authError,
       } = await supabase.auth.getUser();
-
+ 
       if (authError)
         throw new Error(`Authentication error: ${authError.message}`);
       if (!user) throw new Error('Unauthorized access!');
