@@ -184,6 +184,7 @@ function EditMealDialog({
     }
 
     try {
+      console.log("Attempting to save meal plan:", { meal_data: newWeeklyPlan });
       await editMealPlan({ meal_data: newWeeklyPlan }, userId);
       toast({
         title: "Meal Saved",
@@ -192,9 +193,11 @@ function EditMealDialog({
       removeQueryParams(["selected_meal", "is_edit"]);
     } catch (error: any) {
       console.error("Save error:", error);
+      console.error("Save error details:", error);
+      const errorMessage = error?.message || error?.toString() || "Could not save meal plan.";
       toast({
         title: "Save Error",
-        description: error.message || "Could not save meal plan.",
+        description: errorMessage,
         variant: "destructive",
       });
     }

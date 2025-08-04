@@ -75,21 +75,54 @@ export async function getMealPlan(
             user_id: targetUserId,
             meal_data: defaultMealData,
             ai_plan: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           };
 
-      const { data: newPlan, error: createError } = await supabase
-        .from("meal_plans_current")
-        .insert(defaultMealPlan)
-        .select("*")
-        .single();
+      
+      try {
+        const { data: newPlan, error: createError } = await supabase
+          .from("meal_plans_current")
+          .insert(defaultMealPlan)
+          .select("*")
+          .single();
 
-      if (createError) {
-        throw new Error(`Failed to create default meal plan: ${createError.message}`);
+        if (createError) {
+          console.error("Create error details:", createError);
+          throw new Error(`Failed to create default meal plan: ${createError.message}`);
+        }
+
+        return newPlan as UserMealPlan;
+      } catch (insertError) {
+        console.error("Insert error:", insertError);
+        throw new Error(`Failed to create default meal plan: ${insertError}`);
       }
-
-      return newPlan as UserMealPlan;
     }
+    console.error("Fetch error details:", error);
     throw new Error(`Failed to fetch meal plan: ${error.message}`);
+  }
+
+  // Ensure the data has the proper structure
+  if (!data.meal_data) {
+    data.meal_data = {
+      days: [
+        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+      ].map(day => ({
+        dayOfWeek: day,
+        day_of_week: day,
+        meals: [
+          "Breakfast", "Morning Snack", "Lunch", "Afternoon Snack", "Dinner", "Evening Snack"
+        ].map(mealName => ({
+          name: mealName,
+          custom_name: "",
+          ingredients: [],
+          total_calories: null,
+          total_protein: null,
+          total_carbs: null,
+          total_fat: null,
+        }))
+      }))
+    };
   }
 
   return data as UserMealPlan;

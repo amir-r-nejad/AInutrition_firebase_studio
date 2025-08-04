@@ -12,7 +12,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 export async function editMealPlan(
   mealPlan: { meal_data: WeeklyMealPlan },
   userId?: string,
-): Promise<DailyMealPlan> {
+): Promise<any> {
   const supabase = await createClient();
   const targetUserId = userId || (await getUser()).id;
 
@@ -24,9 +24,15 @@ export async function editMealPlan(
     JSON.stringify(mealPlan, null, 2),
   );
 
+  // Update with proper structure and timestamp
+  const updateData = {
+    meal_data: mealPlan.meal_data,
+    updated_at: new Date().toISOString(),
+  };
+
   const { data, error } = await supabase
     .from("meal_plans_current")
-    .update(mealPlan)
+    .update(updateData)
     .eq("user_id", targetUserId)
     .select()
     .single();
@@ -43,7 +49,7 @@ export async function editMealPlan(
   console.log("Updated meal_plan:", JSON.stringify(data, null, 2));
   revalidatePath("/meal-plan/current");
   revalidatePath("/meal-plan");
-  return data as DailyMealPlan;
+  return data;
 }
 
 export async function editAiPlan(
