@@ -1,5 +1,5 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -15,8 +15,12 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryParams } from "@/hooks/useQueryParams";
 import type { Ingredient, Meal, UserMealPlan } from "@/lib/schemas";
+;
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+const router = useRouter();
+
 // Remove server action import
 
 function EditMealDialog({
@@ -140,28 +144,29 @@ function EditMealDialog({
 
   async function handleSubmit() {
     if (!meal || isSaving) return;
-    
+  
     setIsSaving(true);
-
+  
     const { meal_data } = mealPlan;
-
+  
     if (!selectedDay || !selectedMealName) {
       toast({
         title: "Error",
         description: "No meal selected for editing.",
         variant: "destructive",
       });
+      setIsSaving(false);
       return;
     }
-
+  
     const dayIndex = meal_data?.days?.findIndex(
       (plan) => plan.dayOfWeek === selectedDay,
     );
-
+  
     const mealIndex = meal_data?.days?.[dayIndex!]?.meals?.findIndex(
       (meal) => meal.name === decodeURIComponent(selectedMealName),
     );
-
+  
     if (
       !meal_data ||
       dayIndex === undefined ||
@@ -174,23 +179,14 @@ function EditMealDialog({
         description: "Could not find the meal to update.",
         variant: "destructive",
       });
+      setIsSaving(false);
       return;
     }
-
-    // Create deep copy to avoid mutation issues
+  
     const newWeeklyPlan = JSON.parse(JSON.stringify(meal_data));
-    if (
-      newWeeklyPlan.days &&
-      newWeeklyPlan.days[dayIndex] &&
-      newWeeklyPlan.days[dayIndex].meals &&
-      newWeeklyPlan.days[dayIndex].meals[mealIndex]
-    ) {
-      newWeeklyPlan.days[dayIndex].meals[mealIndex] = meal;
-    }
-
+    newWeeklyPlan.days[dayIndex].meals[mealIndex] = meal;
+  
     try {
-      console.log("Attempting to save meal plan:", { meal_data: newWeeklyPlan });
-      
       const response = await fetch('/api/meal-plan/edit', {
         method: 'POST',
         headers: {
@@ -198,34 +194,30 @@ function EditMealDialog({
         },
         body: JSON.stringify({
           mealPlan: { meal_data: newWeeklyPlan },
-          userId
+          userId,
         }),
       });
-
+  
       const result = await response.json();
-
+  
       if (!response.ok) {
         throw new Error(result.error || 'Failed to save meal plan');
       }
-
+  
       toast({
         title: "Meal Saved",
         description: `${meal.custom_name || meal.name} has been updated.`,
       });
-      
-      // Clear query params before reload to ensure dialog closes
+  
+      // حذف پارامترها و رفرش
       removeQueryParams(["selected_meal", "is_edit"]);
-      
-      // Add a small delay to ensure params are cleared before reload
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
+      router.refresh(); // ✅ به‌جای reload
+  
     } catch (error: any) {
       console.error("Save error details:", error);
-      const errorMessage = error?.message || error?.toString() || "Could not save meal plan.";
       toast({
         title: "Save Error",
-        description: errorMessage,
+        description: error?.message || "Could not save meal plan.",
         variant: "destructive",
       });
     } finally {

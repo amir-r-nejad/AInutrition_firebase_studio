@@ -10,47 +10,47 @@ import { createClient } from "@/lib/supabase/client";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function editMealPlan(
-  mealPlan: { meal_data: WeeklyMealPlan },
-  userId?: string,
-): Promise<any> {
-  const supabase = await createClient();
-  const targetUserId = userId || (await getUser()).id;
-
-  if (!targetUserId) throw new Error("User not authenticated");
-
-  console.log(
-    "Updating meal_plans_current for user:",
-    targetUserId,
-    JSON.stringify(mealPlan, null, 2),
-  );
-
-  // Update with proper structure and timestamp
-  const updateData = {
-    meal_data: mealPlan.meal_data,
-    updated_at: new Date().toISOString(),
-  };
-
-  const { data, error } = await supabase
-    .from("meal_plans_current")
-    .update(updateData)
-    .eq("user_id", targetUserId)
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error updating meal_plan:", JSON.stringify(error, null, 2));
-    if (error.code === "PGRST116")
-      throw new Error("No meal plan found to update for this user");
-    if (error.code === "23505")
-      throw new Error("Meal plan update conflict - please try again");
-    throw new Error(`Failed to update meal plan: ${error.message}`);
+    mealPlan: { meal_data: WeeklyMealPlan },
+    userId?: string,
+  ): Promise<any> {
+    const supabase = await createClient();
+    const targetUserId = userId || (await getUser()).id;
+  
+    if (!targetUserId) throw new Error("User not authenticated");
+  
+    console.log(
+      "Upserting meal_plans_current for user:",
+      targetUserId,
+      JSON.stringify(mealPlan, null, 2),
+    );
+  
+    const upsertData = {
+      user_id: targetUserId,
+      meal_data: mealPlan.meal_data,
+      updated_at: new Date().toISOString(),
+    };
+  
+    const { data, error } = await supabase
+      .from("meal_plans_current")
+      .upsert(upsertData, {
+        onConflict: "user_id",
+        ignoreDuplicates: false,
+      })
+      .select()
+      .single();
+  
+    if (error) {
+      console.error("Error upserting meal_plan:", JSON.stringify(error, null, 2));
+      throw new Error(`Failed to upsert meal plan: ${error.message}`);
+    }
+  
+    console.log("Upserted meal_plan:", JSON.stringify(data, null, 2));
+    revalidatePath("/meal-plan/current");
+    revalidatePath("/meal-plan");
+  
+    return data;
   }
-
-  console.log("Updated meal_plan:", JSON.stringify(data, null, 2));
-  revalidatePath("/meal-plan/current");
-  revalidatePath("/meal-plan");
-  return data;
-}
+  
 
 export async function editAiPlan(
   aiPlan: {
