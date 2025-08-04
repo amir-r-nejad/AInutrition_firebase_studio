@@ -19,7 +19,7 @@ export async function editMealPlan(
   if (!targetUserId) throw new Error("User not authenticated");
 
   console.log(
-    "Updating meal_plan for user:",
+    "Updating meal_plans_current for user:",
     targetUserId,
     JSON.stringify(mealPlan, null, 2),
   );
@@ -42,6 +42,7 @@ export async function editMealPlan(
 
   console.log("Updated meal_plan:", JSON.stringify(data, null, 2));
   revalidatePath("/meal-plan/current");
+  revalidatePath("/meal-plan");
   return data as DailyMealPlan;
 }
 
