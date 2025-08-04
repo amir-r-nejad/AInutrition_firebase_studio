@@ -987,8 +987,8 @@ export const AIServiceIngredientSchema = z.object({
 export type AIServiceIngredient = z.infer<typeof AIServiceIngredientSchema>;
 
 export const AIServiceMealSchema = z.object({
-  name: MealNameEnum,
-  custom_name: z.string(),
+  name: z.string(),
+  custom_name: z.string().optional(),
   ingredients: z.array(AIServiceIngredientSchema),
   total_calories: z.number(),
   total_protein: z.number(),
@@ -1012,10 +1012,13 @@ export const AdjustMealIngredientsInputSchema = z.object({
     physical_activity_level: z.string().optional(),
     primary_diet_goal: z.string().optional(),
     preferred_diet: z.string().optional(),
+    dispreferrred_ingredients: z.array(z.string()).nullable().optional(),
+    preferred_ingredients: z.array(z.string()).nullable().optional(),
     allergies: z.array(z.string()).optional(),
     medical_conditions: z.array(z.string()).optional(),
     medications: z.array(z.string()).optional(),
   }),
+  
 });
 
 export type AdjustMealIngredientsInput = z.infer<

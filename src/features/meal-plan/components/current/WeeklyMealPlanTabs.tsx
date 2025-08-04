@@ -46,7 +46,7 @@ function WeeklyMealPlanTabs({
     }
 
     const mealToOptimize = meal_data.days[dayIndex].meals[mealIndex];
-    const mealKey = `${meal_data.days[dayIndex].day_of_week}-${mealToOptimize.name}-${mealIndex}`;
+    const mealKey = `${meal_data.days[dayIndex].dayOfWeek}-${mealToOptimize.name}-${mealIndex}`;
     setOptimizingMealKey(mealKey);
 
     try {
@@ -89,7 +89,7 @@ function WeeklyMealPlanTabs({
           primary_diet_goal: aiInput.userProfile.primary_diet_goal ?? "balanced",
           preferred_diet: aiInput.userProfile.preferred_diet ?? "",
           allergies: aiInput.userProfile.allergies ?? [],
-          dispreferrred_ingredients: aiInput.userProfile.dispreferred_ingredients ?? [],
+          dispreferrred_ingredients: aiInput.userProfile.dispreferrred_ingredients ?? [],
           preferred_ingredients: aiInput.userProfile.preferred_ingredients ?? [],
         },
         // Ensure targetMacros values are numbers
@@ -200,8 +200,8 @@ function WeeklyMealPlanTabs({
 
       {mealPlanState?.meal_data?.days.map((dayPlan, dayIndex) => (
         <TabsContent
-          key={dayPlan.day_of_week}
-          value={dayPlan.day_of_week}
+          key={dayPlan.dayOfWeek}
+          value={dayPlan.dayOfWeek}
           className='mt-6'
         >
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
