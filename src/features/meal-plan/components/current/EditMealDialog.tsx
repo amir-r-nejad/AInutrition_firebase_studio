@@ -136,8 +136,12 @@ function EditMealDialog({
     });
   }
 
+  const [isSaving, setIsSaving] = useState(false);
+
   async function handleSubmit() {
-    if (!meal) return;
+    if (!meal || isSaving) return;
+    
+    setIsSaving(true);
 
     const { meal_data } = mealPlan;
 
@@ -151,7 +155,7 @@ function EditMealDialog({
     }
 
     const dayIndex = meal_data?.days?.findIndex(
-      (plan) => plan.dayOfWeek === selectedDay || plan.dayOfWeek === selectedDay,
+      (plan) => plan.dayOfWeek === selectedDay,
     );
 
     const mealIndex = meal_data?.days?.[dayIndex!]?.meals?.findIndex(
@@ -208,10 +212,14 @@ function EditMealDialog({
         title: "Meal Saved",
         description: `${meal.custom_name || meal.name} has been updated.`,
       });
+      
+      // Clear query params before reload to ensure dialog closes
       removeQueryParams(["selected_meal", "is_edit"]);
       
-      // Refresh the page to show updated data
-      window.location.reload();
+      // Add a small delay to ensure params are cleared before reload
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     } catch (error: any) {
       console.error("Save error details:", error);
       const errorMessage = error?.message || error?.toString() || "Could not save meal plan.";
@@ -220,6 +228,8 @@ function EditMealDialog({
         description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -237,7 +247,7 @@ function EditMealDialog({
     }
 
     const selectedDayPlan = mealPlan.meal_data.days.find(
-      (plan) => plan.dayOfWeek === selectedDay || plan.dayOfWeek === selectedDay,
+      (plan) => plan.dayOfWeek === selectedDay,
     );
 
     const selectedMeal = selectedDayPlan?.meals?.find(
@@ -419,8 +429,8 @@ function EditMealDialog({
               Cancel
             </Button>
           </DialogClose>
-          <Button type="button" onClick={handleSubmit}>
-            Save Changes
+          <Button type="button" onClick={handleSubmit} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>
