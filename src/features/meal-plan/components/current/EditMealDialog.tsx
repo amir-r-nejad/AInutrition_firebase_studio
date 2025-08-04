@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryParams } from '@/hooks/useQueryParams';
-import type { Ingredient, Meal, MealPlans } from '@/lib/schemas';
+import type { Ingredient, Meal, UserMealPlan } from '@/lib/schemas';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { editMealPlan } from '../../lib/data-service';
@@ -23,7 +23,7 @@ function EditMealDialog({
   mealPlan,
   userId,
 }: {
-  mealPlan: MealPlans;
+  mealPlan: UserMealPlan;
   userId?: string;
 }) {
   const { toast } = useToast();
@@ -151,7 +151,7 @@ function EditMealDialog({
     }
 
     const dayIndex = meal_data?.days?.findIndex(
-      (plan) => plan.day_of_week === selectedDay
+      (plan) => plan.dayOfWeek === selectedDay
     );
 
     const mealIndex = meal_data?.days?.[dayIndex!]?.meals?.findIndex(
@@ -203,7 +203,7 @@ function EditMealDialog({
     }
 
     const selectedDayPlan = mealPlan.meal_data.days.find(
-      (plan) => plan.day_of_week === selectedDay
+      (plan) => plan.dayOfWeek === selectedDay
     );
     
     const selectedMeal = selectedDayPlan?.meals?.find(

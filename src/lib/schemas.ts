@@ -126,8 +126,8 @@ export const UserProfileSchema = z.object({
   height_cm: z.number().min(50).max(300).nullable().optional(),
   current_weight_kg: z.number().min(20).max(500).nullable().optional(),
   target_weight_1month_kg: z.number().min(20).max(500).nullable().optional(),
-  preferred_ingredients: z.array(z.string()).nullable().optional(),
   dispreferrred_ingredients: z.array(z.string()).nullable().optional(),
+  preferred_ingredients: z.array(z.string()).nullable().optional(),
   long_term_goal_weight_kg: z.number().min(20).max(500).nullable().optional(),
   physical_activity_level: z
     .enum(["sedentary", "light", "moderate", "active", "extra_active"])
@@ -208,8 +208,6 @@ export const UserProfileSchema = z.object({
   preferred_diet: z.string().nullable().optional(),
   preferred_cuisines: z.array(z.string()).nullable().optional(),
   dispreferrred_cuisines: z.array(z.string()).nullable().optional(),
-  preferred_ingredients: z.array(z.string()).nullable().optional(),
-  dispreferrred_ingredients: z.array(z.string()).nullable().optional(),
   allergies: z.array(z.string()).nullable().optional(),
   preferred_micronutrients: z.array(z.string()).nullable().optional(),
   medical_conditions: z.array(z.string()).nullable().optional(),

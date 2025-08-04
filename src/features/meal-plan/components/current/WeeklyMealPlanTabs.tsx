@@ -9,7 +9,7 @@ import { getAdjustedMealInput } from '@/features/meal-plan/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryParams } from '@/hooks/useQueryParams';
 import { daysOfWeek } from '@/lib/constants';
-import { BaseProfileData, MealPlans, UserPlanType } from '@/lib/schemas';
+import { UserProfile, UserMealPlan, UserPlan } from '@/lib/schemas';
 import { useState } from 'react';
 
 function WeeklyMealPlanTabs({
@@ -18,9 +18,9 @@ function WeeklyMealPlanTabs({
   mealPlan,
   userId,
 }: {
-  profile: BaseProfileData;
-  plan: UserPlanType;
-  mealPlan: MealPlans;
+  profile: UserProfile;
+    plan: UserPlan;
+  mealPlan: UserMealPlan;
   userId?: string;
 }) {
   const { toast } = useToast();
@@ -29,7 +29,7 @@ function WeeklyMealPlanTabs({
   const [optimizingMealKey, setOptimizingMealKey] = useState<string | null>(
     null
   );
-  const [mealPlanState, setMealPlanState] = useState<MealPlans | null>(
+  const [mealPlanState, setMealPlanState] = useState<UserMealPlan | null>(
     mealPlan
   );
 
@@ -89,7 +89,7 @@ function WeeklyMealPlanTabs({
           primary_diet_goal: aiInput.userProfile.primary_diet_goal ?? "balanced",
           preferred_diet: aiInput.userProfile.preferred_diet ?? "",
           allergies: aiInput.userProfile.allergies ?? [],
-          dispreferrred_ingredients: aiInput.userProfile.dispreferrred_ingredients ?? [],
+          dispreferrred_ingredients: aiInput.userProfile.dispreferred_ingredients ?? [],
           preferred_ingredients: aiInput.userProfile.preferred_ingredients ?? [],
         },
         // Ensure targetMacros values are numbers
