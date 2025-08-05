@@ -1,9 +1,9 @@
 import { Card, CardContent } from '@/components/ui/card';
-import LoadingScreen from '@/components/ui/LoadingScreen';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { Tabs } from '@/components/ui/tabs';
 import { MealProgressSection } from '@/features/meal-progress/components/MealProgressSection';
 import MealProgressTabs from '@/features/meal-progress/components/MealProgressTabs';
+import { ClientMealProgressSkeleton } from '@/features/coach/components/loading/ClientMealProgressSkeleton';
 import { Activity } from 'lucide-react';
 import { Suspense } from 'react';
 
@@ -32,12 +32,7 @@ async function CoachMealProgressPage({
           <Tabs defaultValue='daily-tracking' className='w-full'>
             <MealProgressTabs />
 
-            <Suspense
-              key='meal-progress-suspense'
-              fallback={
-                <LoadingScreen loadingLabel='Loading meal progress...' />
-              }
-            >
+            <Suspense fallback={<ClientMealProgressSkeleton />}>
               <MealProgressSection
                 searchParams={searchParams}
                 clientId={clientId}

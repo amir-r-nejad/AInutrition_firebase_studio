@@ -1,5 +1,5 @@
-import LoadingScreen from '@/components/ui/LoadingScreen';
 import PDFSection from '@/features/tools/components/pdf-preview/PDFSection';
+import { ClientReportsSkeleton } from '@/features/coach/components/loading/ClientReportsSkeleton';
 import { Suspense } from 'react';
 
 async function CoachReportspage({
@@ -10,11 +10,11 @@ async function CoachReportspage({
   const { clientId } = await params;
 
   return (
-    <Suspense
-      fallback={<LoadingScreen loadingLabel='Loading client reports...' />}
-    >
-      <PDFSection clientId={clientId} />
-    </Suspense>
+    <div className='container mx-auto py-8'>
+      <Suspense fallback={<ClientReportsSkeleton />}>
+        <PDFSection clientId={clientId} />
+      </Suspense>
+    </div>
   );
 }
 

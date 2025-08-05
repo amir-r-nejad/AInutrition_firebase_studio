@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
-import LoadingScreen from '@/components/ui/LoadingScreen';
 import SectionHeader from '@/components/ui/SectionHeader';
 import AiPlanSection from '@/features/meal-plan/components/optimized/AiPlanSection';
+import { ClientMealPlanSkeleton } from '@/features/coach/components/loading/ClientMealPlanSkeleton';
 import { ChefHat } from 'lucide-react';
 import { Suspense } from 'react';
 
@@ -22,9 +22,7 @@ async function CoachOptimizedMealPlanPage({
           icon={<ChefHat className='mr-3 h-8 w-8 text-primary' />}
         />
 
-        <Suspense
-          fallback={<LoadingScreen loadingLabel='Generating AI meal plan...' />}
-        >
+        <Suspense fallback={<ClientMealPlanSkeleton />}>
           <AiPlanSection clientId={clientId} />
         </Suspense>
       </Card>
