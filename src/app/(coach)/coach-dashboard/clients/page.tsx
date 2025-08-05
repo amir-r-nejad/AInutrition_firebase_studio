@@ -1,17 +1,17 @@
-import LoadingScreen from '@/components/ui/LoadingScreen';
-import { AcceptedClientsSection } from '@/features/coach/components/clients/AcceptedClientsSection';
 import { ClientsHeader } from '@/features/coach/components/clients/ClientsHeader';
+import { ClientsFilterSection } from '@/features/coach/components/clients/ClientsFilterSection';
+import { AcceptedClientsSection } from '@/features/coach/components/clients/AcceptedClientsSection';
 import { Suspense } from 'react';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 
 export default function CoachClientsPage() {
   return (
-    <div className='space-y-8'>
-      {/* WILL BE ADDED IN THE FUTURE */}
-      {/* <ClientsFilterSection /> */}
+    <div className='space-y-8 p-6'>
       <ClientsHeader />
-      <Suspense
-        fallback={<LoadingScreen loadingLabel='Loading accepted clients...' />}
-      >
+
+      <ClientsFilterSection />
+
+      <Suspense fallback={<LoadingScreen loadingLabel='Loading clients...' />}>
         <AcceptedClientsSection />
       </Suspense>
     </div>
