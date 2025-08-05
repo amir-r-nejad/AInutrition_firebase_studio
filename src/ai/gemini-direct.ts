@@ -7,8 +7,8 @@ let geminiDirectModel: any = null;
 function initializeGeminiClient() {
   if (genAI) return; // Already initialized
   
-  // Validate Gemini API key
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  // Validate Gemini API key - ensure we're running server-side
+  const GEMINI_API_KEY = typeof window === 'undefined' ? process.env.GEMINI_API_KEY : null;
   if (!GEMINI_API_KEY) {
     console.error('❌ GEMINI_API_KEY is not set in environment variables');
     throw new Error('GEMINI_API_KEY environment variable is required');
