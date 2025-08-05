@@ -1,33 +1,11 @@
 import { Card, CardContent } from '@/components/ui/card';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { cn } from '@/lib/utils';
-import { UserPlus, Users } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import Link from 'next/link';
+import { primaryActions } from '../../lib/constant';
 
 export function QuickActionsSection() {
-  const primaryActions = [
-    {
-      title: 'Find New Clients',
-      description: 'Browse and connect with potential clients',
-      icon: UserPlus,
-      href: '/coach-dashboard/requests',
-      color:
-        'hover:bg-accent/5 hover:border-accent/50 text-foreground hover:text-accent',
-      iconColor: 'text-accent',
-      bgColor: 'bg-accent/10',
-    },
-    {
-      title: 'View My Clients',
-      description: 'Manage your active client relationships',
-      icon: Users,
-      href: '/coach-dashboard/clients',
-      color:
-        'hover:bg-primary/5 hover:border-primary/50 text-foreground hover:text-primary',
-      iconColor: 'text-primary',
-      bgColor: 'bg-primary/10',
-    },
-  ];
-
   return (
     <Card className='border border-border/50'>
       <SectionHeader

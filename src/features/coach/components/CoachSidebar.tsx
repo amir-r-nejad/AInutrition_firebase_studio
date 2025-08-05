@@ -14,32 +14,9 @@ import {
 } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getUser } from '@/lib/supabase/data-service';
-import { BarChart3, UserCheck, UserPen, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
-
-const coachMenuItems = [
-  {
-    title: 'Dashboard',
-    url: '/coach-dashboard',
-    icon: BarChart3,
-  },
-  {
-    title: 'My Clients',
-    url: '/coach-dashboard/clients',
-    icon: UserCheck,
-  },
-  {
-    title: 'Client Requests',
-    url: '/coach-dashboard/requests',
-    icon: Users,
-  },
-  {
-    title: 'Your Profile',
-    url: '/coach-dashboard/profile',
-    icon: UserPen,
-  },
-];
+import { coachMenuItems } from '../lib/constant';
 
 export function CoachSidebar() {
   return (

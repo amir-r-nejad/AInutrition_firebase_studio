@@ -1,3 +1,51 @@
+import { BarChart3, UserCheck, UserPen, Users, UserPlus } from 'lucide-react';
+
+export const coachMenuItems = [
+  {
+    title: 'Dashboard',
+    url: '/coach-dashboard',
+    icon: BarChart3,
+  },
+  {
+    title: 'My Clients',
+    url: '/coach-dashboard/clients',
+    icon: UserCheck,
+  },
+  {
+    title: 'Client Requests',
+    url: '/coach-dashboard/requests',
+    icon: Users,
+  },
+  {
+    title: 'Your Profile',
+    url: '/coach-dashboard/profile',
+    icon: UserPen,
+  },
+];
+
+export const primaryActions = [
+  {
+    title: 'Find New Clients',
+    description: 'Browse and connect with potential clients',
+    icon: UserPlus,
+    href: '/coach-dashboard/requests',
+    color:
+      'hover:bg-accent/5 hover:border-accent/50 text-foreground hover:text-accent',
+    iconColor: 'text-accent',
+    bgColor: 'bg-accent/10',
+  },
+  {
+    title: 'View My Clients',
+    description: 'Manage your active client relationships',
+    icon: Users,
+    href: '/coach-dashboard/clients',
+    color:
+      'hover:bg-primary/5 hover:border-primary/50 text-foreground hover:text-primary',
+    iconColor: 'text-primary',
+    bgColor: 'bg-primary/10',
+  },
+];
+
 export const biologicalSexOptions = [
   { value: 'all', label: 'All Genders' },
   { value: 'male', label: 'Male' },

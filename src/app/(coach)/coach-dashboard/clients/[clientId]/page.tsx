@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
-import LoadingScreen from '@/components/ui/LoadingScreen';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { CoachClientDashboard } from '@/features/coach/components/client-dashboard/CoachClientDashboard';
+import { ClientDashboardSkeleton } from '@/features/coach/components/loading/ClientDashboardSkeleton';
 import { checkCoachAccess } from '@/lib/utils/access-control';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
@@ -27,7 +27,7 @@ export default async function CoachClientDashboardPage({
           description="Monitor your client's nutrition progress and meal plans"
         />
         <CardContent>
-          <Suspense fallback={<LoadingScreen />}>
+          <Suspense fallback={<ClientDashboardSkeleton />}>
             <CoachClientDashboard clientId={clientId} />
           </Suspense>
         </CardContent>
