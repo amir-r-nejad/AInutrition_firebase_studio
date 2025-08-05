@@ -1,55 +1,127 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+'use client';
+
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
-
-const activeFilters = [
-  { label: 'Active Status', value: 'active' },
-  { label: 'Weight Loss Goal', value: 'weight_loss' },
-];
-
-const filterOptions = [
-  { label: 'All Clients', count: 24, active: false },
-  { label: 'Active', count: 18, active: true },
-  { label: 'Inactive', count: 6, active: false },
-  { label: 'New This Month', count: 3, active: false },
-];
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import FilterField from '@/components/ui/FilterField';
+import SearchForm from '@/components/ui/SearchForm';
+import { useQueryParams } from '@/hooks/useQueryParams';
+import { ArrowUpDown, FilterIcon, Target, Users, X } from 'lucide-react';
+import { useState } from 'react';
+import {
+  biologicalSexOptions,
+  dietGoalOptions,
+  sortOptions,
+} from '../../lib/constant';
 
 export function ClientsFilterSection() {
-  return (
-    <Card className='border border-border/50'>
-      <CardContent className='p-4'>
-        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-          <div className='flex flex-wrap items-center gap-2'>
-            {filterOptions.map((option) => (
-              <Button
-                key={option.label}
-                variant={option.active ? 'default' : 'outline'}
-                size='sm'
-                className='gap-2 bg-transparent'
-              >
-                {option.label}
-                <Badge variant='secondary' className='text-xs'>
-                  {option.count}
-                </Badge>
-              </Button>
-            ))}
-          </div>
+  const [showFilters, setShowFilters] = useState(false);
+  const { removeQueryParams, getQueryParams } = useQueryParams();
 
-          {activeFilters.length > 0 && (
-            <div className='flex items-center gap-2'>
-              <span className='text-sm text-muted-foreground'>
-                Active filters:
-              </span>
-              {activeFilters.map((filter) => (
-                <Badge key={filter.value} variant='secondary' className='gap-1'>
-                  {filter.label}
-                  <X className='h-3 w-3 cursor-pointer' />
-                </Badge>
-              ))}
-            </div>
-          )}
+  const biologicalSex = getQueryParams('biological_sex');
+  const dietGoal = getQueryParams('diet_goal');
+
+  const isActiveFilters = !!dietGoal || !!biologicalSex;
+
+  function clearFilters() {
+    removeQueryParams([
+      'client_name',
+      'biological_sex',
+      'diet_goal',
+      'sort_by',
+    ]);
+  }
+
+  return (
+    <Card className='border border-border/50 shadow-sm'>
+      <CardContent className='p-6'>
+        <div className='flex flex-col sm:flex-row gap-4'>
+          <SearchForm
+            searchQuery='client_name'
+            className='flex-1'
+            placeholder='Search clients by name or email...'
+            inputClassName='bg-background'
+          />
+
+          <div className='flex items-center gap-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <FilterIcon className='h-4 w-4' />
+              Filters
+            </Button>
+
+            {isActiveFilters && (
+              <Button variant='ghost' size='sm' onClick={clearFilters}>
+                <X className='h-4 w-4' />
+                Clear
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Expanded Filters */}
+        {showFilters && (
+          <div className='border-t border-border/50 pt-4 space-y-4 mt-4'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+              <FilterField
+                options={biologicalSexOptions}
+                label='Gender'
+                icon={<Users className='h-4 w-4' />}
+                queryName='biological_sex'
+                placeholder='Select gender'
+              />
+
+              <FilterField
+                options={dietGoalOptions}
+                label='Diet Goal'
+                icon={<Target className='h-4 w-4' />}
+                queryName='diet_goal'
+                placeholder='Select goal'
+              />
+
+              <FilterField
+                options={sortOptions}
+                label='Sort By'
+                icon={<ArrowUpDown className='h-4 w-4' />}
+                queryName='sort_by'
+                placeholder='Sort by'
+              />
+
+              <div className='flex flex-wrap items-center gap-2 self-end'>
+                {biologicalSex && (
+                  <Badge variant='outline' className='gap-1'>
+                    Gender:{' '}
+                    {
+                      biologicalSexOptions.find(
+                        (opt) => opt.value === biologicalSex
+                      )?.label
+                    }
+                    <X
+                      className='h-3 w-3 cursor-pointer hover:text-destructive'
+                      onClick={() => removeQueryParams('biological_sex')}
+                    />
+                  </Badge>
+                )}
+                {dietGoal && (
+                  <Badge variant='outline' className='gap-1'>
+                    Goal:{' '}
+                    {
+                      dietGoalOptions.find((opt) => opt.value === dietGoal)
+                        ?.label
+                    }
+                    <X
+                      className='h-3 w-3 cursor-pointer hover:text-destructive'
+                      onClick={() => removeQueryParams('diet_goal')}
+                    />
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
