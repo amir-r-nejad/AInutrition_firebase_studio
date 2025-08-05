@@ -1,5 +1,5 @@
-
-import { editMealPlan } from "@/features/meal-plan/lib/data-service";
+import { editMealPlan } from "@/features/meal-plan/lib/data-service-current";
+import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -10,22 +10,34 @@ export async function POST(request: NextRequest) {
     if (!mealPlan || !mealPlan.meal_data) {
       return NextResponse.json(
         { error: "Invalid meal plan data" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const result = await editMealPlan(mealPlan, userId);
-    
+    // Get the authenticated user
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'User not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    // The editMealPlan function will handle authentication internally
+    const result = await editMealPlan(mealPlan);
+
     return NextResponse.json({ success: true, data: result });
   } catch (error: any) {
     console.error("API Error editing meal plan:", error);
-    
+
     return NextResponse.json(
-      { 
+      {
         error: error.message || "Failed to update meal plan",
-        details: error.toString()
+        details: error.toString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

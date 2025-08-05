@@ -1,62 +1,14 @@
+
 "use server";
 
-import { getUser } from "@/features/profile/lib/data-services";
-import {
-  GeneratePersonalizedMealPlanOutput,
-  DailyMealPlan,
-  WeeklyMealPlan,
-} from "@/lib/schemas";
-import { createClient } from "@/lib/supabase/client";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/data-service-current";
+import { WeeklyMealPlan } from "@/lib/schemas";
 
 export async function editMealPlan(
   mealPlan: { meal_data: WeeklyMealPlan },
   userId?: string,
 ): Promise<any> {
-  const supabase = await createClient();
-  const targetUserId = userId || (await getUser()).id;
-
-  if (!targetUserId) throw new Error("User not authenticated");
-
-  console.log(
-    "Upserting meal_plans_current for user:",
-    targetUserId,
-    JSON.stringify(mealPlan, null, 2),
-  );
-
-  const upsertData = {
-    user_id: targetUserId,
-    meal_data: mealPlan.meal_data,
-    updated_at: new Date().toISOString(),
-  };
-
-  const { data, error } = await supabase
-    .from("meal_plans_current")
-    .upsert(upsertData, {
-      onConflict: "user_id",
-      ignoreDuplicates: false,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error upserting meal_plan:", JSON.stringify(error, null, 2));
-    throw new Error(`Failed to upsert meal plan: ${error.message}`);
-  }
-
-  console.log("Upserted meal_plan:", JSON.stringify(data, null, 2));
-  revalidatePath("/meal-plan/current");
-  revalidatePath("/meal-plan");
-
-  return data;
-}
-
-export async function editAiPlan(
-  aiPlan: {
-    ai_plan: GeneratePersonalizedMealPlanOutput;
-  },
-  userId?: string,
-): Promise<GeneratePersonalizedMealPlanOutput> {
   const supabase = await createClient();
   const user = await getUser();
   const targetUserId = userId || user.id;
@@ -67,16 +19,16 @@ export async function editAiPlan(
   }
 
   console.log(
-    "Updating ai_plan for user:",
+    "Upserting meal_plans_current for user:",
     targetUserId,
-    JSON.stringify(aiPlan, null, 2),
+    JSON.stringify(mealPlan, null, 2),
   );
 
   try {
     // Create the upsert data with proper structure
     const upsertData = {
       user_id: targetUserId,
-      ai_plan: aiPlan.ai_plan,
+      meal_data: mealPlan.meal_data,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -87,12 +39,12 @@ export async function editAiPlan(
         onConflict: "user_id",
         ignoreDuplicates: false,
       })
-      .select("ai_plan")
+      .select("*")
       .single();
 
     if (error) {
       console.error(
-        "Error updating/inserting ai_plan:",
+        "Error upserting meal_plan:",
         JSON.stringify(error, null, 2),
       );
 
@@ -102,96 +54,31 @@ export async function editAiPlan(
         const { data: insertData, error: insertError } = await supabase
           .from("meal_plans_current")
           .insert(upsertData)
-          .select("ai_plan")
+          .select("*")
           .single();
 
         if (insertError) {
-          console.error("Insert error:", JSON.stringify(insertError, null, 2));
-          throw new Error(
-            `Failed to create AI-generated plan: ${insertError.message}`,
+          console.error(
+            "Insert error:",
+            JSON.stringify(insertError, null, 2),
           );
+          throw new Error(`Failed to insert meal plan: ${insertError.message}`);
         }
 
-        console.log(
-          "Successfully inserted ai_plan:",
-          JSON.stringify(insertData.ai_plan, null, 2),
-        );
-        revalidatePath("/meal-plan/current");
-        revalidateTag("meal_plan");
-        return insertData.ai_plan as GeneratePersonalizedMealPlanOutput;
+        console.log("Inserted meal_plan:", JSON.stringify(insertData, null, 2));
+        return insertData;
       }
 
-      throw new Error(`Failed to update AI-generated plan: ${error.message}`);
+      throw new Error(`Failed to upsert meal plan: ${error.message}`);
     }
 
-    console.log(
-      "Successfully updated ai_plan:",
-      JSON.stringify(data.ai_plan, null, 2),
+    console.log("Upserted meal_plan:", JSON.stringify(data, null, 2));
+    return data;
+  } catch (error: any) {
+    console.error("Unexpected error in editMealPlan:", error);
+    throw new Error(
+      error.message ||
+        "Something went wrong while saving the meal plan. Please try again.",
     );
-    revalidatePath("/meal-plan/current");
-    revalidateTag("meal_plan");
-    return data.ai_plan as GeneratePersonalizedMealPlanOutput;
-  } catch (e) {
-    console.error("Unexpected error in editAiPlan:", e);
-    throw e;
   }
-}
-
-export async function loadMealPlan(
-  userId?: string,
-): Promise<GeneratePersonalizedMealPlanOutput> {
-  const supabase = await createClient();
-  const targetUserId = userId || (await getUser()).id;
-
-  if (!targetUserId) {
-    throw new Error("User not authenticated");
-  }
-
-  const { data, error } = await supabase
-    .from("meal_plans_current")
-    .select("ai_plan")
-    .eq("user_id", targetUserId)
-    .single();
-
-  if (error) {
-    console.error("Error loading meal plan:", JSON.stringify(error, null, 2));
-    if (error.code === "PGRST116")
-      throw new Error("No meal plan found for this user");
-    throw new Error(`Failed to load meal plan: ${error.message}`);
-  }
-
-  if (!data || !data.ai_plan) {
-    throw new Error("No AI plan data found");
-  }
-
-  let parsedPlan: GeneratePersonalizedMealPlanOutput;
-  try {
-    // Handle both string and object formats
-    if (typeof data.ai_plan === "string") {
-      parsedPlan = JSON.parse(data.ai_plan);
-    } else if (typeof data.ai_plan === "object" && data.ai_plan !== null) {
-      parsedPlan = data.ai_plan;
-    } else {
-      throw new Error("Invalid ai_plan data type");
-    }
-
-    // Validate the structure
-    if (!parsedPlan.weeklyMealPlan || !parsedPlan.weeklySummary) {
-      throw new Error("Invalid meal plan structure - missing required fields");
-    }
-  } catch (parseError) {
-    console.error(
-      "Error parsing ai_plan:",
-      parseError,
-      "Raw data:",
-      data.ai_plan,
-    );
-    throw new Error("Invalid meal plan data format");
-  }
-
-  console.log(
-    "Loaded and parsed meal plan:",
-    JSON.stringify(parsedPlan, null, 2),
-  );
-  return parsedPlan as GeneratePersonalizedMealPlanOutput;
 }
