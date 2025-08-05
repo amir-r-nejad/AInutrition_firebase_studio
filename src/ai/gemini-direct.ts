@@ -56,9 +56,15 @@ export async function generateStructuredContent<T>(
     const response = await result.response;
     const text = response.text();
 
+    // Clean up the response to extract JSON (remove markdown code blocks)
+    let cleanedText = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
     // Try to parse as JSON
     try {
-      const parsed = JSON.parse(text);
+      const parsed = JSON.parse(cleanedText);
 
       // If schema is provided, validate the response
       if (schema) {
@@ -74,7 +80,8 @@ export async function generateStructuredContent<T>(
 
       return parsed;
     } catch (parseError) {
-      console.error("Failed to parse AI response as JSON:", text);
+      console.error("Failed to parse AI response as JSON:", cleanedText);
+      console.error("Original response:", text);
       throw new Error("AI response is not valid JSON");
     }
   } catch (error: any) {

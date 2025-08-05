@@ -70,53 +70,7 @@ async function generateWithOpenAI(prompt: string): Promise<AdjustMealIngredients
   }
 }
 
-// Fallback function برای محاسبات محلی
-function createFallbackAdjustment(input: AdjustMealIngredientsInput): AdjustMealIngredientsOutput {
-  const { originalMeal, targetMacros } = input;
-  
-  // کپی از meal اصلی
-  const adjustedMeal = {
-    name: originalMeal.name,
-    custom_name: originalMeal.custom_name,
-    ingredients: originalMeal.ingredients.map((ingredient: any) => ({ ...ingredient }))
-  };
 
-  // محاسبه نسبت‌های مورد نیاز برای رسیدن به target macros
-  const currentCalories = originalMeal.ingredients.reduce((sum: number, ing: any) => 
-    sum + (ing.calories || 0), 0);
-
-  // محاسبه نسبت تغییر برای calories
-  const calorieRatio = currentCalories > 0 ? targetMacros.calories / currentCalories : 1;
-
-  // اعمال تغییرات به ingredients
-  adjustedMeal.ingredients = adjustedMeal.ingredients.map((ing: any) => ({
-    ...ing,
-    quantity: ing.quantity ? Math.round(ing.quantity * calorieRatio * 10) / 10 : ing.quantity,
-    calories: ing.calories ? Math.round(ing.calories * calorieRatio) : ing.calories,
-    protein: ing.protein ? Math.round(ing.protein * calorieRatio * 10) / 10 : ing.protein,
-    carbs: ing.carbs ? Math.round(ing.carbs * calorieRatio * 10) / 10 : ing.carbs,
-    fat: ing.fat ? Math.round(ing.fat * calorieRatio * 10) / 10 : ing.fat,
-  }));
-
-  // محاسبه مجدد totals
-  const totals = adjustedMeal.ingredients.reduce(
-    (acc: any, ing: any) => ({
-      total_calories: acc.total_calories + (ing.calories || 0),
-      total_protein: acc.total_protein + (ing.protein || 0),
-      total_carbs: acc.total_carbs + (ing.carbs || 0),
-      total_fat: acc.total_fat + (ing.fat || 0),
-    }),
-    { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 }
-  );
-
-  return {
-    adjustedMeal: {
-      ...adjustedMeal,
-      ...totals,
-    },
-    explanation: `Meal adjusted using local calculations due to API unavailability. Ingredients have been scaled to target ${targetMacros.calories} calories, ${targetMacros.protein}g protein, ${targetMacros.carbs}g carbs, and ${targetMacros.fat}g fat.`
-  };
-}
 
 function cleanInput(input: any): any {
   const allowedKeys = ['userProfile', 'originalMeal', 'targetMacros'];
@@ -221,28 +175,16 @@ export async function adjustMealIngredientsDirect(
           
         } catch (openaiError: any) {
           console.error('[OpenAI Fallback] Failed:', openaiError.message);
-          
-          // If both APIs fail, use local fallback
-          console.log('[Local Fallback] Both APIs failed, using local calculation...');
-          return createFallbackAdjustment(cleanedInput);
+          throw new Error(`Both Gemini and OpenAI APIs failed: ${openaiError.message}`);
         }
       } else {
-        // For other Gemini errors, go straight to local fallback
-        console.log('[Local Fallback] Gemini error (non-403), using local calculation...');
-        return createFallbackAdjustment(cleanedInput);
+        // For other Gemini errors, throw the error
+        throw new Error(`Gemini API error: ${geminiError.message}`);
       }
     }
     
   } catch (error: any) {
     console.error('Error in adjustMealIngredientsDirect:', error);
-    
-    // Parse input again for fallback
-    try {
-      const cleanedInput = AdjustMealIngredientsInputSchema.parse(cleanInput(input));
-      return createFallbackAdjustment(cleanedInput);
-    } catch (parseError) {
-      console.error('Error parsing input for fallback:', parseError);
-      throw new Error('Invalid input format for meal adjustment');
-    }
+    throw error;
   }
 }
