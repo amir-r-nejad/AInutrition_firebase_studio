@@ -191,9 +191,13 @@ function EditMealDialog({
         description: `${meal.custom_name || meal.name} has been updated.`,
       });
 
-      // حذف پارامترها و رفرش
+      // Close the dialog and refresh the page
       removeQueryParams(["selected_meal", "is_edit"]);
-      router.refresh();
+
+      // Refresh the page to reflect changes
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (error: any) {
       console.error("Save error details:", error);
       toast({

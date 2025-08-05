@@ -34,9 +34,16 @@ export async function POST(request: NextRequest) {
     // Call AI optimization
     const result = await adjustMealIngredientsDirect(optimizationData);
     
-    // Update meal plan with optimized meal
+    // Update meal plan with optimized meal - preserve existing data
     const { dayIndex, mealIndex, newWeeklyPlan } = mealPlan;
-    newWeeklyPlan.days[dayIndex].meals[mealIndex] = result.adjustedMeal;
+    
+    // Only update the specific meal, preserve all other data
+    if (newWeeklyPlan.days[dayIndex] && newWeeklyPlan.days[dayIndex].meals[mealIndex]) {
+      newWeeklyPlan.days[dayIndex].meals[mealIndex] = {
+        ...newWeeklyPlan.days[dayIndex].meals[mealIndex],
+        ...result.adjustedMeal,
+      };
+    }
     
     // Save updated meal plan
     await editMealPlan({ meal_data: newWeeklyPlan }, userId);

@@ -154,10 +154,25 @@ function WeeklyMealPlanTabs({
         throw new Error(result.error || 'Failed to optimize meal');
       }
 
-      setMealPlanState((meal) => ({ 
-        ...meal!, 
-        meal_data: result.updatedMealPlan 
-      }));
+      // Update state while preserving all existing data
+      setMealPlanState((prevMeal) => {
+        if (!prevMeal?.meal_data) return prevMeal;
+        
+        const updatedMealData = { ...prevMeal.meal_data };
+        
+        // Only update the specific meal that was optimized
+        if (updatedMealData.days[dayIndex] && updatedMealData.days[dayIndex].meals[mealIndex]) {
+          updatedMealData.days[dayIndex].meals[mealIndex] = {
+            ...updatedMealData.days[dayIndex].meals[mealIndex],
+            ...result.data.adjustedMeal
+          };
+        }
+        
+        return {
+          ...prevMeal,
+          meal_data: updatedMealData
+        };
+      });
 
       toast({
         title: `Meal Optimized: ${mealToOptimize.name}`,
