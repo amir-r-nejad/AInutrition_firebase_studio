@@ -212,12 +212,20 @@ export function getAdjustedMealInput(
     }
   }
 
+  // Ensure we have valid distribution percentages
+  const defaultDistribution = defaultMacroPercentages[mealToOptimize.name];
+  const safeDistribution = {
+    calories_pct: mealDistribution?.calories_pct ?? defaultDistribution?.calories_pct ?? 16.67,
+    protein_pct: mealDistribution?.protein_pct ?? defaultDistribution?.protein_pct ?? 16.67,
+    carbs_pct: mealDistribution?.carbs_pct ?? defaultDistribution?.carbs_pct ?? 16.67,
+    fat_pct: mealDistribution?.fat_pct ?? defaultDistribution?.fat_pct ?? 16.67,
+  };
+
   const targetMacrosForMeal = {
-    calories:
-      dailyTargets.targetCalories! * (mealDistribution.calories_pct / 100),
-    protein: dailyTargets.targetProtein! * (mealDistribution.protein_pct / 100),
-    carbs: dailyTargets.targetCarbs! * (mealDistribution.carbs_pct / 100),
-    fat: dailyTargets.targetFat! * (mealDistribution.fat_pct / 100),
+    calories: Math.round(dailyTargets.targetCalories! * (safeDistribution.calories_pct / 100)),
+    protein: Math.round(dailyTargets.targetProtein! * (safeDistribution.protein_pct / 100)),
+    carbs: Math.round(dailyTargets.targetCarbs! * (safeDistribution.carbs_pct / 100)),
+    fat: Math.round(dailyTargets.targetFat! * (safeDistribution.fat_pct / 100)),
   };
 
   const preparedIngredients = mealToOptimize.ingredients.map((ing) => ({

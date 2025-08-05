@@ -15,6 +15,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate target macros to ensure they're not null
+    const { targetMacros } = optimizationData;
+    if (!targetMacros || 
+        typeof targetMacros.calories !== 'number' || 
+        typeof targetMacros.protein !== 'number' || 
+        typeof targetMacros.carbs !== 'number' || 
+        typeof targetMacros.fat !== 'number') {
+      return NextResponse.json(
+        { 
+          error: "Invalid target macros - all values must be valid numbers",
+          receivedTargetMacros: targetMacros
+        },
+        { status: 400 }
+      );
+    }
+
     // Call AI optimization
     const result = await adjustMealIngredientsDirect(optimizationData);
     

@@ -52,11 +52,21 @@ function WeeklyMealPlanTabs({
     try {
       const dailyTargets = {
         targetCalories:
-          plan.custom_total_calories ?? plan.target_daily_calories ?? 0,
-        targetProtein: plan.custom_protein_g ?? plan.target_protein_g ?? 0,
-        targetCarbs: plan.custom_carbs_g ?? plan.target_carbs_g ?? 0,
-        targetFat: plan.custom_fat_g ?? plan.target_fat_g ?? 0,
+          plan.custom_total_calories ?? plan.target_daily_calories ?? 2000,
+        targetProtein: plan.custom_protein_g ?? plan.target_protein_g ?? 150,
+        targetCarbs: plan.custom_carbs_g ?? plan.target_carbs_g ?? 250,
+        targetFat: plan.custom_fat_g ?? plan.target_fat_g ?? 67,
       };
+
+      // Validate daily targets to ensure they're not null or invalid
+      if (!dailyTargets.targetCalories || dailyTargets.targetCalories <= 0) {
+        toast({
+          title: "Error",
+          description: "Invalid daily calorie target. Please update your nutrition plan.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (
         dailyTargets.targetCalories <= 0 ||
