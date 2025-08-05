@@ -29,7 +29,7 @@ function initializeGeminiClient() {
 
   // Get the Gemini model
   geminiDirectModel = genAI.getGenerativeModel({
-    model: "googleAI/gemini-2.0-flash",
+    model: "gemini-2.0-flash-exp",
     generationConfig: {
       temperature: 0.7,
       topK: 40,
