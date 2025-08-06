@@ -15,9 +15,9 @@ type RecentRequestsListProps = {
 
 function RecentRequestsList({ recentRequests }: RecentRequestsListProps) {
   return (
-    <div className='space-y-4'>
+    <ul className='space-y-4 max-h-48 overflow-y-auto'>
       {recentRequests.map((request) => (
-        <div
+        <li
           key={request.id}
           className='flex items-center justify-between p-4 rounded-xl border border-border/30 hover:border-border/60 transition-all duration-200'
         >
@@ -54,9 +54,9 @@ function RecentRequestsList({ recentRequests }: RecentRequestsListProps) {
               </div>
             </div>
           </div>
-        </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 

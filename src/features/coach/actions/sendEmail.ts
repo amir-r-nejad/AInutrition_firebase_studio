@@ -53,10 +53,9 @@ export async function sendApprovalRequest(
     // Check if request already exists for this email
     const { data: existingRequest, error: checkError } = await supabase
       .from('coach_client_requests')
-      .select('id, status')
+      .select('id')
       .eq('coach_id', user.id)
       .eq('client_email', approverEmail)
-      .eq('status', 'pending')
       .single();
 
     if (checkError && checkError.code !== 'PGRST116')

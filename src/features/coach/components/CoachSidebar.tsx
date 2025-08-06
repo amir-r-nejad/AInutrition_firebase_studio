@@ -17,6 +17,7 @@ import { getUser } from '@/lib/supabase/data-service';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { coachMenuItems } from '../lib/constant';
+import SignoutButton from '@/features/auth/components/signup/SignoutButton';
 
 export function CoachSidebar() {
   return (
@@ -55,10 +56,11 @@ export function CoachSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className='border-t border-sidebar-border p-4'>
+      <SidebarFooter className='p-2'>
         <Suspense fallback={<Skeleton className='w-10 h-10 rounded-full' />}>
           <CoachSidebarProfile />
         </Suspense>
+        <SignoutButton />
       </SidebarFooter>
     </Sidebar>
   );
@@ -68,12 +70,28 @@ async function CoachSidebarProfile() {
   const coach = await getUser();
 
   return (
-    <div className='text-sm text-sidebar-foreground/60 flex items-center gap-2'>
-      <Avatar>
-        <AvatarImage src={coach.user_metadata.avatar_url} />
-        <AvatarFallback></AvatarFallback>
+    <div className='flex items-center gap-3 p-2 rounded-md border border-sidebar-border bg-sidebar-accent/50'>
+      <Avatar className='h-9 w-9'>
+        <AvatarImage
+          src={
+            coach?.user_metadata.picture
+              ? coach?.user_metadata.picture
+              : `https://placehold.co/100x100.png?text=${
+                  coach.email?.[0]?.toUpperCase() ?? 'U'
+                }`
+          }
+          alt={coach.email ?? 'User Avatar'}
+          data-ai-hint='avatar person'
+        />
+        <AvatarFallback>
+          {coach.email?.[0]?.toUpperCase() ?? 'U'}
+        </AvatarFallback>
       </Avatar>
-      {coach.user_metadata.full_name.split('').slice(0, 20)}
+      <div className='flex flex-col group-data-[collapsible=icon]:hidden'>
+        <span className='text-sm font-medium text-sidebar-foreground truncate max-w-[120px]'>
+          {coach.email}
+        </span>
+      </div>
     </div>
   );
 }
