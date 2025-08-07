@@ -96,7 +96,7 @@ function cleanInput(input: any): any {
 
 function buildPrompt(input: AdjustMealIngredientsInput): string {
   return `
-You are a certified nutrition expert and AI assistant with access to real-time nutritional data. Your task is to adjust the meal ingredients to match the target macronutrients within a 5% error margin using the following strict rules:
+You are a certified nutrition expert and AI assistant. Your task is to adjust the meal ingredients to match the target macronutrients within a 5% error margin. Follow these steps carefully:
 
 USER PROFILE:
 - Age: ${input.userProfile.age}
@@ -107,45 +107,46 @@ USER PROFILE:
 - Preferred Ingredients: ${input.userProfile.preferred_ingredients?.join(", ") || "None"}
 
 RULES FOR ADJUSTMENT:
-1. Preserve the original meal structure and ingredient types.
-2. Do not add or remove ingredients unless required due to allergies.
-3. Adjust quantities in grams (convert other units to grams if provided).
-4. For each ingredient, retrieve precise nutritional data (calories, protein, carbs, fat per gram) from trusted online databases such as:
-   - USDA FoodData Central (fdc.nal.usda.gov)
-   - FatSecret (fatsecret.com)
-   - MyFitnessPal (myfitnesspal.com)
-   Use the most specific match for each ingredient (e.g., "grilled chicken breast" instead of generic "chicken").
-5. Calculate per-gram nutritional values for each ingredient:
-   - Calories (kcal per gram)
-   - Protein (grams per gram)
-   - Carbs (grams per gram)
-   - Fat (grams per gram)
-6. Adjust ingredient quantities using linear optimization or iterative calculations to ensure the total macronutrients match the target values within a 5% error margin:
-   - Total calories: ${input.targetMacros.calories} ± ${input.targetMacros.calories * 0.05} kcal
-   - Total protein: ${input.targetMacros.protein} ± ${input.targetMacros.protein * 0.05}g
-   - Total carbs: ${input.targetMacros.carbs} ± ${input.targetMacros.carbs * 0.05}g
-   - Total fat: ${input.targetMacros.fat} ± ${input.targetMacros.fat * 0.05}g
-7. Validate that the adjusted meal's total macronutrients satisfy:
-   - ${input.targetMacros.calories * 0.95} ≤ total_calories ≤ ${input.targetMacros.calories * 1.05}
-   - ${input.targetMacros.protein * 0.95} ≤ total_protein ≤ ${input.targetMacros.protein * 1.05}
-   - ${input.targetMacros.carbs * 0.95} ≤ total_carbs ≤ ${input.targetMacros.carbs * 1.05}
-   - ${input.targetMacros.fat * 0.95} ≤ total_fat ≤ ${input.targetMacros.fat * 1.05}
-8. Respect user's dietary preferences and restrictions (e.g., allergies, preferred diet).
-9. If exact nutritional data is unavailable, select the closest equivalent (e.g., "brown rice" for "rice") and document the substitution in the explanation.
-10. Ensure all adjusted quantities are positive, realistic, and rounded to two decimal places (e.g., 100.25 grams).
-11. Double-check calculations to ensure macronutrient totals align with the sum of individual ingredient contributions.
+1. **Preserve Meal Structure**: Keep the original meal's ingredients and structure. Only adjust quantities.
+2. **No Ingredient Changes**: Do not add or remove ingredients unless required by allergies.
+3. **Use Grams**: Convert all quantities to grams for calculations.
+4. **Nutritional Data**:
+   - For each ingredient, use accurate nutritional data (calories, protein, carbs, fat per gram) based on reliable sources (e.g., USDA FoodData Central, FatSecret, MyFitnessPal).
+   - If exact data is unavailable, use the closest equivalent (e.g., "brown rice" for "rice") and note it in the explanation.
+5. **Calculate Per-Gram Values**:
+   - For each ingredient, compute:
+     - Calories (kcal per gram)
+     - Protein (grams per gram)
+     - Carbs (grams per gram)
+     - Fat (grams per gram)
+6. **Adjust Quantities**:
+   - Adjust ingredient quantities to match the target macronutrients within a 5% error margin:
+     - Calories: ${input.targetMacros.calories} ± ${input.targetMacros.calories * 0.05} kcal
+     - Protein: ${input.targetMacros.protein} ± ${input.targetMacros.protein * 0.05}g
+     - Carbs: ${input.targetMacros.carbs} ± ${input.targetMacros.carbs * 0.05}g
+     - Fat: ${input.targetMacros.fat} ± ${input.targetMacros.fat * 0.05}g
+   - Use iterative adjustments to ensure totals match the targets.
+7. **Validate Totals**:
+   - Ensure total macronutrients satisfy:
+     - ${input.targetMacros.calories * 0.95} ≤ total_calories ≤ ${input.targetMacros.calories * 1.05}
+     - ${input.targetMacros.protein * 0.95} ≤ total_protein ≤ ${input.targetMacros.protein * 1.05}
+     - ${input.targetMacros.carbs * 0.95} ≤ total_carbs ≤ ${input.targetMacros.carbs * 1.05}
+     - ${input.targetMacros.fat * 0.95} ≤ total_fat ≤ ${input.targetMacros.fat * 1.05}
+8. **Respect Constraints**: Adhere to user’s dietary preferences, allergies, and restrictions.
+9. **Ensure Positive Values**: All quantities and macronutrients must be positive (e.g., no zero or negative values).
+10. **Round Values**: Round quantities and macronutrients to two decimal places for clarity.
 
-CURRENT MEAL (do NOT change structure, only adjust quantities in grams using real nutritional data):
+CURRENT MEAL (adjust quantities in grams only):
 ${JSON.stringify(input.originalMeal, null, 2)}
 
-TARGET MACRONUTRIENTS (final meal MUST match these values within 5%):
+TARGET MACRONUTRIENTS (must match within 5%):
 - Calories: ${input.targetMacros.calories} kcal
 - Protein: ${input.targetMacros.protein}g
 - Carbs: ${input.targetMacros.carbs}g
 - Fat: ${input.targetMacros.fat}g
 
 RESPONSE FORMAT:
-Your response MUST be valid JSON with exactly this structure:
+Return valid JSON with this exact structure:
 
 {
   "adjustedMeal": {
@@ -167,10 +168,10 @@ Your response MUST be valid JSON with exactly this structure:
     "total_carbs": [ADJUSTED_TOTAL_CARBS],
     "total_fat": [ADJUSTED_TOTAL_FAT]
   },
-  "explanation": "Nutritional data for each ingredient was retrieved from trusted online databases (USDA FoodData Central, FatSecret, or MyFitnessPal). Quantities were adjusted using per-gram nutritional values to match target macronutrients within a 5% error margin. The meal structure was preserved, and user dietary constraints (allergies, preferences) were respected. Substitutions (if any) are noted below: [LIST SUBSTITUTIONS]."
+  "explanation": "Nutritional data was sourced from reliable databases. Quantities were adjusted to match target macronutrients within a 5% error margin, preserving meal structure and respecting dietary constraints. Substitutions (if any): [LIST SUBSTITUTIONS]."
 }
 
-Ensure the response is valid JSON, all calculations are accurate, and macronutrient totals are within the 5% error margin. If data retrieval fails, use the most recent and reliable nutritional data available and note any assumptions in the explanation.
+Ensure the response is valid JSON, all calculations are accurate, and totals are within the 5% error margin. If data is unavailable, use the closest equivalent and note it in the explanation.
 `;
 }
 
@@ -210,13 +211,13 @@ export async function adjustMealIngredientsDirect(
         }
 
         const meal = parsed.adjustedMeal;
-        // Enhanced validation for 5% error margin
         const isWithinMargin = (
           value: number,
           target: number,
           margin: number = 0.05
         ) => value >= target * (1 - margin) && value <= target * (1 + margin);
 
+        // Validate macro totals and ensure positive values
         if (
           meal.total_calories <= 0 ||
           meal.total_protein <= 0 ||
@@ -227,20 +228,29 @@ export async function adjustMealIngredientsDirect(
           !isWithinMargin(meal.total_carbs, input.targetMacros.carbs) ||
           !isWithinMargin(meal.total_fat, input.targetMacros.fat)
         ) {
-          console.warn("AI generated invalid macro values or values outside 5% margin, regenerating...");
+          console.warn(
+            "AI generated invalid macro values or values outside 5% margin:",
+            {
+              total_calories: meal.total_calories,
+              total_protein: meal.total_protein,
+              total_carbs: meal.total_carbs,
+              total_fat: meal.total_fat,
+            }
+          );
 
           const retryPrompt = `${prompt}
 
-IMPORTANT: The previous attempt resulted in invalid macro values or values outside the 5% error margin. Please ensure:
-- total_calories: ${input.targetMacros.calories} ± ${input.targetMacros.calories * 0.05} kcal
-- total_protein: ${input.targetMacros.protein} ± ${input.targetMacros.protein * 0.05}g
-- total_carbs: ${input.targetMacros.carbs} ± ${input.targetMacros.carbs * 0.05}g
-- total_fat: ${input.targetMacros.fat} ± ${input.targetMacros.fat * 0.05}g
+IMPORTANT: The previous attempt failed due to invalid macro values or values outside the 5% error margin. Please:
+- Ensure totals are within:
+  - Calories: ${input.targetMacros.calories} ± ${input.targetMacros.calories * 0.05} kcal
+  - Protein: ${input.targetMacros.protein} ± ${input.targetMacros.protein * 0.05}g
+  - Carbs: ${input.targetMacros.carbs} ± ${input.targetMacros.carbs * 0.05}g
+  - Fat: ${input.targetMacros.fat} ± ${input.targetMacros.fat * 0.05}g
 - Minimum values: total_calories ≥ 50, total_protein ≥ 5g, total_carbs ≥ 5g, total_fat ≥ 2g
-- Retrieve fresh nutritional data from USDA FoodData Central, FatSecret, or MyFitnessPal for accuracy.
-- Verify that the sum of individual ingredient macronutrients matches the total values.
+- Use reliable nutritional data for each ingredient.
+- Verify that individual ingredient macronutrients sum to the total values.
 
-All macro values must be positive and within the 5% error margin of the target values.`;
+Recalculate and ensure all values are positive and within the 5% margin.`;
 
           const retryResult = await model.generateContent(retryPrompt);
           const retryResponse = await retryResult.response;
@@ -264,12 +274,45 @@ All macro values must be positive and within the 5% error margin of the target v
             !isWithinMargin(retryMeal.total_carbs, input.targetMacros.carbs) ||
             !isWithinMargin(retryMeal.total_fat, input.targetMacros.fat)
           ) {
+            console.error(
+              "Retry failed with invalid macro values or values outside 5% margin:",
+              {
+                total_calories: retryMeal.total_calories,
+                total_protein: retryMeal.total_protein,
+                total_carbs: retryMeal.total_carbs,
+                total_fat: retryMeal.total_fat,
+              }
+            );
             throw new Error(
-              "AI continues to generate invalid macro values or values outside 5% margin. Please try again.",
+              "AI continues to generate invalid macro values or values outside 5% margin. Please check input data or try again.",
             );
           }
 
           return retryParsed as AdjustMealIngredientsOutput;
+        }
+
+        // Additional validation to ensure ingredient macros sum to totals
+        const ingredientSums = meal.ingredients.reduce(
+          (sums: { calories: number; protein: number; carbs: number; fat: number }, ingredient: any) => ({
+            calories: sums.calories + (ingredient.calories || 0),
+            protein: sums.protein + (ingredient.protein || 0),
+            carbs: sums.carbs + (ingredient.carbs || 0),
+            fat: sums.fat + (ingredient.fat || 0),
+          }),
+          { calories: 0, protein: 0, carbs: 0, fat: 0 }
+        );
+
+        if (
+          Math.abs(ingredientSums.calories - meal.total_calories) > 0.01 ||
+          Math.abs(ingredientSums.protein - meal.total_protein) > 0.01 ||
+          Math.abs(ingredientSums.carbs - meal.total_carbs) > 0.01 ||
+          Math.abs(ingredientSums.fat - meal.total_fat) > 0.01
+        ) {
+          console.error(
+            "Ingredient macronutrient sums do not match totals:",
+            { ingredientSums, totals: meal }
+          );
+          throw new Error("Ingredient macronutrient sums do not match reported totals.");
         }
 
         return parsed as AdjustMealIngredientsOutput;
@@ -277,8 +320,8 @@ All macro values must be positive and within the 5% error margin of the target v
         console.error(
           "[Gemini Direct] JSON parsing or validation failed:",
           jsonError.message,
+          { receivedText: cleanedText }
         );
-        console.error("[Gemini Direct] Received text:", cleanedText);
         throw new Error(
           `Failed to parse or validate AI response: ${jsonError.message}`,
         );
