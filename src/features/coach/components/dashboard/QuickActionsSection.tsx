@@ -1,55 +1,48 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import SectionHeader from '@/components/ui/SectionHeader';
 import { cn } from '@/lib/utils';
-import { UserPlus, Users } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import Link from 'next/link';
+import { primaryActions } from '../../lib/constant';
 
 export function QuickActionsSection() {
-  const actions = [
-    {
-      title: 'Find New Clients',
-      description: 'Browse potential clients and send requests',
-      icon: UserPlus,
-      href: '/coach-dashboard/requests',
-      color: 'bg-blue-50 text-blue-600 hover:bg-blue-100',
-    },
-    {
-      title: 'View My Clients',
-      description: 'Manage your accepted clients',
-      icon: Users,
-      href: '/coach-dashboard/clients',
-      color: 'bg-green-50 text-green-600 hover:bg-green-100',
-    },
-  ];
-
   return (
     <Card className='border border-border/50'>
-      <CardHeader>
-        <CardTitle className='text-lg font-semibold'>Quick Actions</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className='grid grid-cols-2 gap-3'>
-          {actions.map((action) => (
+      <SectionHeader
+        className='text-xl font-semibold'
+        description='Common tasks and shortcuts to help you manage your coaching practice'
+        title='Quick Actions'
+        icon={<UserPlus className='h-5 w-5 text-primary' />}
+      />
+
+      <CardContent className='space-y-6'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+          {primaryActions.map((action) => (
             <Link key={action.title} href={action.href}>
-              <Button
-                variant='ghost'
-                className='h-auto p-4 flex flex-col items-start gap-2 transition-colors duration-200 w-full'
+              <Card
+                className={cn(
+                  'border-2 border-border/30 transition-all duration-200 cursor-pointer group',
+                  action.color
+                )}
               >
-                <div
-                  className={cn(
-                    'p-2 rounded-lg transition-colors duration-200',
-                    action.color
-                  )}
-                >
-                  <action.icon className='h-4 w-4' />
-                </div>
-                <div className='text-left'>
-                  <p className='font-medium text-sm'>{action.title}</p>
-                  <p className='text-xs text-muted-foreground'>
-                    {action.description}
-                  </p>
-                </div>
-              </Button>
+                <CardContent className='p-6'>
+                  <div className='flex items-start gap-4'>
+                    <div className={cn('p-3 rounded-xl', action.bgColor)}>
+                      <action.icon
+                        className={cn('h-6 w-6', action.iconColor)}
+                      />
+                    </div>
+                    <div className='flex-1 space-y-1'>
+                      <h3 className='font-semibold transition-colors'>
+                        {action.title}
+                      </h3>
+                      <p className='text-sm text-muted-foreground'>
+                        {action.description}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </Link>
           ))}
         </div>

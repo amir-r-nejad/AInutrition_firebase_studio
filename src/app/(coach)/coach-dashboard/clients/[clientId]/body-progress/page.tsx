@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
-import LoadingScreen from '@/components/ui/LoadingScreen';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { ProgressTrackingSection } from '@/features/body-progress/components/ProgressTrackingSection';
+import { ClientBodyProgressSkeleton } from '@/features/coach/components/loading/ClientBodyProgressSkeleton';
 import { TrendingUp } from 'lucide-react';
 import { Suspense } from 'react';
 
@@ -23,13 +23,11 @@ export default async function CoachBodyProgressPage({
           icon={<TrendingUp className='h-8 w-8 text-primary' />}
           className='text-3xl font-bold'
           title='Client Progress Overview'
-          description='Review and track your client’s body metrics over time to assess progress, identify trends, and make informed coaching decisions.'
+          description="Review and track your client's body metrics over time to assess progress, identify trends, and make informed coaching decisions."
         />
 
         <CardContent>
-          <Suspense
-            fallback={<LoadingScreen loadingLabel='loading you data...' />}
-          >
+          <Suspense fallback={<ClientBodyProgressSkeleton />}>
             <ProgressTrackingSection
               searchParams={searchParams}
               clientId={clientId}

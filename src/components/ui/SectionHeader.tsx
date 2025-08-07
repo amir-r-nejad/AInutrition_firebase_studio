@@ -7,6 +7,7 @@ type SectionHeaderProps = {
   description?: string;
   icon?: ReactNode;
   className?: string;
+  headerClassName?: string;
 };
 
 function SectionHeader({
@@ -15,15 +16,23 @@ function SectionHeader({
   title,
   icon,
   className,
+  headerClassName,
 }: SectionHeaderProps) {
   return (
-    <CardHeader>
-      <div className='flex items-center gap-2'>
-        {icon && icon}
-        <CardTitle className={className}>{title}</CardTitle>
+    <CardHeader className={headerClassName}>
+      <div className='flex flex-col gap-1'>
+        <div className='flex items-center gap-2'>
+          {icon && icon}
+          <CardTitle className={className}>{title}</CardTitle>
+        </div>
+
+        {description && (
+          <CardDescription className='text-sm text-muted-foreground'>
+            {description}
+          </CardDescription>
+        )}
       </div>
 
-      <CardDescription>{description}</CardDescription>
       {children}
     </CardHeader>
   );

@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
-import PageLoadingSpinner from '@/components/ui/PageLoadingSpinner';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { CoachClientMealPlan } from '@/features/coach/components/client-dashboard/CoachClientMealPlan';
+import { ClientMealPlanSkeleton } from '@/features/coach/components/loading/ClientMealPlanSkeleton';
 import { checkCoachAccess } from '@/lib/utils/access-control';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
@@ -29,11 +29,7 @@ export default async function CoachClientMealPlanPage({
           description="View and monitor your client's weekly meal schedule"
         />
         <CardContent>
-          <Suspense
-            fallback={
-              <PageLoadingSpinner message="Loading client's meal plan..." />
-            }
-          >
+          <Suspense fallback={<ClientMealPlanSkeleton />}>
             <CoachClientMealPlan
               searchParams={searchParams}
               clientId={clientId}

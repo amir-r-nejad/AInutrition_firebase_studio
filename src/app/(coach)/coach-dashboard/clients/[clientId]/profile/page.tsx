@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
-import PageLoadingSpinner from '@/components/ui/PageLoadingSpinner';
 import SectionHeader from '@/components/ui/SectionHeader';
 import ProfileSection from '@/features/profile/components/ProfileSection';
+import { ClientProfileSkeleton } from '@/features/coach/components/loading/ClientProfileSkeleton';
 import { checkCoachAccess } from '@/lib/utils/access-control';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
@@ -27,11 +27,7 @@ export default async function CoachClientProfilePage({
           description="View your client's health profile and nutrition goals"
         />
         <CardContent>
-          <Suspense
-            fallback={
-              <PageLoadingSpinner message="Loading client's profile..." />
-            }
-          >
+          <Suspense fallback={<ClientProfileSkeleton />}>
             <ProfileSection clientId={clientId} />
           </Suspense>
         </CardContent>
