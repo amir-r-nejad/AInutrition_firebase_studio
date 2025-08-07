@@ -96,7 +96,7 @@ function cleanInput(input: any): any {
 
 function buildPrompt(input: AdjustMealIngredientsInput): string {
   return `
-You are a certified nutrition expert and AI assistant. Your task is to adjust the meal ingredients to match the target macronutrients using the following strict rules:
+You are a certified nutrition expert and AI assistant. Your task is to adjust the meal ingredients to match the target macronutrients within a 5% error margin using the following strict rules:
 
 USER PROFILE:
 - Age: ${input.userProfile.age}
@@ -107,19 +107,30 @@ USER PROFILE:
 - Preferred Ingredients: ${input.userProfile.preferred_ingredients?.join(", ") || "None"}
 
 RULES FOR ADJUSTMENT:
-1. Preserve original meal structure and ingredient types.
+1. Preserve the original meal structure and ingredient types.
 2. Do not add or remove ingredients unless required due to allergies.
-3. Only adjust quantities. Keep ingredient names, units, and types unchanged.
-4. Ingredient properties must reflect real-world nutrition data.
-   - For each ingredient, look up nutritional info (calories, protein, carbs, fat per unit) from trusted online sources (e.g. USDA, FatSecret, MyFitnessPal).
-5. Adjust quantities to match the target macronutrient values as closely as possible.
-6. Respect user's dietary preferences and restrictions.
+3. Only adjust quantities in grams (or convert to grams if other units are provided).
+4. Search for each ingredient's nutritional data (calories, protein, carbs, fat per gram) using trusted online sources (e.g., USDA FoodData Central, FatSecret, MyFitnessPal).
+5. Calculate precise per-gram nutritional values for each ingredient:
+   - Calories (kcal per gram)
+   - Protein (grams per gram)
+   - Carbs (grams per gram)
+   - Fat (grams per gram)
+6. Adjust ingredient quantities to match the target macronutrients within a 5% error margin:
+   - Total calories: ${input.targetMacros.calories} ± ${input.targetMacros.calories * 0.05}
+   - Total protein: ${input.targetMacros.protein} ± ${input.targetMacros.protein * 0.05}g
+   - Total carbs: ${input.targetMacros.carbs} ± ${input.targetMacros.carbs * 0.05}g
+   - Total fat: ${input.targetMacros.fat} ± ${input.targetMacros.fat * 0.05}g
+7. Use linear optimization or iterative adjustments to ensure the total macronutrients of the adjusted meal match the target values.
+8. Respect user's dietary preferences and restrictions (e.g., allergies, preferred diet).
+9. If exact nutritional data for an ingredient is unavailable, use the closest equivalent (e.g., use "chicken breast" for "chicken" if specific data is missing) and note the substitution in the explanation.
+10. Ensure all adjusted quantities are positive and realistic (e.g., no negative or zero quantities).
 
-CURRENT MEAL (do NOT change structure, only adjust quantities using real nutritional data):
+CURRENT MEAL (do NOT change structure, only adjust quantities in grams using real nutritional data):
 ${JSON.stringify(input.originalMeal, null, 2)}
 
-TARGET MACRONUTRIENTS (final meal MUST match these values):
-- Calories: ${input.targetMacros.calories}
+TARGET MACRONUTRIENTS (final meal MUST match these values within 5%):
+- Calories: ${input.targetMacros.calories} kcal
 - Protein: ${input.targetMacros.protein}g
 - Carbs: ${input.targetMacros.carbs}g
 - Fat: ${input.targetMacros.fat}g
@@ -134,23 +145,23 @@ Your response MUST be valid JSON with exactly this structure:
     "ingredients": [
       {
         "name": "[ORIGINAL_NAME]",
-        "quantity": [ADJUSTED_VALUE],
-        "unit": "[ORIGINAL_UNIT]",
-        "calories": [ADJUSTED_VALUE],
-        "protein": [ADJUSTED_VALUE],
-        "carbs": [ADJUSTED_VALUE],
-        "fat": [ADJUSTED_VALUE]
+        "quantity": [ADJUSTED_VALUE_IN_GRAMS],
+        "unit": "grams",
+        "calories": [ADJUSTED_CALORIES],
+        "protein": [ADJUSTED_PROTEIN],
+        "carbs": [ADJUSTED_CARBS],
+        "fat": [ADJUSTED_FAT]
       }
     ],
-    "total_calories": ${input.targetMacros.calories},
-    "total_protein": ${input.targetMacros.protein},
-    "total_carbs": ${input.targetMacros.carbs},
-    "total_fat": ${input.targetMacros.fat}
+    "total_calories": [ADJUSTED_TOTAL_CALORIES],
+    "total_protein": [ADJUSTED_TOTAL_PROTEIN],
+    "total_carbs": [ADJUSTED_TOTAL_CARBS],
+    "total_fat": [ADJUSTED_TOTAL_FAT]
   },
-  "explanation": "Ingredient nutrition facts were sourced from reputable online databases. Quantities were adjusted proportionally to hit target macronutrients while strictly preserving original ingredient structure and user dietary constraints."
+  "explanation": "Ingredient nutrition facts were sourced from reputable online databases (e.g., USDA, FatSecret). Quantities were adjusted using per-gram nutritional data to match target macronutrients within a 5% error margin while preserving original ingredient structure and respecting user dietary constraints. Substitutions (if any) are noted."
 }
 
-If any ingredient lacks exact nutrient data, substitute with the closest known equivalent and explain it clearly in the output.
+Ensure the adjusted meal's total macronutrients are within the 5% error margin of the target values. Verify calculations to avoid errors.
 `;
 }
 
@@ -205,6 +216,11 @@ IMPORTANT: The previous attempt resulted in zero or negative macro values. Pleas
 - total_protein is at least 5g
 - total_carbs is at least 5g
 - total_fat is at least 2g
+- All macro values must be within 5% of the target values:
+  - Calories: ${input.targetMacros.calories} ± ${input.targetMacros.calories * 0.05}
+  - Protein: ${input.targetMacros.protein} ± ${input.targetMacros.protein * 0.05}g
+  - Carbs: ${input.targetMacros.carbs} ± ${input.targetMacros.carbs * 0.05}g
+  - Fat: ${input.targetMacros.fat} ± ${input.targetMacros.fat * 0.05}g
 
 All macro values must be positive numbers greater than zero.`;
 

@@ -214,7 +214,7 @@ export default function MealPlanGenerator({
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 120000); // Reduced timeout to 2 minutes
 
-        let result: GeneratePersonalizedMealPlanOutput;
+        let result: GeneratePersonalizedMealPlanOutput | null = null;
         let retryCount = 0;
         const maxRetries = 2;
 
@@ -497,7 +497,7 @@ export default function MealPlanGenerator({
                           title: "No AI Plan Found",
                           description: "Generate an AI meal plan first to refresh it",
                           variant: "default",
-                        });
+                        }); 
                       }
                     }
                   });
