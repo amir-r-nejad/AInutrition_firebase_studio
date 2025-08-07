@@ -62,10 +62,8 @@ async function generateWithOpenAI(
       throw new Error("No content received from OpenAI");
     }
 
-    // Parse JSON response
     const parsed = JSON.parse(content);
 
-    // Validate with schema
     const validationResult =
       AdjustMealIngredientsOutputSchema.safeParse(parsed);
     if (!validationResult.success) {
@@ -98,14 +96,9 @@ function cleanInput(input: any): any {
 
 function buildPrompt(input: AdjustMealIngredientsInput): string {
   return `
-You are a nutrition expert. Your task is to adjust the meal ingredients to meet the target macronutrients while strictly following these rules:
+You are a certified nutrition expert and AI assistant. Your task is to adjust the meal ingredients to match the target macronutrients using the following strict rules:
 
-1. Always maintain the original meal structure and ingredient types
-2. Only adjust quantities, do not add or remove ingredients unless necessary due to allergies
-3. Preserve all original ingredient properties (name, unit, etc.)
-4. Ensure the final meal meets the target macros as closely as possible
-
-User Profile:
+USER PROFILE:
 - Age: ${input.userProfile.age}
 - Diet Goal: ${input.userProfile.primary_diet_goal}
 - Preferred Diet: ${input.userProfile.preferred_diet || "None specified"}
@@ -113,16 +106,27 @@ User Profile:
 - Disliked Ingredients: ${input.userProfile.dispreferrred_ingredients?.join(", ") || "None"}
 - Preferred Ingredients: ${input.userProfile.preferred_ingredients?.join(", ") || "None"}
 
-Current Meal (DO NOT MODIFY STRUCTURE, ONLY ADJUST QUANTITIES):
+RULES FOR ADJUSTMENT:
+1. Preserve original meal structure and ingredient types.
+2. Do not add or remove ingredients unless required due to allergies.
+3. Only adjust quantities. Keep ingredient names, units, and types unchanged.
+4. Ingredient properties must reflect real-world nutrition data.
+   - For each ingredient, look up nutritional info (calories, protein, carbs, fat per unit) from trusted online sources (e.g. USDA, FatSecret, MyFitnessPal).
+5. Adjust quantities to match the target macronutrient values as closely as possible.
+6. Respect user's dietary preferences and restrictions.
+
+CURRENT MEAL (do NOT change structure, only adjust quantities using real nutritional data):
 ${JSON.stringify(input.originalMeal, null, 2)}
 
-Target Macronutrients (MUST MATCH THESE VALUES):
+TARGET MACRONUTRIENTS (final meal MUST match these values):
 - Calories: ${input.targetMacros.calories}
 - Protein: ${input.targetMacros.protein}g
 - Carbs: ${input.targetMacros.carbs}g
 - Fat: ${input.targetMacros.fat}g
 
-Response MUST be valid JSON with EXACTLY this structure:
+RESPONSE FORMAT:
+Your response MUST be valid JSON with exactly this structure:
+
 {
   "adjustedMeal": {
     "name": "${input.originalMeal.name}",
@@ -143,8 +147,10 @@ Response MUST be valid JSON with EXACTLY this structure:
     "total_carbs": ${input.targetMacros.carbs},
     "total_fat": ${input.targetMacros.fat}
   },
-  "explanation": "Adjusted quantities proportionally to meet target macros while respecting user preferences."
+  "explanation": "Ingredient nutrition facts were sourced from reputable online databases. Quantities were adjusted proportionally to hit target macronutrients while strictly preserving original ingredient structure and user dietary constraints."
 }
+
+If any ingredient lacks exact nutrient data, substitute with the closest known equivalent and explain it clearly in the output.
 `;
 }
 
@@ -152,7 +158,6 @@ export async function adjustMealIngredientsDirect(
   input: AdjustMealIngredientsInput,
 ): Promise<AdjustMealIngredientsOutput> {
   try {
-    // Sanitize input: only allow fields defined in schema
     const cleanedInput = AdjustMealIngredientsInputSchema.parse(
       cleanInput(input),
     );
@@ -163,7 +168,6 @@ export async function adjustMealIngredientsDirect(
 
     const prompt = buildPrompt(cleanedInput);
 
-    // Try Gemini first
     try {
       console.log("[Gemini Direct] Attempting to generate meal adjustment...");
       const model = genAI.getGenerativeModel({
@@ -173,7 +177,6 @@ export async function adjustMealIngredientsDirect(
       const response = await result.response;
       const text = response.text();
 
-      // Clean up the response to extract JSON
       let cleanedText = text
         .replace(/```json/g, "")
         .replace(/```/g, "")
@@ -182,12 +185,10 @@ export async function adjustMealIngredientsDirect(
       try {
         const parsed = JSON.parse(cleanedText);
 
-        // Validate the response structure
         if (!parsed.adjustedMeal || !parsed.explanation) {
           throw new Error("AI response missing required fields");
         }
 
-        // Validate that macros are not zero or negative
         const meal = parsed.adjustedMeal;
         if (
           meal.total_calories <= 0 ||
@@ -197,7 +198,6 @@ export async function adjustMealIngredientsDirect(
         ) {
           console.warn("AI generated invalid macro values, regenerating...");
 
-          // Try to regenerate with more specific instructions
           const retryPrompt = `${prompt}
 
 IMPORTANT: The previous attempt resulted in zero or negative macro values. Please ensure:
@@ -219,7 +219,6 @@ All macro values must be positive numbers greater than zero.`;
 
           const retryParsed = JSON.parse(retryCleanedText);
 
-          // Final validation
           const retryMeal = retryParsed.adjustedMeal;
           if (
             retryMeal.total_calories <= 0 ||
@@ -249,7 +248,6 @@ All macro values must be positive numbers greater than zero.`;
     } catch (geminiError: any) {
       console.error("[Gemini Direct] Failed:", geminiError.message);
 
-      // If Gemini fails with 403 or other API errors, try OpenAI
       if (
         geminiError.message?.includes("403") ||
         geminiError.message?.includes("Forbidden") ||
@@ -273,7 +271,6 @@ All macro values must be positive numbers greater than zero.`;
           );
         }
       } else {
-        // For other Gemini errors, throw the error
         throw new Error(`Gemini API error: ${geminiError.message}`);
       }
     }

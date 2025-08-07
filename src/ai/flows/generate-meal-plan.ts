@@ -1,3 +1,4 @@
+
 "use server";
 
 import { geminiModel } from "@/ai/genkit";
@@ -13,7 +14,6 @@ import {
 import { daysOfWeek } from "@/lib/constants";
 import { getAIApiErrorMessage } from "@/lib/utils";
 import { z } from "zod";
-import { getUser } from "@/features/profile/lib/data-services";
 import { editAiPlan } from "@/features/meal-plan/lib/data-service";
 
 export type { GeneratePersonalizedMealPlanOutput };
@@ -128,8 +128,10 @@ For each meal listed below, you MUST generate a corresponding meal object. The t
 
 **CRITICAL OUTPUT INSTRUCTIONS:**
 - Respond with ONLY a valid JSON object matching the provided schema. Do NOT include any text or markdown.
+- You MUST generate exactly {{mealTargets.length}} meals corresponding to each meal target provided.
 - Each meal must include a "meal_title" and a list of ingredients, each with name, calories, protein, carbs, fat.
 - All macro totals must be within 5% of the provided target.
+- Do NOT skip any meals - generate all {{mealTargets.length}} meals even if some are challenging to fit the macros.
 `,
 });
 
@@ -154,108 +156,141 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
       totalFat: 0,
     };
 
-    for (const dayOfWeek of daysOfWeek) {
-      console.log(`4. Processing day: ${dayOfWeek}`);
-      try {
-        const dailyPromptInput: DailyPromptInput = {
-          dayOfWeek,
-          mealTargets: input.mealTargets,
-          preferredDiet: input.preferred_diet || input.preferredDiet || null,
-          allergies: input.allergies || [],
-          dispreferredIngredients: input.dispreferrred_ingredients || input.dispreferredIngredients || [],
-          preferredIngredients: input.preferred_ingredients || input.preferredIngredients || [],
-          preferredCuisines: input.preferredCuisines || [],
-          dispreferredCuisines: input.dispreferredCuisines || [],
-          medicalConditions: input.medical_conditions || input.medicalConditions || [],
-          medications: input.medications || [],
-        };
+    for (let dayIndex = 0; dayIndex < daysOfWeek.length; dayIndex++) {
+      const dayOfWeek = daysOfWeek[dayIndex];
+      console.log(`4. Processing day ${dayIndex + 1}/7: ${dayOfWeek}`);
+      
+      let retryCount = 0;
+      const maxRetries = 3;
+      let dailyOutput = null;
 
-        console.log(
-          "5. dailyPrompt input:",
-          JSON.stringify(dailyPromptInput, null, 2),
-        );
-        const { output: dailyOutput } = await dailyPrompt(dailyPromptInput);
-        console.log(
-          "6. dailyPrompt output:",
-          JSON.stringify(dailyOutput, null, 2),
-        );
+      while (retryCount <= maxRetries && !dailyOutput) {
+        try {
+          const dailyPromptInput: DailyPromptInput = {
+            dayOfWeek,
+            mealTargets: input.mealTargets,
+            preferredDiet: input.preferred_diet || input.preferredDiet || null,
+            allergies: input.allergies || [],
+            dispreferredIngredients: input.dispreferrred_ingredients || input.dispreferredIngredients || [],
+            preferredIngredients: input.preferred_ingredients || input.preferredIngredients || [],
+            preferredCuisines: input.preferredCuisines || [],
+            dispreferredCuisines: input.dispreferredCuisines || [],
+            medicalConditions: input.medical_conditions || input.medicalConditions || [],
+            medications: input.medications || [],
+          };
 
-        if (
-          !dailyOutput ||
-          !dailyOutput.meals ||
-          dailyOutput.meals.length === 0
-        ) {
-          console.warn(`AI returned no meals for ${dayOfWeek}. Skipping.`);
-          continue;
-        }
+          console.log(
+            `5. dailyPrompt input for ${dayOfWeek} (attempt ${retryCount + 1}):`,
+            JSON.stringify(dailyPromptInput, null, 2),
+          );
+          
+          const promptResult = await dailyPrompt(dailyPromptInput);
+          dailyOutput = promptResult.output;
+          
+          console.log(
+            `6. dailyPrompt output for ${dayOfWeek} (attempt ${retryCount + 1}):`,
+            JSON.stringify(dailyOutput, null, 2),
+          );
 
-        const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
-          .map((meal, index) => {
-            if (!meal || !meal.ingredients || meal.ingredients.length === 0) {
-              console.warn(`Invalid meal at index ${index} for ${dayOfWeek}`);
-              return null;
+          if (
+            !dailyOutput ||
+            !dailyOutput.meals ||
+            dailyOutput.meals.length === 0
+          ) {
+            console.warn(`AI returned no meals for ${dayOfWeek} on attempt ${retryCount + 1}.`);
+            if (retryCount < maxRetries) {
+              retryCount++;
+              dailyOutput = null;
+              console.log(`Retrying ${dayOfWeek} in 1 second...`);
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              continue;
+            } else {
+              console.error(`Failed to generate meals for ${dayOfWeek} after ${maxRetries + 1} attempts. Skipping.`);
+              break;
             }
-            const sanitizedIngredients = meal.ingredients.map((ing) => ({
-              name: ing.name ?? "Unknown Ingredient",
-              calories: Number(ing.calories) || 0,
-              protein: Number(ing.protein) || 0,
-              carbs: Number(ing.carbs) || 0,
-              fat: Number(ing.fat) || 0,
-            }));
-            const mealTotals = sanitizedIngredients.reduce(
-              (totals, ing) => {
-                totals.calories += ing.calories;
-                totals.protein += ing.protein;
-                totals.carbs += ing.carbs;
-                totals.fat += ing.fat;
-                return totals;
-              },
-              { calories: 0, protein: 0, carbs: 0, fat: 0 },
-            );
+          } else {
+            // Success, exit retry loop
+            break;
+          }
+        } catch (error) {
+          console.error(`Error generating plan for ${dayOfWeek} on attempt ${retryCount + 1}:`, error);
+          retryCount++;
+          if (retryCount <= maxRetries) {
+            console.log(`Retrying ${dayOfWeek} in 2 seconds...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      }
 
-            const processedMeal: AIGeneratedMeal = {
-              meal_name:
-                input.mealTargets[index]?.mealName || `Meal ${index + 1}`,
-              meal_title: meal.meal_title || `Generated ${index + 1}`,
-              ingredients: sanitizedIngredients,
-              total_calories: mealTotals.calories,
-              total_protein: mealTotals.protein,
-              total_carbs: mealTotals.carbs,
-              total_fat: mealTotals.fat,
-            };
-            return processedMeal;
-          })
-          .filter((meal): meal is AIGeneratedMeal => meal !== null);
+      if (!dailyOutput || !dailyOutput.meals || dailyOutput.meals.length === 0) {
+        console.error(`❌ Completely failed to generate meals for ${dayOfWeek} after all retries`);
+        continue;
+      }
 
-        if (processedMeals.length > 0) {
-          const dailyTotals = processedMeals.reduce(
-            (totals, meal) => ({
-              calories: totals.calories + (meal.total_calories || 0),
-              protein: totals.protein + (meal.total_protein || 0),
-              carbs: totals.carbs + (meal.total_carbs || 0),
-              fat: totals.fat + (meal.total_fat || 0),
-            }),
+      const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
+        .map((meal, index) => {
+          if (!meal || !meal.ingredients || meal.ingredients.length === 0) {
+            console.warn(`Invalid meal at index ${index} for ${dayOfWeek}`);
+            return null;
+          }
+          const sanitizedIngredients = meal.ingredients.map((ing) => ({
+            name: ing.name ?? "Unknown Ingredient",
+            calories: Number(ing.calories) || 0,
+            protein: Number(ing.protein) || 0,
+            carbs: Number(ing.carbs) || 0,
+            fat: Number(ing.fat) || 0,
+          }));
+          const mealTotals = sanitizedIngredients.reduce(
+            (totals, ing) => {
+              totals.calories += ing.calories;
+              totals.protein += ing.protein;
+              totals.carbs += ing.carbs;
+              totals.fat += ing.fat;
+              return totals;
+            },
             { calories: 0, protein: 0, carbs: 0, fat: 0 },
           );
 
-          processedWeeklyPlan.push({
-            day: dayOfWeek,
-            meals: processedMeals,
-            daily_totals: dailyTotals,
-          });
+          const processedMeal: AIGeneratedMeal = {
+            meal_name:
+              input.mealTargets[index]?.mealName || `Meal ${index + 1}`,
+            meal_title: meal.meal_title || `Generated ${index + 1}`,
+            ingredients: sanitizedIngredients,
+            total_calories: mealTotals.calories,
+            total_protein: mealTotals.protein,
+            total_carbs: mealTotals.carbs,
+            total_fat: mealTotals.fat,
+          };
+          return processedMeal;
+        })
+        .filter((meal): meal is AIGeneratedMeal => meal !== null);
 
-          weeklySummary.totalCalories += dailyTotals.calories;
-          weeklySummary.totalProtein += dailyTotals.protein;
-          weeklySummary.totalCarbs += dailyTotals.carbs;
-          weeklySummary.totalFat += dailyTotals.fat;
-        }
-      } catch (e) {
-        console.error(`❌ Failed to generate plan for ${dayOfWeek}:`, e);
+      if (processedMeals.length > 0) {
+        const dailyTotals = processedMeals.reduce(
+          (totals, meal) => ({
+            calories: totals.calories + (meal.total_calories || 0),
+            protein: totals.protein + (meal.total_protein || 0),
+            carbs: totals.carbs + (meal.total_carbs || 0),
+            fat: totals.fat + (meal.total_fat || 0),
+          }),
+          { calories: 0, protein: 0, carbs: 0, fat: 0 },
+        );
+
+        processedWeeklyPlan.push({
+          day: dayOfWeek,
+          meals: processedMeals,
+          daily_totals: dailyTotals,
+        });
+
+        weeklySummary.totalCalories += dailyTotals.calories;
+        weeklySummary.totalProtein += dailyTotals.protein;
+        weeklySummary.totalCarbs += dailyTotals.carbs;
+        weeklySummary.totalFat += dailyTotals.fat;
       }
     }
 
     console.log(
-      "7. Processed weekly plan:",
+      `7. Processed weekly plan (${processedWeeklyPlan.length}/7 days):`,
       JSON.stringify(processedWeeklyPlan, null, 2),
     );
     console.log("8. Weekly summary:", JSON.stringify(weeklySummary, null, 2));
@@ -267,6 +302,16 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
             "The AI failed to generate a valid meal plan for any day of the week. Please try again.",
         }),
       );
+    }
+
+    if (processedWeeklyPlan.length < 7) {
+      console.warn(`⚠️ Only generated ${processedWeeklyPlan.length} out of 7 days. Missing days will be noted.`);
+      
+      // Add missing days to make it clear what's missing
+      const missingDays = daysOfWeek.filter(day => 
+        !processedWeeklyPlan.find(planDay => planDay.day === day)
+      );
+      console.warn(`❌ Missing days: ${missingDays.join(', ')}`);
     }
 
     return {

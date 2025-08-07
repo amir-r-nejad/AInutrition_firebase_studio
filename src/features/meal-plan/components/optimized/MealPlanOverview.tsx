@@ -38,7 +38,8 @@ export default function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
     );
   }
 
-  const { weeklyMealPlan: days, weeklySummary } = mealPlan.ai_plan;
+  const { weeklyMealPlan, weeklySummary } = mealPlan.ai_plan;
+  const days = weeklyMealPlan || [];
 
   const safeWeeklySummary = weeklySummary || {
     totalCalories: 0,
@@ -90,10 +91,10 @@ export default function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
           <CardTitle>7-Day Meal Plan</CardTitle>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
-          <Tabs defaultValue={days[0]?.day || "Monday"} className="w-full">
+          <Tabs defaultValue={weeklyMealPlan[0]?.day || "Monday"} className="w-full">
             <div className="px-6 pb-4 sm:px-0">
               <TabsList className="grid w-full grid-cols-7 text-xs sm:text-sm">
-                {days.map((day: any) => (
+                {weeklyMealPlan.map((day: any) => (
                   <TabsTrigger key={day.day} value={day.day} className="px-1 sm:px-3">
                     {day.day.slice(0, 3)}
                   </TabsTrigger>
@@ -101,7 +102,7 @@ export default function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
               </TabsList>
             </div>
 
-            {days.map((day: any) => (
+            {weeklyMealPlan.map((day: any) => (
               <TabsContent key={day.day} value={day.day} className="space-y-4 px-6 sm:px-0">
                 {/* Daily totals */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
