@@ -185,6 +185,16 @@ function EditMealDialog({
     newWeeklyPlan.days[dayIndex].meals[mealIndex] = meal;
 
     try {
+      // Get target macros from macro splitter for this specific meal
+      // We need to calculate what this meal should have based on macro splitter
+      // For now, using the current meal totals, but this should be updated to use macro splitter data
+      const targetMacros = {
+        calories: meal.total_calories || 0,
+        protein: meal.total_protein || 0,
+        carbs: meal.total_carbs || 0,
+        fat: meal.total_fat || 0,
+      };
+
       const result = await adjustMealIngredientsDirect({
         originalMeal: {
           name: meal.name,
@@ -203,12 +213,7 @@ function EditMealDialog({
           total_carbs: meal.total_carbs || 0,
           total_fat: meal.total_fat || 0,
         },
-        targetMacros: {
-          calories: meal.total_calories || 0,
-          protein: meal.total_protein || 0,
-          carbs: meal.total_carbs || 0,
-          fat: meal.total_fat || 0,
-        },
+        targetMacros,
         userProfile: {
           age: 30,
           allergies: [],

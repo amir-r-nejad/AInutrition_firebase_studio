@@ -84,47 +84,53 @@ async function generateWithOpenAI(
 }
 
 function buildEnhancedPrompt(input: AdjustMealIngredientsInput): string {
-  return `
-I need to adjust this meal to hit specific macro targets. You have access to comprehensive nutrition databases and can look up accurate nutrition information for any food.
+  const currentMacros = {
+    calories: input.originalMeal.ingredients.reduce((sum, ing) => sum + (Number(ing.calories) || 0), 0),
+    protein: input.originalMeal.ingredients.reduce((sum, ing) => sum + (Number(ing.protein) || 0), 0),
+    carbs: input.originalMeal.ingredients.reduce((sum, ing) => sum + (Number(ing.carbs) || 0), 0),
+    fat: input.originalMeal.ingredients.reduce((sum, ing) => sum + (Number(ing.fat) || 0), 0),
+  };
 
-CURRENT MEAL:
+  return `
+I need to adjust this meal to hit EXACT macro targets from the macro splitter. You have access to comprehensive nutrition databases.
+
+CURRENT MEAL WITH ACCURATE NUTRITION DATA:
 ${JSON.stringify(input.originalMeal, null, 2)}
 
-TARGET MACROS:
+CURRENT TOTALS:
+- Calories: ${currentMacros.calories} kcal
+- Protein: ${currentMacros.protein}g
+- Carbs: ${currentMacros.carbs}g
+- Fat: ${currentMacros.fat}g
+
+TARGET MACROS (FROM MACRO SPLITTER - MUST MATCH EXACTLY):
 - Calories: ${input.targetMacros.calories} kcal
 - Protein: ${input.targetMacros.protein}g
 - Carbs: ${input.targetMacros.carbs}g  
 - Fat: ${input.targetMacros.fat}g
 
-CRITICAL INSTRUCTIONS:
-1. **Look up accurate nutrition data**: For each ingredient, research and use the most accurate nutrition information from reliable databases (USDA, nutrition labels, etc.)
-2. **Adjust quantities first**: Modify ONLY the quantities of existing ingredients to get as close as possible to targets
-3. **Add ingredients if needed**: If adjusting quantities alone cannot reach the macro targets (within 10%), suggest adding complementary ingredients that fit the meal profile
-4. **Match targets precisely**: Final macros must be within ±5% of target values
-5. **Realistic portions**: Use realistic amounts (no negative or zero values)
-6. **Meal coherence**: Ensure the meal remains appetizing and cohesive
+DIFFERENCE TO BRIDGE:
+- Calories: ${input.targetMacros.calories - currentMacros.calories > 0 ? '+' : ''}${input.targetMacros.calories - currentMacros.calories} kcal
+- Protein: ${input.targetMacros.protein - currentMacros.protein > 0 ? '+' : ''}${input.targetMacros.protein - currentMacros.protein}g
+- Carbs: ${input.targetMacros.carbs - currentMacros.carbs > 0 ? '+' : ''}${input.targetMacros.carbs - currentMacros.carbs}g
+- Fat: ${input.targetMacros.fat - currentMacros.fat > 0 ? '+' : ''}${input.targetMacros.fat - currentMacros.fat}g
 
-USER PREFERENCES TO RESPECT:
-${input.userProfile.allergies?.length ? `Allergies: ${input.userProfile.allergies.join(", ")}` : "No allergies specified"}
-${input.userProfile.preferred_diet ? `Diet: ${input.userProfile.preferred_diet}` : "No specific diet"}
-${input.userProfile.dispreferrred_ingredients?.length ? `Avoid: ${input.userProfile.dispreferrred_ingredients.join(", ")}` : "No ingredients to avoid"}
-${input.userProfile.preferred_ingredients?.length ? `Prefer: ${input.userProfile.preferred_ingredients.join(", ")}` : "No preferred ingredients"}
+CRITICAL INSTRUCTIONS (PRIORITY ORDER):
+1. **Look up accurate nutrition data**: Use precise USDA/nutrition database values for each ingredient per 100g
+2. **Try quantity adjustments FIRST**: Adjust ONLY existing ingredient quantities to hit targets within ±5% 
+3. **ONLY add ingredients if needed**: Add new ingredients ONLY if quantity adjustments alone cannot achieve ±5% accuracy
+4. **Final validation**: Ensure ALL macros are within ±5% of targets (±${Math.round(input.targetMacros.calories * 0.05)} cal, ±${Math.round(input.targetMacros.protein * 0.05)}g protein, ±${Math.round(input.targetMacros.carbs * 0.05)}g carbs, ±${Math.round(input.targetMacros.fat * 0.05)}g fat)
 
-PROCESS:
-1. Look up accurate nutrition data for each current ingredient
-2. Calculate current total macros
-3. Adjust quantities of existing ingredients proportionally to get closer to targets
-4. If still not within 10% of targets, suggest adding 1-3 complementary ingredients that:
-   - Fit the meal's theme/cuisine
-   - Help bridge the macro gap
-   - Respect user preferences and restrictions
-   - Are commonly paired with existing ingredients
+STEP-BY-STEP PROCESS:
+1. Look up accurate nutrition per 100g for: bread white, cheese, egg whole
+2. Calculate what quantities of existing ingredients would hit targets
+3. Check if this gives realistic portions (20-300g typically)
+4. If targets can be reached with realistic quantities of existing ingredients, DO NOT ADD anything
+5. If impossible with existing ingredients, add minimal complementary ingredients
 
-EXAMPLE COMPLEMENTARY ADDITIONS:
-- If protein is low: add Greek yogurt, eggs, lean meat, legumes, protein powder
-- If carbs are low: add fruits, whole grains, vegetables
-- If fat is low: add nuts, seeds, oils, avocado
-- If calories are low: add calorie-dense healthy options
+USER PREFERENCES:
+${input.userProfile.allergies?.length ? `Allergies: ${input.userProfile.allergies.join(", ")}` : "No allergies"}
+${input.userProfile.dispreferrred_ingredients?.length ? `Avoid: ${input.userProfile.dispreferrred_ingredients.join(", ")}` : "No restrictions"}
 
 Return JSON format:
 {
@@ -133,24 +139,24 @@ Return JSON format:
     "custom_name": "${input.originalMeal.custom_name || ""}",
     "ingredients": [
       {
-        "name": "ingredient name with accurate amount",
-        "quantity": number_in_grams,
-        "unit": "grams",
-        "calories": accurate_calories_per_serving,
-        "protein": accurate_protein_per_serving,
-        "carbs": accurate_carbs_per_serving,
-        "fat": accurate_fat_per_serving
+        "name": "exact ingredient name",
+        "quantity": precise_number_in_grams,
+        "unit": "g",
+        "calories": precise_calories_for_this_quantity,
+        "protein": precise_protein_for_this_quantity,
+        "carbs": precise_carbs_for_this_quantity,
+        "fat": precise_fat_for_this_quantity
       }
     ],
-    "total_calories": calculated_total_calories,
-    "total_protein": calculated_total_protein,
-    "total_carbs": calculated_total_carbs,
-    "total_fat": calculated_total_fat
+    "total_calories": ${input.targetMacros.calories},
+    "total_protein": ${input.targetMacros.protein},
+    "total_carbs": ${input.targetMacros.carbs},
+    "total_fat": ${input.targetMacros.fat}
   },
-  "explanation": "Detailed explanation of: 1) nutrition data sources used, 2) quantity adjustments made, 3) any ingredients added and why, 4) how macro targets were achieved"
+  "explanation": "Detailed explanation of: 1) nutrition values used per 100g, 2) quantity calculations performed, 3) whether targets were achieved by adjusting existing ingredients only or if additions were necessary, 4) final macro accuracy verification"
 }
 
-Make sure the final totals exactly match the sum of individual ingredient macros and are within ±5% of the target macros.
+CRITICAL: The total macros MUST exactly match the target values within ±5%. Verify your calculations before responding.
 `;
 }
 
