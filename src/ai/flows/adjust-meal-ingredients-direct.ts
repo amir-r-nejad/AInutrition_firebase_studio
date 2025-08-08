@@ -31,7 +31,7 @@ async function generateWithOpenAI(
           {
             role: "system",
             content:
-              "You are a nutrition expert with access to comprehensive nutrition databases. Always respond with valid JSON only, no additional text or formatting. You can look up accurate nutrition information for any food item.",
+              "You are a precision nutrition calculator. Your ONLY job is to adjust meal ingredients to match EXACT macro targets from a macro splitter system. You MUST achieve the exact calories, protein, carbs, and fat specified. Use accurate nutrition data per 100g and calculate precise quantities. Failure to match targets within 5% is unacceptable. Respond ONLY with valid JSON, no additional text.",
           },
           {
             role: "user",
@@ -84,33 +84,44 @@ async function generateWithOpenAI(
 }
 
 function buildEnhancedPrompt(input: AdjustMealIngredientsInput): string {
+  const calorieMin = Math.round(input.targetMacros.calories * 0.95);
+  const calorieMax = Math.round(input.targetMacros.calories * 1.05);
+  const proteinMin = Math.round(input.targetMacros.protein * 0.95 * 10) / 10;
+  const proteinMax = Math.round(input.targetMacros.protein * 1.05 * 10) / 10;
+  const carbsMin = Math.round(input.targetMacros.carbs * 0.95 * 10) / 10;
+  const carbsMax = Math.round(input.targetMacros.carbs * 1.05 * 10) / 10;
+  const fatMin = Math.round(input.targetMacros.fat * 0.95 * 10) / 10;
+  const fatMax = Math.round(input.targetMacros.fat * 1.05 * 10) / 10;
+
   return `
-You must adjust this meal to match the exact macro targets. Follow these steps precisely:
+CRITICAL MISSION: Adjust meal ingredients to EXACTLY match these macro targets from the macro splitter. NO EXCEPTIONS.
 
-STEP 1: GET ACCURATE NUTRITION DATA
-For each ingredient, look up precise nutrition values per 100g from USDA database:
-- ${input.originalMeal.ingredients.map(ing => ing.name).join('\n- ')}
+TARGET MACROS FROM MACRO SPLITTER (NON-NEGOTIABLE):
+- Calories: EXACTLY ${input.targetMacros.calories} kcal (Range: ${calorieMin}-${calorieMax})
+- Protein: EXACTLY ${input.targetMacros.protein}g (Range: ${proteinMin}-${proteinMax})
+- Carbs: EXACTLY ${input.targetMacros.carbs}g (Range: ${carbsMin}-${carbsMax})
+- Fat: EXACTLY ${input.targetMacros.fat}g (Range: ${fatMin}-${fatMax})
 
-STEP 2: CURRENT MEAL
+ORIGINAL MEAL TO ADJUST:
 ${JSON.stringify(input.originalMeal.ingredients, null, 2)}
 
-STEP 3: TARGET MACROS (MUST MATCH EXACTLY ±5%)
-- Calories: ${input.targetMacros.calories} kcal
-- Protein: ${input.targetMacros.protein}g  
-- Carbs: ${input.targetMacros.carbs}g
-- Fat: ${input.targetMacros.fat}g
+MANDATORY PROCESS:
+1. For each ingredient, get EXACT nutrition per 100g from nutrition database
+2. Calculate precise quantities (in grams) to hit the EXACT macro targets
+3. Verify calculations: sum all ingredient macros must equal target macros
+4. If ANY macro is outside the range, RECALCULATE until ALL are within range
 
-STEP 4: CALCULATE NEW QUANTITIES
-Using accurate nutrition data per 100g, calculate exact quantities needed to hit targets.
+ABSOLUTE REQUIREMENTS:
+- The final total_calories MUST be ${input.targetMacros.calories}
+- The final total_protein MUST be ${input.targetMacros.protein}
+- The final total_carbs MUST be ${input.targetMacros.carbs}
+- The final total_fat MUST be ${input.targetMacros.fat}
+- Sum of all ingredient calories MUST equal total_calories
+- Sum of all ingredient protein MUST equal total_protein
+- Sum of all ingredient carbs MUST equal total_carbs
+- Sum of all ingredient fat MUST equal total_fat
 
-STEP 5: VALIDATE ACCURACY
-Final totals must be within ±5% of targets:
-- Calories: ${Math.round(input.targetMacros.calories * 0.95)}-${Math.round(input.targetMacros.calories * 1.05)} kcal
-- Protein: ${Math.round(input.targetMacros.protein * 0.95 * 10)/10}-${Math.round(input.targetMacros.protein * 1.05 * 10)/10}g
-- Carbs: ${Math.round(input.targetMacros.carbs * 0.95 * 10)/10}-${Math.round(input.targetMacros.carbs * 1.05 * 10)/10}g  
-- Fat: ${Math.round(input.targetMacros.fat * 0.95 * 10)/10}-${Math.round(input.targetMacros.fat * 1.05 * 10)/10}g
-
-RETURN ONLY THIS JSON:
+RETURN EXACTLY THIS JSON FORMAT:
 {
   "adjustedMeal": {
     "name": "${input.originalMeal.name}",
@@ -118,12 +129,12 @@ RETURN ONLY THIS JSON:
     "ingredients": [
       {
         "name": "ingredient_name",
-        "quantity": exact_grams_number,
-        "unit": "g", 
-        "calories": calculated_calories_for_this_quantity,
-        "protein": calculated_protein_for_this_quantity,
-        "carbs": calculated_carbs_for_this_quantity,
-        "fat": calculated_fat_for_this_quantity
+        "quantity": precise_number_in_grams,
+        "unit": "g",
+        "calories": exact_calories_for_this_portion,
+        "protein": exact_protein_for_this_portion,
+        "carbs": exact_carbs_for_this_portion,
+        "fat": exact_fat_for_this_portion
       }
     ],
     "total_calories": ${input.targetMacros.calories},
@@ -131,10 +142,10 @@ RETURN ONLY THIS JSON:
     "total_carbs": ${input.targetMacros.carbs},
     "total_fat": ${input.targetMacros.fat}
   },
-  "explanation": "Used accurate nutrition data per 100g. Calculated precise quantities to match macro targets within ±5%."
+  "explanation": "Adjusted quantities to match macro splitter targets exactly."
 }
 
-CRITICAL: Use real nutrition database values. Calculate exact quantities. Verify totals match targets ±5%.
+FAILURE IS NOT ACCEPTABLE. The macro splitter has calculated these exact values and you MUST achieve them.
 `;
 }
 
@@ -179,8 +190,31 @@ export async function adjustMealIngredientsDirect(
     console.log("[OpenAI] Generating enhanced meal adjustment with nutrition lookup...");
     const result = await generateWithOpenAI(prompt);
     
+    // Validate that the result matches the target macros
+    const adjustedMeal = result.adjustedMeal;
+    const tolerance = 0.05; // 5%
+    
+    const caloriesValid = Math.abs(adjustedMeal.total_calories - cleanedInput.targetMacros.calories) <= cleanedInput.targetMacros.calories * tolerance;
+    const proteinValid = Math.abs(adjustedMeal.total_protein - cleanedInput.targetMacros.protein) <= cleanedInput.targetMacros.protein * tolerance;
+    const carbsValid = Math.abs(adjustedMeal.total_carbs - cleanedInput.targetMacros.carbs) <= cleanedInput.targetMacros.carbs * tolerance;
+    const fatValid = Math.abs(adjustedMeal.total_fat - cleanedInput.targetMacros.fat) <= cleanedInput.targetMacros.fat * tolerance;
+    
+    if (!caloriesValid || !proteinValid || !carbsValid || !fatValid) {
+      console.error("❌ AI failed to meet macro targets:", {
+        target: cleanedInput.targetMacros,
+        actual: {
+          calories: adjustedMeal.total_calories,
+          protein: adjustedMeal.total_protein,
+          carbs: adjustedMeal.total_carbs,
+          fat: adjustedMeal.total_fat
+        },
+        validation: { caloriesValid, proteinValid, carbsValid, fatValid }
+      });
+      throw new Error(`AI failed to meet macro targets. Please try again. Target: ${cleanedInput.targetMacros.calories}kcal/${cleanedInput.targetMacros.protein}p/${cleanedInput.targetMacros.carbs}c/${cleanedInput.targetMacros.fat}f`);
+    }
+    
     console.log(
-      "[OpenAI] Success! Result:",
+      "[OpenAI] ✅ Success! Macros validated. Result:",
       JSON.stringify(result, null, 2),
     );
     
