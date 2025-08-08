@@ -1,4 +1,3 @@
-
 "use server";
 
 import {
@@ -94,12 +93,12 @@ TARGET MACROS:
 - Fat: ${input.targetMacros.fat}g
 
 CURRENT INGREDIENTS:
-${input.originalMeal.ingredients.map(ing => `- ${ing.name}: ${ing.quantity}g`).join('\n')}
+${input.originalMeal.ingredients.map((ing) => `- ${ing.name}: ${ing.quantity}g`).join("\n")}
 
 INSTRUCTIONS:
 1. Adjust ONLY the quantities of existing ingredients
 2. Use standard nutrition data (USDA values)
-3. Calculate precise amounts to meet targets within 10% tolerance
+3. Calculate precise amounts to meet targets within 5% tolerance
 4. Return valid JSON with exact format below
 
 JSON FORMAT:
@@ -133,26 +132,30 @@ export async function adjustMealIngredientsDirect(
 ): Promise<AdjustMealIngredientsOutput> {
   try {
     // Add debugging and better error handling
-    console.log("[AdjustMealIngredients] Raw input received:", JSON.stringify(input, null, 2));
+    console.log(
+      "[AdjustMealIngredients] Raw input received:",
+      JSON.stringify(input, null, 2),
+    );
     console.log("🎯 TARGET MACROS ANALYSIS:", {
       mealName: input.originalMeal?.name,
       targetMacros: input.targetMacros,
-      expectedFromMacroSplitter: "Should match your macro splitter calculations"
+      expectedFromMacroSplitter:
+        "Should match your macro splitter calculations",
     });
-    
+
     // Check for missing required fields
     if (!input) {
       throw new Error("No input provided");
     }
-    
+
     if (!input.originalMeal) {
       throw new Error("originalMeal is required but was undefined");
     }
-    
+
     if (!input.targetMacros) {
       throw new Error("targetMacros is required but was undefined");
     }
-    
+
     if (!input.userProfile) {
       console.warn("userProfile is missing, using default values");
       input.userProfile = {
@@ -171,18 +174,32 @@ export async function adjustMealIngredientsDirect(
 
     const prompt = buildEnhancedPrompt(cleanedInput);
 
-    console.log("[OpenAI] Generating enhanced meal adjustment with nutrition lookup...");
+    console.log(
+      "[OpenAI] Generating enhanced meal adjustment with nutrition lookup...",
+    );
     const result = await generateWithOpenAI(prompt);
-    
+
     // Validate that the result matches the target macros
     const adjustedMeal = result.adjustedMeal;
-    const tolerance = 0.10; // 10% - more reasonable tolerance
-    
-    const caloriesValid = Math.abs(adjustedMeal.total_calories - cleanedInput.targetMacros.calories) <= cleanedInput.targetMacros.calories * tolerance;
-    const proteinValid = Math.abs(adjustedMeal.total_protein - cleanedInput.targetMacros.protein) <= cleanedInput.targetMacros.protein * tolerance;
-    const carbsValid = Math.abs(adjustedMeal.total_carbs - cleanedInput.targetMacros.carbs) <= cleanedInput.targetMacros.carbs * tolerance;
-    const fatValid = Math.abs(adjustedMeal.total_fat - cleanedInput.targetMacros.fat) <= cleanedInput.targetMacros.fat * tolerance;
-    
+    const tolerance = 0.1; // 10% - more reasonable tolerance
+
+    const caloriesValid =
+      Math.abs(
+        adjustedMeal.total_calories - cleanedInput.targetMacros.calories,
+      ) <=
+      cleanedInput.targetMacros.calories * tolerance;
+    const proteinValid =
+      Math.abs(
+        adjustedMeal.total_protein - cleanedInput.targetMacros.protein,
+      ) <=
+      cleanedInput.targetMacros.protein * tolerance;
+    const carbsValid =
+      Math.abs(adjustedMeal.total_carbs - cleanedInput.targetMacros.carbs) <=
+      cleanedInput.targetMacros.carbs * tolerance;
+    const fatValid =
+      Math.abs(adjustedMeal.total_fat - cleanedInput.targetMacros.fat) <=
+      cleanedInput.targetMacros.fat * tolerance;
+
     if (!caloriesValid || !proteinValid || !carbsValid || !fatValid) {
       console.error("❌ AI failed to meet macro targets:", {
         target: cleanedInput.targetMacros,
@@ -190,28 +207,34 @@ export async function adjustMealIngredientsDirect(
           calories: adjustedMeal.total_calories,
           protein: adjustedMeal.total_protein,
           carbs: adjustedMeal.total_carbs,
-          fat: adjustedMeal.total_fat
+          fat: adjustedMeal.total_fat,
         },
-        validation: { caloriesValid, proteinValid, carbsValid, fatValid }
+        validation: { caloriesValid, proteinValid, carbsValid, fatValid },
       });
-      throw new Error(`AI failed to meet macro targets within 10% tolerance. Please try again. Target: ${cleanedInput.targetMacros.calories}kcal/${cleanedInput.targetMacros.protein}p/${cleanedInput.targetMacros.carbs}c/${cleanedInput.targetMacros.fat}f`);
+      throw new Error(
+        `AI failed to meet macro targets within 10% tolerance. Please try again. Target: ${cleanedInput.targetMacros.calories}kcal/${cleanedInput.targetMacros.protein}p/${cleanedInput.targetMacros.carbs}c/${cleanedInput.targetMacros.fat}f`,
+      );
     }
-    
+
     console.log(
       "[OpenAI] ✅ Success! Macros validated. Result:",
       JSON.stringify(result, null, 2),
     );
-    
+
     return result;
   } catch (error: any) {
     console.error("Error in adjustMealIngredientsDirect:", error);
-    
+
     // Provide more specific error messages
     if (error.name === "ZodError") {
-      const missingFields = error.issues.map((issue: any) => issue.path.join(".")).join(", ");
-      throw new Error(`Missing required fields: ${missingFields}. Please ensure all meal data is properly provided.`);
+      const missingFields = error.issues
+        .map((issue: any) => issue.path.join("."))
+        .join(", ");
+      throw new Error(
+        `Missing required fields: ${missingFields}. Please ensure all meal data is properly provided.`,
+      );
     }
-    
+
     throw error;
   }
 }
