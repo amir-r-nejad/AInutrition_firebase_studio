@@ -119,10 +119,8 @@ Create {{mealTargets.length}} delicious, balanced meals that precisely hit these
 {{#if dispreferredIngredients.length}}- AVOID if possible: {{#each dispreferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
 **PRECISION REQUIREMENTS:**
-- Calories: Within ±3% of target (absolutely critical)
-- Protein: Within ±5% of target (most important macro)
-- Carbs: Within ±10% tolerance 
-- Fat: Within ±10% tolerance
+- Calories: Within ±3% of target (absolutely critical and ONLY validation requirement)
+- Protein, Carbs, Fat: Be creative and balanced, but no strict validation required
 - Use accurate USDA/FoodData Central nutritional values
 - Calculate per-gram nutrition precisely
 
@@ -153,7 +151,7 @@ Create {{mealTargets.length}} delicious, balanced meals that precisely hit these
   ]
 }
 
-**FINAL VALIDATION:** Before outputting, verify each meal's total macros hit targets within tolerance. If not, adjust ingredient quantities or add supplementary ingredients until perfect alignment achieved. Be creative but precise - like a true nutrition professional!`,
+**FINAL VALIDATION:** Before outputting, verify each meal's total CALORIES hit targets within 3% tolerance. Protein, carbs, and fat should be balanced and reasonable but no strict validation required. Be creative with ingredients while maintaining calorie precision!`,
 });
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
@@ -224,7 +222,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
             throw new Error(`Invalid meal structure for ${dayOfWeek}`);
           }
 
-          // Relaxed macro validation - only check calories and protein with 8% tolerance
+          // Only validate calories with 8% tolerance - protein validation removed
           const isAccurate = dailyOutput.meals.every(
             (meal: any, index: number) => {
               const target = input.mealTargets[index];
@@ -233,42 +231,28 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
                   (sum: number, ing: any) => sum + (ing.calories || 0),
                   0,
                 ) || 0;
-              const totalProtein =
-                meal.ingredients?.reduce(
-                  (sum: number, ing: any) => sum + (ing.protein || 0),
-                  0,
-                ) || 0;
 
-              // Calculate percentage errors
+              // Calculate percentage error for calories only
               const calorieError =
                 target.calories > 0
                   ? Math.abs(totalCals - target.calories) / target.calories
                   : 0;
-              const proteinError =
-                target.protein > 0
-                  ? Math.abs(totalProtein - target.protein) / target.protein
-                  : 0;
 
-              // Very relaxed tolerance - 8% for both
-              const isWithinTolerance =
-                calorieError <= 0.08 && // 8% tolerance for calories
-                proteinError <= 0.08; // 8% tolerance for protein
+              // Only check calories with 8% tolerance
+              const isWithinTolerance = calorieError <= 0.08; // 8% tolerance for calories only
 
               if (!isWithinTolerance) {
                 console.warn(
-                  `Macro validation failed for ${target.mealName}:`,
+                  `Calorie validation failed for ${target.mealName}:`,
                   {
                     target: {
                       calories: target.calories,
-                      protein: target.protein,
                     },
                     actual: {
                       calories: totalCals,
-                      protein: totalProtein,
                     },
                     errors: {
                       calories: calorieError,
-                      protein: proteinError,
                     },
                   },
                 );
