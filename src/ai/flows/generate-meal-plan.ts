@@ -82,75 +82,98 @@ const dailyPrompt = geminiModel.definePrompt({
   name: "generateNutritionistMealPlan",
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `YOUR MISSION for {{dayOfWeek}}:
-Create {{mealTargets.length}} delicious, balanced meals that precisely hit these targets:
+  prompt: `PRECISION MACRO ENGINEER - {{dayOfWeek}}
+
+TARGET ACHIEVEMENT MANDATORY:
 {{#each mealTargets}}
-{{this.mealName}}: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
+{{this.mealName}}: EXACT {{this.calories}} kcal | EXACT {{this.protein}}g protein | EXACT {{this.carbs}}g carbs | EXACT {{this.fat}}g fat
 {{/each}}
 
-NUTRITIONIST METHODOLOGY:
+CRITICAL SUCCESS RULES - NO EXCEPTIONS:
+1. CALORIES: Must be EXACTLY within ±3% of target. This is NON-NEGOTIABLE.
+2. PROTEIN: Must be within ±5% of target for muscle building precision.
+3. CARBS: Must be within ±8% of target for energy balance.
+4. FATS: Must be within ±10% of target for hormone optimization.
 
-1. Creative Ingredient Discovery: Search your extensive food database for diverse protein sources (lean meats, fish, dairy, legumes, plant proteins), complex carbs (grains, fruits, vegetables), and healthy fats (oils, nuts, seeds, avocado). Prioritize variety to ensure meals are interesting, sustainable, and nutritionally balanced across food groups.
+MATHEMATICAL PRECISION PROTOCOL:
+For each meal, follow this EXACT calculation sequence:
 
-2. Intelligent Macro Engineering:
-   - Start with a base protein source to anchor the meal.
-   - Add complementary proteins if needed to reach the target (e.g., Greek yogurt + protein powder).
-   - Layer in carbohydrate sources strategically.
-   - Balance with appropriate healthy fats.
-   - Fine-tune quantities until macros align perfectly, ensuring a balanced intake of nutrients from various food groups.
+STEP 1: Calculate exact tolerance ranges FIRST:
+- Calorie range: {{this.calories}} ± 3% = {{this.calories}} * 0.97 to {{this.calories}} * 1.03
+- Protein range: {{this.protein}} ± 5% = {{this.protein}} * 0.95 to {{this.protein}} * 1.05
+- Carbs range: {{this.carbs}} ± 8% = {{this.carbs}} * 0.92 to {{this.carbs}} * 1.08
+- Fat range: {{this.fat}} ± 10% = {{this.fat}} * 0.90 to {{this.fat}} * 1.10
 
-3. Adaptive Ingredient Addition: If initial ingredients don't meet targets:
-   - ADD extra protein powder, egg whites, or lean protein.
-   - SUPPLEMENT with additional carbs (oats, fruits, vegetables).
-   - BOOST healthy fats (nuts, seeds, oils).
-   - MIX AND MATCH until perfect macro balance is achieved.
+STEP 2: Build meal using PRECISE ingredient math:
+- Use EXACT nutritional values per gram (e.g., Chicken breast: 1.65 kcal/g, 0.23g protein/g)
+- Calculate EXACT quantities needed to hit targets
+- Cross-verify: ingredient_amount_grams × nutrition_per_gram = contribution
 
-CREATIVE EXAMPLES:
-- Breakfast: Greek yogurt base + protein powder boost + berries + granola + almond butter
-- Snack: Apple slices + almond butter + whey protein mixed in
-- Lunch: Quinoa bowl + grilled chicken + additional egg whites + vegetables + olive oil dressing
-- Dinner: Salmon + sweet potato + steamed broccoli + extra avocado for fat targets
+STEP 3: Final validation BEFORE output:
+- Sum ALL ingredient contributions
+- Verify EACH macro falls within tolerance range
+- If ANY macro is outside range, RECALCULATE ingredient amounts
 
-CLIENT PREFERENCES (strictly follow):
-{{#if preferredDiet}}- Dietary approach: {{preferredDiet}}{{/if}}
-{{#if allergies.length}}- STRICT ALLERGIES TO AVOID: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if preferredIngredients.length}}- PREFERRED ingredients: {{#each preferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if dispreferredIngredients.length}}- AVOID if possible: {{#each dispreferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+ULTRA-PRECISE INGREDIENT DATABASE:
+Protein Sources (per 100g):
+- Chicken Breast: 165 kcal, 23g protein, 0g carbs, 7.4g fat
+- Whey Protein: 373 kcal, 78g protein, 8g carbs, 4g fat
+- Greek Yogurt: 59 kcal, 10g protein, 3.6g carbs, 0.4g fat
+- Eggs: 155 kcal, 13g protein, 1.1g carbs, 11g fat
 
-PRECISION REQUIREMENTS:
-- Calories: Within ±3% of target (absolutely critical and ONLY validation requirement).
-- Protein, Carbs, Fat: Be creative and balanced, aiming to meet targets as closely as possible, but no strict validation required.
-- Use accurate nutritional values from reliable sources such as USDA/FoodData Central.
-- Calculate nutritional values precisely for the specified quantities.
+Carb Sources (per 100g):
+- Oatmeal (cooked): 68 kcal, 2.4g protein, 12g carbs, 1.4g fat
+- Brown Rice (cooked): 123 kcal, 2.6g protein, 23g carbs, 0.9g fat
+- Banana: 89 kcal, 1.1g protein, 23g carbs, 0.3g fat
+- Sweet Potato: 86 kcal, 1.6g protein, 20g carbs, 0.1g fat
 
-PROFESSIONAL OUTPUT FORMAT:
+Fat Sources (per 100g):
+- Almonds: 579 kcal, 21g protein, 22g carbs, 50g fat
+- Olive Oil: 884 kcal, 0g protein, 0g carbs, 100g fat
+- Avocado: 160 kcal, 2g protein, 9g carbs, 15g fat
+
+CLIENT PREFERENCES (mandatory compliance):
+{{#if preferredDiet}}- Diet Type: {{preferredDiet}}{{/if}}
+{{#if allergies.length}}- FORBIDDEN ALLERGENS: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredIngredients.length}}- PREFERRED: {{#each preferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredIngredients.length}}- AVOID: {{#each dispreferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+
+MANDATORY OUTPUT FORMAT:
 {
   "meals": [
     {
       "meal_title": "Creative meal name reflecting main ingredients",
       "ingredients": [
         {
-          "name": "specific_ingredient_name",
-          "quantity_grams": precise_amount,
+          "name": "exact_ingredient_name",
+          "quantity_grams": mathematically_calculated_amount,
           "nutritional_values": {
-            "calories": calories_for_this_quantity,
-            "protein": protein_for_this_quantity_grams,
-            "carbs": carbs_for_this_quantity_grams,
-            "fat": fat_for_this_quantity_grams
+            "calories": quantity_grams_multiplied_by_calories_per_gram,
+            "protein": quantity_grams_multiplied_by_protein_per_gram,
+            "carbs": quantity_grams_multiplied_by_carbs_per_gram,
+            "fat": quantity_grams_multiplied_by_fat_per_gram
           }
         }
       ],
       "total_macros": {
-        "calories": exact_sum_of_all_ingredients_calories,
-        "protein": exact_sum_of_all_ingredients_protein,
-        "carbs": exact_sum_of_all_ingredients_carbs,
-        "fat": exact_sum_of_all_ingredients_fat
+        "calories": mathematically_verified_sum_within_3_percent_tolerance,
+        "protein": mathematically_verified_sum_within_5_percent_tolerance,
+        "carbs": mathematically_verified_sum_within_8_percent_tolerance,
+        "fat": mathematically_verified_sum_within_10_percent_tolerance
       }
     }
   ]
 }
 
-FINAL VALIDATION: Before outputting, verify each meal's total CALORIES hit targets within 3% tolerance. Protein, carbs, and fat should be balanced and reasonable but no strict validation required. Be creative with ingredients while maintaining calorie precision!`,
+ABSOLUTE FINAL VALIDATION CHECKLIST:
+✓ Each meal CALORIES within ±3% range (CRITICAL)
+✓ Each meal PROTEIN within ±5% range (MUSCLE BUILDING)
+✓ Each meal CARBS within ±8% range (ENERGY BALANCE)
+✓ Each meal FATS within ±10% range (HORMONE SUPPORT)
+✓ All ingredient quantities mathematically precise
+✓ Total macros = sum of all ingredient contributions
+
+FAILURE TO MEET ANY TOLERANCE RANGE = COMPLETELY UNACCEPTABLE. RECALCULATE UNTIL PERFECT.`,
 });
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
