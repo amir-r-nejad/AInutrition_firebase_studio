@@ -1,0 +1,132 @@
+Button' is declared but its value is never read.
+(typescript)
+Ln 3, Col 1
+'Card' is declared but its value is never read.
+(typescript)
+Ln 4, Col 1
+All imports in import declaration are unused.
+(typescript)
+Ln 5, Col 1
+'Input' is declared but its value is never read.
+(typescript)
+Ln 13, Col 1
+'Label' is declared but its value is never read.
+(typescript)
+Ln 14, Col 1
+All imports in import declaration are unused.
+(typescript)
+Ln 19, Col 1
+'useCallback' is declared but its value is never read.
+(typescript)
+Ln 20, Col 10
+'router' is declared but its value is never read.
+(typescript)
+Ln 30, Col 9
+'handleIngredientChange' is declared but its value is never read.
+(typescript)
+Ln 68, Col 12
+'addIngredient' is declared but its value is never read.
+(typescript)
+Ln 108, Col 12
+'removeIngredient' is declared but its value is never read.
+(typescript)
+Ln 135, Col 12
+Property 'meal_distributions' does not exist on type '{ user_id: string; id?: number | undefined; created_at?: string | undefined; updated_at?: string | undefined; target_daily_calories?: number | undefined; target_protein_g?: number | undefined; ... 7 more ...; ai_plan?: any; }'.
+(typescript)
+Ln 211, Col 41
+Unused label.
+(typescript)
+Ln 235, Col 10
+Cannot find name 'mealPercentage'.
+(typescript)
+Ln 235, Col 44
+Expression expected.
+(typescript)
+Ln 236, Col 7
+'catch' or 'finally' expected.
+(typescript)
+Ln 236, Col 8
+No value exists in scope for the shorthand property 'targetMacros'. Either declare one or provide an initializer.
+(typescript)
+Ln 257, Col 9
+Argument of type '{ name: string; ingredients: { name: string; quantity: number; unit: string; calories: number; protein: number; carbs: number; fat: number; }[]; total_calories: number; total_protein: number; total_carbs: number; total_fat: number; custom_name?: string | undefined; }' is not assignable to parameter of type 'SetStateAction<{ name: string; custom_name: string; ingredients: { name: string; quantity: number | null; unit: string; calories: number | null; protein: number | null; carbs: number | null; fat: number | null; }[]; total_calories: number | null; total_protein: number | null; total_carbs: number | null; total_fat: n...'. Type '{ name: string; ingredients: { name: string; quantity: number; unit: string; calories: number; protein: number; carbs: number; fat: number; }[]; total_calories: number; total_protein: number; total_carbs: number; total_fat: number; custom_name?: string | undefined; }' is not assignable to type '{ name: string; custom_name: string; ingredients: { name: string; quantity: number | null; unit: string; calories: number | null; protein: number | null; carbs: number | null; fat: number | null; }[]; total_calories: number | null; total_protein: number | null; total_carbs: number | null; total_fat: number | null; }'. Types of property 'custom_name' are incompatible. Type 'string | undefined' is not assignable to type 'string'. Type 'undefined' is not assignable to type 'string'.
+(typescript)
+Ln 269, Col 17
+'saveResult' is declared but its value is never read.
+(typescript)
+Ln 275, Col 13
+'try' expected.
+(typescript)
+Ln 289, Col 7
+'handleRecalculateManually' is declared but its value is never read.
+(typescript)
+Ln 301, Col 12
+Cannot find name 'meal'.
+(typescript)
+Ln 302, Col 10
+Cannot find name 'calculateTotals'.
+(typescript)
+Ln 303, Col 20
+Cannot find name 'meal'.
+(typescript)
+Ln 303, Col 36
+Cannot find name 'setMeal'.
+(typescript)
+Ln 304, Col 5
+Parameter 'prev' implicitly has an 'any' type.
+(typescript)
+Ln 304, Col 14
+Cannot find name 'selectedDay'.
+(typescript)
+Ln 309, Col 10
+Cannot find name 'selectedMealName'.
+(typescript)
+Ln 309, Col 26
+Cannot find name 'mealPlan'.
+(typescript)
+Ln 309, Col 47
+Cannot find name 'setMeal'.
+(typescript)
+Ln 310, Col 7
+Cannot find name 'mealPlan'.
+(typescript)
+Ln 314, Col 29
+Parameter 'plan' implicitly has an 'any' type.
+(typescript)
+Ln 315, Col 8
+Cannot find name 'selectedDay'.
+(typescript)
+Ln 315, Col 36
+Parameter 'meal' implicitly has an 'any' type.
+(typescript)
+Ln 319, Col 8
+Cannot find name 'selectedMealName'.
+(typescript)
+Ln 319, Col 50
+Cannot find name 'setMeal'.
+(typescript)
+Ln 323, Col 7
+Cannot find name 'calculateTotals'.
+(typescript)
+Ln 333, Col 20
+Cannot find name 'setMeal'.
+(typescript)
+Ln 340, Col 5
+Cannot find name 'selectedDay'.
+(typescript)
+Ln 341, Col 7
+Cannot find name 'selectedMealName'.
+(typescript)
+Ln 341, Col 20
+Cannot find name 'mealPlan'.
+(typescript)
+Ln 341, Col 38
+Cannot find name 'calculateTotals'.
+(typescript)
+Ln 341, Col 58
+Cannot find name 'meal'.
+(typescript)
+Ln 343, Col 8
+Declaration or statement expected.
+(typescript)
+Ln 504, Col 1
