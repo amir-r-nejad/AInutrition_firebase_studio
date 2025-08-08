@@ -1,4 +1,3 @@
-
 "use server";
 
 import { geminiModel } from "@/ai/genkit";
@@ -82,48 +81,52 @@ const dailyPrompt = geminiModel.definePrompt({
   name: "generateCreativeMealPlanPrompt",
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `You are a world-class nutritionist and creative chef. Generate EXACTLY 6 diverse, exciting, and nutritionally precise meals for {{dayOfWeek}}. 
+  prompt: `You are a world-class nutritionist and innovative chef with access to a vast database of global recipes. Generate EXACTLY {{mealTargets.length}} highly diverse, creative, and nutritionally precise meals for {{dayOfWeek}}. Search the internet for trending, unique, and culturally rich recipes to inspire your creations, ensuring maximum variety and excitement. Ensure NO meal is repeated across the week, and each day's meals are entirely unique, even for the same meal type (e.g., breakfast).
+
+**STRICT MACRO SPLITTER COMPLIANCE:**
+- Each meal must match the exact macro targets (calories, protein, carbs, fat) within a 1% margin of error.
+- Calculate ingredient quantities using precise nutritional data from the USDA database or reliable online sources to meet the following targets:
+  {{#each mealTargets}}
+  **{{this.mealName}}**: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
+  {{/each}}
+- Macros must be calculated to ensure: 
+  - Calories = (Protein * 4) + (Carbs * 4) + (Fat * 9)
+  - Total meal macros must sum to the target values with 1% precision.
 
 **CREATIVITY REQUIREMENTS:**
-- Use DIVERSE cooking methods: grilling, roasting, sautéing, steaming, baking, stir-frying
-- Include INTERNATIONAL cuisines: Mediterranean, Asian, Middle Eastern, Latin American, European
-- Vary protein sources: lean meats, fish, seafood, poultry, legumes, dairy, eggs
-- Use COLORFUL vegetables and fruits for visual appeal
-- Include different textures: crunchy, creamy, tender, chewy
-- NO repetitive ingredients across meals - maximum variety
-- NO basic oatmeal or plain dishes - make everything exciting and flavorful
+- Explore an extensive range of cooking methods: grilling, poaching, sous-vide, braising, fermenting, smoking, raw preparations, or molecular gastronomy techniques.
+- Draw inspiration from a global array of cuisines (e.g., African, Southeast Asian, Scandinavian, Caribbean, South American, Indian, Middle Eastern, Pacific Islander, or Eastern European), ensuring no cuisine is repeated within a day or week unless explicitly preferred.
+- Use diverse protein sources: game meats (e.g., venison, quail), exotic seafood (e.g., octopus, sea urchin), heritage breed poultry, plant-based proteins (e.g., tempeh, seitan, lupini beans), or rare legumes.
+- Incorporate vibrant, seasonal, and visually stunning vegetables, fruits, and edible garnishes for Instagram-worthy presentations.
+- Combine varied textures: crispy, velvety, crunchy, silky, chewy, or gelatinous.
+- Avoid repetitive ingredients across all meals in the week to maximize variety.
+- Avoid overly common or basic dishes (e.g., no plain oatmeal, sandwiches, or salads unless creatively elevated).
+- Source inspiration from global food blogs, Michelin-starred restaurant menus, or trending culinary platforms for cutting-edge ideas.
 
-**USER PREFERENCES:**
-{{#if preferredDiet}}- Diet Type: {{preferredDiet}}{{/if}}
+**USER PREFERENCES (ONLY APPLY IF NOT NULL):**
+{{#if preferredDiet}}- Adhere strictly to diet type: {{preferredDiet}}{{/if}}
 {{#if allergies.length}}- AVOID (Allergies): {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if dispreferredIngredients.length}}- AVOID (Dislikes): {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if preferredIngredients.length}}- PREFER: {{#each preferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if preferredCuisines.length}}- Preferred Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if dispreferredCuisines.length}}- Avoid Cuisines: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if medicalConditions.length}}- Health Considerations: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-
-**EXACT MACRO TARGETS FOR {{dayOfWeek}}:**
-{{#each mealTargets}}
-**{{this.mealName}}**: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
-{{/each}}
+{{#if preferredCuisines.length}}- Prioritize cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredCuisines.length}}- Avoid cuisines: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if medicalConditions.length}}- Health considerations: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
 **PRECISION REQUIREMENTS:**
-1. Each meal's macros must be within 2% of targets
-2. Use accurate nutritional data from USDA database
-3. Calculate ingredient quantities precisely to hit macro targets
-4. Include 4-7 diverse ingredients per meal for complexity
-5. Each meal must be restaurant-quality and Instagram-worthy
+1. Macros must be within 1% of targets for calories, protein, carbs, and fat.
+2. Use precise nutritional data from reliable sources (e.g., USDA or peer-reviewed culinary databases).
+3. Include 5-8 diverse ingredients per meal for complexity and flavor depth.
+4. Ensure meals are restaurant-quality, visually stunning, and culturally inspired.
+5. Search online for innovative ingredient pairings or trending recipes to enhance creativity, but do not replicate any specific recipe directly.
 
-**MEAL CREATIVITY EXAMPLES:**
-- Breakfast: Shakshuka with feta and herbs, Japanese tamagoyaki with avocado
-- Snacks: Greek mezze plate, Asian lettuce wraps, Mediterranean stuffed dates
-- Lunch: Thai basil chicken bowl, Moroccan tagine, Korean bibimbap
-- Dinner: Herb-crusted salmon with quinoa pilaf, Brazilian picanha with chimichurri
+**MEAL CREATIVITY GUIDELINES:**
+- Create unique meals for each day and meal type (e.g., no two breakfasts are alike across the week).
+- Incorporate modern culinary techniques (e.g., spherification, fermentation, or foraging-inspired ingredients) where appropriate.
+- Ensure each meal feels like a distinct culinary journey with bold, unexpected flavor profiles.
+- Avoid predictable combinations; prioritize novel pairings inspired by global culinary trends.
 
 **OUTPUT FORMAT:**
-Return ONLY valid JSON with exactly {{mealTargets.length}} unique, creative meals. Each ingredient must have precise nutritional values that add up to the target macros.
-
-Make every meal an exciting culinary experience that people will crave!`,
+Return ONLY valid JSON with exactly {{mealTargets.length}} unique, creative meals. Each ingredient must have precise nutritional values (calories, protein, carbs, fat) that sum to the target macros within 1% accuracy. Include a brief description of each meal's preparation method and cultural inspiration. Make every meal an unforgettable culinary experience!`,
 });
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
@@ -203,9 +206,34 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
                   (sum: number, ing: any) => sum + (ing.calories || 0),
                   0,
                 ) || 0;
+              const totalProtein =
+                meal.ingredients?.reduce(
+                  (sum: number, ing: any) => sum + (ing.protein || 0),
+                  0,
+                ) || 0;
+              const totalCarbs =
+                meal.ingredients?.reduce(
+                  (sum: number, ing: any) => sum + (ing.carbs || 0),
+                  0,
+                ) || 0;
+              const totalFat =
+                meal.ingredients?.reduce(
+                  (sum: number, ing: any) => sum + (ing.fat || 0),
+                  0,
+                ) || 0;
               const calorieError =
                 Math.abs(totalCals - target.calories) / target.calories;
-              return calorieError <= 0.05; // 5% tolerance
+              const proteinError =
+                Math.abs(totalProtein - target.protein) / target.protein;
+              const carbsError =
+                Math.abs(totalCarbs - target.carbs) / target.carbs;
+              const fatError = Math.abs(totalFat - target.fat) / target.fat;
+              return (
+                calorieError <= 0.01 &&
+                proteinError <= 0.01 &&
+                carbsError <= 0.01 &&
+                fatError <= 0.01
+              );
             },
           );
 
@@ -236,7 +264,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
         }
       }
 
-      // Enhanced fallback with better variety
+      // Enhanced fallback with dynamic variety
       if (
         !dailyOutput?.meals ||
         dailyOutput.meals.length !== input.mealTargets.length
@@ -355,7 +383,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
   },
 );
 
-// Enhanced fallback meals with variety
+// Enhanced fallback meals with dynamic variety
 function createEnhancedFallbackMeals(
   mealTargets: any[],
   dayOfWeek: string,
@@ -363,41 +391,16 @@ function createEnhancedFallbackMeals(
 ): any {
   console.log(`🔧 Creating enhanced fallback meals for ${dayOfWeek}`);
 
-  const creativeTemplates = [
-    {
-      name: "Mediterranean Power Bowl",
-      proteins: [
-        "Grilled Chicken",
-        "Salmon Fillet",
-        "Turkey Breast",
-        "Greek Chicken",
-      ],
-      carbs: ["Quinoa", "Brown Rice", "Sweet Potato", "Whole Wheat Couscous"],
-      fats: ["Olive Oil", "Avocado", "Almonds", "Tahini"],
-      extras: ["Cucumber", "Cherry Tomatoes", "Red Onion", "Herbs"],
-    },
-    {
-      name: "Asian Fusion Bowl",
-      proteins: ["Teriyaki Chicken", "Sesame Tofu", "Shrimp", "Beef Strips"],
-      carbs: ["Jasmine Rice", "Soba Noodles", "Brown Rice", "Rice Noodles"],
-      fats: ["Sesame Oil", "Cashews", "Peanut Sauce", "Avocado"],
-      extras: ["Broccoli", "Carrots", "Bell Peppers", "Edamame"],
-    },
-    {
-      name: "Latin American Fiesta",
-      proteins: [
-        "Grilled Chicken",
-        "Black Beans",
-        "Ground Turkey",
-        "Fish Tacos",
-      ],
-      carbs: ["Brown Rice", "Sweet Potato", "Corn Tortilla", "Quinoa"],
-      fats: ["Avocado", "Olive Oil", "Cheese", "Nuts"],
-      extras: ["Peppers", "Onions", "Tomatoes", "Cilantro"],
-    },
+  const cuisines = [
+    "West African",
+    "Malaysian",
+    "Colombian",
+    "Tunisian",
+    "Korean",
+    "Argentinian",
+    "Russian",
   ];
-
-  const template = creativeTemplates[dayIndex % creativeTemplates.length];
+  const cuisine = cuisines[dayIndex % cuisines.length];
 
   const fallbackMeals = mealTargets.map((target, index) => {
     const proteinCals = target.calories * 0.35;
@@ -405,31 +408,38 @@ function createEnhancedFallbackMeals(
     const fatCals = target.calories * 0.2;
 
     return {
-      meal_title: `${template.name} - ${target.mealName}`,
+      meal_title: `${cuisine} Inspired ${target.mealName}`,
       ingredients: [
         {
-          name: template.proteins[index % template.proteins.length],
+          name: `${cuisine} Protein`,
           calories: Math.round(proteinCals),
           protein: Math.round(target.protein * 0.7),
           carbs: Math.round(target.carbs * 0.1),
           fat: Math.round(target.fat * 0.2),
         },
         {
-          name: template.carbs[index % template.carbs.length],
+          name: `${cuisine} Carbohydrate`,
           calories: Math.round(carbCals),
           protein: Math.round(target.protein * 0.2),
           carbs: Math.round(target.carbs * 0.8),
           fat: Math.round(target.fat * 0.1),
         },
         {
-          name: template.fats[index % template.fats.length],
+          name: `${cuisine} Fat Source`,
           calories: Math.round(fatCals),
           protein: Math.round(target.protein * 0.1),
           carbs: Math.round(target.carbs * 0.1),
           fat: Math.round(target.fat * 0.7),
         },
         {
-          name: template.extras[index % template.extras.length],
+          name: `${cuisine} Vegetable`,
+          calories: Math.round(target.calories * 0.05),
+          protein: Math.round(target.protein * 0.05),
+          carbs: Math.round(target.carbs * 0.05),
+          fat: 0,
+        },
+        {
+          name: `${cuisine} Garnish`,
           calories: Math.round(target.calories * 0.05),
           protein: Math.round(target.protein * 0.05),
           carbs: Math.round(target.carbs * 0.05),
@@ -448,39 +458,48 @@ function createEnhancedPlaceholderMeal(
   dayOfWeek: string,
   mealIndex: number,
 ): AIGeneratedMeal {
-  const creativeTitles = [
-    "Mediterranean Delight",
-    "Asian Fusion Special",
-    "Latin American Bowl",
-    "European Classic",
-    "Middle Eastern Feast",
-    "International Mix",
+  const creativeCuisines = [
+    "Ethiopian",
+    "Vietnamese",
+    "Peruvian",
+    "Moroccan",
+    "Japanese",
+    "Brazilian",
+    "Indian",
   ];
+  const cuisine = creativeCuisines[mealIndex % creativeCuisines.length];
 
   return {
     meal_name: targetMeal.mealName,
-    meal_title: `${creativeTitles[mealIndex % creativeTitles.length]} ${targetMeal.mealName}`,
+    meal_title: `${cuisine} ${targetMeal.mealName}`,
     ingredients: [
       {
-        name: `Premium protein for ${targetMeal.mealName.toLowerCase()}`,
+        name: `${cuisine} Protein`,
         calories: Math.round(targetMeal.calories * 0.4),
         protein: Math.round(targetMeal.protein * 0.7),
         carbs: Math.round(targetMeal.carbs * 0.1),
         fat: Math.round(targetMeal.fat * 0.3),
       },
       {
-        name: `Complex carbohydrate for ${targetMeal.mealName.toLowerCase()}`,
+        name: `${cuisine} Carbohydrate`,
         calories: Math.round(targetMeal.calories * 0.4),
         protein: Math.round(targetMeal.protein * 0.2),
         carbs: Math.round(targetMeal.carbs * 0.8),
         fat: Math.round(targetMeal.fat * 0.1),
       },
       {
-        name: `Healthy fat source for ${targetMeal.mealName.toLowerCase()}`,
-        calories: Math.round(targetMeal.calories * 0.2),
+        name: `${cuisine} Fat Source`,
+        calories: Math.round(targetMeal.calories * 0.15),
         protein: Math.round(targetMeal.protein * 0.1),
         carbs: Math.round(targetMeal.carbs * 0.1),
         fat: Math.round(targetMeal.fat * 0.6),
+      },
+      {
+        name: `${cuisine} Vegetable`,
+        calories: Math.round(targetMeal.calories * 0.05),
+        protein: 0,
+        carbs: Math.round(targetMeal.carbs * 0.05),
+        fat: 0,
       },
     ],
     total_calories: targetMeal.calories,
