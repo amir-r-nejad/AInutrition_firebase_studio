@@ -214,111 +214,104 @@ export default function MealPlanGenerator({
 
         // Create AbortController for timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000); // Reduced timeout to 2 minutes
+        const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes timeout
 
         let result: GeneratePersonalizedMealPlanOutput | null = null;
-        let retryCount = 0;
-        const maxRetries = 2;
 
-        while (retryCount <= maxRetries) {
-          try {
-            console.log(
-              `🌐 Making fetch request to /api/meal-plan/generate... (attempt ${retryCount + 1})`,
-            );
+        try {
+          console.log("🌐 Making fetch request to /api/meal-plan/generate...");
 
-            const response = await fetch("/api/meal-plan/generate", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Cache-Control": "no-cache",
-              },
-              body: JSON.stringify({
-                profile: profile,
-                mealTargets: mealTargets,
-              }),
-              signal: controller.signal,
-            });
+          const response = await fetch("/api/meal-plan/generate", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache",
+            },
+            body: JSON.stringify({
+              profile: profile,
+              mealTargets: mealTargets,
+            }),
+            signal: controller.signal,
+          });
 
-            clearTimeout(timeoutId);
-            console.log("✅ API Response Status:", response.status);
+          clearTimeout(timeoutId);
+          console.log("✅ API Response Status:", response.status);
 
-            if (!response.ok) {
-              let errorData;
+          if (!response.ok) {
+            let errorData;
+            try {
+              errorData = await response.json();
+            } catch {
+              errorData = {
+                error: `HTTP ${response.status}: ${response.statusText}`,
+              };
+            }
+            console.error("❌ API Error Response:", errorData);
+            
+            // For server errors, check if meal plan was actually generated
+            if (response.status >= 500) {
+              console.log("🔄 Server error, checking if meal plan was generated...");
               try {
-                errorData = await response.json();
-              } catch {
-                errorData = {
-                  error: `HTTP ${response.status}: ${response.statusText}`,
-                };
-              }
-              console.error("❌ API Error Response:", errorData);
-              throw new Error(
-                errorData.error ||
-                  `API request failed with status ${response.status}`,
-              );
-            }
-
-            result = await response.json();
-            console.log(
-              "✅ Received result from API:",
-              JSON.stringify(result, null, 2),
-            );
-            break; // Success, exit retry loop
-          } catch (fetchError: any) {
-            clearTimeout(timeoutId);
-            console.error(
-              `❌ Fetch error details (attempt ${retryCount + 1}):`,
-              fetchError,
-            );
-
-            if (fetchError.name === "AbortError") {
-              throw new Error(
-                "Request timed out after 2 minutes. Please try again.",
-              );
-            }
-
-            // Check if this is a network error (Failed to fetch)
-            const isNetworkError = 
-              fetchError.message?.includes("Failed to fetch") ||
-              fetchError.message?.includes("fetch") ||
-              fetchError.name === "TypeError";
-
-            if (retryCount === maxRetries) {
-              // Last retry failed, check if meal plan was generated on server
-              if (isNetworkError) {
-                console.log(
-                  "🔄 All retries failed due to network error, checking if meal plan was generated on server...",
-                );
-                try {
-                  // Wait longer for the server to finish processing
-                  await new Promise((resolve) => setTimeout(resolve, 3000));
-                  const existingPlan = await loadMealPlan();
-                  if (existingPlan && existingPlan.weeklyMealPlan) {
-                    console.log(
-                      "✅ Found newly generated meal plan on server!",
-                    );
-                    result = existingPlan;
-                    break;
-                  }
-                } catch (loadError) {
-                  console.log("No meal plan found on server:", loadError);
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+                const existingPlan = await loadMealPlan();
+                if (existingPlan && existingPlan.weeklyMealPlan) {
+                  console.log("✅ Found newly generated meal plan on server!");
+                  result = existingPlan;
+                } else {
+                  throw new Error(
+                    errorData.error || `Server error: ${response.status}`,
+                  );
                 }
-
-                // Show a more specific error message for network issues
+              } catch (loadError) {
                 throw new Error(
-                  "Network connection error occurred, but the meal plan was successfully generated! Please click 'Refresh Meal Plan' to view your new plan.",
+                  errorData.error || `Server error: ${response.status}`,
                 );
-              } else {
-                throw fetchError;
               }
+            } else {
+              throw new Error(
+                errorData.error || `API request failed with status ${response.status}`,
+              );
             }
+          } else {
+            result = await response.json();
+            console.log("✅ Received result from API");
+          }
+        } catch (fetchError: any) {
+          clearTimeout(timeoutId);
+          console.error("❌ Fetch error:", fetchError);
 
-            // Not the last retry, wait before retrying
-            retryCount++;
-            console.log(
-              `⏳ Retrying in ${isNetworkError ? '2' : '1'} second... (${retryCount}/${maxRetries})`,
+          if (fetchError.name === "AbortError") {
+            throw new Error(
+              "Request timed out after 3 minutes. The meal plan may still be generating. Please try refreshing in a moment.",
             );
-            await new Promise((resolve) => setTimeout(resolve, isNetworkError ? 2000 : 1000));
+          }
+
+          // Check if this is a network error
+          const isNetworkError = 
+            fetchError.message?.includes("Failed to fetch") ||
+            fetchError.message?.includes("fetch") ||
+            fetchError.name === "TypeError";
+
+          if (isNetworkError) {
+            console.log("🔄 Network error, checking if meal plan was generated on server...");
+            try {
+              await new Promise((resolve) => setTimeout(resolve, 3000));
+              const existingPlan = await loadMealPlan();
+              if (existingPlan && existingPlan.weeklyMealPlan) {
+                console.log("✅ Found newly generated meal plan on server!");
+                result = existingPlan;
+              } else {
+                throw new Error(
+                  "Network connection error. Please check your connection and try again, or click 'Refresh Meal Plan' to check if your plan was generated.",
+                );
+              }
+            } catch (loadError) {
+              throw new Error(
+                "Network connection error. Please check your connection and try again, or click 'Refresh Meal Plan' to check if your plan was generated.",
+              );
+            }
+          } else {
+            throw fetchError;
           }
         }
 

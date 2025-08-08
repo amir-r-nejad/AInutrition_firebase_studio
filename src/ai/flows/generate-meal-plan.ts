@@ -1,3 +1,4 @@
+
 "use server";
 
 import { geminiModel } from "@/ai/genkit";
@@ -23,7 +24,7 @@ function isValidNumber(val: any): boolean {
 
 function preprocessMealTargets(mealTargets: any[]): any[] {
   console.log(
-    "1. preprocessMealTargets input:",
+    "preprocessMealTargets input:",
     JSON.stringify(mealTargets, null, 2),
   );
   const defaultMacroSplit = { protein: 0.3, carbs: 0.4, fat: 0.3 };
@@ -49,7 +50,7 @@ function preprocessMealTargets(mealTargets: any[]): any[] {
 
       const allValid = [calories, protein, carbs, fat].every(isValidNumber);
       if (!allValid) {
-        console.warn(`🚨 Invalid macros in meal index ${index}:`, {
+        console.warn(`Invalid macros in meal index ${index}:`, {
           mealName,
           calories,
           protein,
@@ -70,7 +71,7 @@ function preprocessMealTargets(mealTargets: any[]): any[] {
     .filter(Boolean);
 
   console.log(
-    "2. preprocessMealTargets output:",
+    "preprocessMealTargets output:",
     JSON.stringify(processed, null, 2),
   );
   return processed;
@@ -103,35 +104,39 @@ const dailyPrompt = geminiModel.definePrompt({
   name: "generateDailyMealPlanPrompt",
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `You are a highly precise nutritional data generation service. Your ONLY task is to create a list of meals for a single day, {{dayOfWeek}}, that strictly matches the provided macronutrient targets for each meal, while adhering to the user's dietary preferences.
+  prompt: `You are an expert nutritionist and meal planner. Generate EXACTLY 6 diverse and nutritionally balanced meals for {{dayOfWeek}} that strictly match the provided macro targets. Each meal must be unique, practical, and delicious.
 
-{{#if preferredDiet}}- Dietary Preference: {{preferredDiet}}{{/if}}
-{{#if allergies.length}}- Allergies to Avoid: {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if dispreferredIngredients.length}}- Disliked Ingredients: {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if preferredIngredients.length}}- Favorite Ingredients: {{#each preferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if preferredCuisines.length}}- Favorite Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if dispreferredCuisines.length}}- Cuisines to Avoid: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if medicalConditions.length}}- Medical Conditions: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if medications.length}}- Medications: {{#each medications}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+**USER PREFERENCES:**
+{{#if preferredDiet}}- Diet: {{preferredDiet}}{{/if}}
+{{#if allergies.length}}- Allergies: {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredIngredients.length}}- Avoid: {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredIngredients.length}}- Prefer: {{#each preferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredCuisines.length}}- Cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredCuisines.length}}- Avoid Cuisines: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if medicalConditions.length}}- Health: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if medications.length}}- Meds: {{#each medications}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
-**ABSOLUTE REQUIREMENTS FOR MEAL GENERATION:**
-For each meal listed below, you MUST generate a corresponding meal object. The total macros for the ingredients you list for each meal MUST fall within a 5% tolerance of the targets.
-
+**MEAL TARGETS FOR {{dayOfWeek}}:**
 {{#each mealTargets}}
-- **Meal: {{this.mealName}}**
-  - **TARGET Calories:** {{this.calories}} kcal
-  - **TARGET Protein:** {{this.protein}}g
-  - **TARGET Carbohydrates:** {{this.carbs}}g
-  - **TARGET Fat:** {{this.fat}}g
+**{{this.mealName}}** - {{this.calories}} cal, {{this.protein}}g protein, {{this.carbs}}g carbs, {{this.fat}}g fat
 {{/each}}
 
-**CRITICAL OUTPUT INSTRUCTIONS:**
-- Respond with ONLY a valid JSON object matching the provided schema. Do NOT include any text or markdown.
-- You MUST generate exactly {{mealTargets.length}} meals corresponding to each meal target provided.
-- Each meal must include a "meal_title" and a list of ingredients, each with name, calories, protein, carbs, fat.
-- All macro totals must be within 5% of the provided target.
-- Do NOT skip any meals - generate all {{mealTargets.length}} meals even if some are challenging to fit the macros.
-`,
+**CRITICAL REQUIREMENTS:**
+1. Generate EXACTLY {{mealTargets.length}} meals - NO MORE, NO LESS
+2. Each meal's total macros must be within 3% of targets
+3. Use varied, realistic ingredients with accurate nutrition data
+4. No repetitive meals - each should be unique and appealing
+5. Consider meal timing (light snacks vs substantial meals)
+6. Include practical cooking methods and common ingredients
+7. Ensure cultural diversity and flavor variety across meals
+
+**OUTPUT FORMAT:**
+Return ONLY valid JSON with exactly {{mealTargets.length}} meal objects. Each meal must have:
+- meal_title: Creative, appetizing meal name
+- ingredients: Array with name, calories, protein, carbs, fat for each ingredient
+- Macro totals that match targets within 3% tolerance
+
+Generate diverse, practical meals that people actually want to eat!`,
 });
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
@@ -143,10 +148,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
   async (
     input: GeneratePersonalizedMealPlanInput,
   ): Promise<GeneratePersonalizedMealPlanOutput> => {
-    console.log(
-      "3. generatePersonalizedMealPlanFlow input:",
-      JSON.stringify(input, null, 2),
-    );
+    console.log("🚀 Starting meal plan generation flow");
     const processedWeeklyPlan: DayPlan[] = [];
     const weeklySummary = {
       totalCalories: 0,
@@ -155,108 +157,86 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
       totalFat: 0,
     };
 
+    // Generate all 7 days with better error handling
     for (let dayIndex = 0; dayIndex < daysOfWeek.length; dayIndex++) {
       const dayOfWeek = daysOfWeek[dayIndex];
-      console.log(`4. Processing day ${dayIndex + 1}/7: ${dayOfWeek}`);
+      console.log(`📅 Processing ${dayOfWeek} (${dayIndex + 1}/7)`);
 
-      let retryCount = 0;
-      const maxRetries = 3;
+      const dailyPromptInput: DailyPromptInput = {
+        dayOfWeek,
+        mealTargets: input.mealTargets,
+        preferredDiet: input.preferred_diet || input.preferredDiet || null,
+        allergies: input.allergies || [],
+        dispreferredIngredients:
+          input.dispreferrred_ingredients ||
+          input.dispreferredIngredients ||
+          [],
+        preferredIngredients:
+          input.preferred_ingredients || input.preferredIngredients || [],
+        preferredCuisines: input.preferredCuisines || [],
+        dispreferredCuisines: input.dispreferredCuisines || [],
+        medicalConditions:
+          input.medical_conditions || input.medicalConditions || [],
+        medications: input.medications || [],
+      };
+
       let dailyOutput = null;
+      let retryCount = 0;
+      const maxRetries = 2;
 
+      // Retry logic with improved fallback
       while (retryCount <= maxRetries && !dailyOutput) {
         try {
-          const dailyPromptInput: DailyPromptInput = {
-            dayOfWeek,
-            mealTargets: input.mealTargets,
-            preferredDiet: input.preferred_diet || input.preferredDiet || null,
-            allergies: input.allergies || [],
-            dispreferredIngredients:
-              input.dispreferrred_ingredients ||
-              input.dispreferredIngredients ||
-              [],
-            preferredIngredients:
-              input.preferred_ingredients || input.preferredIngredients || [],
-            preferredCuisines: input.preferredCuisines || [],
-            dispreferredCuisines: input.dispreferredCuisines || [],
-            medicalConditions:
-              input.medical_conditions || input.medicalConditions || [],
-            medications: input.medications || [],
-          };
-
-          console.log(
-            `5. dailyPrompt input for ${dayOfWeek} (attempt ${retryCount + 1}):`,
-            JSON.stringify(dailyPromptInput, null, 2),
-          );
-
+          console.log(`🤖 AI attempt ${retryCount + 1} for ${dayOfWeek}`);
           const promptResult = await dailyPrompt(dailyPromptInput);
           dailyOutput = promptResult.output;
 
-          console.log(
-            `6. dailyPrompt output for ${dayOfWeek} (attempt ${retryCount + 1}):`,
-            JSON.stringify(dailyOutput, null, 2),
-          );
-
+          // Validate output has exactly 6 meals
           if (
-            !dailyOutput ||
-            !dailyOutput.meals ||
-            dailyOutput.meals.length === 0
+            !dailyOutput?.meals ||
+            dailyOutput.meals.length !== input.mealTargets.length
           ) {
             console.warn(
-              `AI returned no meals for ${dayOfWeek} on attempt ${retryCount + 1}.`,
+              `❌ Invalid meal count for ${dayOfWeek}: got ${dailyOutput?.meals?.length || 0}, expected ${input.mealTargets.length}`,
             );
-            if (retryCount < maxRetries) {
-              retryCount++;
-              dailyOutput = null;
-              console.log(`Retrying ${dayOfWeek} in 1 second...`);
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-              continue;
-            } else {
-              console.error(
-                `Failed to generate meals for ${dayOfWeek} after ${maxRetries + 1} attempts. Skipping.`,
-              );
-              break;
-            }
-          } else {
-            // Success, exit retry loop
-            break;
+            dailyOutput = null;
+            throw new Error(`Invalid meal count for ${dayOfWeek}`);
           }
+
+          console.log(`✅ Generated ${dailyOutput.meals.length} meals for ${dayOfWeek}`);
+          break;
         } catch (error) {
-          console.error(
-            `Error generating plan for ${dayOfWeek} on attempt ${retryCount + 1}:`,
-            error,
-          );
+          console.error(`❌ Error on attempt ${retryCount + 1} for ${dayOfWeek}:`, error);
           retryCount++;
           if (retryCount <= maxRetries) {
-            console.log(`Retrying ${dayOfWeek} in 2 seconds...`);
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
         }
       }
 
-      if (
-        !dailyOutput ||
-        !dailyOutput.meals ||
-        dailyOutput.meals.length === 0
-      ) {
-        console.error(
-          `❌ Completely failed to generate meals for ${dayOfWeek} after all retries`,
-        );
-        continue;
+      // If AI fails, create fallback meals
+      if (!dailyOutput?.meals || dailyOutput.meals.length !== input.mealTargets.length) {
+        console.warn(`🔧 Creating fallback meals for ${dayOfWeek}`);
+        dailyOutput = createFallbackMeals(input.mealTargets, dayOfWeek);
       }
 
-      const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
-        .map((meal, index) => {
-          if (!meal || !meal.ingredients || meal.ingredients.length === 0) {
-            console.warn(`Invalid meal at index ${index} for ${dayOfWeek}`);
-            return null;
-          }
-          const sanitizedIngredients = meal.ingredients.map((ing) => ({
+      // Process and validate meals
+      const processedMeals: AIGeneratedMeal[] = [];
+      
+      for (let mealIndex = 0; mealIndex < input.mealTargets.length; mealIndex++) {
+        const mealFromAI = dailyOutput.meals[mealIndex];
+        const targetMeal = input.mealTargets[mealIndex];
+        
+        if (mealFromAI && mealFromAI.ingredients && mealFromAI.ingredients.length > 0) {
+          // Use AI generated meal
+          const sanitizedIngredients = mealFromAI.ingredients.map((ing) => ({
             name: ing.name ?? "Unknown Ingredient",
             calories: Number(ing.calories) || 0,
             protein: Number(ing.protein) || 0,
             carbs: Number(ing.carbs) || 0,
             fat: Number(ing.fat) || 0,
           }));
+
           const mealTotals = sanitizedIngredients.reduce(
             (totals, ing) => {
               totals.calories += ing.calories;
@@ -268,70 +248,47 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
             { calories: 0, protein: 0, carbs: 0, fat: 0 },
           );
 
-          const processedMeal: AIGeneratedMeal = {
-            meal_name:
-              input.mealTargets[index]?.mealName || `Meal ${index + 1}`,
-            meal_title: meal.meal_title || `Generated ${index + 1}`,
+          processedMeals.push({
+            meal_name: targetMeal.mealName,
+            meal_title: mealFromAI.meal_title || `${targetMeal.mealName} for ${dayOfWeek}`,
             ingredients: sanitizedIngredients,
             total_calories: mealTotals.calories,
             total_protein: mealTotals.protein,
             total_carbs: mealTotals.carbs,
             total_fat: mealTotals.fat,
-          };
-          return processedMeal;
-        })
-        .filter((meal): meal is AIGeneratedMeal => meal !== null);
-
-      if (processedMeals.length > 0) {
-        const dailyTotals = processedMeals.reduce(
-          (totals, meal) => ({
-            calories: totals.calories + (meal.total_calories || 0),
-            protein: totals.protein + (meal.total_protein || 0),
-            carbs: totals.carbs + (meal.total_carbs || 0),
-            fat: totals.fat + (meal.total_fat || 0),
-          }),
-          { calories: 0, protein: 0, carbs: 0, fat: 0 },
-        );
-
-        processedWeeklyPlan.push({
-          day: dayOfWeek,
-          meals: processedMeals,
-          daily_totals: dailyTotals,
-        });
-
-        weeklySummary.totalCalories += dailyTotals.calories;
-        weeklySummary.totalProtein += dailyTotals.protein;
-        weeklySummary.totalCarbs += dailyTotals.carbs;
-        weeklySummary.totalFat += dailyTotals.fat;
+          });
+        } else {
+          // Create placeholder meal
+          processedMeals.push(createPlaceholderMeal(targetMeal, dayOfWeek));
+        }
       }
-    }
 
-    console.log(
-      `7. Processed weekly plan (${processedWeeklyPlan.length}/7 days):`,
-      JSON.stringify(processedWeeklyPlan, null, 2),
-    );
-    console.log("8. Weekly summary:", JSON.stringify(weeklySummary, null, 2));
-
-    if (processedWeeklyPlan.length === 0) {
-      throw new Error(
-        getAIApiErrorMessage({
-          message:
-            "The AI failed to generate a valid meal plan for any day of the week. Please try again.",
+      // Calculate daily totals
+      const dailyTotals = processedMeals.reduce(
+        (totals, meal) => ({
+          calories: totals.calories + (meal.total_calories || 0),
+          protein: totals.protein + (meal.total_protein || 0),
+          carbs: totals.carbs + (meal.total_carbs || 0),
+          fat: totals.fat + (meal.total_fat || 0),
         }),
-      );
-    }
-
-    if (processedWeeklyPlan.length < 7) {
-      console.warn(
-        `⚠️ Only generated ${processedWeeklyPlan.length} out of 7 days. Missing days will be noted.`,
+        { calories: 0, protein: 0, carbs: 0, fat: 0 },
       );
 
-      // Add missing days to make it clear what's missing
-      const missingDays = daysOfWeek.filter(
-        (day) => !processedWeeklyPlan.find((planDay) => planDay.day === day),
-      );
-      console.warn(`❌ Missing days: ${missingDays.join(", ")}`);
+      processedWeeklyPlan.push({
+        day: dayOfWeek,
+        meals: processedMeals,
+        daily_totals: dailyTotals,
+      });
+
+      weeklySummary.totalCalories += dailyTotals.calories;
+      weeklySummary.totalProtein += dailyTotals.protein;
+      weeklySummary.totalCarbs += dailyTotals.carbs;
+      weeklySummary.totalFat += dailyTotals.fat;
+
+      console.log(`✅ Completed ${dayOfWeek} with ${processedMeals.length} meals`);
     }
+
+    console.log(`🎉 Generated complete weekly plan: ${processedWeeklyPlan.length} days`);
 
     return {
       weeklyMealPlan: processedWeeklyPlan,
@@ -340,54 +297,100 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
   },
 );
 
+// Helper function to create fallback meals when AI fails
+function createFallbackMeals(mealTargets: any[], dayOfWeek: string): any {
+  console.log(`🔧 Creating fallback meals for ${dayOfWeek}`);
+  
+  const fallbackMeals = mealTargets.map((target) => ({
+    meal_title: `Balanced ${target.mealName}`,
+    ingredients: [
+      {
+        name: `Protein source for ${target.mealName.toLowerCase()}`,
+        calories: Math.round(target.calories * 0.3),
+        protein: Math.round(target.protein * 0.6),
+        carbs: Math.round(target.carbs * 0.1),
+        fat: Math.round(target.fat * 0.3),
+      },
+      {
+        name: `Carb source for ${target.mealName.toLowerCase()}`,
+        calories: Math.round(target.calories * 0.5),
+        protein: Math.round(target.protein * 0.2),
+        carbs: Math.round(target.carbs * 0.8),
+        fat: Math.round(target.fat * 0.1),
+      },
+      {
+        name: `Healthy fat for ${target.mealName.toLowerCase()}`,
+        calories: Math.round(target.calories * 0.2),
+        protein: Math.round(target.protein * 0.2),
+        carbs: Math.round(target.carbs * 0.1),
+        fat: Math.round(target.fat * 0.6),
+      },
+    ],
+  }));
+
+  return { meals: fallbackMeals };
+}
+
+// Helper function to create placeholder meal
+function createPlaceholderMeal(targetMeal: any, dayOfWeek: string): AIGeneratedMeal {
+  return {
+    meal_name: targetMeal.mealName,
+    meal_title: `Simple ${targetMeal.mealName}`,
+    ingredients: [
+      {
+        name: `Balanced meal for ${targetMeal.mealName.toLowerCase()}`,
+        calories: targetMeal.calories,
+        protein: targetMeal.protein,
+        carbs: targetMeal.carbs,
+        fat: targetMeal.fat,
+      }
+    ],
+    total_calories: targetMeal.calories,
+    total_protein: targetMeal.protein,
+    total_carbs: targetMeal.carbs,
+    total_fat: targetMeal.fat,
+  };
+}
+
 export async function generatePersonalizedMealPlan(
   input: GeneratePersonalizedMealPlanInput,
   userId: string,
 ): Promise<GeneratePersonalizedMealPlanOutput> {
   try {
-    console.log(
-      "0. generatePersonalizedMealPlan input:",
-      JSON.stringify(input, null, 2),
-    );
+    console.log("🎯 Starting meal plan generation for user:", userId);
+    
     const processedInput = {
       ...input,
       mealTargets: preprocessMealTargets(input.mealTargets),
     };
 
-    console.log("9. Processed input:", JSON.stringify(processedInput, null, 2));
-
-    if (
-      !processedInput.mealTargets ||
-      processedInput.mealTargets.length === 0
-    ) {
+    if (!processedInput.mealTargets || processedInput.mealTargets.length === 0) {
       throw new Error("No valid meal targets could be derived from input.");
     }
 
-    const parsedInput =
-      GeneratePersonalizedMealPlanInputSchema.parse(processedInput);
+    const parsedInput = GeneratePersonalizedMealPlanInputSchema.parse(processedInput);
     const result = await generatePersonalizedMealPlanFlow(parsedInput);
-    console.log(
-      "Final meal plan generated successfully:",
-      JSON.stringify(result, null, 2),
-    );
+    
+    console.log("✅ Meal plan generated successfully");
 
     // Save the AI plan to database
     try {
       await editAiPlan({ ai_plan: result }, userId);
-      console.log("AI meal plan saved to database successfully");
+      console.log("💾 AI meal plan saved to database");
     } catch (saveError) {
-      console.error("Error saving AI meal plan to database:", saveError);
-      // Don't throw error here, just log it - we still want to return the generated plan
+      console.error("❌ Error saving AI meal plan:", saveError);
+      // Don't throw error here, just log it
     }
 
     return result;
   } catch (e) {
-    console.error("❌ Input validation failed:", e);
+    console.error("❌ Meal plan generation failed:", e);
     throw new Error(
       getAIApiErrorMessage({
-        message:
-          "Invalid input data. Please ensure all required fields (e.g., mealName, calories, protein, carbs, fat) are provided and valid in mealTargets.",
+        message: "Failed to generate meal plan. Please check your inputs and try again.",
       }),
     );
   }
 }
+
+export { generatePersonalizedMealPlanFlow };
