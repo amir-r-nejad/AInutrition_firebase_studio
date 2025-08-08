@@ -228,6 +228,7 @@ export default function MealPlanGenerator({
                 "Cache-Control": "no-cache",
                 "X-Retry-Attempt": attempt.toString(),
               },
+              credentials: "include",
               body: JSON.stringify({
                 profile: profile,
                 mealTargets: mealTargets,
