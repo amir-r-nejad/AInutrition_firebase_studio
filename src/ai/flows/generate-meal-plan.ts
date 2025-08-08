@@ -98,13 +98,16 @@ async function generateDailyMealPlan(
     throw new Error("OpenAI API key not found in environment variables");
   }
 
-  const prompt = `**YOUR MISSION for {{dayOfWeek}}:**
+  // Build meal targets string
+  const mealTargetsString = mealTargets.map(target => 
+    `**${target.mealName}**: ${target.calories} kcal | ${target.protein}g protein | ${target.carbs}g carbs | ${target.fat}g fat`
+  ).join('\n');
 
-As a professional nutritionist with 15+ years of experience, create {{mealTargets.length}} delicious, balanced meals that precisely hit these targets, using real-time data from reliable online sources:
+  const prompt = `**YOUR MISSION for ${dayOfWeek}:**
 
-{{#each mealTargets}}
-**{{this.mealName}}**: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
-{{/each}}
+As a professional nutritionist with 15+ years of experience, create ${mealTargets.length} delicious, balanced meals that precisely hit these targets, using real-time data from reliable online sources:
+
+${mealTargetsString}
 
 **NUTRITIONIST METHODOLOGY:**
 
@@ -138,10 +141,10 @@ As a professional nutritionist with 15+ years of experience, create {{mealTarget
 - Dinner: Baked salmon + roasted sweet potato + steamed broccoli + extra avocado for fat targets
 
 **CLIENT PREFERENCES (strictly follow):**
-{{#if preferredDiet}}- Dietary approach: {{preferredDiet}}{{/if}}
-{{#if allergies.length}}- STRICT ALLERGIES TO AVOID: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if preferredIngredients.length}}- PREFERRED ingredients: {{#each preferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if dispreferredIngredients.length}}- AVOID if possible: {{#each dispreferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+${preferences.preferredDiet ? `- Dietary approach: ${preferences.preferredDiet}` : ''}
+${preferences.allergies && preferences.allergies.length > 0 ? `- STRICT ALLERGIES TO AVOID: ${preferences.allergies.join(', ')}` : ''}
+${preferences.preferredIngredients && preferences.preferredIngredients.length > 0 ? `- PREFERRED ingredients: ${preferences.preferredIngredients.join(', ')}` : ''}
+${preferences.dispreferredIngredients && preferences.dispreferredIngredients.length > 0 ? `- AVOID if possible: ${preferences.dispreferredIngredients.join(', ')}` : ''}
 
 **PRECISION REQUIREMENTS:**
 - Calories: Within ±3% of target (absolutely critical and ONLY validation requirement).
@@ -149,31 +152,29 @@ As a professional nutritionist with 15+ years of experience, create {{mealTarget
 - Use accurate, up-to-date nutritional values from online sources like USDA/FoodData Central or Nutritionix.
 - Calculate nutritional values precisely for the specified quantities, ensuring all calculations are based on real-time data.
 
+**CRITICAL: You MUST create exactly ${mealTargets.length} meals. No more, no less.**
+
 **PROFESSIONAL OUTPUT FORMAT:**
 {
   "meals": [
-    {
-      "meal_title": "Creative meal name reflecting main ingredients",
+${mealTargets.map(target => `    {
+      "meal_title": "Creative ${target.mealName} name reflecting main ingredients",
       "ingredients": [
         {
-          "name": "specific_ingredient_name",
-          "quantity_grams": precise_amount,
-          "nutritional_values": {
-            "calories": calories_for_this_quantity,
-            "protein": protein_for_this_quantity_grams,
-            "carbs": carbs_for_this_quantity_grams,
-            "fat": fat_for_this_quantity_grams
-          },
-          "source": "URL or name of the nutritional database used (e.g., USDA/FoodData Central)"
+          "name": "specific_ingredient_name (amount unit)",
+          "calories": calories_for_this_quantity,
+          "protein": protein_for_this_quantity_grams,
+          "carbs": carbs_for_this_quantity_grams,
+          "fat": fat_for_this_quantity_grams
         }
       ],
       "total_macros": {
-        "calories": exact_sum_of_all_ingredients_calories,
-        "protein": exact_sum_of_all_ingredients_protein,
-        "carbs": exact_sum_of_all_ingredients_carbs,
-        "fat": exact_sum_of_all_ingredients_fat
+        "calories": ${target.calories},
+        "protein": ${target.protein},
+        "carbs": ${target.carbs},
+        "fat": ${target.fat}
       }
-    }
+    }`).join(',\n')}
   ]
 }
 
@@ -219,8 +220,11 @@ As a professional nutritionist with 15+ years of experience, create {{mealTarget
   const content = data.choices[0]?.message?.content;
 
   if (!content) {
+    console.error("No content received from OpenAI. Full response:", JSON.stringify(data, null, 2));
     throw new Error("No content received from OpenAI");
   }
+
+  console.log("Raw OpenAI response content:", content);
 
   // Clean and parse JSON
   let cleanedContent = content
@@ -230,9 +234,23 @@ As a professional nutritionist with 15+ years of experience, create {{mealTarget
 
   try {
     const parsed = JSON.parse(cleanedContent);
+    console.log("Parsed OpenAI response:", JSON.stringify(parsed, null, 2));
+    
+    // Validate the response structure
+    if (!parsed.meals || !Array.isArray(parsed.meals)) {
+      console.error("Invalid response structure - no meals array:", parsed);
+      throw new Error("OpenAI response missing meals array");
+    }
+    
+    if (parsed.meals.length !== mealTargets.length) {
+      console.error(`Expected ${mealTargets.length} meals, got ${parsed.meals.length}:`, parsed.meals);
+      throw new Error(`OpenAI returned ${parsed.meals.length} meals instead of ${mealTargets.length}`);
+    }
+    
     return parsed;
   } catch (parseError) {
     console.error("Failed to parse OpenAI response:", parseError);
+    console.error("Cleaned content:", cleanedContent);
     throw new Error("Invalid JSON response from OpenAI");
   }
 }
