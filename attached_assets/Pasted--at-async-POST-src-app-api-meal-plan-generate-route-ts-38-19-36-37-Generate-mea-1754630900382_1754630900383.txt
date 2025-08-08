@@ -1,0 +1,399 @@
+   at async POST (src/app/api/meal-plan/generate/route.ts:38:19)
+  36 |
+  37 |     // Generate meal plan
+> 38 |     const result = await generatePersonalizedMealPlanFlow({
+     |                   ^
+  39 |       ...profile,
+  40 |       mealTargets: mealTargets,
+  41 |     }); {
+  source: undefined,
+  status: 'INVALID_ARGUMENT',
+  detail: [Object],
+  code: 400,
+  originalMessage: 'Schema validation failed. Parse Errors:\n' +
+    '\n' +
+    '- weeklyMealPlan.3.meals: must NOT have fewer than 6 items\n' +
+    '\n' +
+    'Provided data:\n' +
+    '\n' +
+    '{\n' +
+    '  "weeklyMealPlan": [\n' +
+    '    {\n' +
+    '      "day": "Monday",\n' +
+    '      "meals": [\n' +
+    '        {\n' +
+    '          "meal_name": "Breakfast",\n' +
+    '          "meal_title": "Oatmeal with Fruit and Nuts",\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "name": "Oats (1 cup)",\n' +
+    '              "calories": 357,\n' +
+    '              "protein": 15,\n' +
+    '              "carbs": 48,\n' +
+    '              "fat": 8\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Almonds (1/4 cup)",\n' +
+    '              "calories": 120,\n' +
+    '              "protein": 4,\n' +
+    '              "carbs": 1,\n' +
+    '              "fat": 7\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Banana (1 medium)",\n' +
+    '              "calories": 100,\n' +
+    '              "protein": 1,\n' +
+    '              "carbs": 25,\n' +
+    '              "fat": 0\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Raisins (1/4 cup)",\n' +
+    '              "calories": 60,\n' +
+    '              "protein": 1,\n' +
+    '              "carbs": 15,\n' +
+    '              "fat": 0\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Cinnamon (1 tsp)",\n' +
+    '              "calories": 10,\n' +
+    '              "protein": 0,\n' +
+    '              "carbs": 3,\n' +
+    '              "fat": 0\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Maple Syrup (1 tbsp)",\n' +
+    '              "calories": 20,\n' +
+    '              "protein": 0,\n' +
+    '              "carbs": 5,\n' +
+    '              "fat": 0\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "total_calories": 667,\n' +
+    '          "total_protein": 21,\n' +
+    '          "total_carbs": 97,\n' +
+    '          "total_fat": 15\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "meal_name": "Morning Snack",\n' +
+    '          "meal_title": "Greek Yogurt with Blueberries and Chia Seeds",\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "name": "Greek Yogurt (1 cup)",\n' +
+    '              "calories": 150,\n' +
+    '              "protein": 20,\n' +
+    '              "carbs": 15,\n' +
+    '              "fat": 5\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Blueberries (1 cup)",\n' +
+    '              "calories": 90,\n' +
+    '              "protein": 1,\n' +
+    '              "carbs": 22,\n' +
+    '              "fat": 1\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Chia Seeds (1 tbsp)",\n' +
+    '              "calories": 43,\n' +
+    '              "protein": 2,\n' +
+    '              "carbs": 5,\n' +
+    '              "fat": 3\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "total_calories": 283,\n' +
+    '          "total_protein": 23,\n' +
+    '          "total_carbs": 42,\n' +
+    '          "total_fat": 9\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "meal_name": "Lunch",\n' +
+    '          "meal_title": "Chicken and Quinoa Bowl",\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "name": "Grilled Chicken Breast (6oz)",\n' +
+    '              "calories": 400,\n' +
+    '              "protein": 40,\n' +
+    '              "carbs": 50,\n' +
+    '              "fat": 10\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Quinoa (1 cup cooked)",\n' +
+    '              "calories": 200,\n' +
+    '              "protein": 8,\n' +
+    '              "carbs": 25,\n' +
+    '              "fat": 5\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Mixed Vegetables (1 cup)",\n' +
+    '              "calories": 50,\n' +
+    '              "protein": 2,\n' +
+    '              "carbs": 5,\n' +
+    '              "fat": 2\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "total_calories": 650,\n' +
+    '          "total_protein": 50,\n' +
+    '          "total_carbs": 80,\n' +
+    '          "total_fat": 17\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "meal_name": "Afternoon Snack",\n' +
+    '          "meal_title": "Apple with Almond Butter",\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "name": "Apple (1 large)",\n' +
+    '              "calories": 200,\n' +
+    '              "protein": 1,\n' +
+    '              "carbs": 20,\n' +
+    '              "fat": 10\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Almond Butter (2 tbsp)",\n' +
+    '              "calories": 100,\n' +
+    '              "protein": 4,\n' +
+    '              "carbs": 4,\n' +
+    '              "fat": 9\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "total_calories": 300,\n' +
+    '          "total_protein": 5,\n' +
+    '          "total_carbs": 24,\n' +
+    '          "total_fat": 19\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "meal_name": "Dinner",\n' +
+    '          "meal_title": "Salmon with Rice and Broccoli",\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "name": "Salmon (6oz)",\n' +
+    '              "calories": 380,\n' +
+    '              "protein": 40,\n' +
+    '              "carbs": 40,\n' +
+    '              "fat": 10\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Brown Rice (1 cup cooked)",\n' +
+    '              "calories": 150,\n' +
+    '              "protein": 3,\n' +
+    '              "carbs": 30,\n' +
+    '              "fat": 2\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Broccoli (1 cup)",\n' +
+    '              "calories": 50,\n' +
+    '              "protein": 2,\n' +
+    '              "carbs": 5,\n' +
+    '              "fat": 2\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "total_calories": 580,\n' +
+    '          "total_protein": 45,\n' +
+    '          "total_carbs": 75,\n' +
+    '          "total_fat": 14\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "meal_name": "Evening Snack",\n' +
+    '          "meal_title": "Cottage Cheese with Peach and Walnuts",\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "name": "Cottage Cheese (1 cup)",\n' +
+    '              "calories": 250,\n' +
+    '              "protein": 25,\n' +
+    '              "carbs": 30,\n' +
+    '              "fat": 5\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Peach (1 large)",\n' +
+    '              "calories": 150,\n' +
+    '              "protein": 2,\n' +
+    '              "carbs": 20,\n' +
+    '              "fat": 5\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Walnuts (1/4 cup)",\n' +
+    '              "calories": 30,\n' +
+    '              "protein": 3,\n' +
+    '              "carbs": 3,\n' +
+    '              "fat": 2\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "total_calories": 430,\n' +
+    '          "total_protein": 30,\n' +
+    '          "total_carbs": 53,\n' +
+    '          "total_fat": 12\n' +
+    '        }\n' +
+    '      ],\n' +
+    '      "daily_totals": {\n' +
+    '        "calories": 2910,\n' +
+    '        "protein": 174,\n' +
+    '        "carbs": 371,\n' +
+    '        "fat": 86\n' +
+    '      }\n' +
+    '    },\n' +
+    '    {\n' +
+    '      "day": "Tuesday",\n' +
+    '      "meals": [\n' +
+    '        {\n' +
+    '          "meal_name": "Breakfast",\n' +
+    '          "meal_title": "Oatmeal with Banana, Blueberries, and Almonds",\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "name": "Oats (1 cup)",\n' +
+    '              "calories": 354,\n' +
+    '              "protein": 12,\n' +
+    '              "carbs": 40,\n' +
+    '              "fat": 11\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Almonds (1/4 cup)",\n' +
+    '              "calories": 120,\n' +
+    '              "protein": 4,\n' +
+    '              "carbs": 1,\n' +
+    '              "fat": 7\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Banana (1 medium)",\n' +
+    '              "calories": 100,\n' +
+    '              "protein": 1,\n' +
+    '              "carbs": 15,\n' +
+    '              "fat": 1\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Blueberries (1/2 cup)",\n' +
+    '              "calories": 60,\n' +
+    '              "protein": 0,\n' +
+    '              "carbs": 15,\n' +
+    '              "fat": 0\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Honey (1 tbsp)",\n' +
+    '              "calories": 30,\n' +
+    '              "protein": 0,\n' +
+    '              "carbs": 7,\n' +
+    '              "fat": 0\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Chia Seeds (1 tbsp)",\n' +
+    '              "calories": 20,\n' +
+    '              "protein": 1,\n' +
+    '              "carbs": 5,\n' +
+    '              "fat": 0\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Peanut Butter (1 tbsp)",\n' +
+    '              "calories": 50,\n' +
+    '              "protein": 2,\n' +
+    '              "carbs": 0,\n' +
+    '              "fat": 5\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "total_calories": 734,\n' +
+    '          "total_protein": 20,\n' +
+    '          "total_carbs": 83,\n' +
+    '          "total_fat": 24\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "meal_name": "Morning Snack",\n' +
+    '          "meal_title": "Greek Yogurt with Berries",\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "name": "Greek Yogurt (1 cup)",\n' +
+    '              "calories": 200,\n' +
+    '              "protein": 20,\n' +
+    '              "carbs": 24,\n' +
+    '              "fat": 4\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Raspberries (1/2 cup)",\n' +
+    '              "calories": 60,\n' +
+    '              "protein": 1,\n' +
+    '              "carbs": 15,\n' +
+    '              "fat": 0\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Strawberries (1 cup, sliced)",\n' +
+    '              "calories": 40,\n' +
+    '              "protein": 1,\n' +
+    '              "carbs": 10,\n' +
+    '              "fat": 0\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "total_calories": 300,\n' +
+    '          "total_protein": 22,\n' +
+    '          "total_carbs": 49,\n' +
+    '          "total_fat": 4\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "meal_name": "Lunch",\n' +
+    '          "meal_title": "Chicken and Rice Bowl",\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "name": "Chicken Breast (6oz)",\n' +
+    '              "calories": 380,\n' +
+    '              "protein": 40,\n' +
+    '              "carbs": 40,\n' +
+    '              "fat": 10\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Brown Rice (1 cup cooked)",\n' +
+    '              "calories": 180,\n' +
+    '              "protein": 4,\n' +
+    '              "carbs": 40,\n' +
+    '              "fat": 1\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Broccoli (1 cup)",\n' +
+    '              "calories": 80,\n' +
+    '              "protein": 4,\n' +
+    '              "carbs": 10,\n' +
+    '              "fat": 4\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "total_calories": 640,\n' +
+    '          "total_protein": 48,\n' +
+    '          "total_carbs": 90,\n' +
+    '          "total_fat": 15\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "meal_name": "Afternoon Snack",\n' +
+    '          "meal_title": "Apple and String Cheese",\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "name": "Apple (1 medium)",\n' +
+    '              "calories": 150,\n' +
+    '              "protein": 1,\n' +
+    '              "carbs": 15,\n' +
+    '              "fat": 7\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "String Cheese (2)",\n' +
+    '              "calories": 140,\n' +
+    '              "protein": 14,\n' +
+    '              "carbs": 4,\n' +
+    '              "fat": 12\n' +
+    '            }\n' +
+    '          ],\n' +
+    '          "total_calories": 290,\n' +
+    '          "total_protein": 15,\n' +
+    '          "total_carbs": 19,\n' +
+    '          "total_fat": 19\n' +
+    '        },\n' +
+    '        {\n' +
+    '          "meal_name": "Dinner",\n' +
+    '          "meal_title": "Salmon and Quinoa",\n' +
+    '          "ingredients": [\n' +
+    '            {\n' +
+    '              "name": "Salmon (6oz)",\n' +
+    '              "calories": 400,\n' +
+    '              "protein": 40,\n' +
+    '              "carbs": 50,\n' +
+    '              "fat": 10\n' +
+    '            },\n' +
+    '            {\n' +
+    '              "name": "Quinoa (1/2 cup cooked)",\n' +
+    '              "calories": 100,\n' +
+    '              "protein": 4,\n' +
+    '              "carbs": 20,\n' +
+    '              "fat": 1\n' +
+    '            },\n' +
+    '            {\n' +
+    '           '... 26556 more characters
