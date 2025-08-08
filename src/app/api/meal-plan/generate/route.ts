@@ -1,4 +1,3 @@
-
 import { generatePersonalizedMealPlan } from "@/ai/flows/generate-meal-plan";
 import { getUser } from "@/features/profile/lib/data-services";
 import { NextRequest, NextResponse } from "next/server";

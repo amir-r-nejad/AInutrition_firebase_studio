@@ -213,7 +213,7 @@ export default function MealPlanGenerator({
         let result: GeneratePersonalizedMealPlanOutput | null = null;
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          let timeoutId: NodeJS.Timeout;
+          let timeoutId: NodeJS.Timeout | undefined;
           try {
             console.log(`🌐 Making fetch request to /api/meal-plan/generate... (attempt ${attempt})`);
 
@@ -235,7 +235,9 @@ export default function MealPlanGenerator({
               signal: controller.signal,
             });
 
-            clearTimeout(timeoutId);
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
             console.log("✅ API Response Status:", response.status);
 
             if (!response.ok) {
@@ -288,7 +290,7 @@ export default function MealPlanGenerator({
               break; // Success, exit retry loop
             }
         } catch (fetchError: any) {
-            if (timeoutId) {
+            if (timeoutId !== undefined) {
               clearTimeout(timeoutId);
             }
             console.error(`❌ Fetch error details (attempt ${attempt}):`, fetchError);
@@ -423,16 +425,7 @@ export default function MealPlanGenerator({
   }
 
   // Check if requirements are met
-  const hasProfile = profile && Object.keys(profile).length > 0;
   const hasMacroDistributions = profile?.meal_distributions?.length === 6;
-  const hasValidPercentages =
-    hasMacroDistributions &&
-    Math.abs(
-      profile.meal_distributions.reduce(
-        (sum: number, dist: any) => sum + (dist.calories_pct || 0),
-        0,
-      ) - 100,
-    ) < 0.01;
 
   const totalPercentage = profile?.meal_distributions?.reduce(
     (sum: number, dist: any) => sum + (dist.calories_pct || 0),
