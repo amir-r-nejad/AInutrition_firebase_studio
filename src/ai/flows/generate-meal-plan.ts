@@ -1,4 +1,3 @@
-
 "use server";
 
 import { geminiModel } from "@/ai/genkit";
@@ -23,8 +22,11 @@ function isValidNumber(val: any): boolean {
 }
 
 function preprocessMealTargets(mealTargets: any[]): any[] {
-  console.log("🔧 Preprocessing meal targets:", JSON.stringify(mealTargets, null, 2));
-  
+  console.log(
+    "🔧 Preprocessing meal targets:",
+    JSON.stringify(mealTargets, null, 2),
+  );
+
   const processed = mealTargets
     .map((meal, index) => {
       const mealName = meal.mealName || `Meal ${index + 1}`;
@@ -144,18 +146,25 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
     // Generate all 7 days with enhanced creativity prompts
     for (let dayIndex = 0; dayIndex < daysOfWeek.length; dayIndex++) {
       const dayOfWeek = daysOfWeek[dayIndex];
-      console.log(`📅 Creating exciting meals for ${dayOfWeek} (${dayIndex + 1}/7)`);
+      console.log(
+        `📅 Creating exciting meals for ${dayOfWeek} (${dayIndex + 1}/7)`,
+      );
 
       const dailyPromptInput: DailyPromptInput = {
         dayOfWeek,
         mealTargets: input.mealTargets,
         preferredDiet: input.preferred_diet || input.preferredDiet || null,
         allergies: input.allergies || [],
-        dispreferredIngredients: input.dispreferrred_ingredients || input.dispreferredIngredients || [],
-        preferredIngredients: input.preferred_ingredients || input.preferredIngredients || [],
+        dispreferredIngredients:
+          input.dispreferrred_ingredients ||
+          input.dispreferredIngredients ||
+          [],
+        preferredIngredients:
+          input.preferred_ingredients || input.preferredIngredients || [],
         preferredCuisines: input.preferredCuisines || [],
         dispreferredCuisines: input.dispreferredCuisines || [],
-        medicalConditions: input.medical_conditions || input.medicalConditions || [],
+        medicalConditions:
+          input.medical_conditions || input.medicalConditions || [],
         medications: input.medications || [],
       };
 
@@ -166,68 +175,111 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
       // Enhanced retry logic with better error handling
       while (retryCount <= maxRetries && !dailyOutput) {
         try {
-          console.log(`🤖 Creative AI attempt ${retryCount + 1} for ${dayOfWeek}`);
+          console.log(
+            `🤖 Creative AI attempt ${retryCount + 1} for ${dayOfWeek}`,
+          );
           const promptResult = await dailyPrompt(dailyPromptInput);
           dailyOutput = promptResult.output;
 
           // Validate output quality and macro accuracy
-          if (!dailyOutput?.meals || dailyOutput.meals.length !== input.mealTargets.length) {
-            console.warn(`❌ Invalid meal count for ${dayOfWeek}: got ${dailyOutput?.meals?.length || 0}, expected ${input.mealTargets.length}`);
+          if (
+            !dailyOutput?.meals ||
+            dailyOutput.meals.length !== input.mealTargets.length
+          ) {
+            console.warn(
+              `❌ Invalid meal count for ${dayOfWeek}: got ${dailyOutput?.meals?.length || 0}, expected ${input.mealTargets.length}`,
+            );
             dailyOutput = null;
             throw new Error(`Invalid meal structure for ${dayOfWeek}`);
           }
 
           // Validate macro accuracy
-          const isAccurate = dailyOutput.meals.every((meal: any, index: number) => {
-            const target = input.mealTargets[index];
-            const totalCals = meal.ingredients?.reduce((sum: number, ing: any) => sum + (ing.calories || 0), 0) || 0;
-            const calorieError = Math.abs(totalCals - target.calories) / target.calories;
-            return calorieError <= 0.05; // 5% tolerance
-          });
+          const isAccurate = dailyOutput.meals.every(
+            (meal: any, index: number) => {
+              const target = input.mealTargets[index];
+              const totalCals =
+                meal.ingredients?.reduce(
+                  (sum: number, ing: any) => sum + (ing.calories || 0),
+                  0,
+                ) || 0;
+              const calorieError =
+                Math.abs(totalCals - target.calories) / target.calories;
+              return calorieError <= 0.05; // 5% tolerance
+            },
+          );
 
           if (!isAccurate) {
-            console.warn(`❌ Macro accuracy failed for ${dayOfWeek}, retrying...`);
+            console.warn(
+              `❌ Macro accuracy failed for ${dayOfWeek}, retrying...`,
+            );
             dailyOutput = null;
             throw new Error(`Macro targets not met for ${dayOfWeek}`);
           }
 
-          console.log(`✅ Generated ${dailyOutput.meals.length} creative meals for ${dayOfWeek}`);
+          console.log(
+            `✅ Generated ${dailyOutput.meals.length} creative meals for ${dayOfWeek}`,
+          );
           break;
         } catch (error) {
-          console.error(`❌ Error on attempt ${retryCount + 1} for ${dayOfWeek}:`, error);
+          console.error(
+            `❌ Error on attempt ${retryCount + 1} for ${dayOfWeek}:`,
+            error,
+          );
           retryCount++;
           if (retryCount <= maxRetries) {
             // Exponential backoff
-            await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * retryCount),
+            );
           }
         }
       }
 
       // Enhanced fallback with better variety
-      if (!dailyOutput?.meals || dailyOutput.meals.length !== input.mealTargets.length) {
+      if (
+        !dailyOutput?.meals ||
+        dailyOutput.meals.length !== input.mealTargets.length
+      ) {
         console.warn(`🔧 Creating enhanced fallback meals for ${dayOfWeek}`);
-        dailyOutput = createEnhancedFallbackMeals(input.mealTargets, dayOfWeek, dayIndex);
+        dailyOutput = createEnhancedFallbackMeals(
+          input.mealTargets,
+          dayOfWeek,
+          dayIndex,
+        );
       }
 
       // Process and validate meals with better error handling
       const processedMeals: AIGeneratedMeal[] = [];
-      
-      for (let mealIndex = 0; mealIndex < input.mealTargets.length; mealIndex++) {
+
+      for (
+        let mealIndex = 0;
+        mealIndex < input.mealTargets.length;
+        mealIndex++
+      ) {
         const mealFromAI = dailyOutput.meals[mealIndex];
         const targetMeal = input.mealTargets[mealIndex];
-        
-        if (mealFromAI && mealFromAI.ingredients && mealFromAI.ingredients.length > 0) {
+
+        if (
+          mealFromAI &&
+          mealFromAI.ingredients &&
+          mealFromAI.ingredients.length > 0
+        ) {
           // Enhanced ingredient processing
-          const sanitizedIngredients = mealFromAI.ingredients.map((ing: any) => ({
-            name: ing.name || "Ingredient",
-            calories: Math.round((Number(ing.calories) || 0) * 100) / 100,
-            protein: Math.round((Number(ing.protein) || 0) * 100) / 100,
-            carbs: Math.round((Number(ing.carbs) || 0) * 100) / 100,
-            fat: Math.round((Number(ing.fat) || 0) * 100) / 100,
-          }));
+          const sanitizedIngredients = mealFromAI.ingredients.map(
+            (ing: any) => ({
+              name: ing.name || "Ingredient",
+              calories: Math.round((Number(ing.calories) || 0) * 100) / 100,
+              protein: Math.round((Number(ing.protein) || 0) * 100) / 100,
+              carbs: Math.round((Number(ing.carbs) || 0) * 100) / 100,
+              fat: Math.round((Number(ing.fat) || 0) * 100) / 100,
+            }),
+          );
 
           const mealTotals = sanitizedIngredients.reduce(
-            (totals, ing) => ({
+            (
+              totals: { calories: any; protein: any; carbs: any; fat: any },
+              ing: { calories: any; protein: any; carbs: any; fat: any },
+            ) => ({
               calories: totals.calories + ing.calories,
               protein: totals.protein + ing.protein,
               carbs: totals.carbs + ing.carbs,
@@ -238,7 +290,8 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
 
           processedMeals.push({
             meal_name: targetMeal.mealName,
-            meal_title: mealFromAI.meal_title || `Creative ${targetMeal.mealName}`,
+            meal_title:
+              mealFromAI.meal_title || `Creative ${targetMeal.mealName}`,
             ingredients: sanitizedIngredients,
             total_calories: Math.round(mealTotals.calories * 100) / 100,
             total_protein: Math.round(mealTotals.protein * 100) / 100,
@@ -247,7 +300,9 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
           });
         } else {
           // Enhanced placeholder meal
-          processedMeals.push(createEnhancedPlaceholderMeal(targetMeal, dayOfWeek, mealIndex));
+          processedMeals.push(
+            createEnhancedPlaceholderMeal(targetMeal, dayOfWeek, mealIndex),
+          );
         }
       }
 
@@ -278,10 +333,14 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
       weeklySummary.totalCarbs += dailyTotals.carbs;
       weeklySummary.totalFat += dailyTotals.fat;
 
-      console.log(`✅ Completed creative ${dayOfWeek} with ${processedMeals.length} diverse meals`);
+      console.log(
+        `✅ Completed creative ${dayOfWeek} with ${processedMeals.length} diverse meals`,
+      );
     }
 
-    console.log(`🎉 Generated complete creative weekly plan: ${processedWeeklyPlan.length} days`);
+    console.log(
+      `🎉 Generated complete creative weekly plan: ${processedWeeklyPlan.length} days`,
+    );
 
     return {
       weeklyMealPlan: processedWeeklyPlan,
@@ -296,39 +355,53 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
 );
 
 // Enhanced fallback meals with variety
-function createEnhancedFallbackMeals(mealTargets: any[], dayOfWeek: string, dayIndex: number): any {
+function createEnhancedFallbackMeals(
+  mealTargets: any[],
+  dayOfWeek: string,
+  dayIndex: number,
+): any {
   console.log(`🔧 Creating enhanced fallback meals for ${dayOfWeek}`);
-  
+
   const creativeTemplates = [
     {
       name: "Mediterranean Power Bowl",
-      proteins: ["Grilled Chicken", "Salmon Fillet", "Turkey Breast", "Greek Chicken"],
+      proteins: [
+        "Grilled Chicken",
+        "Salmon Fillet",
+        "Turkey Breast",
+        "Greek Chicken",
+      ],
       carbs: ["Quinoa", "Brown Rice", "Sweet Potato", "Whole Wheat Couscous"],
       fats: ["Olive Oil", "Avocado", "Almonds", "Tahini"],
-      extras: ["Cucumber", "Cherry Tomatoes", "Red Onion", "Herbs"]
+      extras: ["Cucumber", "Cherry Tomatoes", "Red Onion", "Herbs"],
     },
     {
       name: "Asian Fusion Bowl",
       proteins: ["Teriyaki Chicken", "Sesame Tofu", "Shrimp", "Beef Strips"],
       carbs: ["Jasmine Rice", "Soba Noodles", "Brown Rice", "Rice Noodles"],
       fats: ["Sesame Oil", "Cashews", "Peanut Sauce", "Avocado"],
-      extras: ["Broccoli", "Carrots", "Bell Peppers", "Edamame"]
+      extras: ["Broccoli", "Carrots", "Bell Peppers", "Edamame"],
     },
     {
       name: "Latin American Fiesta",
-      proteins: ["Grilled Chicken", "Black Beans", "Ground Turkey", "Fish Tacos"],
+      proteins: [
+        "Grilled Chicken",
+        "Black Beans",
+        "Ground Turkey",
+        "Fish Tacos",
+      ],
       carbs: ["Brown Rice", "Sweet Potato", "Corn Tortilla", "Quinoa"],
       fats: ["Avocado", "Olive Oil", "Cheese", "Nuts"],
-      extras: ["Peppers", "Onions", "Tomatoes", "Cilantro"]
-    }
+      extras: ["Peppers", "Onions", "Tomatoes", "Cilantro"],
+    },
   ];
 
   const template = creativeTemplates[dayIndex % creativeTemplates.length];
-  
+
   const fallbackMeals = mealTargets.map((target, index) => {
     const proteinCals = target.calories * 0.35;
     const carbCals = target.calories * 0.45;
-    const fatCals = target.calories * 0.20;
+    const fatCals = target.calories * 0.2;
 
     return {
       meal_title: `${template.name} - ${target.mealName}`,
@@ -369,14 +442,18 @@ function createEnhancedFallbackMeals(mealTargets: any[], dayOfWeek: string, dayI
 }
 
 // Enhanced placeholder meal
-function createEnhancedPlaceholderMeal(targetMeal: any, dayOfWeek: string, mealIndex: number): AIGeneratedMeal {
+function createEnhancedPlaceholderMeal(
+  targetMeal: any,
+  dayOfWeek: string,
+  mealIndex: number,
+): AIGeneratedMeal {
   const creativeTitles = [
     "Mediterranean Delight",
     "Asian Fusion Special",
     "Latin American Bowl",
     "European Classic",
     "Middle Eastern Feast",
-    "International Mix"
+    "International Mix",
   ];
 
   return {
@@ -418,21 +495,28 @@ export async function generatePersonalizedMealPlan(
 ): Promise<GeneratePersonalizedMealPlanOutput> {
   try {
     console.log("🎯 Starting enhanced meal plan generation for user:", userId);
-    
+
     const processedInput = {
       ...input,
       mealTargets: preprocessMealTargets(input.mealTargets),
     };
 
-    if (!processedInput.mealTargets || processedInput.mealTargets.length === 0) {
+    if (
+      !processedInput.mealTargets ||
+      processedInput.mealTargets.length === 0
+    ) {
       throw new Error("No valid meal targets could be derived from input.");
     }
 
-    console.log("🔧 Final processed input:", JSON.stringify(processedInput.mealTargets, null, 2));
+    console.log(
+      "🔧 Final processed input:",
+      JSON.stringify(processedInput.mealTargets, null, 2),
+    );
 
-    const parsedInput = GeneratePersonalizedMealPlanInputSchema.parse(processedInput);
+    const parsedInput =
+      GeneratePersonalizedMealPlanInputSchema.parse(processedInput);
     const result = await generatePersonalizedMealPlanFlow(parsedInput);
-    
+
     console.log("✅ Enhanced meal plan generated successfully");
 
     // Save the AI plan to database with error handling
@@ -449,7 +533,8 @@ export async function generatePersonalizedMealPlan(
     console.error("❌ Enhanced meal plan generation failed:", e);
     throw new Error(
       getAIApiErrorMessage({
-        message: "Failed to generate creative meal plan. Please check your macro targets and try again.",
+        message:
+          "Failed to generate creative meal plan. Please check your macro targets and try again.",
       }),
     );
   }
