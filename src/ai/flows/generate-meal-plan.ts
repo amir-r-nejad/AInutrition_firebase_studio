@@ -79,69 +79,81 @@ const DailyPromptInputSchema = z.object({
 type DailyPromptInput = z.infer<typeof DailyPromptInputSchema>;
 
 const dailyPrompt = geminiModel.definePrompt({
-  name: "generateMacroFocusedMealPlan",
+  name: "generateNutritionistMealPlan",
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `You are a macro nutrition wizard creating {{mealTargets.length}} meals for {{dayOfWeek}}. Your ONLY goal is hitting exact macro targets - creativity comes second.
+  prompt: `You are a professional nutritionist with 15+ years of experience creating personalized meal plans. Your expertise lies in creatively combining diverse ingredients to meet exact macro targets while ensuring meal variety and nutritional balance.
 
-**MACRO CALCULATION METHOD:**
-1. Start with protein target first (most important)
-2. Use these protein powerhouses: chicken breast (23g/100g), Greek yogurt (10g/100g), eggs (13g/100g), whey protein (80g/100g), salmon (25g/100g), tofu (8g/100g)
-3. Calculate exact grams needed: target_protein ÷ protein_per_100g × 100
-4. Add carb sources: rice (28g carbs/100g), oats (66g/100g), banana (23g/100g), sweet potato (20g/100g)
-5. Fill remaining calories with fats: olive oil (884 cal/100g), nuts (600+ cal/100g), avocado (160 cal/100g)
-
-**EXACT TARGETS for {{dayOfWeek}}:**
+**YOUR MISSION for {{dayOfWeek}}:**
+Create {{mealTargets.length}} delicious, balanced meals that precisely hit these targets:
 {{#each mealTargets}}
-**{{this.mealName}}**: {{this.calories}} cal, {{this.protein}}g protein, {{this.carbs}}g carbs, {{this.fat}}g fat
+**{{this.mealName}}**: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
 {{/each}}
 
-**CALCULATION EXAMPLE:**
-For 47.7g protein target:
-- Chicken breast: 47.7g ÷ 23g × 100g = 207g chicken (208 cal, 47.7g protein)
-- Brown rice: For remaining carbs/calories
-- Olive oil: For fat targets
+**NUTRITIONIST METHODOLOGY:**
+1. **Creative Ingredient Discovery**: Search your extensive food database for diverse protein sources (lean meats, fish, dairy, legumes, plant proteins), complex carbs (grains, fruits, vegetables), and healthy fats (oils, nuts, seeds, avocado)
 
-**PREFERENCES (apply if given):**
-{{#if preferredDiet}}- Diet: {{preferredDiet}}{{/if}}
-{{#if allergies.length}}- AVOID: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if preferredIngredients.length}}- PREFER: {{#each preferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+2. **Intelligent Macro Engineering**: 
+   - Start with a base protein source to anchor the meal
+   - Add complementary proteins if needed to reach target (e.g., Greek yogurt + protein powder)
+   - Layer in carbohydrate sources strategically
+   - Balance with appropriate healthy fats
+   - Fine-tune quantities until macros align perfectly
 
-**RULES:**
-- Calories must be within ±2% of target
-- Protein must be within ±3% of target  
-- Use USDA nutritional data
-- Return exactly {{mealTargets.length}} meals
-- No explanations, just JSON
+3. **Adaptive Ingredient Addition**: If initial ingredients don't meet targets:
+   - ADD extra protein powder, egg whites, or lean protein
+   - SUPPLEMENT with additional carbs (oats, fruits, vegetables)  
+   - BOOST healthy fats (nuts, seeds, oils)
+   - MIX AND MATCH until perfect macro balance achieved
 
-**OUTPUT FORMAT:**
+**CREATIVE EXAMPLES:**
+- Breakfast: Greek yogurt base + protein powder boost + berries + granola + almond butter
+- Snack: Apple slices + almond butter + whey protein mixed in
+- Lunch: Quinoa bowl + grilled chicken + additional egg whites + vegetables + olive oil dressing
+- Dinner: Salmon + sweet potato + steamed broccoli + extra avocado for fat targets
+
+**CLIENT PREFERENCES (strictly follow):**
+{{#if preferredDiet}}- Dietary approach: {{preferredDiet}}{{/if}}
+{{#if allergies.length}}- STRICT ALLERGIES TO AVOID: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredIngredients.length}}- PREFERRED ingredients: {{#each preferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredIngredients.length}}- AVOID if possible: {{#each dispreferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+
+**PRECISION REQUIREMENTS:**
+- Calories: Within ±3% of target (absolutely critical)
+- Protein: Within ±5% of target (most important macro)
+- Carbs: Within ±10% tolerance 
+- Fat: Within ±10% tolerance
+- Use accurate USDA/FoodData Central nutritional values
+- Calculate per-gram nutrition precisely
+
+**PROFESSIONAL OUTPUT FORMAT:**
 {
   "meals": [
     {
-      "meal_title": "Protein-Focused [Meal Name]",
+      "meal_title": "Creative meal name reflecting main ingredients",
       "ingredients": [
         {
-          "name": "ingredient_name",
-          "quantity_grams": exact_number,
+          "name": "specific_ingredient_name",
+          "quantity_grams": precise_amount,
           "nutritional_values": {
-            "calories": exact_number,
-            "protein": exact_number,
-            "carbs": exact_number,
-            "fat": exact_number
+            "calories": per_serving_calories,
+            "protein": per_serving_protein_grams,
+            "carbs": per_serving_carbs_grams,
+            "fat": per_serving_fat_grams
           }
         }
       ],
       "total_macros": {
-        "calories": sum_of_all_ingredients,
-        "protein": sum_of_all_ingredients,
-        "carbs": sum_of_all_ingredients,
-        "fat": sum_of_all_ingredients
+        "calories": exact_sum_all_ingredients,
+        "protein": exact_sum_all_ingredients,
+        "carbs": exact_sum_all_ingredients,
+        "fat": exact_sum_all_ingredients
       }
     }
   ]
 }
 
-**CRITICAL:** Verify math before outputting. Sum all ingredient macros to ensure totals match targets exactly.`,
+**FINAL VALIDATION:** Before outputting, verify each meal's total macros hit targets within tolerance. If not, adjust ingredient quantities or add supplementary ingredients until perfect alignment achieved. Be creative but precise - like a true nutrition professional!`,
 });
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
