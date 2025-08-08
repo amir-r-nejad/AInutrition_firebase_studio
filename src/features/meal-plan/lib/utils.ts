@@ -221,12 +221,23 @@ export function getAdjustedMealInput(
     fat_pct: mealDistribution?.fat_pct ?? defaultDistribution?.fat_pct ?? 16.67,
   };
 
+  // In the current macro splitter, all macros use calories_pct for distribution
+  const caloriePercentage = (safeDistribution.calories_pct || 0) / 100;
+  
   const targetMacrosForMeal = {
-    calories: Math.round(dailyTargets.targetCalories! * (safeDistribution.calories_pct / 100)),
-    protein: Math.round(dailyTargets.targetProtein! * (safeDistribution.protein_pct / 100)),
-    carbs: Math.round(dailyTargets.targetCarbs! * (safeDistribution.carbs_pct / 100)),
-    fat: Math.round(dailyTargets.targetFat! * (safeDistribution.fat_pct / 100)),
+    calories: Math.round(dailyTargets.targetCalories! * caloriePercentage),
+    protein: Math.round(dailyTargets.targetProtein! * caloriePercentage * 10) / 10,
+    carbs: Math.round(dailyTargets.targetCarbs! * caloriePercentage * 10) / 10,
+    fat: Math.round(dailyTargets.targetFat! * caloriePercentage * 10) / 10,
   };
+
+  console.log("🔧 getAdjustedMealInput Debug:", {
+    mealName: mealToOptimize.name,
+    dailyTargets,
+    safeDistribution,
+    caloriePercentage,
+    targetMacrosForMeal
+  });
 
   const preparedIngredients = mealToOptimize.ingredients.map((ing) => ({
     name: ing.name,

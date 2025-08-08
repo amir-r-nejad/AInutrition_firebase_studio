@@ -212,15 +212,27 @@ function EditMealDialog({
         (dist: any) => dist.mealName === meal.name
       );
 
-      const mealPercentage = mealDistribution ? 
-        (mealDistribution.calories_pct / 100) : 
-        0.25; // Default to 25% if not found
+      if (!mealDistribution) {
+        throw new Error(`Meal distribution not found for ${meal.name}. Please set up macro splitter first.`);
+      }
 
+      // Use the actual percentage distributions from macro splitter
+      const caloriePercentage = (mealDistribution.calories_pct || 0) / 100;
+      
       const targetMacros = {
-        calories: Math.round(dailyTargets.calories * mealPercentage),
-        protein: Math.round(dailyTargets.protein * mealPercentage * 10) / 10,
-        carbs: Math.round(dailyTargets.carbs * mealPercentage * 10) / 10,
-        fat: Math.round(dailyTargets.fat * mealPercentage * 10) / 10,
+        calories: Math.round(dailyTargets.calories * caloriePercentage),
+        protein: Math.round(dailyTargets.protein * caloriePercentage * 10) / 10,
+        carbs: Math.round(dailyTargets.carbs * caloriePercentage * 10) / 10,
+        fat: Math.round(dailyTargets.fat * caloriePercentage * 10) / 10,
+      };
+
+      console.log("🎯 Target Macro Calculation Debug:", {
+        mealName: meal.name,
+        dailyTargets,
+        mealDistribution,
+        caloriePercentage,
+        calculatedTargets: targetMacros
+      });at: Math.round(dailyTargets.fat * mealPercentage * 10) / 10,
       };
 
 

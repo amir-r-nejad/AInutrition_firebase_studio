@@ -161,6 +161,11 @@ export async function adjustMealIngredientsDirect(
   try {
     // Add debugging and better error handling
     console.log("[AdjustMealIngredients] Raw input received:", JSON.stringify(input, null, 2));
+    console.log("🎯 TARGET MACROS ANALYSIS:", {
+      mealName: input.originalMeal?.name,
+      targetMacros: input.targetMacros,
+      expectedFromMacroSplitter: "Should match your macro splitter calculations"
+    });
     
     // Check for missing required fields
     if (!input) {
