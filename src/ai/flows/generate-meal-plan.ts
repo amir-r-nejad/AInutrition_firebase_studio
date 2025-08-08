@@ -82,48 +82,51 @@ const dailyPrompt = geminiModel.definePrompt({
   name: "generateSimpleMealPlan",
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `Generate {{mealTargets.length}} healthy meals for {{dayOfWeek}}.
+  prompt: `Create {{mealTargets.length}} simple meals for {{dayOfWeek}}.
 
-TARGETS:
+MEAL TARGETS:
 {{#each mealTargets}}
-- {{this.mealName}}: {{this.calories}} calories, {{this.protein}}g protein, {{this.carbs}}g carbs, {{this.fat}}g fat
+{{this.mealName}}: {{this.calories}} calories, {{this.protein}}g protein, {{this.carbs}}g carbs, {{this.fat}}g fat
 {{/each}}
 
-PREFERENCES:
-{{#if preferredDiet}}- Diet: {{preferredDiet}}{{/if}}
-{{#if allergies.length}}- Avoid: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+INSTRUCTIONS:
+- Use simple, common food names
+- Calculate exact nutrition for each ingredient
+- Make sure total calories match the target (within 5%)
+- Use normal portions and realistic ingredients
 
-RULES:
-1. Create simple, real meals with common ingredients
-2. Calculate exact nutrition for each ingredient
-3. Make calories within 5% of target (very important)
-4. Use normal food names (no excessive exclamation marks or symbols)
-
-OUTPUT FORMAT:
+EXAMPLE FORMAT:
 {
   "meals": [
     {
-      "meal_title": "Simple meal name",
+      "meal_title": "Chicken and Rice",
       "ingredients": [
         {
-          "name": "Ingredient name",
-          "calories": number,
-          "protein": number,
-          "carbs": number,
-          "fat": number
+          "name": "Chicken Breast",
+          "calories": 200,
+          "protein": 40,
+          "carbs": 0,
+          "fat": 4
+        },
+        {
+          "name": "White Rice",
+          "calories": 150,
+          "protein": 3,
+          "carbs": 30,
+          "fat": 0
         }
       ],
       "total_macros": {
-        "calories": sum_of_ingredient_calories,
-        "protein": sum_of_ingredient_protein,
-        "carbs": sum_of_ingredient_carbs,
-        "fat": sum_of_ingredient_fat
+        "calories": 350,
+        "protein": 43,
+        "carbs": 30,
+        "fat": 4
       }
     }
   ]
 }
 
-Create realistic, balanced meals with accurate nutrition.`,
+Create realistic meals with accurate nutrition that match the targets.`,
 });
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
