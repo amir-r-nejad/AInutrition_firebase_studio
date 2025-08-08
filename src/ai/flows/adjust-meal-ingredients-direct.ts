@@ -84,68 +84,46 @@ async function generateWithOpenAI(
 }
 
 function buildEnhancedPrompt(input: AdjustMealIngredientsInput): string {
-  const currentMacros = {
-    calories: input.originalMeal.ingredients.reduce((sum, ing) => sum + (Number(ing.calories) || 0), 0),
-    protein: input.originalMeal.ingredients.reduce((sum, ing) => sum + (Number(ing.protein) || 0), 0),
-    carbs: input.originalMeal.ingredients.reduce((sum, ing) => sum + (Number(ing.carbs) || 0), 0),
-    fat: input.originalMeal.ingredients.reduce((sum, ing) => sum + (Number(ing.fat) || 0), 0),
-  };
-
   return `
-I need to adjust this meal to hit EXACT macro targets from the macro splitter. You have access to comprehensive nutrition databases.
+You must adjust this meal to match the exact macro targets. Follow these steps precisely:
 
-CURRENT MEAL WITH ACCURATE NUTRITION DATA:
-${JSON.stringify(input.originalMeal, null, 2)}
+STEP 1: GET ACCURATE NUTRITION DATA
+For each ingredient, look up precise nutrition values per 100g from USDA database:
+- ${input.originalMeal.ingredients.map(ing => ing.name).join('\n- ')}
 
-CURRENT TOTALS:
-- Calories: ${currentMacros.calories} kcal
-- Protein: ${currentMacros.protein}g
-- Carbs: ${currentMacros.carbs}g
-- Fat: ${currentMacros.fat}g
+STEP 2: CURRENT MEAL
+${JSON.stringify(input.originalMeal.ingredients, null, 2)}
 
-TARGET MACROS (FROM MACRO SPLITTER - MUST MATCH EXACTLY):
+STEP 3: TARGET MACROS (MUST MATCH EXACTLY ±5%)
 - Calories: ${input.targetMacros.calories} kcal
-- Protein: ${input.targetMacros.protein}g
-- Carbs: ${input.targetMacros.carbs}g  
+- Protein: ${input.targetMacros.protein}g  
+- Carbs: ${input.targetMacros.carbs}g
 - Fat: ${input.targetMacros.fat}g
 
-DIFFERENCE TO BRIDGE:
-- Calories: ${input.targetMacros.calories - currentMacros.calories > 0 ? '+' : ''}${input.targetMacros.calories - currentMacros.calories} kcal
-- Protein: ${input.targetMacros.protein - currentMacros.protein > 0 ? '+' : ''}${input.targetMacros.protein - currentMacros.protein}g
-- Carbs: ${input.targetMacros.carbs - currentMacros.carbs > 0 ? '+' : ''}${input.targetMacros.carbs - currentMacros.carbs}g
-- Fat: ${input.targetMacros.fat - currentMacros.fat > 0 ? '+' : ''}${input.targetMacros.fat - currentMacros.fat}g
+STEP 4: CALCULATE NEW QUANTITIES
+Using accurate nutrition data per 100g, calculate exact quantities needed to hit targets.
 
-CRITICAL INSTRUCTIONS (PRIORITY ORDER):
-1. **Look up accurate nutrition data**: Use precise USDA/nutrition database values for each ingredient per 100g
-2. **Try quantity adjustments FIRST**: Adjust ONLY existing ingredient quantities to hit targets within ±5% 
-3. **ONLY add ingredients if needed**: Add new ingredients ONLY if quantity adjustments alone cannot achieve ±5% accuracy
-4. **Final validation**: Ensure ALL macros are within ±5% of targets (±${Math.round(input.targetMacros.calories * 0.05)} cal, ±${Math.round(input.targetMacros.protein * 0.05)}g protein, ±${Math.round(input.targetMacros.carbs * 0.05)}g carbs, ±${Math.round(input.targetMacros.fat * 0.05)}g fat)
+STEP 5: VALIDATE ACCURACY
+Final totals must be within ±5% of targets:
+- Calories: ${Math.round(input.targetMacros.calories * 0.95)}-${Math.round(input.targetMacros.calories * 1.05)} kcal
+- Protein: ${Math.round(input.targetMacros.protein * 0.95 * 10)/10}-${Math.round(input.targetMacros.protein * 1.05 * 10)/10}g
+- Carbs: ${Math.round(input.targetMacros.carbs * 0.95 * 10)/10}-${Math.round(input.targetMacros.carbs * 1.05 * 10)/10}g  
+- Fat: ${Math.round(input.targetMacros.fat * 0.95 * 10)/10}-${Math.round(input.targetMacros.fat * 1.05 * 10)/10}g
 
-STEP-BY-STEP PROCESS:
-1. Look up accurate nutrition per 100g for: bread white, cheese, egg whole
-2. Calculate what quantities of existing ingredients would hit targets
-3. Check if this gives realistic portions (20-300g typically)
-4. If targets can be reached with realistic quantities of existing ingredients, DO NOT ADD anything
-5. If impossible with existing ingredients, add minimal complementary ingredients
-
-USER PREFERENCES:
-${input.userProfile.allergies?.length ? `Allergies: ${input.userProfile.allergies.join(", ")}` : "No allergies"}
-${input.userProfile.dispreferrred_ingredients?.length ? `Avoid: ${input.userProfile.dispreferrred_ingredients.join(", ")}` : "No restrictions"}
-
-Return JSON format:
+RETURN ONLY THIS JSON:
 {
   "adjustedMeal": {
     "name": "${input.originalMeal.name}",
     "custom_name": "${input.originalMeal.custom_name || ""}",
     "ingredients": [
       {
-        "name": "exact ingredient name",
-        "quantity": precise_number_in_grams,
-        "unit": "g",
-        "calories": precise_calories_for_this_quantity,
-        "protein": precise_protein_for_this_quantity,
-        "carbs": precise_carbs_for_this_quantity,
-        "fat": precise_fat_for_this_quantity
+        "name": "ingredient_name",
+        "quantity": exact_grams_number,
+        "unit": "g", 
+        "calories": calculated_calories_for_this_quantity,
+        "protein": calculated_protein_for_this_quantity,
+        "carbs": calculated_carbs_for_this_quantity,
+        "fat": calculated_fat_for_this_quantity
       }
     ],
     "total_calories": ${input.targetMacros.calories},
@@ -153,10 +131,10 @@ Return JSON format:
     "total_carbs": ${input.targetMacros.carbs},
     "total_fat": ${input.targetMacros.fat}
   },
-  "explanation": "Detailed explanation of: 1) nutrition values used per 100g, 2) quantity calculations performed, 3) whether targets were achieved by adjusting existing ingredients only or if additions were necessary, 4) final macro accuracy verification"
+  "explanation": "Used accurate nutrition data per 100g. Calculated precise quantities to match macro targets within ±5%."
 }
 
-CRITICAL: The total macros MUST exactly match the target values within ±5%. Verify your calculations before responding.
+CRITICAL: Use real nutrition database values. Calculate exact quantities. Verify totals match targets ±5%.
 `;
 }
 
