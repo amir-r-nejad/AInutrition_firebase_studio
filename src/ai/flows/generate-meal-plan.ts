@@ -98,94 +98,90 @@ async function generateDailyMealPlan(
     throw new Error("OpenAI API key not found in environment variables");
   }
 
-  const prompt = `You are a world-class nutritionist and precision macro calculator. Your ONLY mission is to create meals that match the EXACT macro targets with mathematical precision.
+  const prompt = `**YOUR MISSION for {{dayOfWeek}}:**
 
-**ABSOLUTE NON-NEGOTIABLE RULES:**
+As a professional nutritionist with 15+ years of experience, create {{mealTargets.length}} delicious, balanced meals that precisely hit these targets, using real-time data from reliable online sources:
 
-🚨 **MACRO ACCURACY IS YOUR #1 PRIORITY** 🚨
-- Each meal MUST match the target macros within ±5% or it will be REJECTED
-- You MUST add/remove/adjust ingredients until macros are PERFECT
-- If you need more protein: add protein powder, egg whites, lean meat
-- If you need more carbs: add rice, oats, fruits, vegetables  
-- If you need more fat: add nuts, oils, avocado, seeds
-- If you need fewer macros: reduce portions precisely
-- NEVER submit a meal that doesn't meet the ±5% requirement
+{{#each mealTargets}}
+**{{this.mealName}}**: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
+{{/each}}
 
-**STEP-BY-STEP MANDATORY PROCESS:**
+**NUTRITIONIST METHODOLOGY:**
 
-1. **Start with base ingredients** for the meal concept
-2. **Calculate exact macros** for each ingredient (use USDA data)
-3. **Sum up all macros** precisely
-4. **Compare to targets** - check each macro individually
-5. **If ANY macro is outside ±5%**: ADD OR REMOVE ingredients to fix it
-6. **Repeat steps 2-5** until ALL macros are within ±5%
-7. **Double-check calculations** before final output
-8. **Only then** provide the meal
+1. **Real-Time Data Access and Ingredient Discovery**:
+   - Access reliable online nutritional databases such as USDA/FoodData Central, Nutritionix, or other credible sources to retrieve accurate, up-to-date nutritional values for ingredients.
+   - Search for diverse protein sources (lean meats, fish, dairy, legumes, plant proteins), complex carbs (grains, fruits, vegetables), and healthy fats (oils, nuts, seeds, avocado). Prioritize variety to ensure meals are interesting, sustainable, and nutritionally balanced across food groups.
 
-**EXACT MACRO TARGETS FOR ${dayOfWeek}:**
+2. **Intelligent Macro Engineering**:
+   - Start with a base protein source to anchor the meal, selected based on client preferences and dietary approach.
+   - Add complementary proteins if needed to reach the target (e.g., Greek yogurt + protein powder).
+   - Layer in carbohydrate sources strategically to meet carb goals.
+   - Balance with appropriate healthy fats to achieve fat targets.
+   - Fine-tune quantities using precise nutritional data from online sources until macros align perfectly, ensuring a balanced intake of nutrients.
 
-${mealTargets.map((meal, index) => {
-  const allowedRange = {
-    calories: `${(meal.calories * 0.95).toFixed(1)}-${(meal.calories * 1.05).toFixed(1)}`,
-    protein: `${(meal.protein * 0.95).toFixed(1)}-${(meal.protein * 1.05).toFixed(1)}`,
-    carbs: `${(meal.carbs * 0.95).toFixed(1)}-${(meal.carbs * 1.05).toFixed(1)}`,
-    fat: `${(meal.fat * 0.95).toFixed(1)}-${(meal.fat * 1.05).toFixed(1)}`,
-  };
-  
-  return `${index + 1}. ${meal.mealName}:
-   🎯 TARGET: ${meal.calories.toFixed(1)} kcal, ${meal.protein.toFixed(1)}g protein, ${meal.carbs.toFixed(1)}g carbs, ${meal.fat.toFixed(1)}g fat
-   ✅ ALLOWED RANGE: ${allowedRange.calories} kcal, ${allowedRange.protein}g protein, ${allowedRange.carbs}g carbs, ${allowedRange.fat}g fat`;
-}).join("\n\n")}
+3. **Adaptive Ingredient Addition**:
+   - If initial ingredients don't meet macro targets:
+     - ADD extra protein powder, egg whites, or lean protein sources.
+     - SUPPLEMENT with additional carbs (oats, fruits, vegetables).
+     - BOOST healthy fats (nuts, seeds, oils).
+     - MIX AND MATCH ingredients, cross-referencing with online data, until perfect macro balance is achieved.
+   - Use web searches to identify alternative ingredients if needed to meet dietary restrictions or preferences.
 
-**MATHEMATICAL VALIDATION REQUIREMENT:**
-- Calories = (Protein × 4) + (Carbs × 4) + (Fat × 9)
-- Each ingredient must have precise USDA nutritional values
-- Total macros = Sum of all ingredient macros
-- ALL must be within the allowed ranges above
+4. **Professional Decision-Making**:
+   - Mimic the approach of a real nutritionist by considering seasonal availability, cost-effectiveness, and ease of preparation when selecting ingredients, based on insights from credible online sources (e.g., nutrition blogs, dietitian websites).
+   - Ensure meals are practical for everyday preparation while maintaining variety and appeal.
 
-**INGREDIENT ADJUSTMENT EXAMPLES:**
-- Need +10g protein? Add "Protein powder (12g)" → +50 cal, +11g protein, +0g carbs, +0g fat
-- Need +20g carbs? Add "Cooked white rice (50g)" → +65 cal, +1.3g protein, +20g carbs, +0.2g fat  
-- Need +8g fat? Add "Almonds (20g)" → +120 cal, +4g protein, +4g carbs, +8g fat
-- Need -50 calories? Reduce portion sizes proportionally
+**CREATIVE EXAMPLES:**
+- Breakfast: Greek yogurt base + protein powder boost + fresh berries + granola + almond butter
+- Snack: Apple slices + almond butter + whey protein mixed in
+- Lunch: Quinoa bowl + grilled chicken + additional egg whites + mixed vegetables + olive oil dressing
+- Dinner: Baked salmon + roasted sweet potato + steamed broccoli + extra avocado for fat targets
 
-**CREATIVE PREFERENCES (SECONDARY to macro accuracy):**
-${preferences.preferredDiet ? `- Diet type: ${preferences.preferredDiet}` : ""}
-${preferences.allergies?.length ? `- Allergies: ${preferences.allergies.join(", ")}` : ""}
-${preferences.preferredIngredients?.length ? `- Preferred: ${preferences.preferredIngredients.join(", ")}` : ""}
-${preferences.dispreferredIngredients?.length ? `- Avoid: ${preferences.dispreferredIngredients.join(", ")}` : ""}
+**CLIENT PREFERENCES (strictly follow):**
+{{#if preferredDiet}}- Dietary approach: {{preferredDiet}}{{/if}}
+{{#if allergies.length}}- STRICT ALLERGIES TO AVOID: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredIngredients.length}}- PREFERRED ingredients: {{#each preferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredIngredients.length}}- AVOID if possible: {{#each dispreferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
-**MANDATORY OUTPUT FORMAT:**
+**PRECISION REQUIREMENTS:**
+- Calories: Within ±3% of target (absolutely critical and ONLY validation requirement).
+- Protein, Carbs, Fat: Be creative and balanced, aiming to meet targets as closely as possible, but no strict validation required.
+- Use accurate, up-to-date nutritional values from online sources like USDA/FoodData Central or Nutritionix.
+- Calculate nutritional values precisely for the specified quantities, ensuring all calculations are based on real-time data.
+
+**PROFESSIONAL OUTPUT FORMAT:**
 {
   "meals": [
     {
-      "meal_title": "Creative meal name",
+      "meal_title": "Creative meal name reflecting main ingredients",
       "ingredients": [
         {
-          "name": "Ingredient name (exact amount + unit)",
-          "calories": precise_number,
-          "protein": precise_number,
-          "carbs": precise_number,  
-          "fat": precise_number
+          "name": "specific_ingredient_name",
+          "quantity_grams": precise_amount,
+          "nutritional_values": {
+            "calories": calories_for_this_quantity,
+            "protein": protein_for_this_quantity_grams,
+            "carbs": carbs_for_this_quantity_grams,
+            "fat": fat_for_this_quantity_grams
+          },
+          "source": "URL or name of the nutritional database used (e.g., USDA/FoodData Central)"
         }
       ],
-      "total_calories": sum_of_all_ingredient_calories,
-      "total_protein": sum_of_all_ingredient_protein,
-      "total_carbs": sum_of_all_ingredient_carbs,
-      "total_fat": sum_of_all_ingredient_fat,
-      "validation": {
-        "calories_within_range": true,
-        "protein_within_range": true,
-        "carbs_within_range": true,
-        "fat_within_range": true
+      "total_macros": {
+        "calories": exact_sum_of_all_ingredients_calories,
+        "protein": exact_sum_of_all_ingredients_protein,
+        "carbs": exact_sum_of_all_ingredients_carbs,
+        "fat": exact_sum_of_all_ingredients_fat
       }
     }
   ]
 }
 
-🚨 **FINAL WARNING**: If ANY meal has validation: false for ANY macro, the entire response will be REJECTED. You MUST achieve mathematical precision for ALL meals.
-
-Generate ${mealTargets.length} perfectly accurate meals now:`;
+**FINAL VALIDATION:**
+- Before outputting, verify each meal's total CALORIES hit targets within 3% tolerance using data from online sources.
+- Ensure protein, carbs, and fat are balanced and reasonable, but no strict validation is required.
+- Cross-check ingredient choices against client preferences and allergies, using web searches if needed to confirm suitability.
+- Be creative with ingredients while maintaining calorie precision and leveraging real-time nutritional data for accuracy.`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -305,27 +301,37 @@ async function generatePersonalizedMealPlanFlow(
         for (let i = 0; i < dailyOutput.meals.length; i++) {
           const meal = dailyOutput.meals[i];
           const target = input.mealTargets[i];
-          
+
           // Calculate totals from ingredients
-          const actualTotals = meal.ingredients.reduce((totals: any, ing: any) => ({
-            calories: totals.calories + (Number(ing.calories) || 0),
-            protein: totals.protein + (Number(ing.protein) || 0),
-            carbs: totals.carbs + (Number(ing.carbs) || 0),
-            fat: totals.fat + (Number(ing.fat) || 0),
-          }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+          const actualTotals = meal.ingredients.reduce(
+            (totals: any, ing: any) => ({
+              calories: totals.calories + (Number(ing.calories) || 0),
+              protein: totals.protein + (Number(ing.protein) || 0),
+              carbs: totals.carbs + (Number(ing.carbs) || 0),
+              fat: totals.fat + (Number(ing.fat) || 0),
+            }),
+            { calories: 0, protein: 0, carbs: 0, fat: 0 },
+          );
 
           // Check 5% accuracy for each macro
           const margin = 0.05;
-          const caloriesValid = Math.abs(actualTotals.calories - target.calories) <= target.calories * margin;
-          const proteinValid = Math.abs(actualTotals.protein - target.protein) <= target.protein * margin;
-          const carbsValid = Math.abs(actualTotals.carbs - target.carbs) <= target.carbs * margin;
-          const fatValid = Math.abs(actualTotals.fat - target.fat) <= target.fat * margin;
+          const caloriesValid =
+            Math.abs(actualTotals.calories - target.calories) <=
+            target.calories * margin;
+          const proteinValid =
+            Math.abs(actualTotals.protein - target.protein) <=
+            target.protein * margin;
+          const carbsValid =
+            Math.abs(actualTotals.carbs - target.carbs) <=
+            target.carbs * margin;
+          const fatValid =
+            Math.abs(actualTotals.fat - target.fat) <= target.fat * margin;
 
           if (!caloriesValid || !proteinValid || !carbsValid || !fatValid) {
             console.warn(`❌ Meal ${target.mealName} failed validation:`, {
               actualTotals,
               target,
-              validation: { caloriesValid, proteinValid, carbsValid, fatValid }
+              validation: { caloriesValid, proteinValid, carbsValid, fatValid },
             });
             allMealsValid = false;
             break;
@@ -333,7 +339,9 @@ async function generatePersonalizedMealPlanFlow(
         }
 
         if (!allMealsValid) {
-          console.warn(`❌ Not all meals meet 5% accuracy requirement for ${dayOfWeek}, retrying...`);
+          console.warn(
+            `❌ Not all meals meet 5% accuracy requirement for ${dayOfWeek}, retrying...`,
+          );
           dailyOutput = null;
           throw new Error(`Macro accuracy failed for ${dayOfWeek}`);
         }
