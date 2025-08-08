@@ -1,4 +1,3 @@
-
 "use server";
 
 import { geminiModel } from "@/ai/genkit";
@@ -79,66 +78,67 @@ const DailyPromptInputSchema = z.object({
 type DailyPromptInput = z.infer<typeof DailyPromptInputSchema>;
 
 const dailyPrompt = geminiModel.definePrompt({
-  name: "generateSimpleMealPlan",
+  name: "generateCreativeMealPlanPrompt",
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `Create {{mealTargets.length}} simple meals for {{dayOfWeek}}.
+  prompt: `You are a world-class nutritionist and innovative chef with access to a vast database of global recipes. Generate EXACTLY {{mealTargets.length}} highly diverse, creative, and nutritionally precise meals for {{dayOfWeek}}. Search the internet for trending, unique, and culturally rich recipes to inspire your creations, ensuring maximum variety and excitement. Ensure NO meal is repeated across the week, and each day's meals are entirely unique, even for the same meal type (e.g., breakfast).
 
-MEAL TARGETS:
-{{#each mealTargets}}
-{{this.mealName}}: {{this.calories}} calories, {{this.protein}}g protein, {{this.carbs}}g carbs, {{this.fat}}g fat
-{{/each}}
+**STRICT MACRO SPLITTER COMPLIANCE:**
+- Each meal must match the exact macro targets (calories, protein, carbs, fat) within a 1% margin of error.
+- Calculate ingredient quantities using precise nutritional data from the USDA database or reliable online sources to meet the following targets:
+  {{#each mealTargets}}
+  **{{this.mealName}}**: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
+  {{/each}}
+- Macros must be calculated to ensure: 
+  - Calories = (Protein * 4) + (Carbs * 4) + (Fat * 9)
+  - Total meal macros must sum to the target values with 1% precision.
 
-INSTRUCTIONS:
-- Use simple, common food names
-- Calculate exact nutrition for each ingredient
-- Make sure total calories match the target (within 5%)
-- Use normal portions and realistic ingredients
+**CREATIVITY REQUIREMENTS:**
+- Explore an extensive range of cooking methods: grilling, poaching, sous-vide, braising, fermenting, smoking, raw preparations, or molecular gastronomy techniques.
+- Draw inspiration from a global array of cuisines (e.g., African, Southeast Asian, Scandinavian, Caribbean, South American, Indian, Middle Eastern, Pacific Islander, or Eastern European), ensuring no cuisine is repeated within a day or week unless explicitly preferred.
+- Use diverse protein sources: game meats (e.g., venison, quail), exotic seafood (e.g., octopus, sea urchin), heritage breed poultry, plant-based proteins (e.g., tempeh, seitan, lupini beans), or rare legumes.
+- Incorporate vibrant, seasonal, and visually stunning vegetables, fruits, and edible garnishes for Instagram-worthy presentations.
+- Combine varied textures: crispy, velvety, crunchy, silky, chewy, or gelatinous.
+- Avoid repetitive ingredients across all meals in the week to maximize variety.
+- Avoid overly common or basic dishes (e.g., no plain oatmeal, sandwiches, or salads unless creatively elevated).
+- Source inspiration from global food blogs, Michelin-starred restaurant menus, or trending culinary platforms for cutting-edge ideas.
 
-EXAMPLE FORMAT:
-{
-  "meals": [
-    {
-      "meal_title": "Chicken and Rice",
-      "ingredients": [
-        {
-          "name": "Chicken Breast",
-          "calories": 200,
-          "protein": 40,
-          "carbs": 0,
-          "fat": 4
-        },
-        {
-          "name": "White Rice",
-          "calories": 150,
-          "protein": 3,
-          "carbs": 30,
-          "fat": 0
-        }
-      ],
-      "total_macros": {
-        "calories": 350,
-        "protein": 43,
-        "carbs": 30,
-        "fat": 4
-      }
-    }
-  ]
-}
+**USER PREFERENCES (ONLY APPLY IF NOT NULL):**
+{{#if preferredDiet}}- Adhere strictly to diet type: {{preferredDiet}}{{/if}}
+{{#if allergies.length}}- AVOID (Allergies): {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredIngredients.length}}- AVOID (Dislikes): {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredIngredients.length}}- PREFER: {{#each preferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if preferredCuisines.length}}- Prioritize cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if dispreferredCuisines.length}}- Avoid cuisines: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+{{#if medicalConditions.length}}- Health considerations: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
-Create realistic meals with accurate nutrition that match the targets.`,
+**PRECISION REQUIREMENTS:**
+1. Macros must be within 1% of targets for calories, protein, carbs, and fat.
+2. Use precise nutritional data from reliable sources (e.g., USDA or peer-reviewed culinary databases).
+3. Include 5-8 diverse ingredients per meal for complexity and flavor depth.
+4. Ensure meals are restaurant-quality, visually stunning, and culturally inspired.
+5. Search online for innovative ingredient pairings or trending recipes to enhance creativity, but do not replicate any specific recipe directly.
+
+**MEAL CREATIVITY GUIDELINES:**
+- Create unique meals for each day and meal type (e.g., no two breakfasts are alike across the week).
+- Incorporate modern culinary techniques (e.g., spherification, fermentation, or foraging-inspired ingredients) where appropriate.
+- Ensure each meal feels like a distinct culinary journey with bold, unexpected flavor profiles.
+- Avoid predictable combinations; prioritize novel pairings inspired by global culinary trends.
+
+**OUTPUT FORMAT:**
+Return ONLY valid JSON with exactly {{mealTargets.length}} unique, creative meals. Each ingredient must have precise nutritional values (calories, protein, carbs, fat) that sum to the target macros within 1% accuracy. Include a brief description of each meal's preparation method and cultural inspiration. Make every meal an unforgettable culinary experience!`,
 });
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
   {
-    name: "generateSimpleMealPlanFlow",
+    name: "generateCreativeMealPlanFlow",
     inputSchema: GeneratePersonalizedMealPlanInputSchema,
     outputSchema: GeneratePersonalizedMealPlanOutputSchema,
   },
   async (
     input: GeneratePersonalizedMealPlanInput,
   ): Promise<GeneratePersonalizedMealPlanOutput> => {
-    console.log("🚀 Starting simple meal plan generation flow");
+    console.log("🚀 Starting creative meal plan generation flow");
     const processedWeeklyPlan: DayPlan[] = [];
     const weeklySummary = {
       totalCalories: 0,
@@ -147,11 +147,11 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
       totalFat: 0,
     };
 
-    // Generate all 7 days with simple approach
+    // Generate all 7 days with enhanced creativity prompts
     for (let dayIndex = 0; dayIndex < daysOfWeek.length; dayIndex++) {
       const dayOfWeek = daysOfWeek[dayIndex];
       console.log(
-        `📅 Creating simple meals for ${dayOfWeek} (${dayIndex + 1}/7)`,
+        `📅 Creating exciting meals for ${dayOfWeek} (${dayIndex + 1}/7)`,
       );
 
       const dailyPromptInput: DailyPromptInput = {
@@ -174,18 +174,18 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
 
       let dailyOutput = null;
       let retryCount = 0;
-      const maxRetries = 2;
+      const maxRetries = 3;
 
-      // Simple retry logic
+      // Enhanced retry logic with better error handling
       while (retryCount <= maxRetries && !dailyOutput) {
         try {
           console.log(
-            `🎯 Simple attempt ${retryCount + 1} for ${dayOfWeek}`,
+            `🤖 Creative AI attempt ${retryCount + 1} for ${dayOfWeek}`,
           );
           const promptResult = await dailyPrompt(dailyPromptInput);
           dailyOutput = promptResult.output;
 
-          // Basic validation
+          // Validate output quality and macro accuracy
           if (
             !dailyOutput?.meals ||
             dailyOutput.meals.length !== input.mealTargets.length
@@ -197,51 +197,56 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
             throw new Error(`Invalid meal structure for ${dayOfWeek}`);
           }
 
-          // Simple calorie validation (10% tolerance)
+          // Validate macro accuracy
           const isAccurate = dailyOutput.meals.every(
             (meal: any, index: number) => {
               const target = input.mealTargets[index];
-              const totalCals = meal.total_macros?.calories || 0;
-
-              // Calculate percentage error for calories
+              const totalCals =
+                meal.ingredients?.reduce(
+                  (sum: number, ing: any) => sum + (ing.calories || 0),
+                  0,
+                ) || 0;
+              const totalProtein =
+                meal.ingredients?.reduce(
+                  (sum: number, ing: any) => sum + (ing.protein || 0),
+                  0,
+                ) || 0;
+              const totalCarbs =
+                meal.ingredients?.reduce(
+                  (sum: number, ing: any) => sum + (ing.carbs || 0),
+                  0,
+                ) || 0;
+              const totalFat =
+                meal.ingredients?.reduce(
+                  (sum: number, ing: any) => sum + (ing.fat || 0),
+                  0,
+                ) || 0;
               const calorieError =
-                target.calories > 0
-                  ? Math.abs(totalCals - target.calories) / target.calories
-                  : 0;
-
-              // Check calories with 10% tolerance
-              const isWithinTolerance = calorieError <= 0.1; // 10% tolerance
-
-              if (!isWithinTolerance) {
-                console.warn(
-                  `Calorie validation failed for ${target.mealName}:`,
-                  {
-                    target: target.calories,
-                    actual: totalCals,
-                    error: calorieError,
-                  },
-                );
-              }
-
-              return isWithinTolerance;
+                Math.abs(totalCals - target.calories) / target.calories;
+              const proteinError =
+                Math.abs(totalProtein - target.protein) / target.protein;
+              const carbsError =
+                Math.abs(totalCarbs - target.carbs) / target.carbs;
+              const fatError = Math.abs(totalFat - target.fat) / target.fat;
+              return (
+                calorieError <= 0.01 &&
+                proteinError <= 0.01 &&
+                carbsError <= 0.01 &&
+                fatError <= 0.01
+              );
             },
           );
 
-          if (!isAccurate && retryCount < maxRetries) {
+          if (!isAccurate) {
             console.warn(
-              `❌ Calorie accuracy failed for ${dayOfWeek}, retrying...`,
+              `❌ Macro accuracy failed for ${dayOfWeek}, retrying...`,
             );
             dailyOutput = null;
-            throw new Error(`Calorie targets not met for ${dayOfWeek}`);
-          } else if (!isAccurate && retryCount >= maxRetries) {
-            // Accept the result even if not perfect on final attempt
-            console.warn(
-              `⚠️ Accepting imperfect calories for ${dayOfWeek} on final attempt`,
-            );
+            throw new Error(`Macro targets not met for ${dayOfWeek}`);
           }
 
           console.log(
-            `✅ Generated ${dailyOutput.meals.length} meals for ${dayOfWeek}`,
+            `✅ Generated ${dailyOutput.meals.length} creative meals for ${dayOfWeek}`,
           );
           break;
         } catch (error) {
@@ -251,24 +256,28 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
           );
           retryCount++;
           if (retryCount <= maxRetries) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            // Exponential backoff
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * retryCount),
+            );
           }
         }
       }
 
-      // Simple fallback if needed
+      // Enhanced fallback with dynamic variety
       if (
         !dailyOutput?.meals ||
         dailyOutput.meals.length !== input.mealTargets.length
       ) {
-        console.warn(`🔧 Creating simple fallback meals for ${dayOfWeek}`);
-        dailyOutput = createSimpleFallbackMeals(
+        console.warn(`🔧 Creating enhanced fallback meals for ${dayOfWeek}`);
+        dailyOutput = createEnhancedFallbackMeals(
           input.mealTargets,
           dayOfWeek,
+          dayIndex,
         );
       }
 
-      // Process meals
+      // Process and validate meals with better error handling
       const processedMeals: AIGeneratedMeal[] = [];
 
       for (
@@ -284,7 +293,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
           mealFromAI.ingredients &&
           mealFromAI.ingredients.length > 0
         ) {
-          // Process ingredients
+          // Enhanced ingredient processing
           const sanitizedIngredients = mealFromAI.ingredients.map(
             (ing: any) => ({
               name: ing.name || "Ingredient",
@@ -296,7 +305,10 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
           );
 
           const mealTotals = sanitizedIngredients.reduce(
-            (totals, ing) => ({
+            (
+              totals: { calories: any; protein: any; carbs: any; fat: any },
+              ing: { calories: any; protein: any; carbs: any; fat: any },
+            ) => ({
               calories: totals.calories + ing.calories,
               protein: totals.protein + ing.protein,
               carbs: totals.carbs + ing.carbs,
@@ -308,7 +320,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
           processedMeals.push({
             meal_name: targetMeal.mealName,
             meal_title:
-              mealFromAI.meal_title || `${targetMeal.mealName}`,
+              mealFromAI.meal_title || `Creative ${targetMeal.mealName}`,
             ingredients: sanitizedIngredients,
             total_calories: Math.round(mealTotals.calories * 100) / 100,
             total_protein: Math.round(mealTotals.protein * 100) / 100,
@@ -316,9 +328,9 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
             total_fat: Math.round(mealTotals.fat * 100) / 100,
           });
         } else {
-          // Simple placeholder meal
+          // Enhanced placeholder meal
           processedMeals.push(
-            createSimplePlaceholderMeal(targetMeal),
+            createEnhancedPlaceholderMeal(targetMeal, dayOfWeek, mealIndex),
           );
         }
       }
@@ -351,12 +363,12 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
       weeklySummary.totalFat += dailyTotals.fat;
 
       console.log(
-        `✅ Completed ${dayOfWeek} with ${processedMeals.length} simple meals`,
+        `✅ Completed creative ${dayOfWeek} with ${processedMeals.length} diverse meals`,
       );
     }
 
     console.log(
-      `🎉 Generated complete simple weekly plan: ${processedWeeklyPlan.length} days`,
+      `🎉 Generated complete creative weekly plan: ${processedWeeklyPlan.length} days`,
     );
 
     return {
@@ -371,79 +383,123 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
   },
 );
 
-// Simple fallback meals
-function createSimpleFallbackMeals(
+// Enhanced fallback meals with dynamic variety
+function createEnhancedFallbackMeals(
   mealTargets: any[],
   dayOfWeek: string,
+  dayIndex: number,
 ): any {
-  console.log(`🔧 Creating simple fallback meals for ${dayOfWeek}`);
+  console.log(`🔧 Creating enhanced fallback meals for ${dayOfWeek}`);
 
-  const fallbackMeals = mealTargets.map((target, mealIndex) => {
+  const cuisines = [
+    "West African",
+    "Malaysian",
+    "Colombian",
+    "Tunisian",
+    "Korean",
+    "Argentinian",
+    "Russian",
+  ];
+  const cuisine = cuisines[dayIndex % cuisines.length];
+
+  const fallbackMeals = mealTargets.map((target, index) => {
+    const proteinCals = target.calories * 0.35;
+    const carbCals = target.calories * 0.45;
+    const fatCals = target.calories * 0.2;
+
     return {
-      meal_title: `${target.mealName}`,
+      meal_title: `${cuisine} Inspired ${target.mealName}`,
       ingredients: [
         {
-          name: "Chicken Breast",
-          calories: Math.round(target.calories * 0.4),
-          protein: Math.round(target.protein * 0.6),
-          carbs: 0,
-          fat: Math.round(target.fat * 0.3),
+          name: `${cuisine} Protein`,
+          calories: Math.round(proteinCals),
+          protein: Math.round(target.protein * 0.7),
+          carbs: Math.round(target.carbs * 0.1),
+          fat: Math.round(target.fat * 0.2),
         },
         {
-          name: "Rice",
-          calories: Math.round(target.calories * 0.4),
+          name: `${cuisine} Carbohydrate`,
+          calories: Math.round(carbCals),
           protein: Math.round(target.protein * 0.2),
           carbs: Math.round(target.carbs * 0.8),
           fat: Math.round(target.fat * 0.1),
         },
         {
-          name: "Olive Oil",
-          calories: Math.round(target.calories * 0.2),
-          protein: Math.round(target.protein * 0.2),
-          carbs: Math.round(target.carbs * 0.2),
-          fat: Math.round(target.fat * 0.6),
+          name: `${cuisine} Fat Source`,
+          calories: Math.round(fatCals),
+          protein: Math.round(target.protein * 0.1),
+          carbs: Math.round(target.carbs * 0.1),
+          fat: Math.round(target.fat * 0.7),
+        },
+        {
+          name: `${cuisine} Vegetable`,
+          calories: Math.round(target.calories * 0.05),
+          protein: Math.round(target.protein * 0.05),
+          carbs: Math.round(target.carbs * 0.05),
+          fat: 0,
+        },
+        {
+          name: `${cuisine} Garnish`,
+          calories: Math.round(target.calories * 0.05),
+          protein: Math.round(target.protein * 0.05),
+          carbs: Math.round(target.carbs * 0.05),
+          fat: 0,
         },
       ],
-      total_macros: {
-        calories: target.calories,
-        protein: target.protein,
-        carbs: target.carbs,
-        fat: target.fat,
-      }
     };
   });
 
   return { meals: fallbackMeals };
 }
 
-// Simple placeholder meal
-function createSimplePlaceholderMeal(
+// Enhanced placeholder meal
+function createEnhancedPlaceholderMeal(
   targetMeal: any,
+  dayOfWeek: string,
+  mealIndex: number,
 ): AIGeneratedMeal {
+  const creativeCuisines = [
+    "Ethiopian",
+    "Vietnamese",
+    "Peruvian",
+    "Moroccan",
+    "Japanese",
+    "Brazilian",
+    "Indian",
+  ];
+  const cuisine = creativeCuisines[mealIndex % creativeCuisines.length];
+
   return {
     meal_name: targetMeal.mealName,
-    meal_title: `${targetMeal.mealName}`,
+    meal_title: `${cuisine} ${targetMeal.mealName}`,
     ingredients: [
       {
-        name: "Protein Source",
+        name: `${cuisine} Protein`,
         calories: Math.round(targetMeal.calories * 0.4),
         protein: Math.round(targetMeal.protein * 0.7),
         carbs: Math.round(targetMeal.carbs * 0.1),
         fat: Math.round(targetMeal.fat * 0.3),
       },
       {
-        name: "Carb Source",
+        name: `${cuisine} Carbohydrate`,
         calories: Math.round(targetMeal.calories * 0.4),
         protein: Math.round(targetMeal.protein * 0.2),
         carbs: Math.round(targetMeal.carbs * 0.8),
         fat: Math.round(targetMeal.fat * 0.1),
       },
       {
-        name: "Fat Source",
-        calories: Math.round(targetMeal.calories * 0.2),
+        name: `${cuisine} Fat Source`,
+        calories: Math.round(targetMeal.calories * 0.15),
         protein: Math.round(targetMeal.protein * 0.1),
         carbs: Math.round(targetMeal.carbs * 0.1),
         fat: Math.round(targetMeal.fat * 0.6),
+      },
+      {
+        name: `${cuisine} Vegetable`,
+        calories: Math.round(targetMeal.calories * 0.05),
+        protein: 0,
+        carbs: Math.round(targetMeal.carbs * 0.05),
+        fat: 0,
       },
     ],
     total_calories: targetMeal.calories,
@@ -458,7 +514,7 @@ export async function generatePersonalizedMealPlan(
   userId: string,
 ): Promise<GeneratePersonalizedMealPlanOutput> {
   try {
-    console.log("🎯 Starting simple meal plan generation for user:", userId);
+    console.log("🎯 Starting enhanced meal plan generation for user:", userId);
 
     const processedInput = {
       ...input,
@@ -481,23 +537,24 @@ export async function generatePersonalizedMealPlan(
       GeneratePersonalizedMealPlanInputSchema.parse(processedInput);
     const result = await generatePersonalizedMealPlanFlow(parsedInput);
 
-    console.log("✅ Simple meal plan generated successfully");
+    console.log("✅ Enhanced meal plan generated successfully");
 
-    // Save the AI plan to database
+    // Save the AI plan to database with error handling
     try {
       await editAiPlan({ ai_plan: result }, userId);
-      console.log("💾 Simple AI meal plan saved to database");
+      console.log("💾 Enhanced AI meal plan saved to database");
     } catch (saveError) {
-      console.error("❌ Error saving simple AI meal plan:", saveError);
+      console.error("❌ Error saving enhanced AI meal plan:", saveError);
+      // Don't throw error here, just log it
     }
 
     return result;
   } catch (e) {
-    console.error("❌ Simple meal plan generation failed:", e);
+    console.error("❌ Enhanced meal plan generation failed:", e);
     throw new Error(
       getAIApiErrorMessage({
         message:
-          "Failed to generate simple meal plan. Please check your targets and try again.",
+          "Failed to generate creative meal plan. Please check your macro targets and try again.",
       }),
     );
   }
