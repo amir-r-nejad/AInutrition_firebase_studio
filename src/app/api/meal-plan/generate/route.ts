@@ -6,7 +6,7 @@ export const maxDuration = 180; // 3 minutes timeout
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("🚀 API: Starting enhanced meal plan generation");
+    console.log("🚀 API: Starting OpenAI meal plan generation");
 
     const body = await request.json();
     const { profile, mealTargets } = body;
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("🤖 API: Calling enhanced AI meal plan generation for user:", userId);
+    console.log("🤖 API: Calling OpenAI meal plan generation for user:", userId);
     console.log("📊 API: Meal targets:", JSON.stringify(mealTargets, null, 2));
 
     // Generate meal plan with enhanced error handling
@@ -71,17 +71,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("✅ API: Successfully generated enhanced meal plan");
+    console.log("✅ API: Successfully generated OpenAI meal plan");
     console.log("📈 API: Weekly summary:", JSON.stringify(result.weeklySummary, null, 2));
 
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error("❌ API: Error generating enhanced meal plan:", error);
+    console.error("❌ API: Error generating OpenAI meal plan:", error);
 
-    // Enhanced error handling with specific error types
-    if (error.message?.includes("GEMINI_API_KEY")) {
+    // Enhanced error handling with specific error types for OpenAI
+    if (error.message?.includes("OPENAI_API_KEY") || error.message?.includes("OpenAI API key")) {
       return NextResponse.json(
-        { error: "AI service configuration error. Please contact support." },
+        { error: "OpenAI API key configuration error. Please contact support." },
         { status: 500 },
       );
     } else if (
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json(
         {
-          error: "AI service is currently busy. Please try again in a few minutes.",
+          error: "OpenAI service is currently busy. Please try again in a few minutes.",
         },
         { status: 429 },
       );
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         { status: 503 },
       );
     } else if (
-      error.message?.includes("INVALID_ARGUMENT") ||
+      error.message?.includes("Invalid JSON") ||
       error.message?.includes("validation")
     ) {
       return NextResponse.json(
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     } else {
       return NextResponse.json(
         {
-          error: error.message || "Failed to generate enhanced meal plan",
+          error: error.message || "Failed to generate OpenAI meal plan",
           details: "An unexpected error occurred during meal plan generation",
         },
         { status: 500 },

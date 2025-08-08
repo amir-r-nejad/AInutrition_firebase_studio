@@ -203,8 +203,8 @@ export default function MealPlanGenerator({
           JSON.stringify(mealTargets, null, 2),
         );
 
-        // Generate AI meal plan
-        console.log("🤖 Calling AI meal plan generation API...");
+        // Generate AI meal plan using OpenAI
+        console.log("🤖 API: Calling OpenAI meal plan generation...");
 
         // Enhanced retry logic with exponential backoff
         const maxRetries = 3;
@@ -274,7 +274,7 @@ export default function MealPlanGenerator({
                 );
                 try {
                   await new Promise((resolve) => setTimeout(resolve, 3000));
-                  const existingPlan = await loadMealPlan();
+                  const existingPlan = await loadMealPlan(); // Still use loadMealPlan to get the generated plan
                   if (existingPlan && existingPlan.weeklyMealPlan) {
                     console.log(
                       "✅ Found newly generated meal plan on server!",
@@ -386,7 +386,7 @@ export default function MealPlanGenerator({
           throw new Error("Invalid meal plan data returned from API");
         }
 
-        // Save to database
+        // Save to database using editAiPlan
         console.log(
           "Calling editAiPlan with:",
           JSON.stringify({ ai_plan: result }, null, 2),
@@ -403,8 +403,8 @@ export default function MealPlanGenerator({
           JSON.stringify(savedPlan, null, 2),
         );
 
-        // لود داده‌های به‌روز
-        const updatedPlan = await loadMealPlan(); // به جای editMealPlan
+        // Load updated data
+        const updatedPlan = await loadMealPlan(); // Still use loadMealPlan to get the latest saved plan
         console.log(
           "Loaded updated meal plan:",
           JSON.stringify(updatedPlan, null, 2),
@@ -414,8 +414,13 @@ export default function MealPlanGenerator({
         toast({
           title: "Success!",
           description:
-            "Your AI meal plan has been generated with precise macro distributions.",
+            "Your AI meal plan has been generated with precise macro distributions (±5% accuracy).",
         });
+
+        // Auto-refresh page after successful generation
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000); // Refresh after 2 seconds to show the toast first
       } catch (error: any) {
         console.error("❌ Meal plan generation error:", error);
         let errorMessage = "Failed to generate meal plan.";
