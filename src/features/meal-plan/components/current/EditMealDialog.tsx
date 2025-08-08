@@ -56,12 +56,28 @@ function EditMealDialog({
   const selectedDay = getQueryParams("selected_day");
   const selectedMealName = getQueryParams("selected_meal");
 
-  // Fetch user plan data to get macro targets and meal distributions
+  // Fetch user plan and profile data to get macro targets and meal distributions
   const [userPlan, setUserPlan] = useState<UserMealPlan | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  
   useEffect(() => {
-    // In a real application, you would fetch this data from an API
-    // For now, we'll assume mealPlan contains the necessary data
+    // Set the meal plan data
     setUserPlan(mealPlan);
+    
+    // Fetch user profile data that contains meal distributions
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch('/api/profile');
+        if (response.ok) {
+          const profileData = await response.json();
+          setUserProfile(profileData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error);
+      }
+    };
+    
+    fetchUserProfile();
   }, [mealPlan]);
 
   function handleIngredientChange(
@@ -198,6 +214,10 @@ function EditMealDialog({
         throw new Error("User plan data not loaded. Please try again.");
       }
 
+      if (!userProfile) {
+        throw new Error("User profile data not loaded. Please try again.");
+      }
+
       // Get daily macro targets from user plan
       const dailyTargets = {
         calories:
@@ -209,21 +229,24 @@ function EditMealDialog({
         fat: userPlan.custom_fat_g ?? userPlan.target_fat_g ?? 67,
       };
 
-      // Get meal distribution for this specific meal
-      // Note: We need to handle the case where meal_distributions might not exist
-      const mealDistributions = (userPlan as any).meal_distributions;
+      // Get meal distribution for this specific meal from user profile
+      const mealDistributions = userProfile.meal_distributions;
       const mealDistribution = mealDistributions?.find(
         (dist: any) => dist.mealName === meal.name,
       );
 
       if (!mealDistribution) {
-        throw new Error(
-          `Meal distribution not found for ${meal.name}. Please set up macro splitter first.`,
-        );
+        // Use default distribution if none found
+        const defaultDistribution = {
+          calories_pct: 16.67, // Default equal distribution across 6 meals
+        };
+        console.warn(`No meal distribution found for ${meal.name}, using default 16.67%`);
+        var caloriePercentage = defaultDistribution.calories_pct / 100;
+      } else {
+        var caloriePercentage = (mealDistribution.calories_pct || 0) / 100;
       }
 
-      // Use the actual percentage distributions from macro splitter
-      const caloriePercentage = (mealDistribution.calories_pct || 0) / 100;
+      
 
       const targetMacros = {
         calories: Math.round(dailyTargets.calories * caloriePercentage),
