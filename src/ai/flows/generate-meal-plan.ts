@@ -81,74 +81,70 @@ const dailyPrompt = geminiModel.definePrompt({
   name: "generateCreativeMealPlanPrompt",
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `You are a precision nutritionist and expert meal designer tasked with generating EXACTLY {{mealTargets.length}} nutritionally precise meals for {{dayOfWeek}}. Your PRIMARY GOAL is absolute macro accuracy; creativity is important but secondary to precision.
+  prompt: `You are a precision nutritionist tasked with designing EXACTLY {{mealTargets.length}} meals for {{dayOfWeek}}. Your primary goal is to ensure macronutrient values precisely match the provided targets. Accuracy is critical; creativity is secondary.
 
 **Macro Accuracy Requirements:**
-- Calories and protein must be within 3% of target values without exception.
-- Carbohydrates and fat must be within 10% of target values.
+- Calories and protein must be within ±3% of target values.
+- Carbohydrates and fat must be within ±10% of target values.
 
 **Calculation Process:**
-1. For each meal, select 4 to 6 ingredients with reliable, known nutritional values (preferably from USDA FoodData Central or equivalent).
-2. Calculate exact gram quantities to hit calories and protein targets first.
-3. Adjust remaining ingredient quantities to balance carbohydrates and fat within tolerance.
-4. Verify that the sum of all ingredient macros matches the meal targets within specified tolerances.
-5. Recalculate as needed until all tolerances are met.
-6. Double-check total calories using formula: (Protein × 4) + (Carbs × 4) + (Fat × 9).
+1. Select 4–6 ingredients with verified nutritional data from USDA FoodData Central.
+2. Prioritize ingredients to meet protein and calorie targets first, ensuring they are within ±3%.
+   - Use high-protein ingredients (e.g., chicken, fish, tofu) but adjust quantities carefully to avoid exceeding protein targets.
+3. Adjust remaining ingredients to meet carbohydrate and fat targets within ±10%.
+4. Calculate total macros by summing ingredient values.
+5. If any macro is outside the allowed range, adjust ingredient quantities (increase/decrease grams) and recalculate until all targets are met.
+6. Verify total calories using: (Protein × 4) + (Carbs × 4) + (Fat × 9).
+7. Perform a final check to ensure all macros are within the required ranges.
 
-**Ingredient and Meal Design Guidelines:**
-- Use 4 to 6 complementary ingredients that create a flavorful, cohesive meal.
-- Incorporate diverse cooking methods (grilling, poaching, sous-vide, fermenting, etc.) and global culinary inspirations.
-- Prioritize diverse protein sources (lean meats, fish, plant proteins, legumes), colorful vegetables, fruits, healthy fats, and complex carbs.
-- Create visually appealing meals with varied textures and bold, novel flavor profiles.
+**Meal Design Guidelines:**
+- Use 4–6 ingredients to create a cohesive, flavorful meal.
+- Include varied protein sources (e.g., lean meats, fish, legumes), vegetables, complex carbs, and healthy fats.
+- Use diverse cooking methods (e.g., grilling, steaming) and global flavors.
+- Ensure meals are visually appealing with varied textures.
 
-**User Preferences:**
-Apply any of the following only if provided (non-null):
-{{#if preferredDiet}}- Strictly adhere to the diet type: {{preferredDiet}}
-{{/if}}{{#if allergies.length}}- Avoid ingredients triggering allergies: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
-{{/if}}{{#if dispreferredIngredients.length}}- Avoid disliked ingredients: {{#each dispreferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
-{{/if}}{{#if preferredIngredients.length}}- Prefer these ingredients: {{#each preferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+**User Preferences (apply only if provided):**
+{{#if preferredDiet}}- Follow diet: {{preferredDiet}}
+{{/if}}{{#if allergies.length}}- Avoid allergens: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}{{#if dispreferredIngredients.length}}- Avoid: {{#each dispreferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}{{#if preferredIngredients.length}}- Prefer: {{#each preferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
 {{/if}}{{#if preferredCuisines.length}}- Prioritize cuisines: {{#each preferredCuisines}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
 {{/if}}{{#if dispreferredCuisines.length}}- Avoid cuisines: {{#each dispreferredCuisines}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
-{{/if}}{{#if medicalConditions.length}}- Consider health conditions: {{#each medicalConditions}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}{{#if medicalConditions.length}}- Consider conditions: {{#each medicalConditions}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
 {{/if}}
 
-**Mandatory Output Requirements:**
-Return ONLY valid JSON with exactly {{mealTargets.length}} unique meals, each structured as follows:
-
-- **meal_title:** An appealing, creative meal name.
-- **ingredients:** An array of ingredients with:
+**Output Requirements:**
+Return ONLY valid JSON with exactly {{mealTargets.length}} meals, each with:
+- **meal_title**: A creative meal name.
+- **ingredients**: Array of 4–6 ingredients, each with:
   * name
-  * exact quantity in grams (to achieve macro precision)
-  * precise nutritional values (calories, protein, carbs, fat) corresponding to the specified quantity.
+  * quantity_grams (exact for macro precision)
+  * nutritional_values (calories, protein, carbs, fat for the quantity)
+- **total_macros**: Sum of calories, protein, carbs, and fat, ensuring:
+  * Calories: ±3%
+  * Protein: ±3%
+  * Carbs: ±10%
+  * Fat: ±10%
 
-For each meal:
-- Ensure the total macros from all ingredients match the meal targets within these tolerances:
-  * Calories within ±3%
-  * Protein within ±3%
-  * Carbohydrates within ±10%
-  * Fat within ±10%
-
-- No exceptions: If calories or protein are outside 3% tolerance, or carbs/fat are outside 10% tolerance, recalculate ingredient quantities before responding.
-- Prioritize calorie and protein accuracy above all else.
-
-**Macro Targets for reference:**
+**Macro Targets:**
 {{#each mealTargets}}
-- {{this.mealName}}: {{this.calories}} kcal ± 3%, {{this.protein}} g protein ± 3%, {{this.carbs}} g carbs ± 10%, {{this.fat}} g fat ± 10%
+- {{this.mealName}}: {{this.calories}} kcal (±3%), {{this.protein}} g protein (±3%), {{this.carbs}} g carbs (±10%), {{this.fat}} g fat (±10%)
 {{/each}}
 
-**Verification Example:**
-- Target: 500 kcal, 30 g protein, 50 g carbs, 20 g fat
-- Acceptable ranges:
-  * Calories: 485 - 515 kcal
-  * Protein: 29.1 - 30.9 g
-  * Carbs: 45 - 55 g
-  * Fat: 18 - 22 g
+**Example Target and Ranges:**
+- Target: 637.2 kcal, 47.7 g protein, 50 g carbs, 20 g fat
+- Ranges:
+  * Calories: 618.084–656.316 kcal
+  * Protein: 46.269–49.131 g
+  * Carbs: 45–55 g
+  * Fat: 18–22 g
 
-Calculate ingredient quantities accordingly, ensuring sum of ingredient macros meets these ranges exactly.
-
-Do not include explanations or additional commentary. Provide only the valid JSON output adhering strictly to these requirements.
-
-Use precise, reliable nutritional data sources such as USDA FoodData Central, MyFitnessPal, or FatSecret.
+**Additional Instructions:**
+- Use USDA FoodData Central for precise nutritional data.
+- If protein exceeds the target range, reduce the quantity of high-protein ingredients (e.g., chicken, fish) and recalculate.
+- Do not output any meal unless all macros are within the specified ranges.
+- Recalculate ingredient quantities up to 3 times if needed to meet targets.
+- Return only the JSON output, no explanations.
 
 Begin generating the meals now.`,
 });
@@ -344,8 +340,18 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
 
           const mealTotals = sanitizedIngredients.reduce(
             (
-              totals: { calories: number; protein: number; carbs: number; fat: number },
-              ing: { calories: number; protein: number; carbs: number; fat: number },
+              totals: {
+                calories: number;
+                protein: number;
+                carbs: number;
+                fat: number;
+              },
+              ing: {
+                calories: number;
+                protein: number;
+                carbs: number;
+                fat: number;
+              },
             ) => ({
               calories: totals.calories + ing.calories,
               protein: totals.protein + ing.protein,
