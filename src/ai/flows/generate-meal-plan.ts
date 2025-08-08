@@ -213,10 +213,10 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
       if (processedMeals.length > 0) {
         const dailyTotals = processedMeals.reduce(
           (totals, meal) => ({
-            calories: totals.calories + meal.total_calories,
-            protein: totals.protein + meal.total_protein,
-            carbs: totals.carbs + meal.total_carbs,
-            fat: totals.fat + meal.total_fat,
+            calories: totals.calories + (meal.total_calories || 0),
+            protein: totals.protein + (meal.total_protein || 0),
+            carbs: totals.carbs + (meal.total_carbs || 0),
+            fat: totals.fat + (meal.total_fat || 0),
           }),
           { calories: 0, protein: 0, carbs: 0, fat: 0 },
         );
@@ -234,7 +234,12 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
       }
     }
 
-    await editAiPlan(processedWeeklyPlan);
+    const result = {
+      weeklyMealPlan: processedWeeklyPlan,
+      weeklySummary,
+    };
+
+    await editAiPlan({ ai_plan: result });
 
     return {
       weeklyMealPlan: processedWeeklyPlan,
