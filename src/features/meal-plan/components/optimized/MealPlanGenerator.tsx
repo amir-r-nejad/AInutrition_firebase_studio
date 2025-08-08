@@ -219,7 +219,7 @@ export default function MealPlanGenerator({
 
             // Create AbortController for timeout per attempt
             const controller = new AbortController();
-            timeoutId = setTimeout(() => controller.abort(), 180000); // 2 minutes per attempt
+            timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes per attempt
 
             const response = await fetch("/api/meal-plan/generate", {
               method: "POST",
@@ -379,10 +379,6 @@ export default function MealPlanGenerator({
               }
             }
           }
-        }
-
-        if (!result || !result.weeklyMealPlan || !result.weeklySummary) {
-          throw new Error("Invalid meal plan data returned from API");
         }
 
         if (!result || !result.weeklyMealPlan || !result.weeklySummary) {
