@@ -29,7 +29,7 @@ function initializeGeminiClient() {
 
   // Get the Gemini model
   geminiDirectModel = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-exp",
+    model: "gemini-2.0-flash",
     generationConfig: {
       temperature: 0.7,
       topK: 40,
@@ -52,8 +52,16 @@ export async function generateStructuredContent<T>(
 ): Promise<T> {
   try {
     const model = getGeminiDirectModel();
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
+
+    // Add timeout to prevent hanging requests
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Request timeout")), 45000); // 45 second timeout
+    });
+
+    const generationPromise = model.generateContent(prompt);
+
+    const result = await Promise.race([generationPromise, timeoutPromise]);
+    const response = await (result as any).response;
     const text = response.text();
 
     // Clean up the response to extract JSON (remove markdown code blocks)
@@ -87,6 +95,11 @@ export async function generateStructuredContent<T>(
   } catch (error: any) {
     console.error("Error generating content with Gemini Direct API:", error);
 
+    // Handle timeout errors
+    if (error.message === "Request timeout") {
+      throw new Error("AI service request timed out. Please try again.");
+    }
+
     // Handle specific API errors
     if (error.status === 403) {
       throw new Error(
@@ -102,8 +115,14 @@ export async function generateStructuredContent<T>(
       );
     } else if (error.status >= 500) {
       throw new Error("Gemini API server error. Please try again later.");
-    } else if (error.message?.includes("fetch")) {
-      throw new Error("Network error. Please check your internet connection.");
+    } else if (
+      error.message?.includes("fetch") ||
+      error.message?.includes("network") ||
+      error.message?.includes("connection")
+    ) {
+      throw new Error(
+        "Network connection error. Please check your internet connection and try again.",
+      );
     }
 
     throw new Error(
