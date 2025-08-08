@@ -99,23 +99,29 @@ async function generateDailyMealPlan(
   }
 
   // Build meal targets string
-  const mealTargetsString = mealTargets.map(target => 
-    `**${target.mealName}**: ${target.calories} kcal | ${target.protein}g protein | ${target.carbs}g carbs | ${target.fat}g fat`
-  ).join('\n');
+  const mealTargetsString = mealTargets
+    .map(
+      (target) =>
+        `**${target.mealName}**: ${target.calories} kcal | ${target.protein}g protein | ${target.carbs}g carbs | ${target.fat}g fat`,
+    )
+    .join("\n");
 
-  const prompt = `Create ${mealTargets.length} meals for ${dayOfWeek}:
+  const prompt = `As a professional nutritionist with 15+ years of experience,
+  Create ${mealTargets.length} meals for ${dayOfWeek}:
 
 ${mealTargetsString}
 
-${preferences.preferredDiet ? `Diet: ${preferences.preferredDiet}` : ''}
-${preferences.allergies && preferences.allergies.length > 0 ? `Avoid: ${preferences.allergies.join(', ')}` : ''}
+${preferences.preferredDiet ? `Diet: ${preferences.preferredDiet}` : ""}
+${preferences.allergies && preferences.allergies.length > 0 ? `Avoid: ${preferences.allergies.join(", ")}` : ""}
 
 Create tasty, realistic meals using common ingredients. Include amounts in ingredient names.
 
 JSON format:
 {
   "meals": [
-${mealTargets.map((target, index) => `    {
+${mealTargets
+  .map(
+    (target, index) => `    {
       "meal_title": "${target.mealName}",
       "ingredients": [
         {
@@ -132,7 +138,9 @@ ${mealTargets.map((target, index) => `    {
         "carbs": ${target.carbs},
         "fat": ${target.fat}
       }
-    }${index < mealTargets.length - 1 ? ',' : ''}`).join('\n')}
+    }${index < mealTargets.length - 1 ? "," : ""}`,
+  )
+  .join("\n")}
   ]
 }`;
 
@@ -172,7 +180,10 @@ ${mealTargets.map((target, index) => `    {
   const content = data.choices[0]?.message?.content;
 
   if (!content) {
-    console.error("No content received from OpenAI. Full response:", JSON.stringify(data, null, 2));
+    console.error(
+      "No content received from OpenAI. Full response:",
+      JSON.stringify(data, null, 2),
+    );
     throw new Error("No content received from OpenAI");
   }
 
@@ -187,18 +198,23 @@ ${mealTargets.map((target, index) => `    {
   try {
     const parsed = JSON.parse(cleanedContent);
     console.log("Parsed OpenAI response:", JSON.stringify(parsed, null, 2));
-    
+
     // Validate the response structure
     if (!parsed.meals || !Array.isArray(parsed.meals)) {
       console.error("Invalid response structure - no meals array:", parsed);
       throw new Error("OpenAI response missing meals array");
     }
-    
+
     if (parsed.meals.length !== mealTargets.length) {
-      console.error(`Expected ${mealTargets.length} meals, got ${parsed.meals.length}:`, parsed.meals);
-      throw new Error(`OpenAI returned ${parsed.meals.length} meals instead of ${mealTargets.length}`);
+      console.error(
+        `Expected ${mealTargets.length} meals, got ${parsed.meals.length}:`,
+        parsed.meals,
+      );
+      throw new Error(
+        `OpenAI returned ${parsed.meals.length} meals instead of ${mealTargets.length}`,
+      );
     }
-    
+
     return parsed;
   } catch (parseError) {
     console.error("Failed to parse OpenAI response:", parseError);
@@ -270,7 +286,7 @@ async function generatePersonalizedMealPlanFlow(
         let allMealsValid = true;
         for (let i = 0; i < dailyOutput.meals.length; i++) {
           const meal = dailyOutput.meals[i];
-          
+
           if (!meal.ingredients || meal.ingredients.length === 0) {
             console.warn(`❌ Meal ${i + 1} has no ingredients`);
             allMealsValid = false;
@@ -279,7 +295,9 @@ async function generatePersonalizedMealPlanFlow(
         }
 
         if (!allMealsValid) {
-          console.warn(`❌ Some meals missing ingredients for ${dayOfWeek}, retrying...`);
+          console.warn(
+            `❌ Some meals missing ingredients for ${dayOfWeek}, retrying...`,
+          );
           dailyOutput = null;
           throw new Error(`Missing ingredients for ${dayOfWeek}`);
         }
