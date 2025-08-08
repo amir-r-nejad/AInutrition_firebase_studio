@@ -1,0 +1,136 @@
+Breakfast
+Berry Almond Oatmeal Power Bowl with Protein Boost: Breakfast Bliss Start to the Day: Morning Kickstart Fuel-Up Treat, Goodness Bowl Powerhouse, Superboost Feast for Health & Delight, Morning Bliss, Kick-Start Delightful Indulgence, SuperBoost Breakfast: Fuel Your Day the Right Way with Oat & Berries Mix-In Power-Up Fuel-Up Superboost Morning: Bowlful Delight Powerhouse Feast Breakfast Bliss Kickstart Morning
+Ingredient	Amount	Unit	Calories	Protein	Carbs	Fat
+Oats	-	-	308.0	11.0g	40.0g	2.0g
+Blueberries	-	-	100.0	1.0g	12.0g	1.0g
+Almonds	-	-	120.0	4.0g	9.0g	8.0g
+Whey Protein Isolate	-	-	101.2	20.4g	6.3g	5.8g
+Chia Seeds	-	-	8.0	0.4g	2.3g	0.1g
+637.2
+
+Cal
+
+36.76g
+
+Protein
+
+69.65g
+
+Carbs
+
+16.93g
+
+Fat
+
+Morning Snack
+Apple Almond Boost: Snack for Success
+Ingredient	Amount	Unit	Calories	Protein	Carbs	Fat
+Apple Slices	-	-	115.0	1.0g	20.0g	4.0g
+Almond Butter	-	-	95.0	3.0g	3.0g	8.0g
+Whey Protein Isolate	-	-	73.2	14.7g	4.5g	0.4g
+283.2
+
+Cal
+
+18.68g
+
+Protein
+
+27.5g
+
+Carbs
+
+12.42g
+
+Fat
+
+Lunch
+Quinoa Chicken Power Lunch: The Fitness Fuel!
+Ingredient	Amount	Unit	Calories	Protein	Carbs	Fat
+Quinoa	-	-	220.0	8.0g	40.0g	2.5g
+Grilled Chicken Breast	-	-	200.0	40.0g	0.0g	8.0g
+Egg Whites	-	-	144.0	24.0g	12.0g	0.0g
+Mixed Vegetables	-	-	60.0	2.0g	4.0g	4.0g
+Olive Oil	-	-	15.0	0.0g	0.0g	1.7g
+639
+
+Cal
+
+74g
+
+Protein
+
+56g
+
+Carbs
+
+16.2g
+
+Fat
+
+Afternoon Snack
+Apple Almond Boost: Snack for Success
+Ingredient	Amount	Unit	Calories	Protein	Carbs	Fat
+Apple Slices	-	-	115.0	1.0g	20.0g	4.0g
+Almond Butter	-	-	95.0	3.0g	3.0g	8.0g
+Whey Protein Isolate	-	-	73.2	14.7g	4.5g	0.4g
+283.2
+
+Cal
+
+18.68g
+
+Protein
+
+27.5g
+
+Carbs
+
+12.42g
+
+Fat
+
+Dinner
+Salmon Power Bowl: Dinner Delight
+Ingredient	Amount	Unit	Calories	Protein	Carbs	Fat
+Salmon	-	-	250.0	25.0g	0.0g	17.0g
+Sweet Potato	-	-	117.0	2.0g	27.0g	0.0g
+Steamed Broccoli	-	-	28.0	2.0g	5.0g	0.0g
+Avocado	-	-	170.0	2.0g	9.0g	15.0g
+565
+
+Cal
+
+31g
+
+Protein
+
+41g
+
+Carbs
+
+32g
+
+Fat
+
+Evening Snack
+Banana Peanut Protein Power: Night Fuel
+Ingredient	Amount	Unit	Calories	Protein	Carbs	Fat
+Banana	-	-	150.0	1.0g	27.0g	2.0g
+Whey Protein Isolate	-	-	106.6	21.4g	6.7g	0.6g
+Peanut Butter	-	-	168.0	7.2g	14.4g	12.0g
+424.6
+
+Cal
+
+29.56g
+
+Protein
+
+48.08g
+
+Carbs
+
+14.61g
+
+Fat
