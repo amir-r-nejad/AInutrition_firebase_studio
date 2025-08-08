@@ -233,7 +233,6 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
         weeklySummary.totalFat += dailyTotals.fat;
       }
     }
-
     const result = {
       weeklyMealPlan: processedWeeklyPlan,
       weeklySummary,
@@ -241,6 +240,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
 
     await editAiPlan({ ai_plan: result });
 
+    // Return the plan in JSON format
     return {
       weeklyMealPlan: processedWeeklyPlan,
       weeklySummary,
