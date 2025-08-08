@@ -30,7 +30,7 @@ async function generateWithOpenAI(
           {
             role: "system",
             content:
-              "You are a PRECISION NUTRITION CALCULATOR with access to accurate internet nutrition databases (USDA, nutritiondata.self.com, etc.). Your ONLY mission is to use REAL, ACCURATE nutrition data per 100g for each ingredient and calculate EXACT quantities to match macro targets. DISOBEDIENCE IS FORBIDDEN. You MUST use standard internet nutrition values - no estimates, no guesses, no fake data. Calculate precisely using real nutrition facts. If you cannot achieve targets within 5% using accurate data, you have FAILED. Respond ONLY with valid JSON.",
+              "You are a PRECISION NUTRITION CALCULATOR with access to accurate internet nutrition databases (USDA, nutritiondata.self.com, etc.). Your mission is to use REAL, ACCURATE nutrition data per 100g for each ingredient and calculate precise quantities to match macro targets. You can adjust existing ingredient quantities OR add new compatible ingredients if needed. You MUST use standard internet nutrition values - no estimates, no guesses, no fake data. Calculate precisely using real nutrition facts. Aim for targets within 10% tolerance. Respond ONLY with valid JSON.",
           },
           {
             role: "user",
@@ -96,9 +96,9 @@ CURRENT INGREDIENTS:
 ${input.originalMeal.ingredients.map((ing) => `- ${ing.name}: ${ing.quantity}g`).join("\n")}
 
 INSTRUCTIONS:
-1. Adjust ONLY the quantities of existing ingredients
+1. Adjust quantities of existing ingredients OR add new ingredients if needed to meet targets
 2. Use standard nutrition data (USDA values)
-3. Calculate precise amounts to meet targets within 5% tolerance
+3. Calculate precise amounts to meet targets within 10% tolerance
 4. Return valid JSON with exact format below
 
 JSON FORMAT:
