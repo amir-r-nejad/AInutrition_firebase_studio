@@ -203,8 +203,8 @@ export default function MealPlanGenerator({
           JSON.stringify(mealTargets, null, 2),
         );
 
-        // Generate AI meal plan
-        console.log("🤖 Calling AI meal plan generation API...");
+        // Generate AI meal plan using OpenAI
+        console.log("🤖 API: Calling OpenAI meal plan generation...");
 
         // Enhanced retry logic with exponential backoff
         const maxRetries = 3;
@@ -214,14 +214,14 @@ export default function MealPlanGenerator({
           let timeoutId: NodeJS.Timeout | undefined;
           try {
             console.log(
-              `🌐 Making fetch request to /api/meal-plan/generate... (attempt ${attempt})`,
+              `🌐 Making fetch request to /api/meal-plan/generate-openai... (attempt ${attempt})`,
             );
 
             // Create AbortController for timeout per attempt
             const controller = new AbortController();
             timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes per attempt
 
-            const response = await fetch("/api/meal-plan/generate", {
+            const response = await fetch("/api/meal-plan/generate-openai", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -274,7 +274,7 @@ export default function MealPlanGenerator({
                 );
                 try {
                   await new Promise((resolve) => setTimeout(resolve, 3000));
-                  const existingPlan = await loadMealPlan();
+                  const existingPlan = await loadMealPlan(); // Still use loadMealPlan to get the generated plan
                   if (existingPlan && existingPlan.weeklyMealPlan) {
                     console.log(
                       "✅ Found newly generated meal plan on server!",
@@ -386,7 +386,7 @@ export default function MealPlanGenerator({
           throw new Error("Invalid meal plan data returned from API");
         }
 
-        // Save to database
+        // Save to database using editAiPlan
         console.log(
           "Calling editAiPlan with:",
           JSON.stringify({ ai_plan: result }, null, 2),
@@ -403,8 +403,8 @@ export default function MealPlanGenerator({
           JSON.stringify(savedPlan, null, 2),
         );
 
-        // لود داده‌های به‌روز
-        const updatedPlan = await loadMealPlan(); // به جای editMealPlan
+        // Load updated data
+        const updatedPlan = await loadMealPlan(); // Still use loadMealPlan to get the latest saved plan
         console.log(
           "Loaded updated meal plan:",
           JSON.stringify(updatedPlan, null, 2),
