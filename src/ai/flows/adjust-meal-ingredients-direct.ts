@@ -30,7 +30,7 @@ async function generateWithOpenAI(
           {
             role: "system",
             content:
-              "You are a PRECISION NUTRITION CALCULATOR. Your mission: adjust meal ingredients to meet exact macro targets. You MUST use real nutrition data (USDA database). CRITICAL: If existing ingredients cannot meet targets due to wrong macro ratios (e.g., too much fat, not enough carbs), you MUST ADD new ingredients to balance the meal. Example: if cheese+bread is too high in fat, add fruits/vegetables for carbs. Calculate precisely to meet targets within 10% tolerance. Respond ONLY with valid JSON.",
+              "You are a PRECISION NUTRITION CALCULATOR. CRITICAL: You MUST ADD new ingredients when existing ones cannot meet macro ratios. For example: if current meal is 60% fat calories but target is 20% fat calories, you CANNOT just reduce quantities - you MUST add high-carb/high-protein ingredients like fruits, vegetables, lean proteins. Use real USDA nutrition data. Calculate precisely to meet ALL targets within 10% tolerance. Respond ONLY with valid JSON.",
           },
           {
             role: "user",
@@ -95,20 +95,26 @@ TARGET MACROS:
 CURRENT INGREDIENTS:
 ${input.originalMeal.ingredients.map((ing) => `- ${ing.name}: ${ing.quantity}g`).join("\n")}
 
-INSTRUCTIONS:
-1. First try adjusting quantities of existing ingredients
-2. If existing ingredients cannot meet targets (especially fat/carb ratios), ADD new complementary ingredients:
-   - For high fat targets: add nuts, oils, avocado
-   - For high carb targets: add fruits, grains, vegetables
-   - For high protein targets: add lean proteins, dairy
-3. Use standard nutrition data (USDA values)
-4. Calculate precise amounts to meet targets within 10% tolerance
-5. Return valid JSON with exact format below
+CRITICAL ANALYSIS REQUIRED:
+1. Calculate current macro percentages: (protein_cal/total_cal, carb_cal/total_cal, fat_cal/total_cal)
+2. Calculate target macro percentages from target macros
+3. If percentages differ significantly (>5%), you MUST add ingredients to fix ratios
 
-EXAMPLE: If current meal is too high in fat, add high-carb low-fat ingredients like:
-- Banana, apple, berries (fruits)
-- Oats, rice, pasta (grains)
-- Vegetables like spinach, tomatoes
+MANDATORY INGREDIENT ADDITIONS:
+- If target protein % > current protein %: ADD chicken breast, egg whites, protein powder, greek yogurt, tofu
+- If target carb % > current carb %: ADD oats, rice, banana, apple, sweet potato, pasta
+- If target fat % < current fat %: ADD low-fat high-carb/protein ingredients
+
+CURRENT MEAL ANALYSIS EXAMPLE:
+Cheese (33.1g fat) + Bread (3.2g fat) = 36.3g total fat from 36.3g*9 = 327 fat calories
+Target: 14.2g fat = 128 fat calories
+SOLUTION: ADD high-carb ingredients like banana (0.3g fat/100g) to dilute fat percentage
+
+INSTRUCTIONS:
+1. NEVER just reduce quantities if macro ratios are wrong
+2. ALWAYS add balancing ingredients when needed
+3. Use USDA nutrition data
+4. Meet ALL targets within 10%
 
 JSON FORMAT:
 {
