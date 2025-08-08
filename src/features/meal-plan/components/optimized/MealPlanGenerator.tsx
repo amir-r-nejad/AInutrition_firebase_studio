@@ -9,10 +9,8 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { generatePersonalizedMealPlan } from "@/ai/flows/generate-meal-plan";
 import {
   editAiPlan,
-  editMealPlan,
   loadMealPlan,
 } from "@/features/meal-plan/lib/data-service";
 import { Loader2, Sparkles, AlertTriangle, RefreshCw } from "lucide-react";
@@ -20,8 +18,6 @@ import { useState, useTransition, useEffect } from "react";
 import MealPlanOverview from "./MealPlanOverview";
 import {
   GeneratePersonalizedMealPlanOutput,
-  DailyMealPlan,
-  WeeklyMealPlan,
 } from "@/lib/schemas";
 
 interface MealPlanGeneratorProps {
@@ -217,12 +213,13 @@ export default function MealPlanGenerator({
         let result: GeneratePersonalizedMealPlanOutput | null = null;
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          let timeoutId: NodeJS.Timeout;
           try {
             console.log(`🌐 Making fetch request to /api/meal-plan/generate... (attempt ${attempt})`);
 
             // Create AbortController for timeout per attempt
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes per attempt
+            timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes per attempt
 
             const response = await fetch("/api/meal-plan/generate", {
               method: "POST",
@@ -238,7 +235,7 @@ export default function MealPlanGenerator({
               signal: controller.signal,
             });
 
-          clearTimeout(timeoutId);
+            clearTimeout(timeoutId);
             console.log("✅ API Response Status:", response.status);
 
             if (!response.ok) {
@@ -291,7 +288,9 @@ export default function MealPlanGenerator({
               break; // Success, exit retry loop
             }
         } catch (fetchError: any) {
-            clearTimeout(timeoutId);
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
             console.error(`❌ Fetch error details (attempt ${attempt}):`, fetchError);
 
             if (fetchError.name === "AbortError") {
@@ -345,6 +344,10 @@ export default function MealPlanGenerator({
               }
             }
           }
+        }
+
+        if (!result || !result.weeklyMealPlan || !result.weeklySummary) {
+          throw new Error("Invalid meal plan data returned from API");
         }</old_str>
 
         if (!result || !result.weeklyMealPlan || !result.weeklySummary) {
@@ -430,9 +433,6 @@ export default function MealPlanGenerator({
         0,
       ) - 100,
     ) < 0.01;
-
-  const canGenerate =
-    hasProfile && hasMacroDistributions && hasValidPercentages;
 
   const totalPercentage = profile?.meal_distributions?.reduce(
     (sum: number, dist: any) => sum + (dist.calories_pct || 0),
