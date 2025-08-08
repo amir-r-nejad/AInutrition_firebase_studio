@@ -1,4 +1,4 @@
-import { generatePersonalizedMealPlan } from "@/ai/flows/generate-meal-plan";
+import { generatePersonalizedMealPlanFlow } from "@/ai/flows/generate-meal-plan";
 import { getUser } from "@/features/profile/lib/data-services";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -35,13 +35,10 @@ export async function POST(request: NextRequest) {
     console.log("🤖 API: Calling AI meal plan generation for user:", userId);
 
     // Generate meal plan
-    const result = await generatePersonalizedMealPlan(
-      {
-        ...profile,
-        mealTargets: mealTargets,
-      },
-      userId,
-    );
+    const result = await generatePersonalizedMealPlanFlow({
+      ...profile,
+      mealTargets: mealTargets,
+    });
 
     console.log("✅ API: Successfully generated meal plan");
 
