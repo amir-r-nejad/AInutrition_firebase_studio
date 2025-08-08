@@ -81,22 +81,23 @@ const dailyPrompt = geminiModel.definePrompt({
   name: "generateCreativeMealPlanPrompt",
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `You are a world-class nutritionist and innovative chef with access to a vast database of global recipes. Generate EXACTLY {{mealTargets.length}} highly diverse, creative, and nutritionally precise meals for {{dayOfWeek}}. Search the internet for trending, unique, and culturally rich recipes to inspire your creations, ensuring maximum variety and excitement. Ensure NO meal is repeated across the week, and each day's meals are entirely unique, even for the same meal type (e.g., breakfast).
+  prompt: `You are a precision nutritionist and expert meal designer. Generate EXACTLY {{mealTargets.length}} nutritionally precise meals for {{dayOfWeek}}. Your PRIMARY GOAL is absolute macro accuracy - creativity is secondary to precision.
 
-**CRITICAL MACRO CALCULATION REQUIREMENTS:**
-- Each meal MUST match the exact macro targets within a 5% margin of error (NOT 1%).
-- For each meal, calculate ingredient quantities using precise nutritional data to meet these EXACT targets:
+**CRITICAL MACRO ACCURACY REQUIREMENTS (NON-NEGOTIABLE):**
+- CALORIES and PROTEIN must be within 3% of target values - NO EXCEPTIONS
+- CARBS and FAT must be within 10% of target values
+- For each meal, calculate ingredient quantities using PRECISE nutritional data:
   {{#each mealTargets}}
   **{{this.mealName}}**: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
   {{/each}}
 
-**INGREDIENT QUANTITY CALCULATION PROCESS:**
-1. Select 4-6 ingredients that create a cohesive, delicious meal
-2. Look up precise nutritional data per 100g for each ingredient (calories, protein, carbs, fat)
-3. Calculate the exact gram amount needed for each ingredient to collectively meet the macro targets
-4. Verify that the sum of all ingredient macros equals the target macros within 5% tolerance
-5. If not within tolerance, adjust ingredient quantities and recalculate until targets are met
-6. Double-check: Total calories should equal (Total protein × 4) + (Total carbs × 4) + (Total fat × 9)
+**MANDATORY CALCULATION PROCESS:**
+1. Select 4-5 ingredients with KNOWN nutritional values (use USDA database or equivalent)
+2. Calculate exact gram quantities to hit CALORIES and PROTEIN targets first
+3. Adjust other ingredients to balance CARBS and FAT within tolerance
+4. VERIFY: Sum of all ingredient macros MUST equal target macros
+5. If calculations don't match, RECALCULATE until they do
+6. Double-check: Total calories = (Protein × 4) + (Carbs × 4) + (Fat × 9)
 
 **INGREDIENT SELECTION AND CALCULATION:**
 - Choose 4-6 complementary ingredients that create a cohesive, flavorful meal
@@ -125,12 +126,14 @@ const dailyPrompt = geminiModel.definePrompt({
 {{#if dispreferredCuisines.length}}- Avoid cuisines: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if medicalConditions.length}}- Health considerations: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
-**PRECISION REQUIREMENTS:**
-1. Macros must be within 1% of targets for calories, protein, carbs, and fat.
-2. Use precise nutritional data from reliable sources (e.g., USDA or peer-reviewed culinary databases).
-3. Include 5-8 diverse ingredients per meal for complexity and flavor depth.
-4. Ensure meals are restaurant-quality, visually stunning, and culturally inspired.
-5. Search online for innovative ingredient pairings or trending recipes to enhance creativity, but do not replicate any specific recipe directly.
+**PRECISION REQUIREMENTS (STRICTLY ENFORCED):**
+1. CALORIES must be within 3% of target - EXACT precision required
+2. PROTEIN must be within 3% of target - EXACT precision required  
+3. CARBS must be within 10% of target - some flexibility allowed
+4. FAT must be within 10% of target - some flexibility allowed
+5. Use ONLY reliable nutritional data (USDA, MyFitnessPal, FatSecret)
+6. Include 4-5 ingredients per meal for precise macro control
+7. ALWAYS verify calculations before submitting response
 
 **MEAL CREATIVITY GUIDELINES:**
 - Create unique meals for each day and meal type (e.g., no two breakfasts are alike across the week).
@@ -146,9 +149,9 @@ Return ONLY valid JSON with exactly {{mealTargets.length}} unique, creative meal
    - Precise nutritional values (calories, protein, carbs, fat) for that specific quantity
    - Values must be calculated based on the gram amount (not per 100g)
 
-2. **Macro Verification**: The sum of all ingredient macros MUST equal the target macros within 5% tolerance:
+2. **Macro Verification**: The sum of all ingredient macros MUST equal the target macros within tolerance:
    {{#each mealTargets}}
-   - {{this.mealName}}: Total must be {{this.calories}}±{{this.calories}}*0.05 kcal, {{this.protein}}±{{this.protein}}*0.05g protein, {{this.carbs}}±{{this.carbs}}*0.05g carbs, {{this.fat}}±{{this.fat}}*0.05g fat
+   - {{this.mealName}}: Calories {{this.calories}}±{{this.calories}}*0.03 kcal (3%), Protein {{this.protein}}±{{this.protein}}*0.03g (3%), Carbs {{this.carbs}}±{{this.carbs}}*0.10g (10%), Fat {{this.fat}}±{{this.fat}}*0.10g (10%)
    {{/each}}
 
 3. **Structure**: Each meal object must include:
@@ -158,10 +161,11 @@ Return ONLY valid JSON with exactly {{mealTargets.length}} unique, creative meal
 
 **CALCULATION VERIFICATION EXAMPLE:**
 If target is 500 kcal, 30g protein, 50g carbs, 20g fat:
-- Acceptable range: 475-525 kcal, 28.5-31.5g protein, 47.5-52.5g carbs, 19-21g fat
+- Acceptable ranges: 485-515 kcal (3%), 29.1-30.9g protein (3%), 45-55g carbs (10%), 18-22g fat (10%)
 - Each ingredient quantity must be precisely calculated to achieve these totals
+- PRIORITIZE calories and protein accuracy above all else
 
-CRITICAL: If macro totals are outside 5% tolerance, recalculate ingredient quantities before responding.`,
+CRITICAL: If calories or protein are outside 3% tolerance, or if carbs/fat are outside 10% tolerance, recalculate ingredient quantities before responding. DO NOT submit meals that fail these requirements.`,
 });
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
@@ -232,7 +236,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
             throw new Error(`Invalid meal structure for ${dayOfWeek}`);
           }
 
-          // Validate macro accuracy with 5% tolerance
+          // Validate macro accuracy - prioritize calories and protein (3% tolerance), allow more flexibility for carbs/fat (10% tolerance)
           const isAccurate = dailyOutput.meals.every(
             (meal: any, index: number) => {
               const target = input.mealTargets[index];
@@ -257,7 +261,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
                   0,
                 ) || 0;
               
-              // Calculate percentage errors
+              // Calculate percentage errors with prioritized tolerances
               const calorieError = target.calories > 0 ? 
                 Math.abs(totalCals - target.calories) / target.calories : 0;
               const proteinError = target.protein > 0 ? 
@@ -267,18 +271,20 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
               const fatError = target.fat > 0 ? 
                 Math.abs(totalFat - target.fat) / target.fat : 0;
               
+              // Strict tolerance for calories and protein (3%), more lenient for carbs and fat (10%)
               const isWithinTolerance = (
-                calorieError <= 0.05 &&
-                proteinError <= 0.05 &&
-                carbsError <= 0.05 &&
-                fatError <= 0.05
+                calorieError <= 0.03 &&    // 3% tolerance for calories
+                proteinError <= 0.03 &&    // 3% tolerance for protein  
+                carbsError <= 0.10 &&      // 10% tolerance for carbs
+                fatError <= 0.10           // 10% tolerance for fat
               );
               
               if (!isWithinTolerance) {
                 console.warn(`Macro validation failed for ${target.mealName}:`, {
                   target: { calories: target.calories, protein: target.protein, carbs: target.carbs, fat: target.fat },
                   actual: { calories: totalCals, protein: totalProtein, carbs: totalCarbs, fat: totalFat },
-                  errors: { calories: calorieError, protein: proteinError, carbs: carbsError, fat: fatError }
+                  errors: { calories: calorieError, protein: proteinError, carbs: carbsError, fat: fatError },
+                  tolerances: { calories: '3%', protein: '3%', carbs: '10%', fat: '10%' }
                 });
               }
               
