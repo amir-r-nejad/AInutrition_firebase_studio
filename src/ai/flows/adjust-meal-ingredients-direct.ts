@@ -30,7 +30,7 @@ async function generateWithOpenAI(
           {
             role: "system",
             content:
-              "You are a PRECISION NUTRITION CALCULATOR with access to accurate internet nutrition databases (USDA, nutritiondata.self.com, etc.). Your mission is to use REAL, ACCURATE nutrition data per 100g for each ingredient and calculate precise quantities to match macro targets. You can adjust existing ingredient quantities OR add new compatible ingredients if needed. You MUST use standard internet nutrition values - no estimates, no guesses, no fake data. Calculate precisely using real nutrition facts. Aim for targets within 10% tolerance. Respond ONLY with valid JSON.",
+              "You are a PRECISION NUTRITION CALCULATOR. Your mission: adjust meal ingredients to meet exact macro targets. You MUST use real nutrition data (USDA database). CRITICAL: If existing ingredients cannot meet targets due to wrong macro ratios (e.g., too much fat, not enough carbs), you MUST ADD new ingredients to balance the meal. Example: if cheese+bread is too high in fat, add fruits/vegetables for carbs. Calculate precisely to meet targets within 10% tolerance. Respond ONLY with valid JSON.",
           },
           {
             role: "user",
@@ -96,10 +96,19 @@ CURRENT INGREDIENTS:
 ${input.originalMeal.ingredients.map((ing) => `- ${ing.name}: ${ing.quantity}g`).join("\n")}
 
 INSTRUCTIONS:
-1. Adjust quantities of existing ingredients OR add new ingredients if needed to meet targets
-2. Use standard nutrition data (USDA values)
-3. Calculate precise amounts to meet targets within 10% tolerance
-4. Return valid JSON with exact format below
+1. First try adjusting quantities of existing ingredients
+2. If existing ingredients cannot meet targets (especially fat/carb ratios), ADD new complementary ingredients:
+   - For high fat targets: add nuts, oils, avocado
+   - For high carb targets: add fruits, grains, vegetables
+   - For high protein targets: add lean proteins, dairy
+3. Use standard nutrition data (USDA values)
+4. Calculate precise amounts to meet targets within 10% tolerance
+5. Return valid JSON with exact format below
+
+EXAMPLE: If current meal is too high in fat, add high-carb low-fat ingredients like:
+- Banana, apple, berries (fruits)
+- Oats, rice, pasta (grains)
+- Vegetables like spinach, tomatoes
 
 JSON FORMAT:
 {
