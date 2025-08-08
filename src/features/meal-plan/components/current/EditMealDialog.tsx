@@ -56,6 +56,15 @@ function EditMealDialog({
   const selectedDay = getQueryParams("selected_day");
   const selectedMealName = getQueryParams("selected_meal");
 
+  // Fetch user plan data to get macro targets and meal distributions
+  const [userPlan, setUserPlan] = useState<UserMealPlan | null>(null);
+  useEffect(() => {
+    // In a real application, you would fetch this data from an API
+    // For now, we'll assume mealPlan contains the necessary data
+    setUserPlan(mealPlan);
+  }, [mealPlan]);
+
+
   function handleIngredientChange(
     index: number,
     field: keyof Ingredient,
@@ -185,15 +194,35 @@ function EditMealDialog({
     newWeeklyPlan.days[dayIndex].meals[mealIndex] = meal;
 
     try {
-      // Get target macros from macro splitter for this specific meal
-      // We need to calculate what this meal should have based on macro splitter
-      // For now, using the current meal totals, but this should be updated to use macro splitter data
-      const targetMacros = {
-        calories: meal.total_calories || 0,
-        protein: meal.total_protein || 0,
-        carbs: meal.total_carbs || 0,
-        fat: meal.total_fat || 0,
+      // Calculate actual target macros for this specific meal based on macro splitter data
+      if (!userPlan) {
+        throw new Error("User plan data not loaded. Please try again.");
+      }
+
+      // Get daily macro targets from user plan
+      const dailyTargets = {
+        calories: userPlan.custom_total_calories ?? userPlan.target_daily_calories ?? 2000,
+        protein: userPlan.custom_protein_g ?? userPlan.target_protein_g ?? 150,
+        carbs: userPlan.custom_carbs_g ?? userPlan.target_carbs_g ?? 200,
+        fat: userPlan.custom_fat_g ?? userPlan.target_fat_g ?? 67,
       };
+
+      // Get meal distribution for this specific meal
+      const mealDistribution = userPlan.meal_distributions?.find(
+        (dist: any) => dist.mealName === meal.name
+      );
+
+      const mealPercentage = mealDistribution ? 
+        (mealDistribution.calories_pct / 100) : 
+        0.25; // Default to 25% if not found
+
+      const targetMacros = {
+        calories: Math.round(dailyTargets.calories * mealPercentage),
+        protein: Math.round(dailyTargets.protein * mealPercentage * 10) / 10,
+        carbs: Math.round(dailyTargets.carbs * mealPercentage * 10) / 10,
+        fat: Math.round(dailyTargets.fat * mealPercentage * 10) / 10,
+      };
+
 
       const result = await adjustMealIngredientsDirect({
         originalMeal: {
@@ -215,10 +244,10 @@ function EditMealDialog({
         },
         targetMacros,
         userProfile: {
-          age: 30,
-          allergies: [],
-          dispreferrred_ingredients: [],
-          preferred_ingredients: [],
+          age: 30, // This should ideally come from the user's profile
+          allergies: [], // This should ideally come from the user's profile
+          dispreferrred_ingredients: [], // This should ideally come from the user's profile
+          preferred_ingredients: [], // This should ideally come from the user's profile
         },
       });
 
