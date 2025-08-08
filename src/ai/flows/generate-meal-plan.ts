@@ -98,77 +98,94 @@ async function generateDailyMealPlan(
     throw new Error("OpenAI API key not found in environment variables");
   }
 
-  const prompt = `You are a world-class nutritionist and innovative chef with access to precise nutritional data from USDA and extensive knowledge of global cuisines.
+  const prompt = `You are a world-class nutritionist and precision macro calculator. Your ONLY mission is to create meals that match the EXACT macro targets with mathematical precision.
 
-Generate EXACTLY ${mealTargets.length} highly diverse, creative, and nutritionally precise meals for ${dayOfWeek}.
+**ABSOLUTE NON-NEGOTIABLE RULES:**
 
-**STRICT MACRO SPLITTER COMPLIANCE:**
+🚨 **MACRO ACCURACY IS YOUR #1 PRIORITY** 🚨
+- Each meal MUST match the target macros within ±5% or it will be REJECTED
+- You MUST add/remove/adjust ingredients until macros are PERFECT
+- If you need more protein: add protein powder, egg whites, lean meat
+- If you need more carbs: add rice, oats, fruits, vegetables  
+- If you need more fat: add nuts, oils, avocado, seeds
+- If you need fewer macros: reduce portions precisely
+- NEVER submit a meal that doesn't meet the ±5% requirement
 
-1. Each meal must match the exact macro targets (calories, protein, carbs, fat) within ±5% margin of error.
-2. Macronutrient calculation rules:  
-   - Calories = (Protein * 4) + (Carbs * 4) + (Fat * 9) exactly.  
-3. For each ingredient, provide:  
-   - Exact amount with unit (e.g., "Chicken breast (150 g)")  
-   - Precise calories, protein, carbs, fat from USDA or reliable sources.  
-4. The sum of all ingredients' macros MUST match the target macros for that meal within ±5%.  
-5. If any macro is outside the ±5% margin, the entire meal output is invalid and must be regenerated.  
-6. Do NOT approximate macro values during summation; keep decimals until final totals.  
-7. At the end of each meal, provide a validation object showing for calories, protein, carbs, fat whether each is within the ±5% target.  
-8. Only output valid JSON with all validations true. No extra text or explanation.
+**STEP-BY-STEP MANDATORY PROCESS:**
 
-**MACRO TARGETS:**
+1. **Start with base ingredients** for the meal concept
+2. **Calculate exact macros** for each ingredient (use USDA data)
+3. **Sum up all macros** precisely
+4. **Compare to targets** - check each macro individually
+5. **If ANY macro is outside ±5%**: ADD OR REMOVE ingredients to fix it
+6. **Repeat steps 2-5** until ALL macros are within ±5%
+7. **Double-check calculations** before final output
+8. **Only then** provide the meal
 
-${mealTargets.map((meal) => `- ${meal.mealName}: ${meal.calories.toFixed(1)} kcal, ${meal.protein.toFixed(1)}g protein, ${meal.carbs.toFixed(1)}g carbs, ${meal.fat.toFixed(1)}g fat`).join("\n")}
+**EXACT MACRO TARGETS FOR ${dayOfWeek}:**
 
-**CREATIVITY & DIVERSITY REQUIREMENTS:**  
-- Use varied cooking methods (grilling, sous-vide, fermenting, etc.)  
-- Diverse global cuisines without repetition within the day/week  
-- Unique protein sources and seasonal colorful ingredients  
-- Varied textures and Instagram-worthy presentation  
-- No repeated ingredients across meals for the week  
-- Avoid common/basic dishes unless highly elevated  
+${mealTargets.map((meal, index) => {
+  const allowedRange = {
+    calories: `${(meal.calories * 0.95).toFixed(1)}-${(meal.calories * 1.05).toFixed(1)}`,
+    protein: `${(meal.protein * 0.95).toFixed(1)}-${(meal.protein * 1.05).toFixed(1)}`,
+    carbs: `${(meal.carbs * 0.95).toFixed(1)}-${(meal.carbs * 1.05).toFixed(1)}`,
+    fat: `${(meal.fat * 0.95).toFixed(1)}-${(meal.fat * 1.05).toFixed(1)}`,
+  };
+  
+  return `${index + 1}. ${meal.mealName}:
+   🎯 TARGET: ${meal.calories.toFixed(1)} kcal, ${meal.protein.toFixed(1)}g protein, ${meal.carbs.toFixed(1)}g carbs, ${meal.fat.toFixed(1)}g fat
+   ✅ ALLOWED RANGE: ${allowedRange.calories} kcal, ${allowedRange.protein}g protein, ${allowedRange.carbs}g carbs, ${allowedRange.fat}g fat`;
+}).join("\n\n")}
 
-**USER PREFERENCES (Apply only if provided):**  
-${preferences.preferredDiet ? `- Strictly adhere to diet type: ${preferences.preferredDiet}` : ""}  
-${preferences.allergies?.length ? `- Avoid these ingredients: ${preferences.allergies.join(", ")}` : ""}  
-${preferences.dispreferredIngredients?.length ? `- Avoid disliked ingredients: ${preferences.dispreferredIngredients.join(", ")}` : ""}  
-${preferences.preferredIngredients?.length ? `- Prioritize these ingredients: ${preferences.preferredIngredients.join(", ")}` : ""}  
-${preferences.preferredCuisines?.length ? `- Prioritize cuisines: ${preferences.preferredCuisines.join(", ")}` : ""}  
-${preferences.dispreferredCuisines?.length ? `- Avoid cuisines: ${preferences.dispreferredCuisines.join(", ")}` : ""}  
-${preferences.medicalConditions?.length ? `- Consider health conditions: ${preferences.medicalConditions.join(", ")}` : ""}
+**MATHEMATICAL VALIDATION REQUIREMENT:**
+- Calories = (Protein × 4) + (Carbs × 4) + (Fat × 9)
+- Each ingredient must have precise USDA nutritional values
+- Total macros = Sum of all ingredient macros
+- ALL must be within the allowed ranges above
 
-**OUTPUT FORMAT:**
+**INGREDIENT ADJUSTMENT EXAMPLES:**
+- Need +10g protein? Add "Protein powder (12g)" → +50 cal, +11g protein, +0g carbs, +0g fat
+- Need +20g carbs? Add "Cooked white rice (50g)" → +65 cal, +1.3g protein, +20g carbs, +0.2g fat  
+- Need +8g fat? Add "Almonds (20g)" → +120 cal, +4g protein, +4g carbs, +8g fat
+- Need -50 calories? Reduce portion sizes proportionally
 
+**CREATIVE PREFERENCES (SECONDARY to macro accuracy):**
+${preferences.preferredDiet ? `- Diet type: ${preferences.preferredDiet}` : ""}
+${preferences.allergies?.length ? `- Allergies: ${preferences.allergies.join(", ")}` : ""}
+${preferences.preferredIngredients?.length ? `- Preferred: ${preferences.preferredIngredients.join(", ")}` : ""}
+${preferences.dispreferredIngredients?.length ? `- Avoid: ${preferences.dispreferredIngredients.join(", ")}` : ""}
+
+**MANDATORY OUTPUT FORMAT:**
 {
   "meals": [
     {
-      "meal_title": "string",
+      "meal_title": "Creative meal name",
       "ingredients": [
         {
-          "name": "Ingredient name (amount unit)",
-          "calories": number,
-          "protein": number,
-          "carbs": number,
-          "fat": number
+          "name": "Ingredient name (exact amount + unit)",
+          "calories": precise_number,
+          "protein": precise_number,
+          "carbs": precise_number,  
+          "fat": precise_number
         }
       ],
-      "total_calories": number,
-      "total_protein": number,
-      "total_carbs": number,
-      "total_fat": number,
+      "total_calories": sum_of_all_ingredient_calories,
+      "total_protein": sum_of_all_ingredient_protein,
+      "total_carbs": sum_of_all_ingredient_carbs,
+      "total_fat": sum_of_all_ingredient_fat,
       "validation": {
-        "calories": true,
-        "protein": true,
-        "carbs": true,
-        "fat": true
+        "calories_within_range": true,
+        "protein_within_range": true,
+        "carbs_within_range": true,
+        "fat_within_range": true
       }
     }
   ]
 }
 
-Only return the JSON object above with all validations true for every meal.
+🚨 **FINAL WARNING**: If ANY meal has validation: false for ANY macro, the entire response will be REJECTED. You MUST achieve mathematical precision for ALL meals.
 
-Generate the meals now.`;
+Generate ${mealTargets.length} perfectly accurate meals now:`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -259,7 +276,7 @@ async function generatePersonalizedMealPlanFlow(
 
     let dailyOutput = null;
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 5;
 
     // Enhanced retry logic with better error handling
     while (retryCount <= maxRetries && !dailyOutput) {
@@ -283,8 +300,46 @@ async function generatePersonalizedMealPlanFlow(
           throw new Error(`Invalid meal structure for ${dayOfWeek}`);
         }
 
+        // Strict validation: check if ALL meals meet macro accuracy
+        let allMealsValid = true;
+        for (let i = 0; i < dailyOutput.meals.length; i++) {
+          const meal = dailyOutput.meals[i];
+          const target = input.mealTargets[i];
+          
+          // Calculate totals from ingredients
+          const actualTotals = meal.ingredients.reduce((totals: any, ing: any) => ({
+            calories: totals.calories + (Number(ing.calories) || 0),
+            protein: totals.protein + (Number(ing.protein) || 0),
+            carbs: totals.carbs + (Number(ing.carbs) || 0),
+            fat: totals.fat + (Number(ing.fat) || 0),
+          }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+          // Check 5% accuracy for each macro
+          const margin = 0.05;
+          const caloriesValid = Math.abs(actualTotals.calories - target.calories) <= target.calories * margin;
+          const proteinValid = Math.abs(actualTotals.protein - target.protein) <= target.protein * margin;
+          const carbsValid = Math.abs(actualTotals.carbs - target.carbs) <= target.carbs * margin;
+          const fatValid = Math.abs(actualTotals.fat - target.fat) <= target.fat * margin;
+
+          if (!caloriesValid || !proteinValid || !carbsValid || !fatValid) {
+            console.warn(`❌ Meal ${target.mealName} failed validation:`, {
+              actualTotals,
+              target,
+              validation: { caloriesValid, proteinValid, carbsValid, fatValid }
+            });
+            allMealsValid = false;
+            break;
+          }
+        }
+
+        if (!allMealsValid) {
+          console.warn(`❌ Not all meals meet 5% accuracy requirement for ${dayOfWeek}, retrying...`);
+          dailyOutput = null;
+          throw new Error(`Macro accuracy failed for ${dayOfWeek}`);
+        }
+
         console.log(
-          `✅ Generated ${dailyOutput.meals.length} creative meals for ${dayOfWeek}`,
+          `✅ Generated ${dailyOutput.meals.length} ACCURATE meals for ${dayOfWeek}`,
         );
         break;
       } catch (error) {
