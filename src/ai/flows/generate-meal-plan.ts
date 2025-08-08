@@ -106,15 +106,14 @@ async function generateDailyMealPlan(
     )
     .join("\n");
 
-  const prompt = `As a professional nutritionist with 15+ years of experience,
-  Create ${mealTargets.length} meals for ${dayOfWeek}:
+  const prompt = `Create ${mealTargets.length} meals for ${dayOfWeek}:
 
 ${mealTargetsString}
 
 ${preferences.preferredDiet ? `Diet: ${preferences.preferredDiet}` : ""}
 ${preferences.allergies && preferences.allergies.length > 0 ? `Avoid: ${preferences.allergies.join(", ")}` : ""}
 
-Create tasty, realistic meals using common ingredients. Include amounts in ingredient names.
+Create delicious meals with creative dish names. Include amounts in ingredient names.
 
 JSON format:
 {
@@ -122,7 +121,7 @@ JSON format:
 ${mealTargets
   .map(
     (target, index) => `    {
-      "meal_title": "${target.mealName}",
+      "meal_title": "Creative dish name for ${target.mealName}",
       "ingredients": [
         {
           "name": "ingredient (amount)",
