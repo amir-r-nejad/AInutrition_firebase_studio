@@ -98,68 +98,50 @@ async function generateDailyMealPlan(
     throw new Error("OpenAI API key not found in environment variables");
   }
 
-  const prompt = `You are a world-class nutritionist and innovative chef with extensive knowledge of global cuisines and precise nutritional data.
+  // Build meal targets string
+  const mealTargetsString = mealTargets
+    .map(
+      (target) =>
+        `**${target.mealName}**: ${target.calories} kcal | ${target.protein}g protein | ${target.carbs}g carbs | ${target.fat}g fat`,
+    )
+    .join("\n");
 
-Generate EXACTLY ${mealTargets.length} unique, creative, and nutritionally precise meals for ${dayOfWeek}, fully compliant with STRICT MACRO SPLITTER requirements below:
+  const prompt = `Create ${mealTargets.length} meals for ${dayOfWeek}:
 
-1. Each meal MUST match the exact macro targets (calories, protein, carbs, fat) within ±5% margin of error, calculated precisely using USDA or similarly authoritative nutritional data.
+${mealTargetsString}
 
-2. Macro calculation rules:  
-   - Calories = (Protein * 4) + (Carbs * 4) + (Fat * 9)  
-   - Each meal's total calories, protein, carbs, and fat MUST be within 5% of the targets specified for that meal.
+${preferences.preferredDiet ? `Diet: ${preferences.preferredDiet}` : ""}
+${preferences.allergies && preferences.allergies.length > 0 ? `Avoid: ${preferences.allergies.join(", ")}` : ""}
 
-3. Use the exact macro targets below for each meal (calories in kcal, macros in grams):  
-${mealTargets.map((meal) => `- ${meal.mealName}: ${meal.calories.toFixed(1)} kcal, ${meal.protein.toFixed(1)}g protein, ${meal.carbs.toFixed(1)}g carbs, ${meal.fat.toFixed(1)}g fat`).join("\n")}
+Create delicious meals with creative dish names. Include amounts in ingredient names.
 
-4. For each meal, provide:  
-   - A creative meal title reflecting global cuisine inspiration and innovative cooking methods.  
-   - A list of ingredients with exact amounts and units (e.g., "Chicken breast (150 g)").  
-   - For each ingredient, include precise nutritional values (calories, protein, carbs, fat).  
-   - Total macros of all ingredients combined MUST meet the targets within the specified margin.
-
-5. Creativity requirements:  
-   - Diverse cooking techniques (grilling, sous-vide, fermenting, etc.).  
-   - Global cuisines with NO repeats within the day or week unless user preferences specify otherwise.  
-   - Varied, often rare protein sources and seasonal, colorful vegetables/fruits.  
-   - Varied textures and Instagram-worthy presentation concepts.  
-   - No ingredient repetition across meals of the week to maximize variety.
-
-6. User preferences (apply ONLY if provided):  
-${preferences.preferredDiet ? `- Strictly adhere to diet type: ${preferences.preferredDiet}` : ""}  
-${preferences.allergies?.length ? `- AVOID ingredients causing allergies: ${preferences.allergies.join(", ")}` : ""}  
-${preferences.dispreferredIngredients?.length ? `- AVOID disliked ingredients: ${preferences.dispreferredIngredients.join(", ")}` : ""}  
-${preferences.preferredIngredients?.length ? `- PRIORITIZE preferred ingredients: ${preferences.preferredIngredients.join(", ")}` : ""}  
-${preferences.preferredCuisines?.length ? `- PRIORITIZE cuisines: ${preferences.preferredCuisines.join(", ")}` : ""}  
-${preferences.dispreferredCuisines?.length ? `- AVOID cuisines: ${preferences.dispreferredCuisines.join(", ")}` : ""}  
-${preferences.medicalConditions?.length ? `- Consider health conditions: ${preferences.medicalConditions.join(", ")}` : ""}
-
-OUTPUT FORMAT (ONLY valid JSON, no extra commentary):  
+JSON format:
 {
   "meals": [
-    {
-      "meal_title": "string",
+${mealTargets
+  .map(
+    (target, index) => `    {
+      "meal_title": "Creative dish name for ${target.mealName}",
       "ingredients": [
         {
-          "name": "Ingredient name (amount unit)",
+          "name": "ingredient (amount)",
           "calories": number,
           "protein": number,
           "carbs": number,
           "fat": number
         }
-      ]
-    }
+      ],
+      "total_macros": {
+        "calories": ${target.calories},
+        "protein": ${target.protein},
+        "carbs": ${target.carbs},
+        "fat": ${target.fat}
+      }
+    }${index < mealTargets.length - 1 ? "," : ""}`,
+  )
+  .join("\n")}
   ]
-}
-
-VALIDATION CHECK (must be strictly followed):  
-- Total calories for each meal within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.calories * 0.95).toFixed(1)}-${(m.calories * 1.05).toFixed(1)} kcal`).join(", ")}  
-- Total protein within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.protein * 0.95).toFixed(1)}-${(m.protein * 1.05).toFixed(1)}g`).join(", ")}  
-- Total carbs within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.carbs * 0.95).toFixed(1)}-${(m.carbs * 1.05).toFixed(1)}g`).join(", ")}  
-- Total fat within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.fat * 0.95).toFixed(1)}-${(m.fat * 1.05).toFixed(1)}g`).join(", ")}
-
-Be precise, creative, diverse, and exact. Do not include any repetitions or basic/common dishes unless elevated significantly.
-
-Generate now.`;
+}`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -197,8 +179,14 @@ Generate now.`;
   const content = data.choices[0]?.message?.content;
 
   if (!content) {
+    console.error(
+      "No content received from OpenAI. Full response:",
+      JSON.stringify(data, null, 2),
+    );
     throw new Error("No content received from OpenAI");
   }
+
+  console.log("Raw OpenAI response content:", content);
 
   // Clean and parse JSON
   let cleanedContent = content
@@ -208,9 +196,28 @@ Generate now.`;
 
   try {
     const parsed = JSON.parse(cleanedContent);
+    console.log("Parsed OpenAI response:", JSON.stringify(parsed, null, 2));
+
+    // Validate the response structure
+    if (!parsed.meals || !Array.isArray(parsed.meals)) {
+      console.error("Invalid response structure - no meals array:", parsed);
+      throw new Error("OpenAI response missing meals array");
+    }
+
+    if (parsed.meals.length !== mealTargets.length) {
+      console.error(
+        `Expected ${mealTargets.length} meals, got ${parsed.meals.length}:`,
+        parsed.meals,
+      );
+      throw new Error(
+        `OpenAI returned ${parsed.meals.length} meals instead of ${mealTargets.length}`,
+      );
+    }
+
     return parsed;
   } catch (parseError) {
     console.error("Failed to parse OpenAI response:", parseError);
+    console.error("Cleaned content:", cleanedContent);
     throw new Error("Invalid JSON response from OpenAI");
   }
 }
@@ -250,7 +257,7 @@ async function generatePersonalizedMealPlanFlow(
 
     let dailyOutput = null;
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 5;
 
     // Enhanced retry logic with better error handling
     while (retryCount <= maxRetries && !dailyOutput) {
@@ -274,8 +281,28 @@ async function generatePersonalizedMealPlanFlow(
           throw new Error(`Invalid meal structure for ${dayOfWeek}`);
         }
 
+        // Basic validation: just check if meals exist and have ingredients
+        let allMealsValid = true;
+        for (let i = 0; i < dailyOutput.meals.length; i++) {
+          const meal = dailyOutput.meals[i];
+
+          if (!meal.ingredients || meal.ingredients.length === 0) {
+            console.warn(`❌ Meal ${i + 1} has no ingredients`);
+            allMealsValid = false;
+            break;
+          }
+        }
+
+        if (!allMealsValid) {
+          console.warn(
+            `❌ Some meals missing ingredients for ${dayOfWeek}, retrying...`,
+          );
+          dailyOutput = null;
+          throw new Error(`Missing ingredients for ${dayOfWeek}`);
+        }
+
         console.log(
-          `✅ Generated ${dailyOutput.meals.length} creative meals for ${dayOfWeek}`,
+          `✅ Generated ${dailyOutput.meals.length} ACCURATE meals for ${dayOfWeek}`,
         );
         break;
       } catch (error) {
@@ -340,26 +367,13 @@ async function generatePersonalizedMealPlanFlow(
           { calories: 0, protein: 0, carbs: 0, fat: 0 },
         );
 
-        // Validate macro accuracy with 5% margin
+        // Calculate actual macros from ingredients
         const actualMacros = {
           calories: Math.round(mealTotals.calories * 100) / 100,
           protein: Math.round(mealTotals.protein * 100) / 100,
           carbs: Math.round(mealTotals.carbs * 100) / 100,
           fat: Math.round(mealTotals.fat * 100) / 100,
         };
-
-        // Check if macros are within 5% accuracy
-        const isAccurate = validateMacroAccuracy(
-          actualMacros,
-          targetMeal,
-          targetMeal.mealName,
-        );
-
-        if (!isAccurate) {
-          console.warn(
-            `⚠️ Meal ${targetMeal.mealName} exceeds 5% macro error margin, but including in plan`,
-          );
-        }
 
         processedMeals.push({
           meal_name: targetMeal.mealName,

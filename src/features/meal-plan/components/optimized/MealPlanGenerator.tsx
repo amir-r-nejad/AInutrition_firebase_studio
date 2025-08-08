@@ -417,9 +417,22 @@ export default function MealPlanGenerator({
             "Your AI meal plan has been generated with precise macro distributions (±5% accuracy).",
         });
 
-        // Auto-refresh page after successful generation
-        setTimeout(() => {
-          window.location.reload();
+        // Auto-refresh meal plan data and then refresh page after successful generation
+        setTimeout(async () => {
+          try {
+            console.log("Auto-refreshing meal plan before page reload...");
+            const refreshedPlan = await loadMealPlan();
+            console.log("Auto-refreshed meal plan:", JSON.stringify(refreshedPlan, null, 2));
+            setGeneratedPlan(refreshedPlan);
+            
+            // Give a moment for the state to update, then refresh page
+            setTimeout(() => {
+              window.location.reload();
+            }, 500);
+          } catch (error) {
+            console.error("Auto-refresh failed, proceeding with page reload:", error);
+            window.location.reload();
+          }
         }, 2000); // Refresh after 2 seconds to show the toast first
       } catch (error: any) {
         console.error("❌ Meal plan generation error:", error);
