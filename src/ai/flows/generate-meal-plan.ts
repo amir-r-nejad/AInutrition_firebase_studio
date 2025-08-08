@@ -103,69 +103,31 @@ async function generateDailyMealPlan(
     `**${target.mealName}**: ${target.calories} kcal | ${target.protein}g protein | ${target.carbs}g carbs | ${target.fat}g fat`
   ).join('\n');
 
-  const prompt = `**YOUR MISSION for ${dayOfWeek}:**
-
-As a professional nutritionist with 15+ years of experience, create ${mealTargets.length} delicious, balanced meals that precisely hit these targets, using real-time data from reliable online sources:
+  const prompt = `Create ${mealTargets.length} meals for ${dayOfWeek} that hit these exact macro targets:
 
 ${mealTargetsString}
 
-**NUTRITIONIST METHODOLOGY:**
+REQUIREMENTS:
+- Each meal must hit calories within ±2% of target
+- Protein, carbs, fat should be close to targets but calories are most important
+- Use common ingredients with accurate nutritional data
+- Include ingredient amounts in parentheses (e.g., "Chicken breast (150g)")
 
-1. **Real-Time Data Access and Ingredient Discovery**:
-   - Access reliable online nutritional databases such as USDA/FoodData Central, Nutritionix, or other credible sources to retrieve accurate, up-to-date nutritional values for ingredients.
-   - Search for diverse protein sources (lean meats, fish, dairy, legumes, plant proteins), complex carbs (grains, fruits, vegetables), and healthy fats (oils, nuts, seeds, avocado). Prioritize variety to ensure meals are interesting, sustainable, and nutritionally balanced across food groups.
+${preferences.preferredDiet ? `Diet: ${preferences.preferredDiet}` : ''}
+${preferences.allergies && preferences.allergies.length > 0 ? `Allergies: AVOID ${preferences.allergies.join(', ')}` : ''}
 
-2. **Intelligent Macro Engineering**:
-   - Start with a base protein source to anchor the meal, selected based on client preferences and dietary approach.
-   - Add complementary proteins if needed to reach the target (e.g., Greek yogurt + protein powder).
-   - Layer in carbohydrate sources strategically to meet carb goals.
-   - Balance with appropriate healthy fats to achieve fat targets.
-   - Fine-tune quantities using precise nutritional data from online sources until macros align perfectly, ensuring a balanced intake of nutrients.
-
-3. **Adaptive Ingredient Addition**:
-   - If initial ingredients don't meet macro targets:
-     - ADD extra protein powder, egg whites, or lean protein sources.
-     - SUPPLEMENT with additional carbs (oats, fruits, vegetables).
-     - BOOST healthy fats (nuts, seeds, oils).
-     - MIX AND MATCH ingredients, cross-referencing with online data, until perfect macro balance is achieved.
-   - Use web searches to identify alternative ingredients if needed to meet dietary restrictions or preferences.
-
-4. **Professional Decision-Making**:
-   - Mimic the approach of a real nutritionist by considering seasonal availability, cost-effectiveness, and ease of preparation when selecting ingredients, based on insights from credible online sources (e.g., nutrition blogs, dietitian websites).
-   - Ensure meals are practical for everyday preparation while maintaining variety and appeal.
-
-**CREATIVE EXAMPLES:**
-- Breakfast: Greek yogurt base + protein powder boost + fresh berries + granola + almond butter
-- Snack: Apple slices + almond butter + whey protein mixed in
-- Lunch: Quinoa bowl + grilled chicken + additional egg whites + mixed vegetables + olive oil dressing
-- Dinner: Baked salmon + roasted sweet potato + steamed broccoli + extra avocado for fat targets
-
-**CLIENT PREFERENCES (strictly follow):**
-${preferences.preferredDiet ? `- Dietary approach: ${preferences.preferredDiet}` : ''}
-${preferences.allergies && preferences.allergies.length > 0 ? `- STRICT ALLERGIES TO AVOID: ${preferences.allergies.join(', ')}` : ''}
-${preferences.preferredIngredients && preferences.preferredIngredients.length > 0 ? `- PREFERRED ingredients: ${preferences.preferredIngredients.join(', ')}` : ''}
-${preferences.dispreferredIngredients && preferences.dispreferredIngredients.length > 0 ? `- AVOID if possible: ${preferences.dispreferredIngredients.join(', ')}` : ''}
-
-**PRECISION REQUIREMENTS:**
-- Calories: Within ±3% of target (absolutely critical and ONLY validation requirement).
-- Protein, Carbs, Fat: Be creative and balanced, aiming to meet targets as closely as possible, but no strict validation required.
-- Use accurate, up-to-date nutritional values from online sources like USDA/FoodData Central or Nutritionix.
-- Calculate nutritional values precisely for the specified quantities, ensuring all calculations are based on real-time data.
-
-**CRITICAL: You MUST create exactly ${mealTargets.length} meals. No more, no less.**
-
-**PROFESSIONAL OUTPUT FORMAT:**
+Return JSON format:
 {
   "meals": [
-${mealTargets.map(target => `    {
-      "meal_title": "Creative ${target.mealName} name reflecting main ingredients",
+${mealTargets.map((target, index) => `    {
+      "meal_title": "${target.mealName} for ${dayOfWeek}",
       "ingredients": [
         {
-          "name": "specific_ingredient_name (amount unit)",
-          "calories": calories_for_this_quantity,
-          "protein": protein_for_this_quantity_grams,
-          "carbs": carbs_for_this_quantity_grams,
-          "fat": fat_for_this_quantity_grams
+          "name": "ingredient_name (amount)",
+          "calories": exact_calories_number,
+          "protein": exact_protein_grams,
+          "carbs": exact_carbs_grams, 
+          "fat": exact_fat_grams
         }
       ],
       "total_macros": {
@@ -174,15 +136,11 @@ ${mealTargets.map(target => `    {
         "carbs": ${target.carbs},
         "fat": ${target.fat}
       }
-    }`).join(',\n')}
+    }${index < mealTargets.length - 1 ? ',' : ''}`).join('\n')}
   ]
 }
 
-**FINAL VALIDATION:**
-- Before outputting, verify each meal's total CALORIES hit targets within 3% tolerance using data from online sources.
-- Ensure protein, carbs, and fat are balanced and reasonable, but no strict validation is required.
-- Cross-check ingredient choices against client preferences and allergies, using web searches if needed to confirm suitability.
-- Be creative with ingredients while maintaining calorie precision and leveraging real-time nutritional data for accuracy.`;
+Create exactly ${mealTargets.length} meals. Each ingredient must have precise nutritional values that add up to the target macros.`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
