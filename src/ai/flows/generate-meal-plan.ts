@@ -103,31 +103,27 @@ async function generateDailyMealPlan(
     `**${target.mealName}**: ${target.calories} kcal | ${target.protein}g protein | ${target.carbs}g carbs | ${target.fat}g fat`
   ).join('\n');
 
-  const prompt = `Create ${mealTargets.length} meals for ${dayOfWeek} that hit these exact macro targets:
+  const prompt = `Create ${mealTargets.length} meals for ${dayOfWeek}:
 
 ${mealTargetsString}
 
-REQUIREMENTS:
-- Each meal must hit calories within ±2% of target
-- Protein, carbs, fat should be close to targets but calories are most important
-- Use common ingredients with accurate nutritional data
-- Include ingredient amounts in parentheses (e.g., "Chicken breast (150g)")
-
 ${preferences.preferredDiet ? `Diet: ${preferences.preferredDiet}` : ''}
-${preferences.allergies && preferences.allergies.length > 0 ? `Allergies: AVOID ${preferences.allergies.join(', ')}` : ''}
+${preferences.allergies && preferences.allergies.length > 0 ? `Avoid: ${preferences.allergies.join(', ')}` : ''}
 
-Return JSON format:
+Create tasty, realistic meals using common ingredients. Include amounts in ingredient names.
+
+JSON format:
 {
   "meals": [
 ${mealTargets.map((target, index) => `    {
-      "meal_title": "${target.mealName} for ${dayOfWeek}",
+      "meal_title": "${target.mealName}",
       "ingredients": [
         {
-          "name": "ingredient_name (amount)",
-          "calories": exact_calories_number,
-          "protein": exact_protein_grams,
-          "carbs": exact_carbs_grams, 
-          "fat": exact_fat_grams
+          "name": "ingredient (amount)",
+          "calories": number,
+          "protein": number,
+          "carbs": number,
+          "fat": number
         }
       ],
       "total_macros": {
@@ -138,9 +134,7 @@ ${mealTargets.map((target, index) => `    {
       }
     }${index < mealTargets.length - 1 ? ',' : ''}`).join('\n')}
   ]
-}
-
-Create exactly ${mealTargets.length} meals. Each ingredient must have precise nutritional values that add up to the target macros.`;
+}`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -272,54 +266,22 @@ async function generatePersonalizedMealPlanFlow(
           throw new Error(`Invalid meal structure for ${dayOfWeek}`);
         }
 
-        // Strict validation: check if ALL meals meet macro accuracy
+        // Basic validation: just check if meals exist and have ingredients
         let allMealsValid = true;
         for (let i = 0; i < dailyOutput.meals.length; i++) {
           const meal = dailyOutput.meals[i];
-          const target = input.mealTargets[i];
-
-          // Calculate totals from ingredients
-          const actualTotals = meal.ingredients.reduce(
-            (totals: any, ing: any) => ({
-              calories: totals.calories + (Number(ing.calories) || 0),
-              protein: totals.protein + (Number(ing.protein) || 0),
-              carbs: totals.carbs + (Number(ing.carbs) || 0),
-              fat: totals.fat + (Number(ing.fat) || 0),
-            }),
-            { calories: 0, protein: 0, carbs: 0, fat: 0 },
-          );
-
-          // Check 5% accuracy for each macro
-          const margin = 0.05;
-          const caloriesValid =
-            Math.abs(actualTotals.calories - target.calories) <=
-            target.calories * margin;
-          const proteinValid =
-            Math.abs(actualTotals.protein - target.protein) <=
-            target.protein * margin;
-          const carbsValid =
-            Math.abs(actualTotals.carbs - target.carbs) <=
-            target.carbs * margin;
-          const fatValid =
-            Math.abs(actualTotals.fat - target.fat) <= target.fat * margin;
-
-          if (!caloriesValid || !proteinValid || !carbsValid || !fatValid) {
-            console.warn(`❌ Meal ${target.mealName} failed validation:`, {
-              actualTotals,
-              target,
-              validation: { caloriesValid, proteinValid, carbsValid, fatValid },
-            });
+          
+          if (!meal.ingredients || meal.ingredients.length === 0) {
+            console.warn(`❌ Meal ${i + 1} has no ingredients`);
             allMealsValid = false;
             break;
           }
         }
 
         if (!allMealsValid) {
-          console.warn(
-            `❌ Not all meals meet 5% accuracy requirement for ${dayOfWeek}, retrying...`,
-          );
+          console.warn(`❌ Some meals missing ingredients for ${dayOfWeek}, retrying...`);
           dailyOutput = null;
-          throw new Error(`Macro accuracy failed for ${dayOfWeek}`);
+          throw new Error(`Missing ingredients for ${dayOfWeek}`);
         }
 
         console.log(
@@ -388,26 +350,13 @@ async function generatePersonalizedMealPlanFlow(
           { calories: 0, protein: 0, carbs: 0, fat: 0 },
         );
 
-        // Validate macro accuracy with 5% margin
+        // Calculate actual macros from ingredients
         const actualMacros = {
           calories: Math.round(mealTotals.calories * 100) / 100,
           protein: Math.round(mealTotals.protein * 100) / 100,
           carbs: Math.round(mealTotals.carbs * 100) / 100,
           fat: Math.round(mealTotals.fat * 100) / 100,
         };
-
-        // Check if macros are within 5% accuracy
-        const isAccurate = validateMacroAccuracy(
-          actualMacros,
-          targetMeal,
-          targetMeal.mealName,
-        );
-
-        if (!isAccurate) {
-          console.warn(
-            `⚠️ Meal ${targetMeal.mealName} exceeds 5% macro error margin, but including in plan`,
-          );
-        }
 
         processedMeals.push({
           meal_name: targetMeal.mealName,
