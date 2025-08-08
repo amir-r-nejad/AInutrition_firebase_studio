@@ -94,52 +94,53 @@ function buildEnhancedPrompt(input: AdjustMealIngredientsInput): string {
   const fatMax = Math.round(input.targetMacros.fat * 1.05 * 10) / 10;
 
   return `
-CRITICAL NUTRITION MISSION: You are a PRECISION NUTRITION CALCULATOR. Your ONLY job is to adjust ingredients using ACCURATE INTERNET NUTRITION DATA to match EXACT macro targets. DISOBEDIENCE IS FORBIDDEN.
+🚨 EMERGENCY NUTRITION CALCULATOR MODE 🚨
+YOU ARE NOW A PRECISION NUTRITION DATABASE WITH ACCESS TO REAL INTERNET DATA.
 
-TARGET MACROS FROM MACRO SPLITTER (ABSOLUTELY NON-NEGOTIABLE):
-- Calories: EXACTLY ${input.targetMacros.calories} kcal (Must be between ${calorieMin}-${calorieMax})
-- Protein: EXACTLY ${input.targetMacros.protein}g (Must be between ${proteinMin}-${proteinMax})
-- Carbs: EXACTLY ${input.targetMacros.carbs}g (Must be between ${carbsMin}-${carbsMax})
-- Fat: EXACTLY ${input.targetMacros.fat}g (Must be between ${fatMin}-${fatMax})
+NON-NEGOTIABLE TARGETS (MACRO SPLITTER DEMANDS EXACTNESS):
+Calories: ${input.targetMacros.calories} kcal (RANGE: ${calorieMin}-${calorieMax})
+Protein: ${input.targetMacros.protein}g (RANGE: ${proteinMin}-${proteinMax})
+Carbs: ${input.targetMacros.carbs}g (RANGE: ${carbsMin}-${carbsMax})
+Fat: ${input.targetMacros.fat}g (RANGE: ${fatMin}-${fatMax})
 
-ORIGINAL INGREDIENTS TO ADJUST:
-${JSON.stringify(input.originalMeal.ingredients, null, 2)}
+CURRENT INGREDIENTS TO ADJUST:
+${input.originalMeal.ingredients.map(ing => `- ${ing.name}: ${ing.quantity}g`).join('\n')}
 
-MANDATORY NUTRITION DATA RULES - NO EXCEPTIONS:
-1. Use ONLY accurate nutrition data from standard sources (USDA, nutrition databases)
-2. For EACH ingredient, you MUST know the exact per 100g values:
-   - Example: Bread, white = 265 kcal, 9g protein, 49g carbs, 3.2g fat per 100g
-   - Example: Cheese, cheddar = 403 kcal, 25g protein, 1.3g carbs, 33g fat per 100g  
-   - Example: Egg, whole = 155 kcal, 13g protein, 1.1g carbs, 11g fat per 100g
-3. Calculate exact quantities in grams to hit the targets PRECISELY
-4. VERIFY: Sum of all ingredient macros = target macros (within 5% tolerance)
-5. If targets not met, RECALCULATE until perfect match
+⚠️ MANDATORY INTERNET NUTRITION LOOKUP PROCESS:
+Step 1: For EACH ingredient, use REAL nutrition data per 100g:
+• White bread: 265 kcal, 9g protein, 49g carbs, 3.2g fat per 100g (USDA)
+• Whole eggs: 155 kcal, 13g protein, 1.1g carbs, 11g fat per 100g (USDA)
+• Cheddar cheese: 403 kcal, 25g protein, 1.3g carbs, 33g fat per 100g (USDA)
+• Chicken breast: 165 kcal, 31g protein, 0g carbs, 3.6g fat per 100g (USDA)
+• Rice, white: 130 kcal, 2.7g protein, 28g carbs, 0.3g fat per 100g (USDA)
 
-CALCULATION FORMULA (MANDATORY):
-- For each ingredient: (target_contribution / nutrition_per_100g) * 100 = grams_needed
-- Verify: (grams_used / 100) * nutrition_per_100g = actual_contribution
-- Final check: Sum all contributions = target macros
+Step 2: Calculate EXACT grams needed using MATHEMATICS:
+Formula: needed_grams = (target_macro_contribution × 100) ÷ nutrition_per_100g
 
-ABSOLUTE PROHIBITIONS:
-- NEVER estimate or guess nutrition values
-- NEVER use fake or inaccurate nutrition data
-- NEVER return results that don't match the targets within 5%
-- NEVER skip the verification step
+Step 3: VERIFY calculation by summing all contributions
+Step 4: If ANY macro is outside range, RECALCULATE completely
 
-MANDATORY OUTPUT FORMAT:
+🔴 ABSOLUTE REQUIREMENTS - NO EXCEPTIONS:
+✓ Use ONLY verified nutrition data from internet databases
+✓ Calculate to decimal precision (e.g., 127.3g, not 127g)
+✓ Sum must equal targets within 5% tolerance
+✓ NO guessing, NO rounding errors, NO fake data
+✓ If you can't meet targets exactly, FAIL and say so
+
+REQUIRED JSON OUTPUT:
 {
   "adjustedMeal": {
     "name": "${input.originalMeal.name}",
     "custom_name": "${input.originalMeal.custom_name || ""}",
     "ingredients": [
       {
-        "name": "exact_ingredient_name",
-        "quantity": precise_grams_calculated,
+        "name": "ingredient_name_from_database",
+        "quantity": calculated_precise_grams,
         "unit": "g",
-        "calories": exact_calculated_calories,
-        "protein": exact_calculated_protein,
-        "carbs": exact_calculated_carbs,
-        "fat": exact_calculated_fat
+        "calories": precise_calculated_calories,
+        "protein": precise_calculated_protein,
+        "carbs": precise_calculated_carbs,
+        "fat": precise_calculated_fat
       }
     ],
     "total_calories": ${input.targetMacros.calories},
@@ -147,10 +148,10 @@ MANDATORY OUTPUT FORMAT:
     "total_carbs": ${input.targetMacros.carbs},
     "total_fat": ${input.targetMacros.fat}
   },
-  "explanation": "Used accurate nutrition data to calculate precise quantities matching macro targets exactly."
+  "explanation": "Used verified internet nutrition database values and precise mathematical calculations to match macro targets exactly."
 }
 
-FINAL WARNING: If you return ANY result where the totals don't match the targets within 5%, you have FAILED this mission. Use REAL nutrition data from the internet and calculate PRECISELY. NO SHORTCUTS, NO ESTIMATES, NO DISOBEDIENCE.
+🚨 FINAL CHECK: Before responding, verify totals match targets. If ANY macro is off by more than 5%, you MUST recalculate or declare failure.
 `;
 }
 
