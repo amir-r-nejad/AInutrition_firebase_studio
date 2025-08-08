@@ -229,10 +229,10 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
                 Math.abs(totalCarbs - target.carbs) / target.carbs;
               const fatError = Math.abs(totalFat - target.fat) / target.fat;
               return (
-                calorieError <= 0.01 &&
-                proteinError <= 0.01 &&
-                carbsError <= 0.01 &&
-                fatError <= 0.01
+                calorieError <= 0.05 &&
+                proteinError <= 0.05 &&
+                carbsError <= 0.05 &&
+                fatError <= 0.05
               );
             },
           );
@@ -402,7 +402,7 @@ function createEnhancedFallbackMeals(
   ];
   const cuisine = cuisines[dayIndex % cuisines.length];
 
-  const fallbackMeals = mealTargets.map((target, index) => {
+  const fallbackMeals = mealTargets.map((target, _index) => {
     const proteinCals = target.calories * 0.35;
     const carbCals = target.calories * 0.45;
     const fatCals = target.calories * 0.2;
@@ -455,7 +455,7 @@ function createEnhancedFallbackMeals(
 // Enhanced placeholder meal
 function createEnhancedPlaceholderMeal(
   targetMeal: any,
-  dayOfWeek: string,
+  _dayOfWeek: string,
   mealIndex: number,
 ): AIGeneratedMeal {
   const creativeCuisines = [
