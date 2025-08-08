@@ -1,4 +1,3 @@
-
 import { editMealPlan } from "@/features/meal-plan/lib/data-service-current";
 import { adjustMealIngredientsDirect } from "@/ai/flows/adjust-meal-ingredients-direct";
 import { NextRequest, NextResponse } from "next/server";
@@ -33,10 +32,10 @@ export async function POST(request: NextRequest) {
 
     // Call AI optimization
     const result = await adjustMealIngredientsDirect(optimizationData);
-    
+
     // Update meal plan with optimized meal - preserve existing data
     const { dayIndex, mealIndex, newWeeklyPlan } = mealPlan;
-    
+
     // Only update the specific meal, preserve all other data
     if (newWeeklyPlan.days[dayIndex] && newWeeklyPlan.days[dayIndex].meals[mealIndex]) {
       newWeeklyPlan.days[dayIndex].meals[mealIndex] = {
@@ -44,10 +43,10 @@ export async function POST(request: NextRequest) {
         ...result.adjustedMeal,
       };
     }
-    
+
     // Save updated meal plan
     await editMealPlan({ meal_data: newWeeklyPlan }, userId);
-    
+
     return NextResponse.json({ 
       success: true, 
       data: result,
@@ -55,7 +54,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("API Error optimizing meal:", error);
-    
+
     return NextResponse.json(
       { 
         error: error.message || "Failed to optimize meal",

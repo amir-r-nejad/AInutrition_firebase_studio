@@ -18,6 +18,7 @@ import { useQueryParams } from "@/hooks/useQueryParams";
 import type { Ingredient, Meal, UserMealPlan } from "@/lib/schemas";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { adjustMealIngredientsDirect } from "@/ai/flows/adjust-meal-ingredients-direct";
 
 function EditMealDialog({
   mealPlan,
@@ -184,7 +185,29 @@ function EditMealDialog({
     newWeeklyPlan.days[dayIndex].meals[mealIndex] = meal;
 
     try {
-      const result = await editMealPlan({ meal_data: newWeeklyPlan }, userId);
+      const result = await adjustMealIngredientsDirect({
+        mealName: meal.name,
+        customMealName: meal.custom_name,
+        ingredients: meal.ingredients,
+        targetMacros: {
+          calories: meal.total_calories,
+          protein: meal.total_protein,
+          carbs: meal.total_carbs,
+          fat: meal.total_fat,
+        },
+        userId: userId ?? "",
+      });
+
+      // Assuming result.adjustedMeal contains the updated meal data
+      if (result.adjustedMeal) {
+        // Update the current meal state with the adjusted meal
+        setMeal(result.adjustedMeal);
+
+        // Update the mealPlan object with the adjusted meal
+        newWeeklyPlan.days[dayIndex].meals[mealIndex] = result.adjustedMeal;
+      }
+
+      const saveResult = await editMealPlan({ meal_data: newWeeklyPlan }, userId);
 
       toast({
         title: "Meal Saved",

@@ -3,6 +3,8 @@ import LoadingScreen from "@/components/ui/LoadingScreen";
 import SectionHeader from "@/components/ui/SectionHeader";
 import PlanSection from "@/features/meal-plan/components/current/PlanSection";
 import { Suspense } from "react";
+import { getMealPlan } from "@/features/meal-plan/lib/data-service-current";
+import { adjustMealIngredientsDirect } from "@/ai/flows/adjust-meal-ingredients-direct";
 
 export default async function CurrentMealPlanPage({
   searchParams,
