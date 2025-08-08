@@ -82,49 +82,48 @@ const dailyPrompt = geminiModel.definePrompt({
   name: "generateNutritionistMealPlan",
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `You are a professional nutritionist with 15+ years of experience creating personalized meal plans. Your expertise lies in creatively combining diverse ingredients to meet exact macro targets while ensuring meal variety and nutritional balance.
-
-**YOUR MISSION for {{dayOfWeek}}:**
+  prompt: `YOUR MISSION for {{dayOfWeek}}:
 Create {{mealTargets.length}} delicious, balanced meals that precisely hit these targets:
 {{#each mealTargets}}
-**{{this.mealName}}**: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
+{{this.mealName}}: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
 {{/each}}
 
-**NUTRITIONIST METHODOLOGY:**
-1. **Creative Ingredient Discovery**: Search your extensive food database for diverse protein sources (lean meats, fish, dairy, legumes, plant proteins), complex carbs (grains, fruits, vegetables), and healthy fats (oils, nuts, seeds, avocado)
+NUTRITIONIST METHODOLOGY:
 
-2. **Intelligent Macro Engineering**: 
-   - Start with a base protein source to anchor the meal
-   - Add complementary proteins if needed to reach target (e.g., Greek yogurt + protein powder)
-   - Layer in carbohydrate sources strategically
-   - Balance with appropriate healthy fats
-   - Fine-tune quantities until macros align perfectly
+1. Creative Ingredient Discovery: Search your extensive food database for diverse protein sources (lean meats, fish, dairy, legumes, plant proteins), complex carbs (grains, fruits, vegetables), and healthy fats (oils, nuts, seeds, avocado). Prioritize variety to ensure meals are interesting, sustainable, and nutritionally balanced across food groups.
 
-3. **Adaptive Ingredient Addition**: If initial ingredients don't meet targets:
-   - ADD extra protein powder, egg whites, or lean protein
-   - SUPPLEMENT with additional carbs (oats, fruits, vegetables)  
-   - BOOST healthy fats (nuts, seeds, oils)
-   - MIX AND MATCH until perfect macro balance achieved
+2. Intelligent Macro Engineering:
+   - Start with a base protein source to anchor the meal.
+   - Add complementary proteins if needed to reach the target (e.g., Greek yogurt + protein powder).
+   - Layer in carbohydrate sources strategically.
+   - Balance with appropriate healthy fats.
+   - Fine-tune quantities until macros align perfectly, ensuring a balanced intake of nutrients from various food groups.
 
-**CREATIVE EXAMPLES:**
+3. Adaptive Ingredient Addition: If initial ingredients don't meet targets:
+   - ADD extra protein powder, egg whites, or lean protein.
+   - SUPPLEMENT with additional carbs (oats, fruits, vegetables).
+   - BOOST healthy fats (nuts, seeds, oils).
+   - MIX AND MATCH until perfect macro balance is achieved.
+
+CREATIVE EXAMPLES:
 - Breakfast: Greek yogurt base + protein powder boost + berries + granola + almond butter
 - Snack: Apple slices + almond butter + whey protein mixed in
 - Lunch: Quinoa bowl + grilled chicken + additional egg whites + vegetables + olive oil dressing
 - Dinner: Salmon + sweet potato + steamed broccoli + extra avocado for fat targets
 
-**CLIENT PREFERENCES (strictly follow):**
+CLIENT PREFERENCES (strictly follow):
 {{#if preferredDiet}}- Dietary approach: {{preferredDiet}}{{/if}}
 {{#if allergies.length}}- STRICT ALLERGIES TO AVOID: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if preferredIngredients.length}}- PREFERRED ingredients: {{#each preferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if dispreferredIngredients.length}}- AVOID if possible: {{#each dispreferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 
-**PRECISION REQUIREMENTS:**
-- Calories: Within ±3% of target (absolutely critical and ONLY validation requirement)
-- Protein, Carbs, Fat: Be creative and balanced, but no strict validation required
-- Use accurate USDA/FoodData Central nutritional values
-- Calculate per-gram nutrition precisely
+PRECISION REQUIREMENTS:
+- Calories: Within ±3% of target (absolutely critical and ONLY validation requirement).
+- Protein, Carbs, Fat: Be creative and balanced, aiming to meet targets as closely as possible, but no strict validation required.
+- Use accurate nutritional values from reliable sources such as USDA/FoodData Central.
+- Calculate nutritional values precisely for the specified quantities.
 
-**PROFESSIONAL OUTPUT FORMAT:**
+PROFESSIONAL OUTPUT FORMAT:
 {
   "meals": [
     {
@@ -134,24 +133,24 @@ Create {{mealTargets.length}} delicious, balanced meals that precisely hit these
           "name": "specific_ingredient_name",
           "quantity_grams": precise_amount,
           "nutritional_values": {
-            "calories": per_serving_calories,
-            "protein": per_serving_protein_grams,
-            "carbs": per_serving_carbs_grams,
-            "fat": per_serving_fat_grams
+            "calories": calories_for_this_quantity,
+            "protein": protein_for_this_quantity_grams,
+            "carbs": carbs_for_this_quantity_grams,
+            "fat": fat_for_this_quantity_grams
           }
         }
       ],
       "total_macros": {
-        "calories": exact_sum_all_ingredients,
-        "protein": exact_sum_all_ingredients,
-        "carbs": exact_sum_all_ingredients,
-        "fat": exact_sum_all_ingredients
+        "calories": exact_sum_of_all_ingredients_calories,
+        "protein": exact_sum_of_all_ingredients_protein,
+        "carbs": exact_sum_of_all_ingredients_carbs,
+        "fat": exact_sum_of_all_ingredients_fat
       }
     }
   ]
 }
 
-**FINAL VALIDATION:** Before outputting, verify each meal's total CALORIES hit targets within 3% tolerance. Protein, carbs, and fat should be balanced and reasonable but no strict validation required. Be creative with ingredients while maintaining calorie precision!`,
+FINAL VALIDATION: Before outputting, verify each meal's total CALORIES hit targets within 3% tolerance. Protein, carbs, and fat should be balanced and reasonable but no strict validation required. Be creative with ingredients while maintaining calorie precision!`,
 });
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
