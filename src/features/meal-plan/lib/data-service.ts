@@ -149,8 +149,12 @@ export async function loadMealPlan(
     throw new Error(`Failed to load meal plan: ${error.message}`);
   }
 
-  if (!data || !data.ai_plan) {
-    throw new Error("No AI plan data found");
+  if (!data) {
+    throw new Error("No meal plan found for this user");
+  }
+
+  if (!data.ai_plan) {
+    throw new Error("No AI plan generated yet - please generate an AI meal plan first");
   }
 
   let parsedPlan: GeneratePersonalizedMealPlanOutput;

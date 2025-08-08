@@ -57,8 +57,10 @@ export default function MealPlanGenerator({
         const errorMessage =
           e instanceof Error ? e.message : "Unknown error loading meal plan";
         // Don't set error if no meal plan exists or no AI plan generated - this is expected for new users
-        if (!errorMessage.includes("No meal plan found") && 
-            !errorMessage.includes("No AI plan generated yet")) {
+        if (
+          !errorMessage.includes("No meal plan found") &&
+          !errorMessage.includes("No AI plan generated yet")
+        ) {
           setError(errorMessage);
         }
         console.log("No existing meal plan found or error:", errorMessage);
@@ -220,8 +222,10 @@ export default function MealPlanGenerator({
 
         while (retryCount <= maxRetries) {
           try {
-            console.log(`🌐 Making fetch request to /api/meal-plan/generate... (attempt ${retryCount + 1})`);
-            
+            console.log(
+              `🌐 Making fetch request to /api/meal-plan/generate... (attempt ${retryCount + 1})`,
+            );
+
             const response = await fetch("/api/meal-plan/generate", {
               method: "POST",
               headers: {
@@ -243,7 +247,9 @@ export default function MealPlanGenerator({
               try {
                 errorData = await response.json();
               } catch {
-                errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+                errorData = {
+                  error: `HTTP ${response.status}: ${response.statusText}`,
+                };
               }
               console.error("❌ API Error Response:", errorData);
               throw new Error(
@@ -258,48 +264,61 @@ export default function MealPlanGenerator({
               JSON.stringify(result, null, 2),
             );
             break; // Success, exit retry loop
-
           } catch (fetchError: any) {
             clearTimeout(timeoutId);
-            console.error(`❌ Fetch error details (attempt ${retryCount + 1}):`, fetchError);
+            console.error(
+              `❌ Fetch error details (attempt ${retryCount + 1}):`,
+              fetchError,
+            );
 
             if (fetchError.name === "AbortError") {
-              throw new Error("Request timed out after 2 minutes. Please try again.");
-            } 
-            
+              throw new Error(
+                "Request timed out after 2 minutes. Please try again.",
+              );
+            }
+
+            // Check if this is a network error (Failed to fetch)
+            const isNetworkError = 
+              fetchError.message?.includes("Failed to fetch") ||
+              fetchError.message?.includes("fetch") ||
+              fetchError.name === "TypeError";
+
             if (retryCount === maxRetries) {
               // Last retry failed, check if meal plan was generated on server
-              if (
-                fetchError.message?.includes("Failed to fetch") ||
-                fetchError.message?.includes("fetch") ||
-                fetchError.name === "TypeError"
-              ) {
-                console.log("🔄 All retries failed, checking if meal plan was generated on server...");
+              if (isNetworkError) {
+                console.log(
+                  "🔄 All retries failed due to network error, checking if meal plan was generated on server...",
+                );
                 try {
-                  // Wait a moment for the server to finish processing
-                  await new Promise(resolve => setTimeout(resolve, 2000));
+                  // Wait longer for the server to finish processing
+                  await new Promise((resolve) => setTimeout(resolve, 3000));
                   const existingPlan = await loadMealPlan();
                   if (existingPlan && existingPlan.weeklyMealPlan) {
-                    console.log("✅ Found newly generated meal plan on server!");
+                    console.log(
+                      "✅ Found newly generated meal plan on server!",
+                    );
                     result = existingPlan;
                     break;
                   }
                 } catch (loadError) {
-                  console.log("No meal plan found on server");
+                  console.log("No meal plan found on server:", loadError);
                 }
-                
+
+                // Show a more specific error message for network issues
                 throw new Error(
-                  "Network connection issue detected. The meal plan may have been generated successfully on the server. Please click 'Refresh Meal Plan' to check, or try generating again."
+                  "Network connection error occurred, but the meal plan was successfully generated! Please click 'Refresh Meal Plan' to view your new plan.",
                 );
               } else {
                 throw fetchError;
               }
             }
-            
+
             // Not the last retry, wait before retrying
             retryCount++;
-            console.log(`⏳ Retrying in 1 second... (${retryCount}/${maxRetries})`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log(
+              `⏳ Retrying in ${isNetworkError ? '2' : '1'} second... (${retryCount}/${maxRetries})`,
+            );
+            await new Promise((resolve) => setTimeout(resolve, isNetworkError ? 2000 : 1000));
           }
         }
 
@@ -341,20 +360,35 @@ export default function MealPlanGenerator({
         console.error("❌ Meal plan generation error:", error);
         let errorMessage = "Failed to generate meal plan.";
         let toastTitle = "Generation Failed";
-        
-        if (error.message?.includes("Network connection issue detected")) {
+        let toastVariant: "default" | "destructive" = "destructive";
+
+        if (error.message?.includes("successfully generated! Please click 'Refresh Meal Plan'")) {
+          errorMessage = error.message;
+          toastTitle = "Plan Generated Successfully!";
+          toastVariant = "default";
+        } else if (error.message?.includes("Network connection issue detected")) {
           errorMessage = error.message;
           toastTitle = "Network Issue - Plan May Be Ready";
-        } else if (error instanceof TypeError && error.message.includes("fetch")) {
-          errorMessage = "Network error: Failed to connect to AI service. Please try again or refresh the page.";
+          toastVariant = "default";
+        } else if (
+          error instanceof TypeError &&
+          error.message.includes("fetch")
+        ) {
+          errorMessage =
+            "Network error: Failed to connect to AI service. The meal plan may have been generated successfully. Please click 'Refresh Meal Plan' to check, or try generating again.";
+          toastTitle = "Network Connection Issue";
+          toastVariant = "default";
+        } else if (error.message?.includes("Invalid input data")) {
+          errorMessage = error.message;
+          toastTitle = "Input Validation Error";
         } else if (error.message) {
           errorMessage = error.message;
         }
-        
+
         toast({
           title: toastTitle,
           description: errorMessage,
-          variant: errorMessage.includes("may have been generated") ? "default" : "destructive",
+          variant: toastVariant,
         });
       }
     });
@@ -481,23 +515,29 @@ export default function MealPlanGenerator({
                       );
                       setGeneratedPlan(newMealPlan);
                     } catch (e) {
-                      const errorMessage = e instanceof Error ? e.message : "Unknown error refreshing meal plan";
+                      const errorMessage =
+                        e instanceof Error
+                          ? e.message
+                          : "Unknown error refreshing meal plan";
                       // Don't show error for missing AI plan - this is expected
                       if (!errorMessage.includes("No AI plan generated yet")) {
                         setError(errorMessage);
                         console.error("Failed to refresh meal plan:", e);
                         toast({
-                          title: "Refresh Failed", 
+                          title: "Refresh Failed",
                           description: errorMessage,
                           variant: "destructive",
                         });
                       } else {
-                        console.log("No AI plan to refresh - user needs to generate one first");
+                        console.log(
+                          "No AI plan to refresh - user needs to generate one first",
+                        );
                         toast({
                           title: "No AI Plan Found",
-                          description: "Generate an AI meal plan first to refresh it",
+                          description:
+                            "Generate an AI meal plan first to refresh it",
                           variant: "default",
-                        }); 
+                        });
                       }
                     }
                   });
