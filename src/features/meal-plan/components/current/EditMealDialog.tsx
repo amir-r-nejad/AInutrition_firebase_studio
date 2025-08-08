@@ -1,4 +1,3 @@
-
 "use client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -201,7 +200,10 @@ function EditMealDialog({
 
       // Get daily macro targets from user plan
       const dailyTargets = {
-        calories: userPlan.custom_total_calories ?? userPlan.target_daily_calories ?? 2000,
+        calories:
+          userPlan.custom_total_calories ??
+          userPlan.target_daily_calories ??
+          2000,
         protein: userPlan.custom_protein_g ?? userPlan.target_protein_g ?? 150,
         carbs: userPlan.custom_carbs_g ?? userPlan.target_carbs_g ?? 200,
         fat: userPlan.custom_fat_g ?? userPlan.target_fat_g ?? 67,
@@ -211,16 +213,18 @@ function EditMealDialog({
       // Note: We need to handle the case where meal_distributions might not exist
       const mealDistributions = (userPlan as any).meal_distributions;
       const mealDistribution = mealDistributions?.find(
-        (dist: any) => dist.mealName === meal.name
+        (dist: any) => dist.mealName === meal.name,
       );
 
       if (!mealDistribution) {
-        throw new Error(`Meal distribution not found for ${meal.name}. Please set up macro splitter first.`);
+        throw new Error(
+          `Meal distribution not found for ${meal.name}. Please set up macro splitter first.`,
+        );
       }
 
       // Use the actual percentage distributions from macro splitter
       const caloriePercentage = (mealDistribution.calories_pct || 0) / 100;
-      
+
       const targetMacros = {
         calories: Math.round(dailyTargets.calories * caloriePercentage),
         protein: Math.round(dailyTargets.protein * caloriePercentage * 10) / 10,
@@ -233,14 +237,14 @@ function EditMealDialog({
         dailyTargets,
         mealDistribution,
         caloriePercentage,
-        calculatedTargets: targetMacros
+        calculatedTargets: targetMacros,
       });
 
       const result = await adjustMealIngredientsDirect({
         originalMeal: {
           name: meal.name,
           custom_name: meal.custom_name || "",
-          ingredients: meal.ingredients.map(ing => ({
+          ingredients: meal.ingredients.map((ing) => ({
             name: ing.name,
             quantity: Number(ing.quantity) || 0,
             unit: ing.unit || "g",
@@ -278,7 +282,10 @@ function EditMealDialog({
         };
       }
 
-      const saveResult = await editMealPlan({ meal_data: newWeeklyPlan }, userId);
+      const saveResult = await editMealPlan(
+        { meal_data: newWeeklyPlan },
+        userId,
+      );
 
       toast({
         title: "Meal Saved",
