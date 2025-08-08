@@ -83,25 +83,38 @@ const dailyPrompt = geminiModel.definePrompt({
   output: { schema: AIDailyPlanOutputSchema },
   prompt: `You are a world-class nutritionist and innovative chef with access to a vast database of global recipes. Generate EXACTLY {{mealTargets.length}} highly diverse, creative, and nutritionally precise meals for {{dayOfWeek}}. Search the internet for trending, unique, and culturally rich recipes to inspire your creations, ensuring maximum variety and excitement. Ensure NO meal is repeated across the week, and each day's meals are entirely unique, even for the same meal type (e.g., breakfast).
 
-**STRICT MACRO SPLITTER COMPLIANCE:**
-- Each meal must match the exact macro targets (calories, protein, carbs, fat) within a 1% margin of error.
-- Calculate ingredient quantities using precise nutritional data from the USDA database or reliable online sources to meet the following targets:
+**CRITICAL MACRO CALCULATION REQUIREMENTS:**
+- Each meal MUST match the exact macro targets within a 5% margin of error (NOT 1%).
+- For each meal, calculate ingredient quantities using precise nutritional data to meet these EXACT targets:
   {{#each mealTargets}}
   **{{this.mealName}}**: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
   {{/each}}
-- Macros must be calculated to ensure: 
-  - Calories = (Protein * 4) + (Carbs * 4) + (Fat * 9)
-  - Total meal macros must sum to the target values with 1% precision.
+
+**INGREDIENT QUANTITY CALCULATION PROCESS:**
+1. Select 4-6 ingredients that create a cohesive, delicious meal
+2. Look up precise nutritional data per 100g for each ingredient (calories, protein, carbs, fat)
+3. Calculate the exact gram amount needed for each ingredient to collectively meet the macro targets
+4. Verify that the sum of all ingredient macros equals the target macros within 5% tolerance
+5. If not within tolerance, adjust ingredient quantities and recalculate until targets are met
+6. Double-check: Total calories should equal (Total protein × 4) + (Total carbs × 4) + (Total fat × 9)
+
+**INGREDIENT SELECTION AND CALCULATION:**
+- Choose 4-6 complementary ingredients that create a cohesive, flavorful meal
+- Use precise nutritional data (calories, protein, carbs, fat per 100g) from reliable sources like USDA FoodData Central
+- Calculate exact quantities in grams for each ingredient to collectively meet macro targets
+- Example calculation process:
+  * Target: 500 kcal, 30g protein, 50g carbs, 20g fat
+  * Ingredient 1 (Chicken breast): 165 kcal, 31g protein, 0g carbs, 3.6g fat per 100g
+  * Ingredient 2 (Brown rice): 112 kcal, 2.6g protein, 23g carbs, 0.9g fat per 100g  
+  * Calculate quantities: X grams chicken + Y grams rice + other ingredients = exact macro targets
+- Verify final totals match targets within 5% margin before submitting
 
 **CREATIVITY REQUIREMENTS:**
-- Explore an extensive range of cooking methods: grilling, poaching, sous-vide, braising, fermenting, smoking, raw preparations, or molecular gastronomy techniques.
-- Draw inspiration from a global array of cuisines (e.g., African, Southeast Asian, Scandinavian, Caribbean, South American, Indian, Middle Eastern, Pacific Islander, or Eastern European), ensuring no cuisine is repeated within a day or week unless explicitly preferred.
-- Use diverse protein sources: game meats (e.g., venison, quail), exotic seafood (e.g., octopus, sea urchin), heritage breed poultry, plant-based proteins (e.g., tempeh, seitan, lupini beans), or rare legumes.
-- Incorporate vibrant, seasonal, and visually stunning vegetables, fruits, and edible garnishes for Instagram-worthy presentations.
-- Combine varied textures: crispy, velvety, crunchy, silky, chewy, or gelatinous.
-- Avoid repetitive ingredients across all meals in the week to maximize variety.
-- Avoid overly common or basic dishes (e.g., no plain oatmeal, sandwiches, or salads unless creatively elevated).
-- Source inspiration from global food blogs, Michelin-starred restaurant menus, or trending culinary platforms for cutting-edge ideas.
+- Explore diverse cooking methods: grilling, poaching, sous-vide, braising, fermenting, smoking, raw preparations
+- Draw inspiration from global cuisines ensuring variety across the week
+- Use diverse protein sources: lean meats, fish, poultry, plant-based proteins, legumes
+- Include colorful vegetables, fruits, healthy fats, and complex carbohydrates
+- Create visually appealing, restaurant-quality meals with varied textures and flavors
 
 **USER PREFERENCES (ONLY APPLY IF NOT NULL):**
 {{#if preferredDiet}}- Adhere strictly to diet type: {{preferredDiet}}{{/if}}
@@ -125,8 +138,30 @@ const dailyPrompt = geminiModel.definePrompt({
 - Ensure each meal feels like a distinct culinary journey with bold, unexpected flavor profiles.
 - Avoid predictable combinations; prioritize novel pairings inspired by global culinary trends.
 
-**OUTPUT FORMAT:**
-Return ONLY valid JSON with exactly {{mealTargets.length}} unique, creative meals. Each ingredient must have precise nutritional values (calories, protein, carbs, fat) that sum to the target macros within 1% accuracy. Include a brief description of each meal's preparation method and cultural inspiration. Make every meal an unforgettable culinary experience!`,
+**MANDATORY OUTPUT REQUIREMENTS:**
+Return ONLY valid JSON with exactly {{mealTargets.length}} unique, creative meals. For each meal:
+
+1. **Ingredient Precision**: Each ingredient must specify:
+   - Exact quantity in grams
+   - Precise nutritional values (calories, protein, carbs, fat) for that specific quantity
+   - Values must be calculated based on the gram amount (not per 100g)
+
+2. **Macro Verification**: The sum of all ingredient macros MUST equal the target macros within 5% tolerance:
+   {{#each mealTargets}}
+   - {{this.mealName}}: Total must be {{this.calories}}±{{this.calories}}*0.05 kcal, {{this.protein}}±{{this.protein}}*0.05g protein, {{this.carbs}}±{{this.carbs}}*0.05g carbs, {{this.fat}}±{{this.fat}}*0.05g fat
+   {{/each}}
+
+3. **Structure**: Each meal object must include:
+   - meal_title: Creative, appealing name
+   - ingredients: Array with name, precise macros matching the calculated quantities
+   - Ensure ingredient macros sum exactly to meal totals
+
+**CALCULATION VERIFICATION EXAMPLE:**
+If target is 500 kcal, 30g protein, 50g carbs, 20g fat:
+- Acceptable range: 475-525 kcal, 28.5-31.5g protein, 47.5-52.5g carbs, 19-21g fat
+- Each ingredient quantity must be precisely calculated to achieve these totals
+
+CRITICAL: If macro totals are outside 5% tolerance, recalculate ingredient quantities before responding.`,
 });
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
@@ -197,7 +232,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
             throw new Error(`Invalid meal structure for ${dayOfWeek}`);
           }
 
-          // Validate macro accuracy
+          // Validate macro accuracy with 5% tolerance
           const isAccurate = dailyOutput.meals.every(
             (meal: any, index: number) => {
               const target = input.mealTargets[index];
@@ -221,19 +256,33 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
                   (sum: number, ing: any) => sum + (ing.fat || 0),
                   0,
                 ) || 0;
-              const calorieError =
-                Math.abs(totalCals - target.calories) / target.calories;
-              const proteinError =
-                Math.abs(totalProtein - target.protein) / target.protein;
-              const carbsError =
-                Math.abs(totalCarbs - target.carbs) / target.carbs;
-              const fatError = Math.abs(totalFat - target.fat) / target.fat;
-              return (
+              
+              // Calculate percentage errors
+              const calorieError = target.calories > 0 ? 
+                Math.abs(totalCals - target.calories) / target.calories : 0;
+              const proteinError = target.protein > 0 ? 
+                Math.abs(totalProtein - target.protein) / target.protein : 0;
+              const carbsError = target.carbs > 0 ? 
+                Math.abs(totalCarbs - target.carbs) / target.carbs : 0;
+              const fatError = target.fat > 0 ? 
+                Math.abs(totalFat - target.fat) / target.fat : 0;
+              
+              const isWithinTolerance = (
                 calorieError <= 0.05 &&
                 proteinError <= 0.05 &&
                 carbsError <= 0.05 &&
                 fatError <= 0.05
               );
+              
+              if (!isWithinTolerance) {
+                console.warn(`Macro validation failed for ${target.mealName}:`, {
+                  target: { calories: target.calories, protein: target.protein, carbs: target.carbs, fat: target.fat },
+                  actual: { calories: totalCals, protein: totalProtein, carbs: totalCarbs, fat: totalFat },
+                  errors: { calories: calorieError, protein: proteinError, carbs: carbsError, fat: fatError }
+                });
+              }
+              
+              return isWithinTolerance;
             },
           );
 
