@@ -1,3 +1,4 @@
+
 "use client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,6 @@ function EditMealDialog({
     // For now, we'll assume mealPlan contains the necessary data
     setUserPlan(mealPlan);
   }, [mealPlan]);
-
 
   function handleIngredientChange(
     index: number,
@@ -208,7 +208,9 @@ function EditMealDialog({
       };
 
       // Get meal distribution for this specific meal
-      const mealDistribution = userPlan.meal_distributions?.find(
+      // Note: We need to handle the case where meal_distributions might not exist
+      const mealDistributions = (userPlan as any).meal_distributions;
+      const mealDistribution = mealDistributions?.find(
         (dist: any) => dist.mealName === meal.name
       );
 
@@ -232,9 +234,7 @@ function EditMealDialog({
         mealDistribution,
         caloriePercentage,
         calculatedTargets: targetMacros
-      });at: Math.round(dailyTargets.fat * mealPercentage * 10) / 10,
-      };
-
+      });
 
       const result = await adjustMealIngredientsDirect({
         originalMeal: {
@@ -266,10 +266,16 @@ function EditMealDialog({
       // Assuming result.adjustedMeal contains the updated meal data
       if (result.adjustedMeal) {
         // Update the current meal state with the adjusted meal
-        setMeal(result.adjustedMeal);
+        setMeal({
+          ...result.adjustedMeal,
+          custom_name: result.adjustedMeal.custom_name || "",
+        });
 
         // Update the mealPlan object with the adjusted meal
-        newWeeklyPlan.days[dayIndex].meals[mealIndex] = result.adjustedMeal;
+        newWeeklyPlan.days[dayIndex].meals[mealIndex] = {
+          ...result.adjustedMeal,
+          custom_name: result.adjustedMeal.custom_name || "",
+        };
       }
 
       const saveResult = await editMealPlan({ meal_data: newWeeklyPlan }, userId);
