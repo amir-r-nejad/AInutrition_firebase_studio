@@ -98,42 +98,47 @@ async function generateDailyMealPlan(
     throw new Error("OpenAI API key not found in environment variables");
   }
 
-  const prompt = `You are a world-class nutritionist and innovative chef with extensive knowledge of global cuisines and precise nutritional data.
+  const prompt = `You are a world-class nutritionist and innovative chef with access to precise nutritional data from USDA and extensive knowledge of global cuisines.
 
-Generate EXACTLY ${mealTargets.length} unique, creative, and nutritionally precise meals for ${dayOfWeek}, fully compliant with STRICT MACRO SPLITTER requirements below:
+Generate EXACTLY ${mealTargets.length} highly diverse, creative, and nutritionally precise meals for ${dayOfWeek}.
 
-1. Each meal MUST match the exact macro targets (calories, protein, carbs, fat) within ±5% margin of error, calculated precisely using USDA or similarly authoritative nutritional data.
+**STRICT MACRO SPLITTER COMPLIANCE:**
 
-2. Macro calculation rules:  
-   - Calories = (Protein * 4) + (Carbs * 4) + (Fat * 9)  
-   - Each meal's total calories, protein, carbs, and fat MUST be within 5% of the targets specified for that meal.
+1. Each meal must match the exact macro targets (calories, protein, carbs, fat) within ±5% margin of error.
+2. Macronutrient calculation rules:  
+   - Calories = (Protein * 4) + (Carbs * 4) + (Fat * 9) exactly.  
+3. For each ingredient, provide:  
+   - Exact amount with unit (e.g., "Chicken breast (150 g)")  
+   - Precise calories, protein, carbs, fat from USDA or reliable sources.  
+4. The sum of all ingredients' macros MUST match the target macros for that meal within ±5%.  
+5. If any macro is outside the ±5% margin, the entire meal output is invalid and must be regenerated.  
+6. Do NOT approximate macro values during summation; keep decimals until final totals.  
+7. At the end of each meal, provide a validation object showing for calories, protein, carbs, fat whether each is within the ±5% target.  
+8. Only output valid JSON with all validations true. No extra text or explanation.
 
-3. Use the exact macro targets below for each meal (calories in kcal, macros in grams):  
+**MACRO TARGETS:**
+
 ${mealTargets.map((meal) => `- ${meal.mealName}: ${meal.calories.toFixed(1)} kcal, ${meal.protein.toFixed(1)}g protein, ${meal.carbs.toFixed(1)}g carbs, ${meal.fat.toFixed(1)}g fat`).join("\n")}
 
-4. For each meal, provide:  
-   - A creative meal title reflecting global cuisine inspiration and innovative cooking methods.  
-   - A list of ingredients with exact amounts and units (e.g., "Chicken breast (150 g)").  
-   - For each ingredient, include precise nutritional values (calories, protein, carbs, fat).  
-   - Total macros of all ingredients combined MUST meet the targets within the specified margin.
+**CREATIVITY & DIVERSITY REQUIREMENTS:**  
+- Use varied cooking methods (grilling, sous-vide, fermenting, etc.)  
+- Diverse global cuisines without repetition within the day/week  
+- Unique protein sources and seasonal colorful ingredients  
+- Varied textures and Instagram-worthy presentation  
+- No repeated ingredients across meals for the week  
+- Avoid common/basic dishes unless highly elevated  
 
-5. Creativity requirements:  
-   - Diverse cooking techniques (grilling, sous-vide, fermenting, etc.).  
-   - Global cuisines with NO repeats within the day or week unless user preferences specify otherwise.  
-   - Varied, often rare protein sources and seasonal, colorful vegetables/fruits.  
-   - Varied textures and Instagram-worthy presentation concepts.  
-   - No ingredient repetition across meals of the week to maximize variety.
-
-6. User preferences (apply ONLY if provided):  
+**USER PREFERENCES (Apply only if provided):**  
 ${preferences.preferredDiet ? `- Strictly adhere to diet type: ${preferences.preferredDiet}` : ""}  
-${preferences.allergies?.length ? `- AVOID ingredients causing allergies: ${preferences.allergies.join(", ")}` : ""}  
-${preferences.dispreferredIngredients?.length ? `- AVOID disliked ingredients: ${preferences.dispreferredIngredients.join(", ")}` : ""}  
-${preferences.preferredIngredients?.length ? `- PRIORITIZE preferred ingredients: ${preferences.preferredIngredients.join(", ")}` : ""}  
-${preferences.preferredCuisines?.length ? `- PRIORITIZE cuisines: ${preferences.preferredCuisines.join(", ")}` : ""}  
-${preferences.dispreferredCuisines?.length ? `- AVOID cuisines: ${preferences.dispreferredCuisines.join(", ")}` : ""}  
+${preferences.allergies?.length ? `- Avoid these ingredients: ${preferences.allergies.join(", ")}` : ""}  
+${preferences.dispreferredIngredients?.length ? `- Avoid disliked ingredients: ${preferences.dispreferredIngredients.join(", ")}` : ""}  
+${preferences.preferredIngredients?.length ? `- Prioritize these ingredients: ${preferences.preferredIngredients.join(", ")}` : ""}  
+${preferences.preferredCuisines?.length ? `- Prioritize cuisines: ${preferences.preferredCuisines.join(", ")}` : ""}  
+${preferences.dispreferredCuisines?.length ? `- Avoid cuisines: ${preferences.dispreferredCuisines.join(", ")}` : ""}  
 ${preferences.medicalConditions?.length ? `- Consider health conditions: ${preferences.medicalConditions.join(", ")}` : ""}
 
-OUTPUT FORMAT (ONLY valid JSON, no extra commentary):  
+**OUTPUT FORMAT:**
+
 {
   "meals": [
     {
@@ -146,20 +151,24 @@ OUTPUT FORMAT (ONLY valid JSON, no extra commentary):
           "carbs": number,
           "fat": number
         }
-      ]
+      ],
+      "total_calories": number,
+      "total_protein": number,
+      "total_carbs": number,
+      "total_fat": number,
+      "validation": {
+        "calories": true,
+        "protein": true,
+        "carbs": true,
+        "fat": true
+      }
     }
   ]
 }
 
-VALIDATION CHECK (must be strictly followed):  
-- Total calories for each meal within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.calories * 0.95).toFixed(1)}-${(m.calories * 1.05).toFixed(1)} kcal`).join(", ")}  
-- Total protein within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.protein * 0.95).toFixed(1)}-${(m.protein * 1.05).toFixed(1)}g`).join(", ")}  
-- Total carbs within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.carbs * 0.95).toFixed(1)}-${(m.carbs * 1.05).toFixed(1)}g`).join(", ")}  
-- Total fat within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.fat * 0.95).toFixed(1)}-${(m.fat * 1.05).toFixed(1)}g`).join(", ")}
+Only return the JSON object above with all validations true for every meal.
 
-Be precise, creative, diverse, and exact. Do not include any repetitions or basic/common dishes unless elevated significantly.
-
-Generate now.`;
+Generate the meals now.`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",

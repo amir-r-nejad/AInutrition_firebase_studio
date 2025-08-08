@@ -1,0 +1,41 @@
+❌ Macro validation failed for Breakfast: {
+  calories: { actual: 637, target: 637.2, valid: true },
+  protein: { actual: 22.2, target: 47.7, valid: false },
+  carbs: { actual: 71.7, target: 79.65, valid: false },
+  fat: { actual: 30.5, target: 14.18, valid: false }
+}
+⚠️ Meal Breakfast exceeds 5% macro error margin, but including in plan
+❌ Macro validation failed for Morning Snack: {
+  calories: { actual: 257, target: 283.2, valid: false },
+  protein: { actual: 18.5, target: 21.2, valid: false },
+  carbs: { actual: 18.4, target: 35.4, valid: false },
+  fat: { actual: 13.3, target: 6.3, valid: false }
+}
+⚠️ Meal Morning Snack exceeds 5% macro error margin, but including in plan
+❌ Macro validation failed for Lunch: {
+  calories: { actual: 566, target: 637.2, valid: false },
+  protein: { actual: 41.4, target: 47.7, valid: false },
+  carbs: { actual: 28.5, target: 79.65, valid: false },
+  fat: { actual: 31.4, target: 14.18, valid: false }
+}
+⚠️ Meal Lunch exceeds 5% macro error margin, but including in plan
+❌ Macro validation failed for Afternoon Snack: {
+  calories: { actual: 352, target: 283.2, valid: false },
+  protein: { actual: 15.3, target: 21.2, valid: false },
+  carbs: { actual: 55.2, target: 35.4, valid: false },
+  fat: { actual: 10.1, target: 6.3, valid: false }
+}
+⚠️ Meal Afternoon Snack exceeds 5% macro error margin, but including in plan
+❌ Macro validation failed for Dinner: {
+  calories: { actual: 518, target: 566.4, valid: false },
+  protein: { actual: 36.6, target: 42.4, valid: false },
+  carbs: { actual: 27.8, target: 70.8, valid: false },
+  fat: { actual: 30.2, target: 12.6, valid: false }
+}
+⚠️ Meal Dinner exceeds 5% macro error margin, but including in plan
+❌ Macro validation failed for Evening Snack: {
+  calories: { actual: 425, target: 424.8, valid: true },
+  protein: { actual: 17.8, target: 31.8, valid: false },
+  carbs: { actual: 56.4, target: 53.1, valid: false },
+  fat: { actual: 16.5, target: 9.45, valid: false }
+}
