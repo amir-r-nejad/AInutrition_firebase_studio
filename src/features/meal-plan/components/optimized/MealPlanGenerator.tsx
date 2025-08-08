@@ -214,14 +214,14 @@ export default function MealPlanGenerator({
           let timeoutId: NodeJS.Timeout | undefined;
           try {
             console.log(
-              `🌐 Making fetch request to /api/meal-plan/generate-openai... (attempt ${attempt})`,
+              `🌐 Making fetch request to /api/meal-plan/generate... (attempt ${attempt})`,
             );
 
             // Create AbortController for timeout per attempt
             const controller = new AbortController();
             timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes per attempt
 
-            const response = await fetch("/api/meal-plan/generate-openai", {
+            const response = await fetch("/api/meal-plan/generate", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
