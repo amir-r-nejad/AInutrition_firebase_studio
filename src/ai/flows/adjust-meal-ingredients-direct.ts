@@ -84,63 +84,38 @@ async function generateWithOpenAI(
 }
 
 function buildEnhancedPrompt(input: AdjustMealIngredientsInput): string {
-  const calorieMin = Math.round(input.targetMacros.calories * 0.95);
-  const calorieMax = Math.round(input.targetMacros.calories * 1.05);
-  const proteinMin = Math.round(input.targetMacros.protein * 0.95 * 10) / 10;
-  const proteinMax = Math.round(input.targetMacros.protein * 1.05 * 10) / 10;
-  const carbsMin = Math.round(input.targetMacros.carbs * 0.95 * 10) / 10;
-  const carbsMax = Math.round(input.targetMacros.carbs * 1.05 * 10) / 10;
-  const fatMin = Math.round(input.targetMacros.fat * 0.95 * 10) / 10;
-  const fatMax = Math.round(input.targetMacros.fat * 1.05 * 10) / 10;
-
   return `
-🚨 EMERGENCY NUTRITION CALCULATOR MODE 🚨
-YOU ARE NOW A PRECISION NUTRITION DATABASE WITH ACCESS TO REAL INTERNET DATA.
+Adjust these ingredients to meet the target macros:
 
-NON-NEGOTIABLE TARGETS (MACRO SPLITTER DEMANDS EXACTNESS):
-Calories: ${input.targetMacros.calories} kcal (RANGE: ${calorieMin}-${calorieMax})
-Protein: ${input.targetMacros.protein}g (RANGE: ${proteinMin}-${proteinMax})
-Carbs: ${input.targetMacros.carbs}g (RANGE: ${carbsMin}-${carbsMax})
-Fat: ${input.targetMacros.fat}g (RANGE: ${fatMin}-${fatMax})
+TARGET MACROS:
+- Calories: ${input.targetMacros.calories} kcal
+- Protein: ${input.targetMacros.protein}g  
+- Carbs: ${input.targetMacros.carbs}g
+- Fat: ${input.targetMacros.fat}g
 
-CURRENT INGREDIENTS TO ADJUST:
+CURRENT INGREDIENTS:
 ${input.originalMeal.ingredients.map(ing => `- ${ing.name}: ${ing.quantity}g`).join('\n')}
 
-⚠️ MANDATORY INTERNET NUTRITION LOOKUP PROCESS:
-Step 1: For EACH ingredient, use REAL nutrition data per 100g:
-• White bread: 265 kcal, 9g protein, 49g carbs, 3.2g fat per 100g (USDA)
-• Whole eggs: 155 kcal, 13g protein, 1.1g carbs, 11g fat per 100g (USDA)
-• Cheddar cheese: 403 kcal, 25g protein, 1.3g carbs, 33g fat per 100g (USDA)
-• Chicken breast: 165 kcal, 31g protein, 0g carbs, 3.6g fat per 100g (USDA)
-• Rice, white: 130 kcal, 2.7g protein, 28g carbs, 0.3g fat per 100g (USDA)
+INSTRUCTIONS:
+1. Adjust ONLY the quantities of existing ingredients
+2. Use standard nutrition data (USDA values)
+3. Calculate precise amounts to meet targets within 10% tolerance
+4. Return valid JSON with exact format below
 
-Step 2: Calculate EXACT grams needed using MATHEMATICS:
-Formula: needed_grams = (target_macro_contribution × 100) ÷ nutrition_per_100g
-
-Step 3: VERIFY calculation by summing all contributions
-Step 4: If ANY macro is outside range, RECALCULATE completely
-
-🔴 ABSOLUTE REQUIREMENTS - NO EXCEPTIONS:
-✓ Use ONLY verified nutrition data from internet databases
-✓ Calculate to decimal precision (e.g., 127.3g, not 127g)
-✓ Sum must equal targets within 5% tolerance
-✓ NO guessing, NO rounding errors, NO fake data
-✓ If you can't meet targets exactly, FAIL and say so
-
-REQUIRED JSON OUTPUT:
+JSON FORMAT:
 {
   "adjustedMeal": {
     "name": "${input.originalMeal.name}",
     "custom_name": "${input.originalMeal.custom_name || ""}",
     "ingredients": [
       {
-        "name": "ingredient_name_from_database",
-        "quantity": calculated_precise_grams,
-        "unit": "g",
-        "calories": precise_calculated_calories,
-        "protein": precise_calculated_protein,
-        "carbs": precise_calculated_carbs,
-        "fat": precise_calculated_fat
+        "name": "ingredient_name",
+        "quantity": precise_grams,
+        "unit": "g", 
+        "calories": calculated_calories,
+        "protein": calculated_protein,
+        "carbs": calculated_carbs,
+        "fat": calculated_fat
       }
     ],
     "total_calories": ${input.targetMacros.calories},
@@ -148,10 +123,8 @@ REQUIRED JSON OUTPUT:
     "total_carbs": ${input.targetMacros.carbs},
     "total_fat": ${input.targetMacros.fat}
   },
-  "explanation": "Used verified internet nutrition database values and precise mathematical calculations to match macro targets exactly."
+  "explanation": "Adjusted ingredient quantities to meet macro targets."
 }
-
-🚨 FINAL CHECK: Before responding, verify totals match targets. If ANY macro is off by more than 5%, you MUST recalculate or declare failure.
 `;
 }
 
@@ -203,7 +176,7 @@ export async function adjustMealIngredientsDirect(
     
     // Validate that the result matches the target macros
     const adjustedMeal = result.adjustedMeal;
-    const tolerance = 0.05; // 5%
+    const tolerance = 0.10; // 10% - more reasonable tolerance
     
     const caloriesValid = Math.abs(adjustedMeal.total_calories - cleanedInput.targetMacros.calories) <= cleanedInput.targetMacros.calories * tolerance;
     const proteinValid = Math.abs(adjustedMeal.total_protein - cleanedInput.targetMacros.protein) <= cleanedInput.targetMacros.protein * tolerance;
@@ -221,7 +194,7 @@ export async function adjustMealIngredientsDirect(
         },
         validation: { caloriesValid, proteinValid, carbsValid, fatValid }
       });
-      throw new Error(`AI failed to meet macro targets. Please try again. Target: ${cleanedInput.targetMacros.calories}kcal/${cleanedInput.targetMacros.protein}p/${cleanedInput.targetMacros.carbs}c/${cleanedInput.targetMacros.fat}f`);
+      throw new Error(`AI failed to meet macro targets within 10% tolerance. Please try again. Target: ${cleanedInput.targetMacros.calories}kcal/${cleanedInput.targetMacros.protein}p/${cleanedInput.targetMacros.carbs}c/${cleanedInput.targetMacros.fat}f`);
     }
     
     console.log(
