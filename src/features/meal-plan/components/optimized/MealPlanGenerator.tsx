@@ -16,9 +16,7 @@ import {
 import { Loader2, Sparkles, AlertTriangle, RefreshCw } from "lucide-react";
 import { useState, useTransition, useEffect } from "react";
 import MealPlanOverview from "./MealPlanOverview";
-import {
-  GeneratePersonalizedMealPlanOutput,
-} from "@/lib/schemas";
+import { GeneratePersonalizedMealPlanOutput } from "@/lib/schemas";
 
 interface MealPlanGeneratorProps {
   profile: any;
@@ -215,7 +213,9 @@ export default function MealPlanGenerator({
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           let timeoutId: NodeJS.Timeout | undefined;
           try {
-            console.log(`🌐 Making fetch request to /api/meal-plan/generate... (attempt ${attempt})`);
+            console.log(
+              `🌐 Making fetch request to /api/meal-plan/generate... (attempt ${attempt})`,
+            );
 
             // Create AbortController for timeout per attempt
             const controller = new AbortController();
@@ -249,56 +249,79 @@ export default function MealPlanGenerator({
                   error: `HTTP ${response.status}: ${response.statusText}`,
                 };
               }
-              console.error(`❌ API Error Response (attempt ${attempt}):`, errorData);
-              
+              console.error(
+                `❌ API Error Response (attempt ${attempt}):`,
+                errorData,
+              );
+
               // Handle specific status codes
               if (response.status === 408 || response.status === 429) {
                 // Timeout or rate limit - retry with delay
                 if (attempt < maxRetries) {
-                  console.log(`⏳ Retrying in ${2 * attempt} second... (${attempt}/${maxRetries})`);
-                  await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+                  console.log(
+                    `⏳ Retrying in ${2 * attempt} second... (${attempt}/${maxRetries})`,
+                  );
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, 2000 * attempt),
+                  );
                   continue;
                 }
               } else if (response.status >= 500) {
                 // Server error - check if meal plan was generated
-                console.log("🔄 Server error, checking if meal plan was generated...");
+                console.log(
+                  "🔄 Server error, checking if meal plan was generated...",
+                );
                 try {
                   await new Promise((resolve) => setTimeout(resolve, 3000));
                   const existingPlan = await loadMealPlan();
                   if (existingPlan && existingPlan.weeklyMealPlan) {
-                    console.log("✅ Found newly generated meal plan on server!");
+                    console.log(
+                      "✅ Found newly generated meal plan on server!",
+                    );
                     result = existingPlan;
                     break;
                   }
                 } catch (loadError) {
                   console.error("Failed to load existing plan:", loadError);
                 }
-                
+
                 if (attempt < maxRetries) {
-                  console.log(`⏳ Retrying in ${2 * attempt} second... (${attempt}/${maxRetries})`);
-                  await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+                  console.log(
+                    `⏳ Retrying in ${2 * attempt} second... (${attempt}/${maxRetries})`,
+                  );
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, 2000 * attempt),
+                  );
                   continue;
                 }
               }
-              
+
               throw new Error(
-                errorData.error || `API request failed with status ${response.status}`,
+                errorData.error ||
+                  `API request failed with status ${response.status}`,
               );
             } else {
               result = await response.json();
               console.log("✅ Received enhanced result from API");
               break; // Success, exit retry loop
             }
-        } catch (fetchError: any) {
+          } catch (fetchError: any) {
             if (timeoutId !== undefined) {
               clearTimeout(timeoutId);
             }
-            console.error(`❌ Fetch error details (attempt ${attempt}):`, fetchError);
+            console.error(
+              `❌ Fetch error details (attempt ${attempt}):`,
+              fetchError,
+            );
 
             if (fetchError.name === "AbortError") {
               if (attempt < maxRetries) {
-                console.log(`⏳ Request timed out, retrying... (${attempt}/${maxRetries})`);
-                await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+                console.log(
+                  `⏳ Request timed out, retrying... (${attempt}/${maxRetries})`,
+                );
+                await new Promise((resolve) =>
+                  setTimeout(resolve, 2000 * attempt),
+                );
                 continue;
               } else {
                 throw new Error(
@@ -308,13 +331,15 @@ export default function MealPlanGenerator({
             }
 
             // Check if this is a network error
-            const isNetworkError = 
+            const isNetworkError =
               fetchError.message?.includes("Failed to fetch") ||
               fetchError.message?.includes("fetch") ||
               fetchError.name === "TypeError";
 
             if (isNetworkError) {
-              console.log(`🔄 Network error, checking if meal plan was generated on server... (attempt ${attempt})`);
+              console.log(
+                `🔄 Network error, checking if meal plan was generated on server... (attempt ${attempt})`,
+              );
               try {
                 await new Promise((resolve) => setTimeout(resolve, 3000));
                 const existingPlan = await loadMealPlan();
@@ -326,10 +351,14 @@ export default function MealPlanGenerator({
               } catch (loadError) {
                 console.error("Failed to check for existing plan:", loadError);
               }
-              
+
               if (attempt < maxRetries) {
-                console.log(`⏳ Retrying network request... (${attempt}/${maxRetries})`);
-                await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+                console.log(
+                  `⏳ Retrying network request... (${attempt}/${maxRetries})`,
+                );
+                await new Promise((resolve) =>
+                  setTimeout(resolve, 2000 * attempt),
+                );
                 continue;
               } else {
                 throw new Error(
@@ -338,8 +367,12 @@ export default function MealPlanGenerator({
               }
             } else {
               if (attempt < maxRetries) {
-                console.log(`⏳ Retrying after error... (${attempt}/${maxRetries})`);
-                await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+                console.log(
+                  `⏳ Retrying after error... (${attempt}/${maxRetries})`,
+                );
+                await new Promise((resolve) =>
+                  setTimeout(resolve, 2000 * attempt),
+                );
                 continue;
               } else {
                 throw fetchError;
@@ -350,7 +383,7 @@ export default function MealPlanGenerator({
 
         if (!result || !result.weeklyMealPlan || !result.weeklySummary) {
           throw new Error("Invalid meal plan data returned from API");
-        }</old_str>
+        }
 
         if (!result || !result.weeklyMealPlan || !result.weeklySummary) {
           throw new Error("Invalid meal plan data returned from API");
@@ -392,11 +425,17 @@ export default function MealPlanGenerator({
         let toastTitle = "Generation Failed";
         let toastVariant: "default" | "destructive" = "destructive";
 
-        if (error.message?.includes("successfully generated! Please click 'Refresh Meal Plan'")) {
+        if (
+          error.message?.includes(
+            "successfully generated! Please click 'Refresh Meal Plan'",
+          )
+        ) {
           errorMessage = error.message;
           toastTitle = "Plan Generated Successfully!";
           toastVariant = "default";
-        } else if (error.message?.includes("Network connection issue detected")) {
+        } else if (
+          error.message?.includes("Network connection issue detected")
+        ) {
           errorMessage = error.message;
           toastTitle = "Network Issue - Plan May Be Ready";
           toastVariant = "default";
