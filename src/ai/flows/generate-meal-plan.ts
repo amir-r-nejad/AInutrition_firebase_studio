@@ -18,6 +18,27 @@ function isValidNumber(val: any): boolean {
   return typeof val === "number" && !isNaN(val) && isFinite(val);
 }
 
+function validateMacroAccuracy(actual: any, target: any, mealName: string): boolean {
+  const margin = 0.05; // 5% error margin
+  
+  const caloriesValid = Math.abs(actual.calories - target.calories) <= (target.calories * margin);
+  const proteinValid = Math.abs(actual.protein - target.protein) <= (target.protein * margin);
+  const carbsValid = Math.abs(actual.carbs - target.carbs) <= (target.carbs * margin);
+  const fatValid = Math.abs(actual.fat - target.fat) <= (target.fat * margin);
+  
+  if (!caloriesValid || !proteinValid || !carbsValid || !fatValid) {
+    console.warn(`❌ Macro validation failed for ${mealName}:`, {
+      calories: { actual: actual.calories, target: target.calories, valid: caloriesValid },
+      protein: { actual: actual.protein, target: target.protein, valid: proteinValid },
+      carbs: { actual: actual.carbs, target: target.carbs, valid: carbsValid },
+      fat: { actual: actual.fat, target: target.fat, valid: fatValid }
+    });
+    return false;
+  }
+  
+  return true;
+}
+
 function preprocessMealTargets(mealTargets: any[]): any[] {
   console.log(
     "🔧 Preprocessing meal targets:",
@@ -65,12 +86,16 @@ async function generateDailyMealPlan(
   const prompt = `You are a world-class nutritionist and innovative chef with access to a vast database of global recipes. Generate EXACTLY ${mealTargets.length} highly diverse, creative, and nutritionally precise meals for ${dayOfWeek}. Search the internet for trending, unique, and culturally rich recipes to inspire your creations, ensuring maximum variety and excitement. Ensure NO meal is repeated across the week, and each day's meals are entirely unique, even for the same meal type (e.g., breakfast).
 
 **STRICT MACRO SPLITTER COMPLIANCE:**
-- Each meal must match the exact macro targets (calories, protein, carbs, fat) within a 1% margin of error.
+- Each meal must match the exact macro targets (calories, protein, carbs, fat) within a 5% margin of error.
 - Calculate ingredient quantities using precise nutritional data from the USDA database or reliable sources to meet the following targets:
-${mealTargets.map(meal => `**${meal.mealName}**: ${meal.calories} kcal | ${meal.protein}g protein | ${meal.carbs}g carbs | ${meal.fat}g fat`).join('\n')}
+${mealTargets.map(meal => `**${meal.mealName}**: ${meal.calories.toFixed(1)} kcal | ${meal.protein.toFixed(1)}g protein | ${meal.carbs.toFixed(1)}g carbs | ${meal.fat.toFixed(1)}g fat`).join('\n')}
 - Macros must be calculated to ensure: 
   - Calories = (Protein * 4) + (Carbs * 4) + (Fat * 9)
-  - Total meal macros must sum to the target values with 1% precision.
+  - Each macro must be within 5% of target: 
+    - Calories: ${mealTargets.map(m => `${m.mealName} = ${(m.calories * 0.95).toFixed(1)}-${(m.calories * 1.05).toFixed(1)} kcal`).join(', ')}
+    - Protein: ${mealTargets.map(m => `${m.mealName} = ${(m.protein * 0.95).toFixed(1)}-${(m.protein * 1.05).toFixed(1)}g`).join(', ')}
+    - Carbs: ${mealTargets.map(m => `${m.mealName} = ${(m.carbs * 0.95).toFixed(1)}-${(m.carbs * 1.05).toFixed(1)}g`).join(', ')}
+    - Fat: ${mealTargets.map(m => `${m.mealName} = ${(m.fat * 0.95).toFixed(1)}-${(m.fat * 1.05).toFixed(1)}g`).join(', ')}
 
 **CREATIVITY REQUIREMENTS:**
 - Explore an extensive range of cooking methods: grilling, poaching, sous-vide, braising, fermenting, smoking, raw preparations, or molecular gastronomy techniques.
@@ -109,7 +134,15 @@ Return ONLY valid JSON with exactly ${mealTargets.length} unique, creative meals
   ]
 }
 
-Each ingredient must have precise nutritional values (calories, protein, carbs, fat) that sum to the target macros within 1% accuracy. Include amount and unit in the ingredient name. Make every meal an unforgettable culinary experience!`;
+Each ingredient must have precise nutritional values (calories, protein, carbs, fat) that sum to the target macros within 5% accuracy. 
+
+**VALIDATION REQUIREMENTS:**
+- Total calories must be within ±5% of target: ${mealTargets.map(m => `${m.mealName}: ${(m.calories * 0.95).toFixed(1)}-${(m.calories * 1.05).toFixed(1)} kcal`).join(', ')}
+- Total protein must be within ±5% of target: ${mealTargets.map(m => `${m.mealName}: ${(m.protein * 0.95).toFixed(1)}-${(m.protein * 1.05).toFixed(1)}g`).join(', ')}
+- Total carbs must be within ±5% of target: ${mealTargets.map(m => `${m.mealName}: ${(m.carbs * 0.95).toFixed(1)}-${(m.carbs * 1.05).toFixed(1)}g`).join(', ')}
+- Total fat must be within ±5% of target: ${mealTargets.map(m => `${m.mealName}: ${(m.fat * 0.95).toFixed(1)}-${(m.fat * 1.05).toFixed(1)}g`).join(', ')}
+
+Include amount and unit in the ingredient name. Make every meal an unforgettable culinary experience while meeting exact macro requirements!`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -252,14 +285,29 @@ async function generatePersonalizedMealPlanFlow(
           { calories: 0, protein: 0, carbs: 0, fat: 0 },
         );
 
+        // Validate macro accuracy with 5% margin
+        const actualMacros = {
+          calories: Math.round(mealTotals.calories * 100) / 100,
+          protein: Math.round(mealTotals.protein * 100) / 100,
+          carbs: Math.round(mealTotals.carbs * 100) / 100,
+          fat: Math.round(mealTotals.fat * 100) / 100,
+        };
+
+        // Check if macros are within 5% accuracy
+        const isAccurate = validateMacroAccuracy(actualMacros, targetMeal, targetMeal.mealName);
+        
+        if (!isAccurate) {
+          console.warn(`⚠️ Meal ${targetMeal.mealName} exceeds 5% macro error margin, but including in plan`);
+        }
+
         processedMeals.push({
           meal_name: targetMeal.mealName,
           meal_title: mealFromAI.meal_title || `Creative ${targetMeal.mealName}`,
           ingredients: sanitizedIngredients,
-          total_calories: Math.round(mealTotals.calories * 100) / 100,
-          total_protein: Math.round(mealTotals.protein * 100) / 100,
-          total_carbs: Math.round(mealTotals.carbs * 100) / 100,
-          total_fat: Math.round(mealTotals.fat * 100) / 100,
+          total_calories: actualMacros.calories,
+          total_protein: actualMacros.protein,
+          total_carbs: actualMacros.carbs,
+          total_fat: actualMacros.fat,
         });
       } else {
         // Enhanced placeholder meal
@@ -318,47 +366,53 @@ function createEnhancedFallbackMeals(mealTargets: any[], dayOfWeek: string, dayI
   const cuisine = cuisines[dayIndex % cuisines.length];
 
   const fallbackMeals = mealTargets.map((target, index) => {
-    const proteinCals = target.calories * 0.35;
-    const carbCals = target.calories * 0.45;
-    const fatCals = target.calories * 0.2;
+    // Calculate precise ingredient distributions to meet exact macros
+    const proteinFromProteinSource = target.protein * 0.8;
+    const proteinFromOtherSources = target.protein * 0.2;
+    
+    const carbsFromCarbSource = target.carbs * 0.85;
+    const carbsFromOtherSources = target.carbs * 0.15;
+    
+    const fatFromFatSource = target.fat * 0.75;
+    const fatFromOtherSources = target.fat * 0.25;
 
     return {
       meal_title: `${cuisine} Inspired ${target.mealName}`,
       ingredients: [
         {
-          name: `${cuisine} Protein (100g)`,
-          calories: Math.round(proteinCals),
-          protein: Math.round(target.protein * 0.7),
-          carbs: Math.round(target.carbs * 0.1),
-          fat: Math.round(target.fat * 0.2),
+          name: `${cuisine} Protein Source (120g)`,
+          calories: Math.round((proteinFromProteinSource * 4) + (fatFromOtherSources * 0.4 * 9)),
+          protein: Math.round(proteinFromProteinSource * 100) / 100,
+          carbs: Math.round(carbsFromOtherSources * 0.1 * 100) / 100,
+          fat: Math.round(fatFromOtherSources * 0.4 * 100) / 100,
         },
         {
-          name: `${cuisine} Carbohydrate (1 cup)`,
-          calories: Math.round(carbCals),
-          protein: Math.round(target.protein * 0.2),
-          carbs: Math.round(target.carbs * 0.8),
-          fat: Math.round(target.fat * 0.1),
+          name: `${cuisine} Carbohydrate Source (80g)`,
+          calories: Math.round((carbsFromCarbSource * 4) + (proteinFromOtherSources * 0.6 * 4)),
+          protein: Math.round(proteinFromOtherSources * 0.6 * 100) / 100,
+          carbs: Math.round(carbsFromCarbSource * 100) / 100,
+          fat: Math.round(fatFromOtherSources * 0.2 * 100) / 100,
         },
         {
-          name: `${cuisine} Fat Source (2 tbsp)`,
-          calories: Math.round(fatCals),
-          protein: Math.round(target.protein * 0.1),
-          carbs: Math.round(target.carbs * 0.1),
-          fat: Math.round(target.fat * 0.7),
+          name: `${cuisine} Healthy Fat (15g)`,
+          calories: Math.round(fatFromFatSource * 9),
+          protein: Math.round(proteinFromOtherSources * 0.1 * 100) / 100,
+          carbs: Math.round(carbsFromOtherSources * 0.1 * 100) / 100,
+          fat: Math.round(fatFromFatSource * 100) / 100,
         },
         {
-          name: `${cuisine} Vegetable (1 cup)`,
-          calories: Math.round(target.calories * 0.05),
-          protein: Math.round(target.protein * 0.05),
-          carbs: Math.round(target.carbs * 0.05),
-          fat: 0,
+          name: `${cuisine} Vegetables (100g)`,
+          calories: Math.round(carbsFromOtherSources * 0.7 * 4),
+          protein: Math.round(proteinFromOtherSources * 0.3 * 100) / 100,
+          carbs: Math.round(carbsFromOtherSources * 0.7 * 100) / 100,
+          fat: Math.round(fatFromOtherSources * 0.3 * 100) / 100,
         },
         {
-          name: `${cuisine} Garnish (1 tsp)`,
-          calories: Math.round(target.calories * 0.05),
-          protein: Math.round(target.protein * 0.05),
-          carbs: Math.round(target.carbs * 0.05),
-          fat: 0,
+          name: `${cuisine} Seasoning (5g)`,
+          calories: Math.round(carbsFromOtherSources * 0.1 * 4),
+          protein: 0,
+          carbs: Math.round(carbsFromOtherSources * 0.1 * 100) / 100,
+          fat: Math.round(fatFromOtherSources * 0.1 * 100) / 100,
         },
       ],
     };

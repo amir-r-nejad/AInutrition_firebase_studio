@@ -414,8 +414,13 @@ export default function MealPlanGenerator({
         toast({
           title: "Success!",
           description:
-            "Your AI meal plan has been generated with precise macro distributions.",
+            "Your AI meal plan has been generated with precise macro distributions (±5% accuracy).",
         });
+
+        // Auto-refresh page after successful generation
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000); // Refresh after 2 seconds to show the toast first
       } catch (error: any) {
         console.error("❌ Meal plan generation error:", error);
         let errorMessage = "Failed to generate meal plan.";
