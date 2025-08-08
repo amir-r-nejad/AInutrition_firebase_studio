@@ -18,24 +18,39 @@ function isValidNumber(val: any): boolean {
   return typeof val === "number" && !isNaN(val) && isFinite(val);
 }
 
-function validateMacroAccuracy(actual: any, target: any, mealName: string): boolean {
+function validateMacroAccuracy(
+  actual: any,
+  target: any,
+  mealName: string,
+): boolean {
   const margin = 0.05; // 5% error margin
-  
-  const caloriesValid = Math.abs(actual.calories - target.calories) <= (target.calories * margin);
-  const proteinValid = Math.abs(actual.protein - target.protein) <= (target.protein * margin);
-  const carbsValid = Math.abs(actual.carbs - target.carbs) <= (target.carbs * margin);
-  const fatValid = Math.abs(actual.fat - target.fat) <= (target.fat * margin);
-  
+
+  const caloriesValid =
+    Math.abs(actual.calories - target.calories) <= target.calories * margin;
+  const proteinValid =
+    Math.abs(actual.protein - target.protein) <= target.protein * margin;
+  const carbsValid =
+    Math.abs(actual.carbs - target.carbs) <= target.carbs * margin;
+  const fatValid = Math.abs(actual.fat - target.fat) <= target.fat * margin;
+
   if (!caloriesValid || !proteinValid || !carbsValid || !fatValid) {
     console.warn(`❌ Macro validation failed for ${mealName}:`, {
-      calories: { actual: actual.calories, target: target.calories, valid: caloriesValid },
-      protein: { actual: actual.protein, target: target.protein, valid: proteinValid },
+      calories: {
+        actual: actual.calories,
+        target: target.calories,
+        valid: caloriesValid,
+      },
+      protein: {
+        actual: actual.protein,
+        target: target.protein,
+        valid: proteinValid,
+      },
       carbs: { actual: actual.carbs, target: target.carbs, valid: carbsValid },
-      fat: { actual: actual.fat, target: target.fat, valid: fatValid }
+      fat: { actual: actual.fat, target: target.fat, valid: fatValid },
     });
     return false;
   }
-  
+
   return true;
 }
 
@@ -75,7 +90,7 @@ function preprocessMealTargets(mealTargets: any[]): any[] {
 async function generateDailyMealPlan(
   dayOfWeek: string,
   mealTargets: any[],
-  preferences: any = {}
+  preferences: any = {},
 ): Promise<any> {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -83,44 +98,46 @@ async function generateDailyMealPlan(
     throw new Error("OpenAI API key not found in environment variables");
   }
 
-  const prompt = `You are a world-class nutritionist and innovative chef with access to a vast database of global recipes. Generate EXACTLY ${mealTargets.length} highly diverse, creative, and nutritionally precise meals for ${dayOfWeek}. Search the internet for trending, unique, and culturally rich recipes to inspire your creations, ensuring maximum variety and excitement. Ensure NO meal is repeated across the week, and each day's meals are entirely unique, even for the same meal type (e.g., breakfast).
+  const prompt = `You are a world-class nutritionist and innovative chef with extensive knowledge of global cuisines and precise nutritional data.
 
-**STRICT MACRO SPLITTER COMPLIANCE:**
-- Each meal must match the exact macro targets (calories, protein, carbs, fat) within a 5% margin of error.
-- Calculate ingredient quantities using precise nutritional data from the USDA database or reliable sources to meet the following targets:
-${mealTargets.map(meal => `**${meal.mealName}**: ${meal.calories.toFixed(1)} kcal | ${meal.protein.toFixed(1)}g protein | ${meal.carbs.toFixed(1)}g carbs | ${meal.fat.toFixed(1)}g fat`).join('\n')}
-- Macros must be calculated to ensure: 
-  - Calories = (Protein * 4) + (Carbs * 4) + (Fat * 9)
-  - Each macro must be within 5% of target: 
-    - Calories: ${mealTargets.map(m => `${m.mealName} = ${(m.calories * 0.95).toFixed(1)}-${(m.calories * 1.05).toFixed(1)} kcal`).join(', ')}
-    - Protein: ${mealTargets.map(m => `${m.mealName} = ${(m.protein * 0.95).toFixed(1)}-${(m.protein * 1.05).toFixed(1)}g`).join(', ')}
-    - Carbs: ${mealTargets.map(m => `${m.mealName} = ${(m.carbs * 0.95).toFixed(1)}-${(m.carbs * 1.05).toFixed(1)}g`).join(', ')}
-    - Fat: ${mealTargets.map(m => `${m.mealName} = ${(m.fat * 0.95).toFixed(1)}-${(m.fat * 1.05).toFixed(1)}g`).join(', ')}
+Generate EXACTLY ${mealTargets.length} unique, creative, and nutritionally precise meals for ${dayOfWeek}, fully compliant with STRICT MACRO SPLITTER requirements below:
 
-**CREATIVITY REQUIREMENTS:**
-- Explore an extensive range of cooking methods: grilling, poaching, sous-vide, braising, fermenting, smoking, raw preparations, or molecular gastronomy techniques.
-- Draw inspiration from a global array of cuisines (e.g., African, Southeast Asian, Scandinavian, Caribbean, South American, Indian, Middle Eastern, Pacific Islander, or Eastern European), ensuring no cuisine is repeated within a day or week unless explicitly preferred.
-- Use diverse protein sources: game meats (e.g., venison, quail), exotic seafood (e.g., octopus, sea urchin), heritage breed poultry, plant-based proteins (e.g., tempeh, seitan, lupini beans), or rare legumes.
-- Incorporate vibrant, seasonal, and visually stunning vegetables, fruits, and edible garnishes for Instagram-worthy presentations.
-- Combine varied textures: crispy, velvety, crunchy, silky, chewy, or gelatinous.
-- Avoid repetitive ingredients across all meals in the week to maximize variety.
-- Avoid overly common or basic dishes (e.g., no plain oatmeal, sandwiches, or salads unless creatively elevated).
+1. Each meal MUST match the exact macro targets (calories, protein, carbs, fat) within ±5% margin of error, calculated precisely using USDA or similarly authoritative nutritional data.
 
-**USER PREFERENCES (ONLY APPLY IF PROVIDED):**
-${preferences.preferredDiet ? `- Adhere strictly to diet type: ${preferences.preferredDiet}` : ''}
-${preferences.allergies?.length ? `- AVOID (Allergies): ${preferences.allergies.join(', ')}` : ''}
-${preferences.dispreferredIngredients?.length ? `- AVOID (Dislikes): ${preferences.dispreferredIngredients.join(', ')}` : ''}
-${preferences.preferredIngredients?.length ? `- PREFER: ${preferences.preferredIngredients.join(', ')}` : ''}
-${preferences.preferredCuisines?.length ? `- Prioritize cuisines: ${preferences.preferredCuisines.join(', ')}` : ''}
-${preferences.dispreferredCuisines?.length ? `- Avoid cuisines: ${preferences.dispreferredCuisines.join(', ')}` : ''}
-${preferences.medicalConditions?.length ? `- Health considerations: ${preferences.medicalConditions.join(', ')}` : ''}
+2. Macro calculation rules:  
+   - Calories = (Protein * 4) + (Carbs * 4) + (Fat * 9)  
+   - Each meal's total calories, protein, carbs, and fat MUST be within 5% of the targets specified for that meal.
 
-**OUTPUT FORMAT:**
-Return ONLY valid JSON with exactly ${mealTargets.length} unique, creative meals. The format should be:
+3. Use the exact macro targets below for each meal (calories in kcal, macros in grams):  
+${mealTargets.map((meal) => `- ${meal.mealName}: ${meal.calories.toFixed(1)} kcal, ${meal.protein.toFixed(1)}g protein, ${meal.carbs.toFixed(1)}g carbs, ${meal.fat.toFixed(1)}g fat`).join("\n")}
+
+4. For each meal, provide:  
+   - A creative meal title reflecting global cuisine inspiration and innovative cooking methods.  
+   - A list of ingredients with exact amounts and units (e.g., "Chicken breast (150 g)").  
+   - For each ingredient, include precise nutritional values (calories, protein, carbs, fat).  
+   - Total macros of all ingredients combined MUST meet the targets within the specified margin.
+
+5. Creativity requirements:  
+   - Diverse cooking techniques (grilling, sous-vide, fermenting, etc.).  
+   - Global cuisines with NO repeats within the day or week unless user preferences specify otherwise.  
+   - Varied, often rare protein sources and seasonal, colorful vegetables/fruits.  
+   - Varied textures and Instagram-worthy presentation concepts.  
+   - No ingredient repetition across meals of the week to maximize variety.
+
+6. User preferences (apply ONLY if provided):  
+${preferences.preferredDiet ? `- Strictly adhere to diet type: ${preferences.preferredDiet}` : ""}  
+${preferences.allergies?.length ? `- AVOID ingredients causing allergies: ${preferences.allergies.join(", ")}` : ""}  
+${preferences.dispreferredIngredients?.length ? `- AVOID disliked ingredients: ${preferences.dispreferredIngredients.join(", ")}` : ""}  
+${preferences.preferredIngredients?.length ? `- PRIORITIZE preferred ingredients: ${preferences.preferredIngredients.join(", ")}` : ""}  
+${preferences.preferredCuisines?.length ? `- PRIORITIZE cuisines: ${preferences.preferredCuisines.join(", ")}` : ""}  
+${preferences.dispreferredCuisines?.length ? `- AVOID cuisines: ${preferences.dispreferredCuisines.join(", ")}` : ""}  
+${preferences.medicalConditions?.length ? `- Consider health conditions: ${preferences.medicalConditions.join(", ")}` : ""}
+
+OUTPUT FORMAT (ONLY valid JSON, no extra commentary):  
 {
   "meals": [
     {
-      "meal_title": "Creative meal name with cultural inspiration",
+      "meal_title": "string",
       "ingredients": [
         {
           "name": "Ingredient name (amount unit)",
@@ -134,15 +151,15 @@ Return ONLY valid JSON with exactly ${mealTargets.length} unique, creative meals
   ]
 }
 
-Each ingredient must have precise nutritional values (calories, protein, carbs, fat) that sum to the target macros within 5% accuracy. 
+VALIDATION CHECK (must be strictly followed):  
+- Total calories for each meal within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.calories * 0.95).toFixed(1)}-${(m.calories * 1.05).toFixed(1)} kcal`).join(", ")}  
+- Total protein within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.protein * 0.95).toFixed(1)}-${(m.protein * 1.05).toFixed(1)}g`).join(", ")}  
+- Total carbs within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.carbs * 0.95).toFixed(1)}-${(m.carbs * 1.05).toFixed(1)}g`).join(", ")}  
+- Total fat within ±5%: ${mealTargets.map((m) => `${m.mealName}: ${(m.fat * 0.95).toFixed(1)}-${(m.fat * 1.05).toFixed(1)}g`).join(", ")}
 
-**VALIDATION REQUIREMENTS:**
-- Total calories must be within ±5% of target: ${mealTargets.map(m => `${m.mealName}: ${(m.calories * 0.95).toFixed(1)}-${(m.calories * 1.05).toFixed(1)} kcal`).join(', ')}
-- Total protein must be within ±5% of target: ${mealTargets.map(m => `${m.mealName}: ${(m.protein * 0.95).toFixed(1)}-${(m.protein * 1.05).toFixed(1)}g`).join(', ')}
-- Total carbs must be within ±5% of target: ${mealTargets.map(m => `${m.mealName}: ${(m.carbs * 0.95).toFixed(1)}-${(m.carbs * 1.05).toFixed(1)}g`).join(', ')}
-- Total fat must be within ±5% of target: ${mealTargets.map(m => `${m.mealName}: ${(m.fat * 0.95).toFixed(1)}-${(m.fat * 1.05).toFixed(1)}g`).join(', ')}
+Be precise, creative, diverse, and exact. Do not include any repetitions or basic/common dishes unless elevated significantly.
 
-Include amount and unit in the ingredient name. Make every meal an unforgettable culinary experience while meeting exact macro requirements!`;
+Generate now.`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -155,7 +172,8 @@ Include amount and unit in the ingredient name. Make every meal an unforgettable
       messages: [
         {
           role: "system",
-          content: "You are a world-class nutritionist and innovative chef. Always respond with valid JSON only, no additional text or formatting.",
+          content:
+            "You are a world-class nutritionist and innovative chef. Always respond with valid JSON only, no additional text or formatting.",
         },
         {
           role: "user",
@@ -170,7 +188,9 @@ Include amount and unit in the ingredient name. Make every meal an unforgettable
   if (!response.ok) {
     const errorText = await response.text();
     console.error("OpenAI API Error:", errorText);
-    throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `OpenAI API error: ${response.status} ${response.statusText}`,
+    );
   }
 
   const data = await response.json();
@@ -210,18 +230,23 @@ async function generatePersonalizedMealPlanFlow(
   const preferences = {
     preferredDiet: input.preferred_diet || input.preferredDiet || null,
     allergies: input.allergies || [],
-    dispreferredIngredients: input.dispreferrred_ingredients || input.dispreferredIngredients || [],
-    preferredIngredients: input.preferred_ingredients || input.preferredIngredients || [],
+    dispreferredIngredients:
+      input.dispreferrred_ingredients || input.dispreferredIngredients || [],
+    preferredIngredients:
+      input.preferred_ingredients || input.preferredIngredients || [],
     preferredCuisines: input.preferredCuisines || [],
     dispreferredCuisines: input.dispreferredCuisines || [],
-    medicalConditions: input.medical_conditions || input.medicalConditions || [],
+    medicalConditions:
+      input.medical_conditions || input.medicalConditions || [],
     medications: input.medications || [],
   };
 
   // Generate all 7 days with enhanced creativity prompts
   for (let dayIndex = 0; dayIndex < daysOfWeek.length; dayIndex++) {
     const dayOfWeek = daysOfWeek[dayIndex];
-    console.log(`📅 Creating exciting meals for ${dayOfWeek} (${dayIndex + 1}/7)`);
+    console.log(
+      `📅 Creating exciting meals for ${dayOfWeek} (${dayIndex + 1}/7)`,
+    );
 
     let dailyOutput = null;
     let retryCount = 0;
@@ -231,31 +256,54 @@ async function generatePersonalizedMealPlanFlow(
     while (retryCount <= maxRetries && !dailyOutput) {
       try {
         console.log(`🤖 OpenAI attempt ${retryCount + 1} for ${dayOfWeek}`);
-        dailyOutput = await generateDailyMealPlan(dayOfWeek, input.mealTargets, preferences);
+        dailyOutput = await generateDailyMealPlan(
+          dayOfWeek,
+          input.mealTargets,
+          preferences,
+        );
 
         // Validate output quality and macro accuracy
-        if (!dailyOutput?.meals || dailyOutput.meals.length !== input.mealTargets.length) {
-          console.warn(`❌ Invalid meal count for ${dayOfWeek}: got ${dailyOutput?.meals?.length || 0}, expected ${input.mealTargets.length}`);
+        if (
+          !dailyOutput?.meals ||
+          dailyOutput.meals.length !== input.mealTargets.length
+        ) {
+          console.warn(
+            `❌ Invalid meal count for ${dayOfWeek}: got ${dailyOutput?.meals?.length || 0}, expected ${input.mealTargets.length}`,
+          );
           dailyOutput = null;
           throw new Error(`Invalid meal structure for ${dayOfWeek}`);
         }
 
-        console.log(`✅ Generated ${dailyOutput.meals.length} creative meals for ${dayOfWeek}`);
+        console.log(
+          `✅ Generated ${dailyOutput.meals.length} creative meals for ${dayOfWeek}`,
+        );
         break;
       } catch (error) {
-        console.error(`❌ Error on attempt ${retryCount + 1} for ${dayOfWeek}:`, error);
+        console.error(
+          `❌ Error on attempt ${retryCount + 1} for ${dayOfWeek}:`,
+          error,
+        );
         retryCount++;
         if (retryCount <= maxRetries) {
           // Exponential backoff
-          await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * retryCount),
+          );
         }
       }
     }
 
     // Enhanced fallback with dynamic variety
-    if (!dailyOutput?.meals || dailyOutput.meals.length !== input.mealTargets.length) {
+    if (
+      !dailyOutput?.meals ||
+      dailyOutput.meals.length !== input.mealTargets.length
+    ) {
       console.warn(`🔧 Creating enhanced fallback meals for ${dayOfWeek}`);
-      dailyOutput = createEnhancedFallbackMeals(input.mealTargets, dayOfWeek, dayIndex);
+      dailyOutput = createEnhancedFallbackMeals(
+        input.mealTargets,
+        dayOfWeek,
+        dayIndex,
+      );
     }
 
     // Process and validate meals with better error handling
@@ -265,7 +313,11 @@ async function generatePersonalizedMealPlanFlow(
       const mealFromAI = dailyOutput.meals[mealIndex];
       const targetMeal = input.mealTargets[mealIndex];
 
-      if (mealFromAI && mealFromAI.ingredients && mealFromAI.ingredients.length > 0) {
+      if (
+        mealFromAI &&
+        mealFromAI.ingredients &&
+        mealFromAI.ingredients.length > 0
+      ) {
         // Enhanced ingredient processing
         const sanitizedIngredients = mealFromAI.ingredients.map((ing: any) => ({
           name: ing.name || "Ingredient",
@@ -276,7 +328,10 @@ async function generatePersonalizedMealPlanFlow(
         }));
 
         const mealTotals = sanitizedIngredients.reduce(
-          (totals: { calories: any; protein: any; carbs: any; fat: any }, ing: { calories: any; protein: any; carbs: any; fat: any }) => ({
+          (
+            totals: { calories: any; protein: any; carbs: any; fat: any },
+            ing: { calories: any; protein: any; carbs: any; fat: any },
+          ) => ({
             calories: totals.calories + ing.calories,
             protein: totals.protein + ing.protein,
             carbs: totals.carbs + ing.carbs,
@@ -294,15 +349,22 @@ async function generatePersonalizedMealPlanFlow(
         };
 
         // Check if macros are within 5% accuracy
-        const isAccurate = validateMacroAccuracy(actualMacros, targetMeal, targetMeal.mealName);
-        
+        const isAccurate = validateMacroAccuracy(
+          actualMacros,
+          targetMeal,
+          targetMeal.mealName,
+        );
+
         if (!isAccurate) {
-          console.warn(`⚠️ Meal ${targetMeal.mealName} exceeds 5% macro error margin, but including in plan`);
+          console.warn(
+            `⚠️ Meal ${targetMeal.mealName} exceeds 5% macro error margin, but including in plan`,
+          );
         }
 
         processedMeals.push({
           meal_name: targetMeal.mealName,
-          meal_title: mealFromAI.meal_title || `Creative ${targetMeal.mealName}`,
+          meal_title:
+            mealFromAI.meal_title || `Creative ${targetMeal.mealName}`,
           ingredients: sanitizedIngredients,
           total_calories: actualMacros.calories,
           total_protein: actualMacros.protein,
@@ -311,7 +373,9 @@ async function generatePersonalizedMealPlanFlow(
         });
       } else {
         // Enhanced placeholder meal
-        processedMeals.push(createEnhancedPlaceholderMeal(targetMeal, dayOfWeek, mealIndex));
+        processedMeals.push(
+          createEnhancedPlaceholderMeal(targetMeal, dayOfWeek, mealIndex),
+        );
       }
     }
 
@@ -342,10 +406,14 @@ async function generatePersonalizedMealPlanFlow(
     weeklySummary.totalCarbs += dailyTotals.carbs;
     weeklySummary.totalFat += dailyTotals.fat;
 
-    console.log(`✅ Completed creative ${dayOfWeek} with ${processedMeals.length} diverse meals`);
+    console.log(
+      `✅ Completed creative ${dayOfWeek} with ${processedMeals.length} diverse meals`,
+    );
   }
 
-  console.log(`🎉 Generated complete creative weekly plan: ${processedWeeklyPlan.length} days`);
+  console.log(
+    `🎉 Generated complete creative weekly plan: ${processedWeeklyPlan.length} days`,
+  );
 
   return {
     weeklyMealPlan: processedWeeklyPlan,
@@ -359,20 +427,32 @@ async function generatePersonalizedMealPlanFlow(
 }
 
 // Enhanced fallback meals with dynamic variety
-function createEnhancedFallbackMeals(mealTargets: any[], dayOfWeek: string, dayIndex: number): any {
+function createEnhancedFallbackMeals(
+  mealTargets: any[],
+  dayOfWeek: string,
+  dayIndex: number,
+): any {
   console.log(`🔧 Creating enhanced fallback meals for ${dayOfWeek}`);
 
-  const cuisines = ["West African", "Malaysian", "Colombian", "Tunisian", "Korean", "Argentinian", "Russian"];
+  const cuisines = [
+    "West African",
+    "Malaysian",
+    "Colombian",
+    "Tunisian",
+    "Korean",
+    "Argentinian",
+    "Russian",
+  ];
   const cuisine = cuisines[dayIndex % cuisines.length];
 
   const fallbackMeals = mealTargets.map((target, index) => {
     // Calculate precise ingredient distributions to meet exact macros
     const proteinFromProteinSource = target.protein * 0.8;
     const proteinFromOtherSources = target.protein * 0.2;
-    
+
     const carbsFromCarbSource = target.carbs * 0.85;
     const carbsFromOtherSources = target.carbs * 0.15;
-    
+
     const fatFromFatSource = target.fat * 0.75;
     const fatFromOtherSources = target.fat * 0.25;
 
@@ -381,14 +461,18 @@ function createEnhancedFallbackMeals(mealTargets: any[], dayOfWeek: string, dayI
       ingredients: [
         {
           name: `${cuisine} Protein Source (120g)`,
-          calories: Math.round((proteinFromProteinSource * 4) + (fatFromOtherSources * 0.4 * 9)),
+          calories: Math.round(
+            proteinFromProteinSource * 4 + fatFromOtherSources * 0.4 * 9,
+          ),
           protein: Math.round(proteinFromProteinSource * 100) / 100,
           carbs: Math.round(carbsFromOtherSources * 0.1 * 100) / 100,
           fat: Math.round(fatFromOtherSources * 0.4 * 100) / 100,
         },
         {
           name: `${cuisine} Carbohydrate Source (80g)`,
-          calories: Math.round((carbsFromCarbSource * 4) + (proteinFromOtherSources * 0.6 * 4)),
+          calories: Math.round(
+            carbsFromCarbSource * 4 + proteinFromOtherSources * 0.6 * 4,
+          ),
           protein: Math.round(proteinFromOtherSources * 0.6 * 100) / 100,
           carbs: Math.round(carbsFromCarbSource * 100) / 100,
           fat: Math.round(fatFromOtherSources * 0.2 * 100) / 100,
@@ -422,8 +506,20 @@ function createEnhancedFallbackMeals(mealTargets: any[], dayOfWeek: string, dayI
 }
 
 // Enhanced placeholder meal
-function createEnhancedPlaceholderMeal(targetMeal: any, dayOfWeek: string, mealIndex: number): AIGeneratedMeal {
-  const creativeCuisines = ["Ethiopian", "Vietnamese", "Peruvian", "Moroccan", "Japanese", "Brazilian", "Indian"];
+function createEnhancedPlaceholderMeal(
+  targetMeal: any,
+  dayOfWeek: string,
+  mealIndex: number,
+): AIGeneratedMeal {
+  const creativeCuisines = [
+    "Ethiopian",
+    "Vietnamese",
+    "Peruvian",
+    "Moroccan",
+    "Japanese",
+    "Brazilian",
+    "Indian",
+  ];
   const cuisine = creativeCuisines[mealIndex % creativeCuisines.length];
 
   return {
@@ -478,13 +574,20 @@ export async function generatePersonalizedMealPlan(
       mealTargets: preprocessMealTargets(input.mealTargets),
     };
 
-    if (!processedInput.mealTargets || processedInput.mealTargets.length === 0) {
+    if (
+      !processedInput.mealTargets ||
+      processedInput.mealTargets.length === 0
+    ) {
       throw new Error("No valid meal targets could be derived from input.");
     }
 
-    console.log("🔧 Final processed input:", JSON.stringify(processedInput.mealTargets, null, 2));
+    console.log(
+      "🔧 Final processed input:",
+      JSON.stringify(processedInput.mealTargets, null, 2),
+    );
 
-    const parsedInput = GeneratePersonalizedMealPlanInputSchema.parse(processedInput);
+    const parsedInput =
+      GeneratePersonalizedMealPlanInputSchema.parse(processedInput);
     const result = await generatePersonalizedMealPlanFlow(parsedInput);
 
     console.log("✅ OpenAI meal plan generated successfully");
@@ -503,7 +606,8 @@ export async function generatePersonalizedMealPlan(
     console.error("❌ OpenAI meal plan generation failed:", e);
     throw new Error(
       getAIApiErrorMessage({
-        message: "Failed to generate creative meal plan with OpenAI. Please check your macro targets and try again.",
+        message:
+          "Failed to generate creative meal plan with OpenAI. Please check your macro targets and try again.",
       }),
     );
   }
