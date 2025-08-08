@@ -176,9 +176,21 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
       if (!dailyOutput || !dailyOutput.meals || dailyOutput.meals.length === 0)
         continue;
 
-      const processedMeals: AIGeneratedMeal[] = dailyOutput.meals
-        .map((meal, index) => {
-          const sanitizedIngredients = meal.ingredients.map((ing) => ({
+      // Ensure we have exactly 6 meals by filling missing ones with placeholder meals
+      const targetMealNames = [
+        "Breakfast", "Morning Snack", "Lunch", 
+        "Afternoon Snack", "Dinner", "Evening Snack"
+      ];
+
+      const processedMeals: AIGeneratedMeal[] = [];
+      
+      for (let mealIndex = 0; mealIndex < 6; mealIndex++) {
+        const mealFromAI = dailyOutput.meals[mealIndex];
+        const targetMealName = input.mealTargets[mealIndex]?.mealName || targetMealNames[mealIndex];
+        
+        if (mealFromAI && mealFromAI.ingredients && mealFromAI.ingredients.length > 0) {
+          // Use AI generated meal
+          const sanitizedIngredients = mealFromAI.ingredients.map((ing) => ({
             name: ing.name ?? "Unknown Ingredient",
             calories: Number(ing.calories) || 0,
             protein: Number(ing.protein) || 0,
@@ -197,18 +209,41 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
             { calories: 0, protein: 0, carbs: 0, fat: 0 },
           );
 
-          return {
-            meal_name:
-              input.mealTargets[index]?.mealName || `Meal ${index + 1}`,
-            meal_title: meal.meal_title || `Generated ${index + 1}`,
+          processedMeals.push({
+            meal_name: targetMealName,
+            meal_title: mealFromAI.meal_title || `Generated ${targetMealName}`,
             ingredients: sanitizedIngredients,
             total_calories: mealTotals.calories,
             total_protein: mealTotals.protein,
             total_carbs: mealTotals.carbs,
             total_fat: mealTotals.fat,
-          };
-        })
-        .filter(Boolean);
+          });
+        } else {
+          // Create placeholder meal when AI doesn't generate one
+          const targetCalories = input.mealTargets[mealIndex]?.calories || 300;
+          const targetProtein = input.mealTargets[mealIndex]?.protein || 20;
+          const targetCarbs = input.mealTargets[mealIndex]?.carbs || 30;
+          const targetFat = input.mealTargets[mealIndex]?.fat || 10;
+          
+          processedMeals.push({
+            meal_name: targetMealName,
+            meal_title: `Simple ${targetMealName}`,
+            ingredients: [
+              {
+                name: `Balanced meal for ${targetMealName.toLowerCase()}`,
+                calories: targetCalories,
+                protein: targetProtein,
+                carbs: targetCarbs,
+                fat: targetFat,
+              }
+            ],
+            total_calories: targetCalories,
+            total_protein: targetProtein,
+            total_carbs: targetCarbs,
+            total_fat: targetFat,
+          });
+        }
+      }
 
       if (processedMeals.length > 0) {
         const dailyTotals = processedMeals.reduce(
