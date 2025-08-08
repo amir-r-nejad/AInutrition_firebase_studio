@@ -186,16 +186,35 @@ function EditMealDialog({
 
     try {
       const result = await adjustMealIngredientsDirect({
-        mealName: meal.name,
-        customMealName: meal.custom_name,
-        ingredients: meal.ingredients,
-        targetMacros: {
-          calories: meal.total_calories,
-          protein: meal.total_protein,
-          carbs: meal.total_carbs,
-          fat: meal.total_fat,
+        originalMeal: {
+          name: meal.name,
+          custom_name: meal.custom_name || "",
+          ingredients: meal.ingredients.map(ing => ({
+            name: ing.name,
+            quantity: Number(ing.quantity) || 0,
+            unit: ing.unit || "g",
+            calories: Number(ing.calories) || 0,
+            protein: Number(ing.protein) || 0,
+            carbs: Number(ing.carbs) || 0,
+            fat: Number(ing.fat) || 0,
+          })),
+          total_calories: meal.total_calories || 0,
+          total_protein: meal.total_protein || 0,
+          total_carbs: meal.total_carbs || 0,
+          total_fat: meal.total_fat || 0,
         },
-        userId: userId ?? "",
+        targetMacros: {
+          calories: meal.total_calories || 0,
+          protein: meal.total_protein || 0,
+          carbs: meal.total_carbs || 0,
+          fat: meal.total_fat || 0,
+        },
+        userProfile: {
+          age: 30,
+          allergies: [],
+          dispreferrred_ingredients: [],
+          preferred_ingredients: [],
+        },
       });
 
       // Assuming result.adjustedMeal contains the updated meal data
