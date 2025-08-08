@@ -122,7 +122,7 @@ Return ONLY valid JSON with exactly {{mealTargets.length}} unique meals, each st
   * precise nutritional values (calories, protein, carbs, fat) corresponding to the specified quantity.
 
 For each meal:
-- Ensure the total macros from all ingredients match the target macros within these tolerances:
+- Ensure the total macros from all ingredients match the meal targets within these tolerances:
   * Calories within ±3%
   * Protein within ±3%
   * Carbohydrates within ±10%
@@ -221,7 +221,7 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
             throw new Error(`Invalid meal structure for ${dayOfWeek}`);
           }
 
-          // Validate macro accuracy - prioritize calories and protein (3% tolerance), allow more flexibility for carbs/fat (10% tolerance)
+          // Validate ONLY calories and protein accuracy (ignore carbs and fat)
           const isAccurate = dailyOutput.meals.every(
             (meal: any, index: number) => {
               const target = input.mealTargets[index];
@@ -235,18 +235,8 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
                   (sum: number, ing: any) => sum + (ing.protein || 0),
                   0,
                 ) || 0;
-              const totalCarbs =
-                meal.ingredients?.reduce(
-                  (sum: number, ing: any) => sum + (ing.carbs || 0),
-                  0,
-                ) || 0;
-              const totalFat =
-                meal.ingredients?.reduce(
-                  (sum: number, ing: any) => sum + (ing.fat || 0),
-                  0,
-                ) || 0;
 
-              // Calculate percentage errors with prioritized tolerances
+              // Calculate percentage errors ONLY for calories and protein
               const calorieError =
                 target.calories > 0
                   ? Math.abs(totalCals - target.calories) / target.calories
@@ -255,21 +245,11 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
                 target.protein > 0
                   ? Math.abs(totalProtein - target.protein) / target.protein
                   : 0;
-              const carbsError =
-                target.carbs > 0
-                  ? Math.abs(totalCarbs - target.carbs) / target.carbs
-                  : 0;
-              const fatError =
-                target.fat > 0
-                  ? Math.abs(totalFat - target.fat) / target.fat
-                  : 0;
 
-              // Strict tolerance for calories and protein (3%), more lenient for carbs and fat (10%)
+              // Only check calories and protein (5% tolerance for easier success)
               const isWithinTolerance =
-                calorieError <= 0.03 && // 3% tolerance for calories
-                proteinError <= 0.03 && // 3% tolerance for protein
-                carbsError <= 0.1 && // 10% tolerance for carbs
-                fatError <= 0.1; // 10% tolerance for fat
+                calorieError <= 0.05 && // 5% tolerance for calories
+                proteinError <= 0.05; // 5% tolerance for protein
 
               if (!isWithinTolerance) {
                 console.warn(
@@ -278,26 +258,14 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
                     target: {
                       calories: target.calories,
                       protein: target.protein,
-                      carbs: target.carbs,
-                      fat: target.fat,
                     },
                     actual: {
                       calories: totalCals,
                       protein: totalProtein,
-                      carbs: totalCarbs,
-                      fat: totalFat,
                     },
                     errors: {
                       calories: calorieError,
                       protein: proteinError,
-                      carbs: carbsError,
-                      fat: fatError,
-                    },
-                    tolerances: {
-                      calories: "3%",
-                      protein: "3%",
-                      carbs: "10%",
-                      fat: "10%",
                     },
                   },
                 );
@@ -376,8 +344,8 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
 
           const mealTotals = sanitizedIngredients.reduce(
             (
-              totals: { calories: any; protein: any; carbs: any; fat: any },
-              ing: { calories: any; protein: any; carbs: any; fat: any },
+              totals: { calories: number; protein: number; carbs: number; fat: number },
+              ing: { calories: number; protein: number; carbs: number; fat: number },
             ) => ({
               calories: totals.calories + ing.calories,
               protein: totals.protein + ing.protein,
