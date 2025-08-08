@@ -81,91 +81,76 @@ const dailyPrompt = geminiModel.definePrompt({
   name: "generateCreativeMealPlanPrompt",
   input: { schema: DailyPromptInputSchema },
   output: { schema: AIDailyPlanOutputSchema },
-  prompt: `You are a precision nutritionist and expert meal designer. Generate EXACTLY {{mealTargets.length}} nutritionally precise meals for {{dayOfWeek}}. Your PRIMARY GOAL is absolute macro accuracy - creativity is secondary to precision.
+  prompt: `You are a precision nutritionist and expert meal designer tasked with generating EXACTLY {{mealTargets.length}} nutritionally precise meals for {{dayOfWeek}}. Your PRIMARY GOAL is absolute macro accuracy; creativity is important but secondary to precision.
 
-**CRITICAL MACRO ACCURACY REQUIREMENTS (NON-NEGOTIABLE):**
-- CALORIES and PROTEIN must be within 3% of target values - NO EXCEPTIONS
-- CARBS and FAT must be within 10% of target values
-- For each meal, calculate ingredient quantities using PRECISE nutritional data:
-  {{#each mealTargets}}
-  **{{this.mealName}}**: {{this.calories}} kcal | {{this.protein}}g protein | {{this.carbs}}g carbs | {{this.fat}}g fat
-  {{/each}}
+**Macro Accuracy Requirements:**
+- Calories and protein must be within 3% of target values without exception.
+- Carbohydrates and fat must be within 10% of target values.
 
-**MANDATORY CALCULATION PROCESS:**
-1. Select 4-5 ingredients with KNOWN nutritional values (use USDA database or equivalent)
-2. Calculate exact gram quantities to hit CALORIES and PROTEIN targets first
-3. Adjust other ingredients to balance CARBS and FAT within tolerance
-4. VERIFY: Sum of all ingredient macros MUST equal target macros
-5. If calculations don't match, RECALCULATE until they do
-6. Double-check: Total calories = (Protein × 4) + (Carbs × 4) + (Fat × 9)
+**Calculation Process:**
+1. For each meal, select 4 to 6 ingredients with reliable, known nutritional values (preferably from USDA FoodData Central or equivalent).
+2. Calculate exact gram quantities to hit calories and protein targets first.
+3. Adjust remaining ingredient quantities to balance carbohydrates and fat within tolerance.
+4. Verify that the sum of all ingredient macros matches the meal targets within specified tolerances.
+5. Recalculate as needed until all tolerances are met.
+6. Double-check total calories using formula: (Protein × 4) + (Carbs × 4) + (Fat × 9).
 
-**INGREDIENT SELECTION AND CALCULATION:**
-- Choose 4-6 complementary ingredients that create a cohesive, flavorful meal
-- Use precise nutritional data (calories, protein, carbs, fat per 100g) from reliable sources like USDA FoodData Central
-- Calculate exact quantities in grams for each ingredient to collectively meet macro targets
-- Example calculation process:
-  * Target: 500 kcal, 30g protein, 50g carbs, 20g fat
-  * Ingredient 1 (Chicken breast): 165 kcal, 31g protein, 0g carbs, 3.6g fat per 100g
-  * Ingredient 2 (Brown rice): 112 kcal, 2.6g protein, 23g carbs, 0.9g fat per 100g  
-  * Calculate quantities: X grams chicken + Y grams rice + other ingredients = exact macro targets
-- Verify final totals match targets within 5% margin before submitting
+**Ingredient and Meal Design Guidelines:**
+- Use 4 to 6 complementary ingredients that create a flavorful, cohesive meal.
+- Incorporate diverse cooking methods (grilling, poaching, sous-vide, fermenting, etc.) and global culinary inspirations.
+- Prioritize diverse protein sources (lean meats, fish, plant proteins, legumes), colorful vegetables, fruits, healthy fats, and complex carbs.
+- Create visually appealing meals with varied textures and bold, novel flavor profiles.
 
-**CREATIVITY REQUIREMENTS:**
-- Explore diverse cooking methods: grilling, poaching, sous-vide, braising, fermenting, smoking, raw preparations
-- Draw inspiration from global cuisines ensuring variety across the week
-- Use diverse protein sources: lean meats, fish, poultry, plant-based proteins, legumes
-- Include colorful vegetables, fruits, healthy fats, and complex carbohydrates
-- Create visually appealing, restaurant-quality meals with varied textures and flavors
+**User Preferences:**
+Apply any of the following only if provided (non-null):
+{{#if preferredDiet}}- Strictly adhere to the diet type: {{preferredDiet}}
+{{/if}}{{#if allergies.length}}- Avoid ingredients triggering allergies: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}{{#if dispreferredIngredients.length}}- Avoid disliked ingredients: {{#each dispreferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}{{#if preferredIngredients.length}}- Prefer these ingredients: {{#each preferredIngredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}{{#if preferredCuisines.length}}- Prioritize cuisines: {{#each preferredCuisines}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}{{#if dispreferredCuisines.length}}- Avoid cuisines: {{#each dispreferredCuisines}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}{{#if medicalConditions.length}}- Consider health conditions: {{#each medicalConditions}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}
 
-**USER PREFERENCES (ONLY APPLY IF NOT NULL):**
-{{#if preferredDiet}}- Adhere strictly to diet type: {{preferredDiet}}{{/if}}
-{{#if allergies.length}}- AVOID (Allergies): {{#each allergies}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if dispreferredIngredients.length}}- AVOID (Dislikes): {{#each dispreferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if preferredIngredients.length}}- PREFER: {{#each preferredIngredients}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if preferredCuisines.length}}- Prioritize cuisines: {{#each preferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if dispreferredCuisines.length}}- Avoid cuisines: {{#each dispreferredCuisines}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-{{#if medicalConditions.length}}- Health considerations: {{#each medicalConditions}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+**Mandatory Output Requirements:**
+Return ONLY valid JSON with exactly {{mealTargets.length}} unique meals, each structured as follows:
 
-**PRECISION REQUIREMENTS (STRICTLY ENFORCED):**
-1. CALORIES must be within 3% of target - EXACT precision required
-2. PROTEIN must be within 3% of target - EXACT precision required  
-3. CARBS must be within 10% of target - some flexibility allowed
-4. FAT must be within 10% of target - some flexibility allowed
-5. Use ONLY reliable nutritional data (USDA, MyFitnessPal, FatSecret)
-6. Include 4-5 ingredients per meal for precise macro control
-7. ALWAYS verify calculations before submitting response
+- **meal_title:** An appealing, creative meal name.
+- **ingredients:** An array of ingredients with:
+  * name
+  * exact quantity in grams (to achieve macro precision)
+  * precise nutritional values (calories, protein, carbs, fat) corresponding to the specified quantity.
 
-**MEAL CREATIVITY GUIDELINES:**
-- Create unique meals for each day and meal type (e.g., no two breakfasts are alike across the week).
-- Incorporate modern culinary techniques (e.g., spherification, fermentation, or foraging-inspired ingredients) where appropriate.
-- Ensure each meal feels like a distinct culinary journey with bold, unexpected flavor profiles.
-- Avoid predictable combinations; prioritize novel pairings inspired by global culinary trends.
+For each meal:
+- Ensure the total macros from all ingredients match the target macros within these tolerances:
+  * Calories within ±3%
+  * Protein within ±3%
+  * Carbohydrates within ±10%
+  * Fat within ±10%
 
-**MANDATORY OUTPUT REQUIREMENTS:**
-Return ONLY valid JSON with exactly {{mealTargets.length}} unique, creative meals. For each meal:
+- No exceptions: If calories or protein are outside 3% tolerance, or carbs/fat are outside 10% tolerance, recalculate ingredient quantities before responding.
+- Prioritize calorie and protein accuracy above all else.
 
-1. **Ingredient Precision**: Each ingredient must specify:
-   - Exact quantity in grams
-   - Precise nutritional values (calories, protein, carbs, fat) for that specific quantity
-   - Values must be calculated based on the gram amount (not per 100g)
+**Macro Targets for reference:**
+{{#each mealTargets}}
+- {{this.mealName}}: {{this.calories}} kcal ± 3%, {{this.protein}} g protein ± 3%, {{this.carbs}} g carbs ± 10%, {{this.fat}} g fat ± 10%
+{{/each}}
 
-2. **Macro Verification**: The sum of all ingredient macros MUST equal the target macros within tolerance:
-   {{#each mealTargets}}
-   - {{this.mealName}}: Calories {{this.calories}}±{{this.calories}}*0.03 kcal (3%), Protein {{this.protein}}±{{this.protein}}*0.03g (3%), Carbs {{this.carbs}}±{{this.carbs}}*0.10g (10%), Fat {{this.fat}}±{{this.fat}}*0.10g (10%)
-   {{/each}}
+**Verification Example:**
+- Target: 500 kcal, 30 g protein, 50 g carbs, 20 g fat
+- Acceptable ranges:
+  * Calories: 485 - 515 kcal
+  * Protein: 29.1 - 30.9 g
+  * Carbs: 45 - 55 g
+  * Fat: 18 - 22 g
 
-3. **Structure**: Each meal object must include:
-   - meal_title: Creative, appealing name
-   - ingredients: Array with name, precise macros matching the calculated quantities
-   - Ensure ingredient macros sum exactly to meal totals
+Calculate ingredient quantities accordingly, ensuring sum of ingredient macros meets these ranges exactly.
 
-**CALCULATION VERIFICATION EXAMPLE:**
-If target is 500 kcal, 30g protein, 50g carbs, 20g fat:
-- Acceptable ranges: 485-515 kcal (3%), 29.1-30.9g protein (3%), 45-55g carbs (10%), 18-22g fat (10%)
-- Each ingredient quantity must be precisely calculated to achieve these totals
-- PRIORITIZE calories and protein accuracy above all else
+Do not include explanations or additional commentary. Provide only the valid JSON output adhering strictly to these requirements.
 
-CRITICAL: If calories or protein are outside 3% tolerance, or if carbs/fat are outside 10% tolerance, recalculate ingredient quantities before responding. DO NOT submit meals that fail these requirements.`,
+Use precise, reliable nutritional data sources such as USDA FoodData Central, MyFitnessPal, or FatSecret.
+
+Begin generating the meals now.`,
 });
 
 const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
@@ -260,34 +245,64 @@ const generatePersonalizedMealPlanFlow = geminiModel.defineFlow(
                   (sum: number, ing: any) => sum + (ing.fat || 0),
                   0,
                 ) || 0;
-              
+
               // Calculate percentage errors with prioritized tolerances
-              const calorieError = target.calories > 0 ? 
-                Math.abs(totalCals - target.calories) / target.calories : 0;
-              const proteinError = target.protein > 0 ? 
-                Math.abs(totalProtein - target.protein) / target.protein : 0;
-              const carbsError = target.carbs > 0 ? 
-                Math.abs(totalCarbs - target.carbs) / target.carbs : 0;
-              const fatError = target.fat > 0 ? 
-                Math.abs(totalFat - target.fat) / target.fat : 0;
-              
+              const calorieError =
+                target.calories > 0
+                  ? Math.abs(totalCals - target.calories) / target.calories
+                  : 0;
+              const proteinError =
+                target.protein > 0
+                  ? Math.abs(totalProtein - target.protein) / target.protein
+                  : 0;
+              const carbsError =
+                target.carbs > 0
+                  ? Math.abs(totalCarbs - target.carbs) / target.carbs
+                  : 0;
+              const fatError =
+                target.fat > 0
+                  ? Math.abs(totalFat - target.fat) / target.fat
+                  : 0;
+
               // Strict tolerance for calories and protein (3%), more lenient for carbs and fat (10%)
-              const isWithinTolerance = (
-                calorieError <= 0.03 &&    // 3% tolerance for calories
-                proteinError <= 0.03 &&    // 3% tolerance for protein  
-                carbsError <= 0.10 &&      // 10% tolerance for carbs
-                fatError <= 0.10           // 10% tolerance for fat
-              );
-              
+              const isWithinTolerance =
+                calorieError <= 0.03 && // 3% tolerance for calories
+                proteinError <= 0.03 && // 3% tolerance for protein
+                carbsError <= 0.1 && // 10% tolerance for carbs
+                fatError <= 0.1; // 10% tolerance for fat
+
               if (!isWithinTolerance) {
-                console.warn(`Macro validation failed for ${target.mealName}:`, {
-                  target: { calories: target.calories, protein: target.protein, carbs: target.carbs, fat: target.fat },
-                  actual: { calories: totalCals, protein: totalProtein, carbs: totalCarbs, fat: totalFat },
-                  errors: { calories: calorieError, protein: proteinError, carbs: carbsError, fat: fatError },
-                  tolerances: { calories: '3%', protein: '3%', carbs: '10%', fat: '10%' }
-                });
+                console.warn(
+                  `Macro validation failed for ${target.mealName}:`,
+                  {
+                    target: {
+                      calories: target.calories,
+                      protein: target.protein,
+                      carbs: target.carbs,
+                      fat: target.fat,
+                    },
+                    actual: {
+                      calories: totalCals,
+                      protein: totalProtein,
+                      carbs: totalCarbs,
+                      fat: totalFat,
+                    },
+                    errors: {
+                      calories: calorieError,
+                      protein: proteinError,
+                      carbs: carbsError,
+                      fat: fatError,
+                    },
+                    tolerances: {
+                      calories: "3%",
+                      protein: "3%",
+                      carbs: "10%",
+                      fat: "10%",
+                    },
+                  },
+                );
               }
-              
+
               return isWithinTolerance;
             },
           );
