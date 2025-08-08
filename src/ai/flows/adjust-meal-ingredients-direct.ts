@@ -31,7 +31,7 @@ async function generateWithOpenAI(
           {
             role: "system",
             content:
-              "You are a precision nutrition calculator. Your ONLY job is to adjust meal ingredients to match EXACT macro targets from a macro splitter system. You MUST achieve the exact calories, protein, carbs, and fat specified. Use accurate nutrition data per 100g and calculate precise quantities. Failure to match targets within 5% is unacceptable. Respond ONLY with valid JSON, no additional text.",
+              "You are a PRECISION NUTRITION CALCULATOR with access to accurate internet nutrition databases (USDA, nutritiondata.self.com, etc.). Your ONLY mission is to use REAL, ACCURATE nutrition data per 100g for each ingredient and calculate EXACT quantities to match macro targets. DISOBEDIENCE IS FORBIDDEN. You MUST use standard internet nutrition values - no estimates, no guesses, no fake data. Calculate precisely using real nutrition facts. If you cannot achieve targets within 5% using accurate data, you have FAILED. Respond ONLY with valid JSON.",
           },
           {
             role: "user",
@@ -94,47 +94,52 @@ function buildEnhancedPrompt(input: AdjustMealIngredientsInput): string {
   const fatMax = Math.round(input.targetMacros.fat * 1.05 * 10) / 10;
 
   return `
-CRITICAL MISSION: Adjust meal ingredients to EXACTLY match these macro targets from the macro splitter. NO EXCEPTIONS.
+CRITICAL NUTRITION MISSION: You are a PRECISION NUTRITION CALCULATOR. Your ONLY job is to adjust ingredients using ACCURATE INTERNET NUTRITION DATA to match EXACT macro targets. DISOBEDIENCE IS FORBIDDEN.
 
-TARGET MACROS FROM MACRO SPLITTER (NON-NEGOTIABLE):
-- Calories: EXACTLY ${input.targetMacros.calories} kcal (Range: ${calorieMin}-${calorieMax})
-- Protein: EXACTLY ${input.targetMacros.protein}g (Range: ${proteinMin}-${proteinMax})
-- Carbs: EXACTLY ${input.targetMacros.carbs}g (Range: ${carbsMin}-${carbsMax})
-- Fat: EXACTLY ${input.targetMacros.fat}g (Range: ${fatMin}-${fatMax})
+TARGET MACROS FROM MACRO SPLITTER (ABSOLUTELY NON-NEGOTIABLE):
+- Calories: EXACTLY ${input.targetMacros.calories} kcal (Must be between ${calorieMin}-${calorieMax})
+- Protein: EXACTLY ${input.targetMacros.protein}g (Must be between ${proteinMin}-${proteinMax})
+- Carbs: EXACTLY ${input.targetMacros.carbs}g (Must be between ${carbsMin}-${carbsMax})
+- Fat: EXACTLY ${input.targetMacros.fat}g (Must be between ${fatMin}-${fatMax})
 
-ORIGINAL MEAL TO ADJUST:
+ORIGINAL INGREDIENTS TO ADJUST:
 ${JSON.stringify(input.originalMeal.ingredients, null, 2)}
 
-MANDATORY PROCESS:
-1. For each ingredient, get EXACT nutrition per 100g from nutrition database
-2. Calculate precise quantities (in grams) to hit the EXACT macro targets
-3. Verify calculations: sum all ingredient macros must equal target macros
-4. If ANY macro is outside the range, RECALCULATE until ALL are within range
+MANDATORY NUTRITION DATA RULES - NO EXCEPTIONS:
+1. Use ONLY accurate nutrition data from standard sources (USDA, nutrition databases)
+2. For EACH ingredient, you MUST know the exact per 100g values:
+   - Example: Bread, white = 265 kcal, 9g protein, 49g carbs, 3.2g fat per 100g
+   - Example: Cheese, cheddar = 403 kcal, 25g protein, 1.3g carbs, 33g fat per 100g  
+   - Example: Egg, whole = 155 kcal, 13g protein, 1.1g carbs, 11g fat per 100g
+3. Calculate exact quantities in grams to hit the targets PRECISELY
+4. VERIFY: Sum of all ingredient macros = target macros (within 5% tolerance)
+5. If targets not met, RECALCULATE until perfect match
 
-ABSOLUTE REQUIREMENTS:
-- The final total_calories MUST be ${input.targetMacros.calories}
-- The final total_protein MUST be ${input.targetMacros.protein}
-- The final total_carbs MUST be ${input.targetMacros.carbs}
-- The final total_fat MUST be ${input.targetMacros.fat}
-- Sum of all ingredient calories MUST equal total_calories
-- Sum of all ingredient protein MUST equal total_protein
-- Sum of all ingredient carbs MUST equal total_carbs
-- Sum of all ingredient fat MUST equal total_fat
+CALCULATION FORMULA (MANDATORY):
+- For each ingredient: (target_contribution / nutrition_per_100g) * 100 = grams_needed
+- Verify: (grams_used / 100) * nutrition_per_100g = actual_contribution
+- Final check: Sum all contributions = target macros
 
-RETURN EXACTLY THIS JSON FORMAT:
+ABSOLUTE PROHIBITIONS:
+- NEVER estimate or guess nutrition values
+- NEVER use fake or inaccurate nutrition data
+- NEVER return results that don't match the targets within 5%
+- NEVER skip the verification step
+
+MANDATORY OUTPUT FORMAT:
 {
   "adjustedMeal": {
     "name": "${input.originalMeal.name}",
     "custom_name": "${input.originalMeal.custom_name || ""}",
     "ingredients": [
       {
-        "name": "ingredient_name",
-        "quantity": precise_number_in_grams,
+        "name": "exact_ingredient_name",
+        "quantity": precise_grams_calculated,
         "unit": "g",
-        "calories": exact_calories_for_this_portion,
-        "protein": exact_protein_for_this_portion,
-        "carbs": exact_carbs_for_this_portion,
-        "fat": exact_fat_for_this_portion
+        "calories": exact_calculated_calories,
+        "protein": exact_calculated_protein,
+        "carbs": exact_calculated_carbs,
+        "fat": exact_calculated_fat
       }
     ],
     "total_calories": ${input.targetMacros.calories},
@@ -142,10 +147,10 @@ RETURN EXACTLY THIS JSON FORMAT:
     "total_carbs": ${input.targetMacros.carbs},
     "total_fat": ${input.targetMacros.fat}
   },
-  "explanation": "Adjusted quantities to match macro splitter targets exactly."
+  "explanation": "Used accurate nutrition data to calculate precise quantities matching macro targets exactly."
 }
 
-FAILURE IS NOT ACCEPTABLE. The macro splitter has calculated these exact values and you MUST achieve them.
+FINAL WARNING: If you return ANY result where the totals don't match the targets within 5%, you have FAILED this mission. Use REAL nutrition data from the internet and calculate PRECISELY. NO SHORTCUTS, NO ESTIMATES, NO DISOBEDIENCE.
 `;
 }
 
