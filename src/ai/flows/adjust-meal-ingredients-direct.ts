@@ -30,7 +30,7 @@ async function generateWithOpenAI(
           {
             role: "system",
             content:
-              "You are a STRICT NUTRITION CALCULATOR. RULES YOU CANNOT BREAK: 1) Use REAL internet nutrition data (USDA database) 2) If existing ingredients can't reach macro targets, ADD new ingredients 3) MUST meet ALL targets within 5% tolerance 4) If fat is too high, ADD low-fat ingredients (fruits, vegetables, lean proteins) 5) If protein is too low, ADD protein sources (chicken, eggs, protein powder) 6) If carbs are too low, ADD carb sources (oats, rice, fruits). NO EXCEPTIONS. Respond ONLY with valid JSON.",
+              "You MUST add ingredients to reach exact macro targets. NO EXCUSES. If fat too high: ADD banana, apple, spinach. If carbs too low: ADD oats, rice, potato. If protein too low: ADD chicken, eggs. Use real nutrition data. Meet targets within 5% or I REJECT your response.",
           },
           {
             role: "user",
@@ -95,20 +95,16 @@ TARGET MACROS:
 CURRENT INGREDIENTS:
 ${input.originalMeal.ingredients.map((ing) => `- ${ing.name}: ${ing.quantity}g`).join("\n")}
 
-TARGET MACROS (MUST REACH EXACTLY):
-- Calories: ${input.targetMacros.calories} kcal
-- Protein: ${input.targetMacros.protein}g  
-- Carbs: ${input.targetMacros.carbs}g
-- Fat: ${input.targetMacros.fat}g
+TARGETS: ${input.targetMacros.calories}cal, ${input.targetMacros.protein}p, ${input.targetMacros.carbs}c, ${input.targetMacros.fat}f
 
-MANDATORY RULES:
-1. Use real nutrition data from internet/USDA database
-2. If current ingredients can't reach targets, ADD ingredients:
-   - Fat too high? ADD fruits/vegetables (banana, apple, spinach)
-   - Protein too low? ADD chicken breast, eggs, protein powder
-   - Carbs too low? ADD oats, rice, sweet potato
-3. Calculate exact quantities to hit targets within 5%
-4. DO NOT just reduce quantities - ADD ingredients to balance
+CURRENT PROBLEM: Fat too high (${input.originalMeal.ingredients.reduce((sum, ing) => sum + ing.fat, 0)}g), carbs too low, protein too low.
+
+SOLUTION: ADD these ingredients to fix:
+- ADD banana (high carbs, low fat)
+- ADD oats (high carbs, protein)
+- ADD chicken breast (high protein, low fat)
+
+Use exact nutrition data. Meet targets exactly.
 
 JSON FORMAT:
 {
