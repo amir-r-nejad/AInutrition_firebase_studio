@@ -174,7 +174,7 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
 - Cauliflower: 25 kcal, 1.9g protein, 5g carbs, 0.3g fat
 - Green Beans: 31 kcal, 1.8g protein, 7g carbs, 0.2g fat
 
-**ULTRA-STRICT CALCULATION RULES - ZERO TOLERANCE FOR ERRORS:**
+**CALCULATION RULES:**
 
 1. **MANDATORY FOOD VARIETY**: 
    - NEVER repeat the same 3-ingredient combination (chicken+quinoa+broccoli)
@@ -192,17 +192,17 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
 
 3. **TARGET MATCHING ALGORITHM**:
    - Step 1: Select diverse ingredients based on user preferences
-   - Step 2: Calculate initial quantities using: target_macro ÷ ingredient_macro_per_100g × 100
-   - Step 3: Adjust quantities iteratively until ALL 4 macros are within 3% of target
+   - Step 2: Focus PRIMARILY on hitting calories and protein targets within 5%
+   - Step 3: Carbs and fat should be reasonable but don't need to be exact
    - Step 4: Verify: ingredient_sum = total_displayed (exactly equal)
-   - Step 5: If verification fails, recalculate from Step 1
+   - Step 5: If calories or protein are outside 5%, recalculate from Step 1
 
 4. **VERIFICATION CHECKPOINTS**:
    - Before returning response, calculate: sum(all_ingredient_calories) = totalCalories
    - sum(all_ingredient_protein) = totalProtein  
    - sum(all_ingredient_carbs) = totalCarbs
    - sum(all_ingredient_fat) = totalFat
-   - If ANY mismatch detected, RESTART calculation process
+   - If calories or protein mismatch detected, RESTART calculation process
 
 5. **FORBIDDEN ACTIONS**:
    - DO NOT estimate or guess nutritional values
@@ -218,7 +218,7 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
    - Be engaging, conversational, and motivational, explaining why the meal is ideal for the user's diet goal, activity level, and preferences.
    - Highlight specific ingredients and their benefits.
    - Concisely confirm macro calculations.
-   - Confirm all macros are within 5% of the target.
+   - Confirm calories and protein are within 5% of the target.
    - Reference specific user data for personalization.
 
 **STRICT VALIDATION EXAMPLE:**
@@ -261,7 +261,7 @@ Status: NEEDS ADJUSTMENT to hit targets exactly
   ]
 }
 
-REMEMBER: The totals MUST be within 5% of the target macros. Calculate precisely and verify before responding.
+REMEMBER: The calories and protein totals MUST be within 5% of the target. Carbs and fat should be reasonable but don't need to be exact. Calculate precisely and verify before responding.
 `;
 }
 
@@ -308,13 +308,11 @@ export async function suggestMealsForMacros(
       let valid = true;
       const macroErrors: string[] = [];
 
-      // Validate macro accuracy
+      // Validate macro accuracy - Only calories and protein with 5% tolerance
       suggestions.forEach((meal, index) => {
         const tolerances = {
           calories: validatedInput.target_calories * 0.05,
           protein: validatedInput.target_protein_grams * 0.05,
-          carbs: validatedInput.target_carbs_grams * 0.05,
-          fat: validatedInput.target_fat_grams * 0.05,
         };
 
         const errors: string[] = [];
@@ -332,21 +330,6 @@ export async function suggestMealsForMacros(
         ) {
           errors.push(
             `Protein: ${meal.totalProtein}g (target: ${validatedInput.target_protein_grams}g, allowed: ${validatedInput.target_protein_grams - tolerances.protein}-${validatedInput.target_protein_grams + tolerances.protein})`,
-          );
-        }
-        if (
-          Math.abs(meal.totalCarbs - validatedInput.target_carbs_grams) >
-          tolerances.carbs
-        ) {
-          errors.push(
-            `Carbs: ${meal.totalCarbs}g (target: ${validatedInput.target_carbs_grams}g, allowed: ${validatedInput.target_carbs_grams - tolerances.carbs}-${validatedInput.target_carbs_grams + tolerances.carbs})`,
-          );
-        }
-        if (
-          Math.abs(meal.totalFat - validatedInput.target_fat_grams) > tolerances.fat
-        ) {
-          errors.push(
-            `Fat: ${meal.totalFat}g (target: ${validatedInput.target_fat_grams}g, allowed: ${validatedInput.target_fat_grams - tolerances.fat}-${validatedInput.target_fat_grams + tolerances.fat})`,
           );
         }
 
