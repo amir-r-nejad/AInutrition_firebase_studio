@@ -126,49 +126,89 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
 - Carbohydrates: ${input.target_carbs_grams}g
 - Fat: ${input.target_fat_grams}g
 
-**STRICT NUTRITIONAL DATABASE REQUIREMENT:**
-You MUST use ONLY accurate nutritional data from verified sources like USDA FoodData Central. Use these EXACT values per 100g:
+**MANDATORY NUTRITIONAL DATABASE - USE THESE EXACT VALUES PER 100g:**
 
-**PROTEINS:**
-- Chicken Breast (skinless): 165 kcal, 31g protein, 0g carbs, 3.6g fat
-- Lean Ground Beef (93/7): 152 kcal, 22.6g protein, 0g carbs, 6.2g fat
-- Salmon (Atlantic): 208 kcal, 25.4g protein, 0g carbs, 12.4g fat
-- Greek Yogurt (non-fat): 59 kcal, 10.3g protein, 3.6g carbs, 0.4g fat
+**PROTEINS (pick different ones for variety):**
+- Chicken Breast: 165 kcal, 31g protein, 0g carbs, 3.6g fat
+- Turkey Breast: 189 kcal, 29g protein, 0g carbs, 7.4g fat  
+- Lean Beef (93/7): 152 kcal, 22.6g protein, 0g carbs, 6.2g fat
+- Salmon: 208 kcal, 25.4g protein, 0g carbs, 12.4g fat
+- Tuna (canned in water): 116 kcal, 25.5g protein, 0g carbs, 0.8g fat
+- Cod: 105 kcal, 23g protein, 0g carbs, 0.9g fat
+- Shrimp: 99 kcal, 20.9g protein, 0.2g carbs, 1.7g fat
+- Greek Yogurt (0% fat): 59 kcal, 10.3g protein, 3.6g carbs, 0.4g fat
+- Cottage Cheese (low-fat): 98 kcal, 11g protein, 3.4g carbs, 4.3g fat
 - Eggs (whole): 155 kcal, 13g protein, 1.1g carbs, 11g fat
 - Egg Whites: 52 kcal, 10.9g protein, 0.7g carbs, 0.2g fat
 - Tofu (firm): 144 kcal, 15.8g protein, 4.3g carbs, 8.7g fat
+- Lentils (cooked): 116 kcal, 9g protein, 20g carbs, 0.4g fat
+- Black Beans (cooked): 132 kcal, 8.9g protein, 23g carbs, 0.5g fat
 
-**CARBOHYDRATES:**
+**CARBOHYDRATES (vary your selections):**
 - White Rice (cooked): 130 kcal, 2.7g protein, 28g carbs, 0.3g fat
 - Brown Rice (cooked): 112 kcal, 2.6g protein, 23g carbs, 0.9g fat
 - Quinoa (cooked): 120 kcal, 4.4g protein, 21.3g carbs, 1.9g fat
-- Oats (dry): 389 kcal, 16.9g protein, 66.3g carbs, 6.9g fat
+- Pasta (cooked): 131 kcal, 5g protein, 25g carbs, 1.1g fat
 - Sweet Potato: 86 kcal, 1.6g protein, 20.1g carbs, 0.1g fat
+- Regular Potato: 77 kcal, 2g protein, 17g carbs, 0.1g fat
+- Oats (dry): 389 kcal, 16.9g protein, 66.3g carbs, 6.9g fat
+- Whole Wheat Bread: 247 kcal, 13g protein, 41g carbs, 4.2g fat
 - Banana: 89 kcal, 1.1g protein, 22.8g carbs, 0.3g fat
+- Apple: 52 kcal, 0.3g protein, 14g carbs, 0.2g fat
+- Berries (mixed): 57 kcal, 0.7g protein, 14g carbs, 0.3g fat
 
-**FATS:**
+**HEALTHY FATS:**
 - Olive Oil: 884 kcal, 0g protein, 0g carbs, 100g fat
 - Avocado: 160 kcal, 2g protein, 8.5g carbs, 14.7g fat
 - Almonds: 579 kcal, 21.2g protein, 21.6g carbs, 49.9g fat
+- Walnuts: 654 kcal, 15.2g protein, 13.7g carbs, 65.2g fat
 - Peanut Butter: 588 kcal, 25.8g protein, 20g carbs, 50g fat
+- Almond Butter: 614 kcal, 21g protein, 20g carbs, 56g fat
+- Coconut Oil: 862 kcal, 0g protein, 0g carbs, 100g fat
 
-**VEGETABLES:**
+**VEGETABLES (always include for nutrients):**
 - Spinach: 23 kcal, 2.9g protein, 3.6g carbs, 0.4g fat
 - Broccoli: 34 kcal, 2.8g protein, 7g carbs, 0.4g fat
 - Bell Peppers: 31 kcal, 1g protein, 7g carbs, 0.3g fat
+- Zucchini: 17 kcal, 1.2g protein, 3.1g carbs, 0.3g fat
+- Cauliflower: 25 kcal, 1.9g protein, 5g carbs, 0.3g fat
+- Green Beans: 31 kcal, 1.8g protein, 7g carbs, 0.2g fat
 
-**CRITICAL RULES - NON-NEGOTIABLE:**
-1. **Meal Generation and Macro Accuracy**:
-   - Use ONLY the nutritional values provided above or other verified USDA data
-   - DO NOT make up or estimate nutritional values
-   - Calculate exact quantities needed: quantity_needed = (target_macro ÷ macro_per_100g) × 100
-   - First, generate a meal concept that aligns with the user's dietary preferences, restrictions, meal type (e.g., snack, breakfast), and ingredient preferences/avoidances.
-   - Select ingredients from the verified nutritional database above, prioritizing user preferences and avoiding allergies.
-   - Calculate the macro contribution of each ingredient based on its quantity using EXACT nutritional data.
-   - Iteratively adjust ingredient quantities to minimize the difference between total macros and targets, ensuring ALL macros are within the 5% margin.
-   - Verify the final totals for calories, protein, carbs, and fat against the target ranges before returning the response.
-   - If any macro is outside the 5% margin, adjust quantities and recalculate until ALL macros are within range.
-   - All nutritional values (calories, protein, carbs, fat) MUST be numbers, not null, undefined, or "n/a".
+**ULTRA-STRICT CALCULATION RULES - ZERO TOLERANCE FOR ERRORS:**
+
+1. **MANDATORY FOOD VARIETY**: 
+   - NEVER repeat the same 3-ingredient combination (chicken+quinoa+broccoli)
+   - Use AT LEAST 4-5 different ingredients per meal
+   - Rotate protein sources: if previous was chicken, use fish/beef/eggs/legumes
+   - Vary carb sources: rice, pasta, potatoes, oats, bread, fruits
+   - Include different vegetables each time
+
+2. **MATHEMATICAL PRECISION REQUIREMENT**:
+   - Use ONLY the exact nutritional values provided above - NO EXCEPTIONS
+   - Calculate each ingredient contribution: (quantity_grams ÷ 100) × nutrition_per_100g
+   - Example: 150g chicken = (150÷100) × 165 = 247.5 kcal, (150÷100) × 31 = 46.5g protein
+   - Sum ALL individual contributions to get totals
+   - Totals MUST equal sum of ingredients (no rounding errors allowed)
+
+3. **TARGET MATCHING ALGORITHM**:
+   - Step 1: Select diverse ingredients based on user preferences
+   - Step 2: Calculate initial quantities using: target_macro ÷ ingredient_macro_per_100g × 100
+   - Step 3: Adjust quantities iteratively until ALL 4 macros are within 3% of target
+   - Step 4: Verify: ingredient_sum = total_displayed (exactly equal)
+   - Step 5: If verification fails, recalculate from Step 1
+
+4. **VERIFICATION CHECKPOINTS**:
+   - Before returning response, calculate: sum(all_ingredient_calories) = totalCalories
+   - sum(all_ingredient_protein) = totalProtein  
+   - sum(all_ingredient_carbs) = totalCarbs
+   - sum(all_ingredient_fat) = totalFat
+   - If ANY mismatch detected, RESTART calculation process
+
+5. **FORBIDDEN ACTIONS**:
+   - DO NOT estimate or guess nutritional values
+   - DO NOT use ingredients not in the database above
+   - DO NOT create meals with fewer than 4 ingredients
+   - DO NOT repeat exact ingredient combinations from previous suggestions
 
 2. **Meal Appropriateness**: Suggestions MUST be appropriate for the meal type (e.g., light and quick for "Snack," substantial for "Dinner").
 
@@ -181,31 +221,42 @@ You MUST use ONLY accurate nutritional data from verified sources like USDA Food
    - Confirm all macros are within 5% of the target.
    - Reference specific user data for personalization.
 
-**JSON OUTPUT:**
-Respond with ONLY a raw JSON object with a single root key: "suggestions".
+**STRICT VALIDATION EXAMPLE:**
+Target: 637 kcal, 48g protein, 80g carbs, 14g fat
 
-**EXAMPLE OUTPUT:**
+CORRECT CALCULATION:
+- Turkey Breast 120g: (120÷100) × 189 = 226.8 kcal, 34.8g protein, 0g carbs, 8.88g fat
+- Sweet Potato 200g: (200÷100) × 86 = 172 kcal, 3.2g protein, 40.2g carbs, 0.2g fat  
+- Pasta 100g: (100÷100) × 131 = 131 kcal, 5g protein, 25g carbs, 1.1g fat
+- Spinach 150g: (150÷100) × 23 = 34.5 kcal, 4.35g protein, 5.4g carbs, 0.6g fat
+- Olive Oil 6g: (6÷100) × 884 = 53.04 kcal, 0g protein, 0g carbs, 6g fat
+
+VERIFICATION:
+Sum: 617.34 kcal, 47.35g protein, 70.6g carbs, 16.78g fat
+Status: NEEDS ADJUSTMENT to hit targets exactly
+
+**JSON OUTPUT FORMAT:**
 {
   "suggestions": [
     {
-      "mealTitle": "Personalized Protein-Packed Snack",
-      "description": "This snack is tailored for your ${input.diet_goal} goal, providing high protein to keep you full and steady carbs for energy. Ingredient A delivers 10g protein, Ingredient B adds 5g, totaling 15g protein (within 5% of target). With ${input.target_calories} kcal, ${input.target_carbs_grams}g carbs, and ${input.target_fat_grams}g fat, this snack supports your ${input.activity_level} lifestyle!",
+      "mealTitle": "Creative diverse meal name",
+      "description": "Detailed explanation of nutrition benefits and macro verification",
       "ingredients": [
         {
-          "name": "Ingredient Name",
-          "amount": "100",
+          "name": "Exact ingredient name from database",
+          "amount": "precise_quantity",
           "unit": "g",
-          "calories": 100,
-          "protein": 10,
-          "carbs": 10,
-          "fat": 4,
-          "macrosString": "100 cal, 10g protein, 10g carbs, 4g fat"
+          "calories": calculated_exactly,
+          "protein": calculated_exactly,
+          "carbs": calculated_exactly,
+          "fat": calculated_exactly,
+          "macrosString": "X cal, Xg protein, Xg carbs, Xg fat"
         }
       ],
-      "totalCalories": ${input.target_calories},
-      "totalProtein": ${input.target_protein_grams},
-      "totalCarbs": ${input.target_carbs_grams},
-      "totalFat": ${input.target_fat_grams}
+      "totalCalories": exact_sum_of_ingredient_calories,
+      "totalProtein": exact_sum_of_ingredient_protein,
+      "totalCarbs": exact_sum_of_ingredient_carbs,
+      "totalFat": exact_sum_of_ingredient_fat
     }
   ]
 }
