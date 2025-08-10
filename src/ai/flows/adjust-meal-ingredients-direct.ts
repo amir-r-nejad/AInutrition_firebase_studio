@@ -28,9 +28,9 @@ async function generateWithOpenAI(
         model: "gpt-4o",
         messages: [
           {
-            role: "system",
+            role: "system", 
             content:
-              "You MUST add ingredients to reach exact macro targets. NO EXCUSES. If fat too high: ADD banana, apple, spinach. If carbs too low: ADD oats, rice, potato. If protein too low: ADD chicken, eggs. Use real nutrition data. Meet targets within 5% or I REJECT your response.",
+              "MANDATORY RULES: 1) Calculate EXACT nutrition values from USDA database 2) MUST add ingredients to balance macros 3) Fat too high = ADD spinach/cucumber (0 fat) 4) Carbs too low = ADD banana/apple 5) Protein low = ADD egg whites 6) MUST hit targets within 3% tolerance. NO NEGOTIATION.",
           },
           {
             role: "user",
@@ -92,19 +92,24 @@ TARGET MACROS:
 - Carbs: ${input.targetMacros.carbs}g
 - Fat: ${input.targetMacros.fat}g
 
-CURRENT INGREDIENTS:
-${input.originalMeal.ingredients.map((ing) => `- ${ing.name}: ${ing.quantity}g`).join("\n")}
+FIX THIS MEAL TO EXACT TARGETS:
 
-TARGETS: ${input.targetMacros.calories}cal, ${input.targetMacros.protein}p, ${input.targetMacros.carbs}c, ${input.targetMacros.fat}f
+CURRENT:
+${input.originalMeal.ingredients.map((ing) => `${ing.name} ${ing.quantity}g (${ing.calories}cal, ${ing.protein}p, ${ing.carbs}c, ${ing.fat}f)`).join("\n")}
 
-CURRENT PROBLEM: Fat too high (${input.originalMeal.ingredients.reduce((sum, ing) => sum + ing.fat, 0)}g), carbs too low, protein too low.
+MUST REACH EXACTLY:
+Calories: ${input.targetMacros.calories}
+Protein: ${input.targetMacros.protein}g
+Carbs: ${input.targetMacros.carbs}g  
+Fat: ${input.targetMacros.fat}g
 
-SOLUTION: ADD these ingredients to fix:
-- ADD banana (high carbs, low fat)
-- ADD oats (high carbs, protein)
-- ADD chicken breast (high protein, low fat)
+REQUIRED ACTIONS:
+1. Keep existing ingredients but adjust quantities
+2. ADD banana (89cal/100g, 1.1p, 23c, 0.3f) to increase carbs
+3. ADD spinach (23cal/100g, 2.9p, 3.6c, 0.4f) to reduce fat ratio
+4. ADD egg whites (52cal/100g, 11p, 0.7c, 0.2f) for protein
 
-Use exact nutrition data. Meet targets exactly.
+CALCULATE EXACT QUANTITIES TO HIT TARGETS.
 
 JSON FORMAT:
 {
@@ -186,7 +191,7 @@ export async function adjustMealIngredientsDirect(
 
     // Validate that the result matches the target macros
     const adjustedMeal = result.adjustedMeal;
-    const tolerance = 0.05; // 5% - strict tolerance
+    const tolerance = 0.03; // 3% - very strict tolerance
 
     const caloriesValid =
       Math.abs(
@@ -217,7 +222,7 @@ export async function adjustMealIngredientsDirect(
         validation: { caloriesValid, proteinValid, carbsValid, fatValid },
       });
       throw new Error(
-        `AI failed to meet macro targets within 5% tolerance. Please try again. Target: ${cleanedInput.targetMacros.calories}kcal/${cleanedInput.targetMacros.protein}p/${cleanedInput.targetMacros.carbs}c/${cleanedInput.targetMacros.fat}f`,
+        `AI failed to meet macro targets within 3% tolerance. Please try again. Target: ${cleanedInput.targetMacros.calories}kcal/${cleanedInput.targetMacros.protein}p/${cleanedInput.targetMacros.carbs}c/${cleanedInput.targetMacros.fat}f`,
       );
     }
 
