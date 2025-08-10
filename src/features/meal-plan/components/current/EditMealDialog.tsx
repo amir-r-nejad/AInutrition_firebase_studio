@@ -235,18 +235,17 @@ function EditMealDialog({
         (dist: any) => dist.mealName === meal.name,
       );
 
+      let caloriePercentage;
       if (!mealDistribution) {
         // Use default distribution if none found
         const defaultDistribution = {
           calories_pct: 16.67, // Default equal distribution across 6 meals
         };
         console.warn(`No meal distribution found for ${meal.name}, using default 16.67%`);
-        var caloriePercentage = defaultDistribution.calories_pct / 100;
+        caloriePercentage = defaultDistribution.calories_pct / 100;
       } else {
-        var caloriePercentage = (mealDistribution.calories_pct || 0) / 100;
+        caloriePercentage = (mealDistribution.calories_pct || 0) / 100;
       }
-
-      
 
       const targetMacros = {
         calories: Math.round(dailyTargets.calories * caloriePercentage),
