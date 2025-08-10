@@ -10,6 +10,7 @@ import {
 // OpenAI function
 async function generateWithOpenAI(
   prompt: string,
+  input: AdjustMealIngredientsInput,
 ): Promise<AdjustMealIngredientsOutput> {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -234,7 +235,7 @@ export async function adjustMealIngredientsDirect(
     console.log(
       "[OpenAI] Generating enhanced meal adjustment with nutrition lookup...",
     );
-    const result = await generateWithOpenAI(prompt);
+    const result = await generateWithOpenAI(prompt, cleanedInput);
 
     // Log the results for monitoring (removed strict validation)
     const adjustedMeal = result.adjustedMeal;
