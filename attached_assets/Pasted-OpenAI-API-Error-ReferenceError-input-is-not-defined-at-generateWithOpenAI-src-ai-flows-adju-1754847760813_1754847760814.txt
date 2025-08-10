@@ -1,0 +1,34 @@
+OpenAI API Error: ReferenceError: input is not defined
+    at generateWithOpenAI (src/ai/flows/adjust-meal-ingredients-direct.ts:102:47)
+    at async adjustMealIngredientsDirect (src/ai/flows/adjust-meal-ingredients-direct.ts:237:19)
+    at async POST (src/app/api/meal-plan/optimize/route.ts:34:19)
+  100 |     const macroErrors = [];
+  101 |     
+> 102 |     if (Math.abs(adjustedMeal.total_calories - input.targetMacros.calories) > input.targetMacros.calories * tolerance) {
+      |                                               ^
+  103 |       macroErrors.push(`Calories: expected ${input.targetMacros.calories}, got ${adjustedMeal.total_calories}`);
+  104 |     }
+  105 |     if (Math.abs(adjustedMeal.total_protein - input.targetMacros.protein) > input.targetMacros.protein * tolerance) {
+Error in adjustMealIngredientsDirect: ReferenceError: input is not defined
+    at generateWithOpenAI (src/ai/flows/adjust-meal-ingredients-direct.ts:102:47)
+    at async adjustMealIngredientsDirect (src/ai/flows/adjust-meal-ingredients-direct.ts:237:19)
+    at async POST (src/app/api/meal-plan/optimize/route.ts:34:19)
+  100 |     const macroErrors = [];
+  101 |     
+> 102 |     if (Math.abs(adjustedMeal.total_calories - input.targetMacros.calories) > input.targetMacros.calories * tolerance) {
+      |                                               ^
+  103 |       macroErrors.push(`Calories: expected ${input.targetMacros.calories}, got ${adjustedMeal.total_calories}`);
+  104 |     }
+  105 |     if (Math.abs(adjustedMeal.total_protein - input.targetMacros.protein) > input.targetMacros.protein * tolerance) {
+API Error optimizing meal: ReferenceError: input is not defined
+    at generateWithOpenAI (src/ai/flows/adjust-meal-ingredients-direct.ts:102:47)
+    at async adjustMealIngredientsDirect (src/ai/flows/adjust-meal-ingredients-direct.ts:237:19)
+    at async POST (src/app/api/meal-plan/optimize/route.ts:34:19)
+  100 |     const macroErrors = [];
+  101 |     
+> 102 |     if (Math.abs(adjustedMeal.total_calories - input.targetMacros.calories) > input.targetMacros.calories * tolerance) {
+      |                                               ^
+  103 |       macroErrors.push(`Calories: expected ${input.targetMacros.calories}, got ${adjustedMeal.total_calories}`);
+  104 |     }
+  105 |     if (Math.abs(adjustedMeal.total_protein - input.targetMacros.protein) > input.targetMacros.protein * tolerance) {
+ POST /api/meal-plan/optimize 500 in 21353ms
