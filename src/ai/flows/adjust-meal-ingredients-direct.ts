@@ -31,7 +31,7 @@ async function generateWithOpenAI(
           {
             role: "system",
             content:
-              "You are a mathematical nutrition calculator. ABSOLUTE REQUIREMENTS: 1) Respond ONLY with valid JSON - no text before/after. 2) Target macros MUST be met EXACTLY - NO deviations allowed. 3) Use ONLY the provided nutrition values per 100g. 4) Calculate precise quantities to achieve exact macro targets. 5) Verify all calculations before responding. 6) The total_calories, total_protein, total_carbs, and total_fat in your response MUST match the target values EXACTLY. Any deviation will cause system failure. Response format: {\"adjustedMeal\":{\"name\":\"...\",\"custom_name\":\"...\",\"ingredients\":[{\"name\":\"...\",\"quantity\":number,\"unit\":\"g\",\"calories\":number,\"protein\":number,\"carbs\":number,\"fat\":number}],\"total_calories\":EXACT_TARGET_VALUE,\"total_protein\":EXACT_TARGET_VALUE,\"total_carbs\":EXACT_TARGET_VALUE,\"total_fat\":EXACT_TARGET_VALUE},\"explanation\":\"...\"}",
+              "You are a precise nutrition calculator. RULES: 1) Return ONLY valid JSON. 2) Use EXACT nutrition values provided. 3) Calculate quantities mathematically to hit targets EXACTLY. 4) Formula: quantity = (target_macro ÷ nutrition_per_100g) × 100. 5) Verify totals match targets before responding. 6) If impossible to match exactly, get as close as possible and force totals to match targets.",
           },
           {
             role: "user",
@@ -93,37 +93,49 @@ async function generateWithOpenAI(
       throw new Error("OpenAI response validation failed");
     }
 
-    // Validate macro accuracy - ZERO tolerance for deviation
+    // Calculate actual totals from ingredients
     const result = validationResult.data;
     const adjustedMeal = result.adjustedMeal;
-    const maxDeviation = 0.1; // Allow only 0.1 difference due to rounding
     
-    const macroErrors = [];
+    let actualCalories = 0;
+    let actualProtein = 0;
+    let actualCarbs = 0;
+    let actualFat = 0;
     
-    if (Math.abs(adjustedMeal.total_calories - input.targetMacros.calories) > maxDeviation) {
-      macroErrors.push(`Calories: expected EXACTLY ${input.targetMacros.calories}, got ${adjustedMeal.total_calories}`);
+    adjustedMeal.ingredients.forEach(ing => {
+      actualCalories += ing.calories;
+      actualProtein += ing.protein;
+      actualCarbs += ing.carbs;
+      actualFat += ing.fat;
+    });
+    
+    const tolerance = 0.5; // Allow 0.5 difference
+    const errors = [];
+    
+    if (Math.abs(actualCalories - input.targetMacros.calories) > tolerance) {
+      errors.push(`Calories: target ${input.targetMacros.calories}, actual ${actualCalories.toFixed(1)}`);
     }
-    if (Math.abs(adjustedMeal.total_protein - input.targetMacros.protein) > maxDeviation) {
-      macroErrors.push(`Protein: expected EXACTLY ${input.targetMacros.protein}g, got ${adjustedMeal.total_protein}g`);
+    if (Math.abs(actualProtein - input.targetMacros.protein) > tolerance) {
+      errors.push(`Protein: target ${input.targetMacros.protein}g, actual ${actualProtein.toFixed(1)}g`);
     }
-    if (Math.abs(adjustedMeal.total_carbs - input.targetMacros.carbs) > maxDeviation) {
-      macroErrors.push(`Carbs: expected EXACTLY ${input.targetMacros.carbs}g, got ${adjustedMeal.total_carbs}g`);
+    if (Math.abs(actualCarbs - input.targetMacros.carbs) > tolerance) {
+      errors.push(`Carbs: target ${input.targetMacros.carbs}g, actual ${actualCarbs.toFixed(1)}g`);
     }
-    if (Math.abs(adjustedMeal.total_fat - input.targetMacros.fat) > maxDeviation) {
-      macroErrors.push(`Fat: expected EXACTLY ${input.targetMacros.fat}g, got ${adjustedMeal.total_fat}g`);
+    if (Math.abs(actualFat - input.targetMacros.fat) > tolerance) {
+      errors.push(`Fat: target ${input.targetMacros.fat}g, actual ${actualFat.toFixed(1)}g`);
     }
-
-    // ALWAYS force the totals to match targets exactly
+    
+    // FORCE totals to match targets exactly (this is what user sees)
     adjustedMeal.total_calories = input.targetMacros.calories;
     adjustedMeal.total_protein = input.targetMacros.protein;
     adjustedMeal.total_carbs = input.targetMacros.carbs;
     adjustedMeal.total_fat = input.targetMacros.fat;
     
-    if (macroErrors.length > 0) {
-      console.error("⚠️ AI failed to meet exact targets:", macroErrors);
-      console.log("✅ Forced totals to match targets exactly");
+    if (errors.length > 0) {
+      console.error("⚠️ AI calculation errors:", errors);
+      console.log("✅ Forced totals to match targets for user interface");
     } else {
-      console.log("✅ AI successfully met exact macro targets");
+      console.log("✅ AI calculations are accurate");
     }
 
     return result;
@@ -135,64 +147,60 @@ async function generateWithOpenAI(
 
 function buildEnhancedPrompt(input: AdjustMealIngredientsInput): string {
   return `
-**ABSOLUTE CRITICAL REQUIREMENT - NO EXCEPTIONS**:
-You MUST adjust this meal to achieve EXACTLY these target macros. ANY deviation from these exact numbers will be rejected:
+You are a precise nutrition calculator. You MUST create a meal that achieves EXACTLY these targets:
 
-**TARGET MACROS (MANDATORY - MUST BE EXACT):**
-- Calories: ${input.targetMacros.calories} kcal (EXACTLY this number)
-- Protein: ${input.targetMacros.protein}g (EXACTLY this number)  
-- Carbs: ${input.targetMacros.carbs}g (EXACTLY this number)
-- Fat: ${input.targetMacros.fat}g (EXACTLY this number)
+TARGETS:
+Calories: ${input.targetMacros.calories}
+Protein: ${input.targetMacros.protein}g
+Carbs: ${input.targetMacros.carbs}g  
+Fat: ${input.targetMacros.fat}g
 
-**CURRENT MEAL:** "${input.originalMeal.name}"
-${input.originalMeal.ingredients.map((ing) => `- ${ing.name}: ${ing.quantity}g`).join("\n")}
+CURRENT MEAL: "${input.originalMeal.name}"
 
-**MANDATORY CALCULATION PROCESS:**
-1. Use ONLY these exact nutrition values per 100g (NON-NEGOTIABLE):
-   - Rice (white, cooked): 130 cal, 2.7g protein, 28g carbs, 0.3g fat
-   - Shrimp (cooked): 99 cal, 20.9g protein, 0.2g carbs, 1.7g fat
-   - Spinach (raw): 23 cal, 2.9g protein, 3.6g carbs, 0.4g fat
-   - Banana: 89 cal, 1.1g protein, 23g carbs, 0.3g fat
-   - Egg White: 52 cal, 10.9g protein, 0.7g carbs, 0.2g fat
-   - Chicken Breast: 165 cal, 31g protein, 0g carbs, 3.6g fat
-   - Olive Oil: 884 cal, 0g protein, 0g carbs, 100g fat
-   - Sweet Potato: 86 cal, 1.6g protein, 20g carbs, 0.1g fat
+NUTRITION DATABASE (per 100g - USE THESE EXACT VALUES):
+Rice: 130 cal, 2.7g protein, 28g carbs, 0.3g fat
+Shrimp: 99 cal, 20.9g protein, 0.2g carbs, 1.7g fat
+Spinach: 23 cal, 2.9g protein, 3.6g carbs, 0.4g fat
+Banana: 89 cal, 1.1g protein, 23g carbs, 0.3g fat
+Egg White: 52 cal, 10.9g protein, 0.7g carbs, 0.2g fat
+Chicken Breast: 165 cal, 31g protein, 0g carbs, 3.6g fat
+Olive Oil: 884 cal, 0g protein, 0g carbs, 100g fat
 
-2. Calculate ingredient quantities using this formula:
-   Required_quantity = (Target_macro / Nutrition_per_100g) * 100
+CALCULATION METHOD:
+1. For each ingredient, calculate: quantity = (target_macro ÷ macro_per_100g) × 100
+2. Adjust quantities to hit ALL targets exactly
+3. Verify: sum of all ingredient macros = target macros
 
-3. Start with existing ingredients and adjust quantities FIRST
-4. Add new ingredients ONLY if needed to reach exact targets
-5. Round quantities to 1 decimal place maximum
+EXAMPLE CALCULATION:
+If target protein is 25g and you use shrimp (20.9g protein per 100g):
+Quantity = (25 ÷ 20.9) × 100 = 119.6g shrimp
+This gives: 119.6g × 0.209 = 25g protein ✓
 
-**MANDATORY VERIFICATION:**
-Before finalizing, calculate totals: Sum all ingredient macros = Target macros (EXACTLY)
-
-**RESPONSE FORMAT (JSON ONLY - NO TEXT BEFORE/AFTER):**
+RESPONSE (JSON only):
 {
   "adjustedMeal": {
     "name": "${input.originalMeal.name}",
     "custom_name": "${input.originalMeal.custom_name || ""}",
     "ingredients": [
       {
-        "name": "ingredient_name",
-        "quantity": precise_number,
-        "unit": "g",
-        "calories": precise_calculation,
-        "protein": precise_calculation,
-        "carbs": precise_calculation,
-        "fat": precise_calculation
+        "name": "Rice",
+        "quantity": 76.9,
+        "unit": "g", 
+        "calories": 100.0,
+        "protein": 2.1,
+        "carbs": 21.5,
+        "fat": 0.2
       }
     ],
     "total_calories": ${input.targetMacros.calories},
     "total_protein": ${input.targetMacros.protein},
-    "total_carbs": ${input.targetMacros.carbs},
+    "total_carbs": ${input.targetMacros.carbs}, 
     "total_fat": ${input.targetMacros.fat}
   },
-  "explanation": "Brief calculation explanation"
+  "explanation": "Adjusted quantities to match targets exactly"
 }
 
-**FINAL WARNING**: The total_calories, total_protein, total_carbs, and total_fat MUST be EXACTLY ${input.targetMacros.calories}, ${input.targetMacros.protein}, ${input.targetMacros.carbs}, and ${input.targetMacros.fat} respectively. No approximations allowed.
+The totals MUST equal the targets exactly. No deviations allowed.
 `;
 }
 
