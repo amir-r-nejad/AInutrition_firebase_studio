@@ -126,12 +126,45 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
 - Carbohydrates: ${input.target_carbs_grams}g
 - Fat: ${input.target_fat_grams}g
 
+**STRICT NUTRITIONAL DATABASE REQUIREMENT:**
+You MUST use ONLY accurate nutritional data from verified sources like USDA FoodData Central. Use these EXACT values per 100g:
+
+**PROTEINS:**
+- Chicken Breast (skinless): 165 kcal, 31g protein, 0g carbs, 3.6g fat
+- Lean Ground Beef (93/7): 152 kcal, 22.6g protein, 0g carbs, 6.2g fat
+- Salmon (Atlantic): 208 kcal, 25.4g protein, 0g carbs, 12.4g fat
+- Greek Yogurt (non-fat): 59 kcal, 10.3g protein, 3.6g carbs, 0.4g fat
+- Eggs (whole): 155 kcal, 13g protein, 1.1g carbs, 11g fat
+- Egg Whites: 52 kcal, 10.9g protein, 0.7g carbs, 0.2g fat
+- Tofu (firm): 144 kcal, 15.8g protein, 4.3g carbs, 8.7g fat
+
+**CARBOHYDRATES:**
+- White Rice (cooked): 130 kcal, 2.7g protein, 28g carbs, 0.3g fat
+- Brown Rice (cooked): 112 kcal, 2.6g protein, 23g carbs, 0.9g fat
+- Quinoa (cooked): 120 kcal, 4.4g protein, 21.3g carbs, 1.9g fat
+- Oats (dry): 389 kcal, 16.9g protein, 66.3g carbs, 6.9g fat
+- Sweet Potato: 86 kcal, 1.6g protein, 20.1g carbs, 0.1g fat
+- Banana: 89 kcal, 1.1g protein, 22.8g carbs, 0.3g fat
+
+**FATS:**
+- Olive Oil: 884 kcal, 0g protein, 0g carbs, 100g fat
+- Avocado: 160 kcal, 2g protein, 8.5g carbs, 14.7g fat
+- Almonds: 579 kcal, 21.2g protein, 21.6g carbs, 49.9g fat
+- Peanut Butter: 588 kcal, 25.8g protein, 20g carbs, 50g fat
+
+**VEGETABLES:**
+- Spinach: 23 kcal, 2.9g protein, 3.6g carbs, 0.4g fat
+- Broccoli: 34 kcal, 2.8g protein, 7g carbs, 0.4g fat
+- Bell Peppers: 31 kcal, 1g protein, 7g carbs, 0.3g fat
+
 **CRITICAL RULES - NON-NEGOTIABLE:**
 1. **Meal Generation and Macro Accuracy**:
+   - Use ONLY the nutritional values provided above or other verified USDA data
+   - DO NOT make up or estimate nutritional values
+   - Calculate exact quantities needed: quantity_needed = (target_macro ÷ macro_per_100g) × 100
    - First, generate a meal concept that aligns with the user's dietary preferences, restrictions, meal type (e.g., snack, breakfast), and ingredient preferences/avoidances.
-   - Select ingredients from a broad nutritional database, prioritizing user preferences and avoiding allergies.
-   - Use standard nutritional data for ingredients (e.g., provide accurate kcal, protein, carbs, and fat per unit, such as per 100g or per piece).
-   - Calculate the macro contribution of each ingredient based on its quantity.
+   - Select ingredients from the verified nutritional database above, prioritizing user preferences and avoiding allergies.
+   - Calculate the macro contribution of each ingredient based on its quantity using EXACT nutritional data.
    - Iteratively adjust ingredient quantities to minimize the difference between total macros and targets, ensuring ALL macros are within the 5% margin.
    - Verify the final totals for calories, protein, carbs, and fat against the target ranges before returning the response.
    - If any macro is outside the 5% margin, adjust quantities and recalculate until ALL macros are within range.
