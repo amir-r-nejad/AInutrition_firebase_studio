@@ -30,7 +30,7 @@ async function generateWithOpenAI(
           {
             role: "system",
             content:
-              "You are a PRECISION NUTRITION CALCULATOR. CRITICAL: You MUST ADD new ingredients when existing ones cannot meet macro ratios. For example: if current meal is 60% fat calories but target is 20% fat calories, you CANNOT just reduce quantities - you MUST add high-carb/high-protein ingredients like fruits, vegetables, lean proteins. Use real USDA nutrition data. Calculate precisely to meet ALL targets within 10% tolerance. Respond ONLY with valid JSON.",
+              "You are a STRICT NUTRITION CALCULATOR. RULES YOU CANNOT BREAK: 1) Use REAL internet nutrition data (USDA database) 2) If existing ingredients can't reach macro targets, ADD new ingredients 3) MUST meet ALL targets within 5% tolerance 4) If fat is too high, ADD low-fat ingredients (fruits, vegetables, lean proteins) 5) If protein is too low, ADD protein sources (chicken, eggs, protein powder) 6) If carbs are too low, ADD carb sources (oats, rice, fruits). NO EXCEPTIONS. Respond ONLY with valid JSON.",
           },
           {
             role: "user",
@@ -95,26 +95,20 @@ TARGET MACROS:
 CURRENT INGREDIENTS:
 ${input.originalMeal.ingredients.map((ing) => `- ${ing.name}: ${ing.quantity}g`).join("\n")}
 
-CRITICAL ANALYSIS REQUIRED:
-1. Calculate current macro percentages: (protein_cal/total_cal, carb_cal/total_cal, fat_cal/total_cal)
-2. Calculate target macro percentages from target macros
-3. If percentages differ significantly (>5%), you MUST add ingredients to fix ratios
+TARGET MACROS (MUST REACH EXACTLY):
+- Calories: ${input.targetMacros.calories} kcal
+- Protein: ${input.targetMacros.protein}g  
+- Carbs: ${input.targetMacros.carbs}g
+- Fat: ${input.targetMacros.fat}g
 
-MANDATORY INGREDIENT ADDITIONS:
-- If target protein % > current protein %: ADD chicken breast, egg whites, protein powder, greek yogurt, tofu
-- If target carb % > current carb %: ADD oats, rice, banana, apple, sweet potato, pasta
-- If target fat % < current fat %: ADD low-fat high-carb/protein ingredients
-
-CURRENT MEAL ANALYSIS EXAMPLE:
-Cheese (33.1g fat) + Bread (3.2g fat) = 36.3g total fat from 36.3g*9 = 327 fat calories
-Target: 14.2g fat = 128 fat calories
-SOLUTION: ADD high-carb ingredients like banana (0.3g fat/100g) to dilute fat percentage
-
-INSTRUCTIONS:
-1. NEVER just reduce quantities if macro ratios are wrong
-2. ALWAYS add balancing ingredients when needed
-3. Use USDA nutrition data
-4. Meet ALL targets within 10%
+MANDATORY RULES:
+1. Use real nutrition data from internet/USDA database
+2. If current ingredients can't reach targets, ADD ingredients:
+   - Fat too high? ADD fruits/vegetables (banana, apple, spinach)
+   - Protein too low? ADD chicken breast, eggs, protein powder
+   - Carbs too low? ADD oats, rice, sweet potato
+3. Calculate exact quantities to hit targets within 5%
+4. DO NOT just reduce quantities - ADD ingredients to balance
 
 JSON FORMAT:
 {
@@ -196,7 +190,7 @@ export async function adjustMealIngredientsDirect(
 
     // Validate that the result matches the target macros
     const adjustedMeal = result.adjustedMeal;
-    const tolerance = 0.1; // 10% - more reasonable tolerance
+    const tolerance = 0.05; // 5% - strict tolerance
 
     const caloriesValid =
       Math.abs(
@@ -227,7 +221,7 @@ export async function adjustMealIngredientsDirect(
         validation: { caloriesValid, proteinValid, carbsValid, fatValid },
       });
       throw new Error(
-        `AI failed to meet macro targets within 10% tolerance. Please try again. Target: ${cleanedInput.targetMacros.calories}kcal/${cleanedInput.targetMacros.protein}p/${cleanedInput.targetMacros.carbs}c/${cleanedInput.targetMacros.fat}f`,
+        `AI failed to meet macro targets within 5% tolerance. Please try again. Target: ${cleanedInput.targetMacros.calories}kcal/${cleanedInput.targetMacros.protein}p/${cleanedInput.targetMacros.carbs}c/${cleanedInput.targetMacros.fat}f`,
       );
     }
 
