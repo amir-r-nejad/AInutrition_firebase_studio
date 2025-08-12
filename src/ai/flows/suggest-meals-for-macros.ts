@@ -1,4 +1,3 @@
-
 "use server";
 
 import {
@@ -32,14 +31,14 @@ async function generateWithOpenAI(
         messages: [
           {
             role: "system",
-            content: `You are NutriMind, an expert AI nutritionist. Your PRIMARY task is to generate meal suggestions where the total calories, protein, carbs, and fat EXACTLY match the target macronutrients or are within a strict 5% margin of error. This is ABSOLUTELY NON-NEGOTIABLE. You MUST calculate and verify all macros before returning a response to ensure they meet the target. Adhere strictly to all user preferences and dietary restrictions. Your entire response MUST be a single, valid JSON object and nothing else.`,
+            content: `You are NutriMind, an expert AI nutritionist. Your PRIMARY task is to generate meal suggestions where the total calories, protein, carbs, and fat EXACTLY match the target macronutrients or are within a strict 3% margin of error. This is ABSOLUTELY NON-NEGOTIABLE. You MUST calculate and verify all macros before returning a response to ensure they meet the target. Adhere strictly to all user preferences and dietary restrictions. Your entire response MUST be a single, valid JSON object and nothing else.`,
           },
           {
             role: "user",
             content: prompt,
           },
         ],
-        temperature: 0.7,
+        temperature: 0.5,
         max_tokens: 3000,
       }),
     });
@@ -84,7 +83,8 @@ async function generateWithOpenAI(
       }
     }
 
-    const validationResult = SuggestMealsForMacrosOutputSchema.safeParse(parsed);
+    const validationResult =
+      SuggestMealsForMacrosOutputSchema.safeParse(parsed);
     if (!validationResult.success) {
       console.error(
         "OpenAI response validation failed:",
@@ -101,13 +101,15 @@ async function generateWithOpenAI(
 }
 
 function buildPrompt(input: SuggestMealsForMacrosInput): string {
-  const allergiesText = input.allergies && input.allergies.length > 0 
-    ? input.allergies.join(", ") 
-    : "None";
-  
-  const medicalConditionsText = input.medical_conditions && input.medical_conditions.length > 0 
-    ? input.medical_conditions.join(", ") 
-    : "None";
+  const allergiesText =
+    input.allergies && input.allergies.length > 0
+      ? input.allergies.join(", ")
+      : "None";
+
+  const medicalConditionsText =
+    input.medical_conditions && input.medical_conditions.length > 0
+      ? input.medical_conditions.join(", ")
+      : "None";
 
   return `
 Generate 1-3 highly personalized meal suggestions for the user's profile and meal target below. The total calories, protein, carbs, and fat for each meal MUST EXACTLY match the target macros or be within a strict 5% margin of error (e.g., for ${input.target_calories} kcal, the meal must have ${(input.target_calories * 0.95).toFixed(1)}-${(input.target_calories * 1.05).toFixed(1)} kcal; for ${input.target_protein_grams}g protein, ${(input.target_protein_grams * 0.95).toFixed(1)}-${(input.target_protein_grams * 1.05).toFixed(1)}g). Macro accuracy is the HIGHEST PRIORITY and MUST be achieved before returning any response.
@@ -287,7 +289,9 @@ export async function suggestMealsForMacros(
     // Retry logic to ensure valid output
     while (attempts < maxAttempts) {
       attempts++;
-      console.log(`Attempt ${attempts} to generate valid meal suggestions with OpenAI`);
+      console.log(
+        `Attempt ${attempts} to generate valid meal suggestions with OpenAI`,
+      );
 
       const prompt = buildPrompt(validatedInput);
       const result = await generateWithOpenAI(prompt, validatedInput);
@@ -380,10 +384,7 @@ export async function suggestMealsForMacros(
     }
 
     // Log final output for debugging
-    console.log(
-      "Final OpenAI suggestions:",
-      JSON.stringify(output, null, 2),
-    );
+    console.log("Final OpenAI suggestions:", JSON.stringify(output, null, 2));
 
     return output;
   } catch (error: any) {
