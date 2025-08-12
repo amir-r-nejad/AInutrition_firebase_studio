@@ -53,42 +53,65 @@ export default function OptimizedMealSuggestion({
   useEffect(() => {
     // Load the linear programming solver if not already loaded
     if (typeof window !== "undefined" && !(window as any).solver) {
-      const script = document.createElement("script");
-      script.src =
-        "https://cdn.jsdelivr.net/npm/javascript-lp-solver@0.4.24/solver.js";
-      script.async = true;
-      script.defer = true;
+      const loadSolver = async () => {
+        const cdnUrls = [
+          "https://unpkg.com/javascript-lp-solver@0.4.24/solver.js",
+          "https://cdn.jsdelivr.net/npm/javascript-lp-solver@0.4.24/solver.js",
+          "https://cdn.skypack.dev/javascript-lp-solver@0.4.24/solver.js"
+        ];
 
-      script.onload = () => {
-        console.log("Linear programming solver loaded successfully");
-        // Update the solver availability state
-        setIsSolverAvailable(true);
-      };
+        for (let i = 0; i < cdnUrls.length; i++) {
+          try {
+            await new Promise((resolve, reject) => {
+              const script = document.createElement("script");
+              script.src = cdnUrls[i];
+              script.async = true;
+              script.defer = true;
 
-      script.onerror = () => {
-        console.error("Failed to load linear programming solver");
-        toast({
-          title: "Optimization Unavailable",
-          description:
-            "Failed to load optimization tools. Please refresh the page and try again.",
-          variant: "destructive",
-        });
-        // Set solver as unavailable to prevent further attempts
-        setIsSolverAvailable(false);
-      };
+              script.onload = () => {
+                console.log(`Linear programming solver loaded successfully from ${cdnUrls[i]}`);
+                setIsSolverAvailable(true);
+                resolve(true);
+              };
 
-      // Add script to head
-      document.head.appendChild(script);
+              script.onerror = () => {
+                console.warn(`Failed to load solver from ${cdnUrls[i]}, trying next CDN...`);
+                document.head.removeChild(script);
+                reject(new Error(`Failed to load from ${cdnUrls[i]}`));
+              };
 
-      // Set a timeout to check if solver loaded
-      const timeout = setTimeout(() => {
-        if (!(window as any).solver) {
-          console.warn("Solver loading timeout - setting as unavailable");
-          setIsSolverAvailable(false);
+              document.head.appendChild(script);
+
+              // Set a timeout for each attempt
+              setTimeout(() => {
+                if (!(window as any).solver) {
+                  document.head.removeChild(script);
+                  reject(new Error(`Timeout loading from ${cdnUrls[i]}`));
+                }
+              }, 5000);
+            });
+            
+            // If we get here, loading was successful
+            break;
+          } catch (error) {
+            console.warn(`CDN ${i + 1} failed:`, error);
+            
+            // If this was the last CDN attempt, show error
+            if (i === cdnUrls.length - 1) {
+              console.error("Failed to load linear programming solver from all CDNs");
+              toast({
+                title: "Optimization Unavailable",
+                description:
+                  "Failed to load optimization tools from all sources. Please check your internet connection and try again.",
+                variant: "destructive",
+              });
+              setIsSolverAvailable(false);
+            }
+          }
         }
-      }, 10000); // 10 second timeout
+      };
 
-      return () => clearTimeout(timeout);
+      loadSolver();
     } else if ((window as any).solver) {
       setIsSolverAvailable(true);
     }
@@ -205,33 +228,60 @@ export default function OptimizedMealSuggestion({
 
             <Button
               onClick={() => {
-                // Retry loading the solver
-                const script = document.createElement("script");
-                script.src =
-                  "https://cdn.jsdelivr.net/npm/javascript-lp-solver@0.4.24/solver.js";
-                script.async = true;
-                script.defer = true;
+                // Retry loading the solver with fallback CDNs
+                const loadSolver = async () => {
+                  const cdnUrls = [
+                    "https://unpkg.com/javascript-lp-solver@0.4.24/solver.js",
+                    "https://cdn.jsdelivr.net/npm/javascript-lp-solver@0.4.24/solver.js",
+                    "https://cdn.skypack.dev/javascript-lp-solver@0.4.24/solver.js"
+                  ];
 
-                script.onload = () => {
-                  console.log(
-                    "Linear programming solver loaded successfully on retry",
-                  );
-                  setIsSolverAvailable(true);
+                  for (let i = 0; i < cdnUrls.length; i++) {
+                    try {
+                      await new Promise((resolve, reject) => {
+                        const script = document.createElement("script");
+                        script.src = cdnUrls[i];
+                        script.async = true;
+                        script.defer = true;
+
+                        script.onload = () => {
+                          console.log(`Linear programming solver loaded successfully on retry from ${cdnUrls[i]}`);
+                          setIsSolverAvailable(true);
+                          resolve(true);
+                        };
+
+                        script.onerror = () => {
+                          document.head.removeChild(script);
+                          reject(new Error(`Failed to load from ${cdnUrls[i]}`));
+                        };
+
+                        document.head.appendChild(script);
+
+                        setTimeout(() => {
+                          if (!(window as any).solver) {
+                            document.head.removeChild(script);
+                            reject(new Error(`Timeout loading from ${cdnUrls[i]}`));
+                          }
+                        }, 5000);
+                      });
+                      
+                      break;
+                    } catch (error) {
+                      if (i === cdnUrls.length - 1) {
+                        console.error("Failed to load linear programming solver on retry from all CDNs");
+                        toast({
+                          title: "Loading Failed",
+                          description:
+                            "Could not load optimization tools from any source. Please check your internet connection and try again.",
+                          variant: "destructive",
+                        });
+                        setIsSolverAvailable(false);
+                      }
+                    }
+                  }
                 };
 
-                script.onerror = () => {
-                  console.error(
-                    "Failed to load linear programming solver on retry",
-                  );
-                  toast({
-                    title: "Loading Failed",
-                    description:
-                      "Could not load optimization tools. Please check your internet connection and try again.",
-                    variant: "destructive",
-                  });
-                };
-
-                document.head.appendChild(script);
+                loadSolver();
               }}
               variant="outline"
               size="sm"
