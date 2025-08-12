@@ -1,59 +1,51 @@
-'use client';
+"use client";
 
-import { suggestMealsForMacros } from '@/ai/flows/suggest-meals-for-macros';
-import { Button } from '@/components/ui/button';
+import { suggestMealsForMacros } from "@/ai/flows/suggest-meals-for-macros";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/select";
 
-import { getMissingProfileFields } from '@/features/meal-plan/lib/utils';
-import { useToast } from '@/hooks/use-toast';
-import { defaultMacroPercentages, mealNames } from '@/lib/constants';
+import { getMissingProfileFields } from "@/features/meal-plan/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { defaultMacroPercentages, mealNames } from "@/lib/constants";
 import {
-  BaseProfileData,
+  UserProfile,
+  UserPlan,
   SuggestMealsForMacrosOutput,
-  UserPlanType,
-} from '@/lib/schemas';
-import { AlertTriangle, Loader2, Sparkles } from 'lucide-react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+} from "@/lib/schemas";
+import { AlertTriangle, Loader2, Sparkles } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
   useMemo,
   useState,
   useTransition,
-} from 'react';
-import { useMealUrlParams } from '../../hooks/useMealUrlParams';
-import { getExampleTargetsForMeal, prepareAiMealInput } from '../../lib/utils';
-import { getUserProfile } from '@/lib/supabase/data-service';
+} from "react";
+import { useMealUrlParams } from "../../hooks/useMealUrlParams";
+import { getExampleTargetsForMeal, prepareAiMealInput } from "../../lib/utils";
+import { getUserProfile } from "@/lib/supabase/data-service";
+import OptimizedMealSuggestion from "./OptimizedMealSuggestion";
 
 function AIMealSuggestionGenerator({
   profile,
   plan,
 }: {
-  plan: UserPlanType;
-  profile: BaseProfileData;
+  plan: UserPlan;
+  profile: UserProfile;
 }) {
   const { updateUrlWithMeal, getQueryParams, getCurrentMealParams } =
     useMealUrlParams();
@@ -68,12 +60,12 @@ function AIMealSuggestionGenerator({
   const [isLoadingAiSuggestions, startLoadingAiSuggestions] = useTransition();
 
   const [suggestions, setSuggestions] = useState<
-    SuggestMealsForMacrosOutput['suggestions']
+    SuggestMealsForMacrosOutput["suggestions"]
   >([]);
 
   // Derive values from URL query parameters
   const selectedMealName = useMemo(() => {
-    const mealNameParam = getQueryParams('mealName');
+    const mealNameParam = getQueryParams("mealName");
     return mealNameParam && mealNames.includes(mealNameParam)
       ? mealNameParam
       : null;
@@ -89,17 +81,17 @@ function AIMealSuggestionGenerator({
       if (!targets) return;
 
       const urlSearchParams = new URLSearchParams(searchParams);
-      urlSearchParams.set('mealName', targets.mealName);
-      urlSearchParams.set('calories', targets.calories.toFixed(2).toString());
-      urlSearchParams.set('protein', targets.protein.toFixed(2).toString());
-      urlSearchParams.set('carbs', targets.carbs.toFixed(2).toString());
-      urlSearchParams.set('fat', targets.fat.toFixed(2).toString());
+      urlSearchParams.set("mealName", targets.mealName);
+      urlSearchParams.set("calories", targets.calories.toFixed(2).toString());
+      urlSearchParams.set("protein", targets.protein.toFixed(2).toString());
+      urlSearchParams.set("carbs", targets.carbs.toFixed(2).toString());
+      urlSearchParams.set("fat", targets.fat.toFixed(2).toString());
 
       router.push(`${pathname}?${urlSearchParams.toString()}`, {
         scroll: false,
       });
     },
-    [pathname, router, searchParams]
+    [pathname, router, searchParams],
   );
 
   const calculateTargetsForSelectedMeal = useCallback(() => {
@@ -125,7 +117,7 @@ function AIMealSuggestionGenerator({
         mealDistribution = defaultMacroPercentages[selectedMealName];
       else
         mealDistribution = userMealDistributions.filter(
-          (meal) => meal.mealName === selectedMealName
+          (meal: any) => meal.mealName === selectedMealName,
         )[0];
 
       if (
@@ -153,10 +145,10 @@ function AIMealSuggestionGenerator({
         const exampleTargets = getExampleTargetsForMeal(selectedMealName);
         updateUrlWithTargets(exampleTargets);
         toast({
-          title: 'Using Example Targets',
+          title: "Using Example Targets",
           description: `Could not calculate specific targets for ${selectedMealName} from profile. Ensure profile basics (age, weight, height, gender, activity, goal) are complete.`,
           duration: 6000,
-          variant: 'default',
+          variant: "default",
         });
       }
     } else {
@@ -164,10 +156,10 @@ function AIMealSuggestionGenerator({
       const exampleTargets = getExampleTargetsForMeal(selectedMealName);
       updateUrlWithTargets(exampleTargets);
       toast({
-        title: 'Profile Incomplete or Demo',
+        title: "Profile Incomplete or Demo",
         description: `Showing example targets for ${selectedMealName}. Please complete your profile via Onboarding or Smart Calorie Planner for personalized calculations.`,
         duration: 7000,
-        variant: 'default',
+        variant: "default",
       });
     }
   }, [plan, profile, selectedMealName, toast, updateUrlWithTargets]);
@@ -187,12 +179,12 @@ function AIMealSuggestionGenerator({
     startLoadingAiSuggestions(async () => {
       if (!targetMacros) {
         toast({
-          title: 'Error',
-          description: 'Target macros not loaded. Select a meal first.',
-          variant: 'destructive',
+          title: "Error",
+          description: "Target macros not loaded. Select a meal first.",
+          variant: "destructive",
         });
         return;
-        console.log('RETURNED');
+        console.log("RETURNED");
       }
 
       setError(null);
@@ -207,18 +199,18 @@ function AIMealSuggestionGenerator({
         else {
           setError(error);
           toast({
-            title: 'AI Response Error',
+            title: "AI Response Error",
             description: error,
-            variant: 'destructive',
+            variant: "destructive",
           });
         }
       } catch (err: any) {
-        setError(err?.message || 'Failed to fetch profile or suggestions.');
+        setError(err?.message || "Failed to fetch profile or suggestions.");
         toast({
-          title: 'Error',
+          title: "Error",
           description:
-            err?.message || 'Failed to fetch profile or suggestions.',
-          variant: 'destructive',
+            err?.message || "Failed to fetch profile or suggestions.",
+          variant: "destructive",
         });
       }
     });
@@ -228,19 +220,19 @@ function AIMealSuggestionGenerator({
 
   return (
     <>
-      <div className='space-y-2'>
+      <div className="space-y-2">
         <Label
-          htmlFor='meal-select'
-          className='text-lg font-semibold text-primary'
+          htmlFor="meal-select"
+          className="text-lg font-semibold text-primary"
         >
           2. Choose a Meal:
         </Label>
         <Select
           onValueChange={handleMealSelectionChange}
-          value={selectedMealName || ''}
+          value={selectedMealName || ""}
         >
-          <SelectTrigger id='meal-select' className='w-full md:w-1/2 lg:w-1/3'>
-            <SelectValue placeholder='Select a meal...' />
+          <SelectTrigger id="meal-select" className="w-full md:w-1/2 lg:w-1/3">
+            <SelectValue placeholder="Select a meal..." />
           </SelectTrigger>
           <SelectContent>
             {mealNames.map((name) => (
@@ -253,9 +245,9 @@ function AIMealSuggestionGenerator({
       </div>
 
       {selectedMealName && !targetMacros && (
-        <div className='flex justify-center items-center py-4'>
-          <Loader2 className='h-6 w-6 animate-spin text-primary' />
-          <p className='ml-2'>
+        <div className="flex justify-center items-center py-4">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p className="ml-2">
             Loading profile and calculating targets for {selectedMealName}
             ...
           </p>
@@ -264,26 +256,26 @@ function AIMealSuggestionGenerator({
 
       {showContentBelowSelection && (
         <>
-          <div className='p-4 border rounded-md bg-muted/50'>
-            <h3 className='text-lg font-semibold mb-2 text-primary'>
+          <div className="p-4 border rounded-md bg-muted/50">
+            <h3 className="text-lg font-semibold mb-2 text-primary">
               Target Macros for {targetMacros.mealName}:
             </h3>
 
-            <div className='grid grid-cols-2 md:grid-cols-4 gap-3'>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <p>
-                <span className='font-medium'>Calories:</span>{' '}
+                <span className="font-medium">Calories:</span>{" "}
                 {targetMacros.calories.toFixed(1)} kcal
               </p>
               <p>
-                <span className='font-medium'>Protein:</span>{' '}
+                <span className="font-medium">Protein:</span>{" "}
                 {targetMacros.protein.toFixed(1)} g
               </p>
               <p>
-                <span className='font-medium'>Carbs:</span>{' '}
+                <span className="font-medium">Carbs:</span>{" "}
                 {targetMacros.carbs.toFixed(1)} g
               </p>
               <p>
-                <span className='font-medium'>Fat:</span>{' '}
+                <span className="font-medium">Fat:</span>{" "}
                 {targetMacros.fat.toFixed(1)} g
               </p>
             </div>
@@ -292,24 +284,24 @@ function AIMealSuggestionGenerator({
           <Button
             onClick={() => handleGetSuggestions()}
             disabled={targetMacros.calories <= 0 || isLoadingAiSuggestions}
-            size='lg'
-            className='w-full md:w-auto'
+            size="lg"
+            className="w-full md:w-auto"
           >
             {isLoadingAiSuggestions ? (
-              <Loader2 className='mr-2 h-5 w-5 animate-spin' />
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             ) : (
-              <Sparkles className='mr-2 h-5 w-5' />
+              <Sparkles className="mr-2 h-5 w-5" />
             )}
             {isLoadingAiSuggestions
-              ? 'Getting Suggestions...'
+              ? "Getting Suggestions..."
               : targetMacros.calories > 0
-              ? 'Get AI Meal Suggestions'
-              : 'Meals must contains a certain amount of calories'}
+                ? "Get AI Meal Suggestions"
+                : "Meals must contains a certain amount of calories"}
           </Button>
 
           {error && (
-            <p className='text-destructive mt-4'>
-              <AlertTriangle className='inline mr-1 h-4 w-4' />
+            <p className="text-destructive mt-4">
+              <AlertTriangle className="inline mr-1 h-4 w-4" />
               {error}
             </p>
           )}
@@ -317,100 +309,36 @@ function AIMealSuggestionGenerator({
       )}
 
       {!selectedMealName && (
-        <div className='text-center py-6 text-muted-foreground'>
+        <div className="text-center py-6 text-muted-foreground">
           <p>Please select a meal type above to get started.</p>
         </div>
       )}
 
       {isLoadingAiSuggestions && (
-        <div className='flex flex-col items-center justify-center py-8 space-y-2'>
-          <Loader2 className='h-10 w-10 animate-spin text-primary' />
-          <p className='text-lg text-muted-foreground'>
-            Fetching creative meal ideas for your{' '}
-            {targetMacros?.mealName || 'meal'}...
+        <div className="flex flex-col items-center justify-center py-8 space-y-2">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-lg text-muted-foreground">
+            Fetching creative meal ideas for your{" "}
+            {targetMacros?.mealName || "meal"}...
           </p>
         </div>
       )}
 
       {suggestions && suggestions.length > 0 && !isLoadingAiSuggestions && (
-        <div className='space-y-4'>
-          <h2 className='text-2xl font-semibold text-primary mt-8 mb-4'>
-            Here are some ideas for your {targetMacros?.mealName || 'meal'}:
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold text-primary mt-8 mb-4">
+            AI Meal Suggestion for your {targetMacros?.mealName || "meal"}:
           </h2>
           {suggestions.map((suggestion, index) => (
-            <Card
+            <OptimizedMealSuggestion
               key={index}
-              className='shadow-md hover:shadow-lg transition-shadow'
-            >
-              <CardHeader>
-                <CardTitle className='text-xl font-semibold'>
-                  {suggestion.mealTitle}
-                </CardTitle>
-                <CardDescription className='text-sm'>
-                  {suggestion.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <h4 className='font-medium text-md mb-2 text-primary'>
-                  Ingredients:
-                </h4>
-                <ScrollArea className='w-full mb-4'>
-                  <Table className='min-w-[500px]'>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className='w-[30%]'>Ingredient</TableHead>
-                        <TableHead className='text-right'>Amount</TableHead>
-                        <TableHead className='text-right'>Unit</TableHead>
-                        <TableHead className='text-right'>Calories</TableHead>
-                        <TableHead className='text-right'>
-                          Macros (P/C/F)
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {suggestion.ingredients.map((ing, i) => (
-                        <TableRow key={i}>
-                          <TableCell className='font-medium py-1.5'>
-                            {ing.name}
-                          </TableCell>
-                          <TableCell className='text-right py-1.5'>
-                            {ing.amount}
-                          </TableCell>
-                          <TableCell className='text-right py-1.5'>
-                            {ing.unit}
-                          </TableCell>
-                          <TableCell className='text-right py-1.5'>
-                            {ing.calories.toFixed(0)}
-                          </TableCell>
-                          <TableCell className='text-right py-1.5 whitespace-nowrap'>
-                            {ing.macrosString}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  <ScrollBar orientation='horizontal' />
-                </ScrollArea>
-
-                <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
-                  Total: {suggestion.totalCalories.toFixed(0)} kcal | Protein:{' '}
-                  {suggestion.totalProtein.toFixed(1)}g | Carbs:{' '}
-                  {suggestion.totalCarbs.toFixed(1)}g | Fat:{' '}
-                  {suggestion.totalFat.toFixed(1)}g
-                </div>
-
-                {suggestion.instructions && (
-                  <div className='mt-4'>
-                    <h4 className='font-medium text-md mb-1 text-primary'>
-                      Instructions:
-                    </h4>
-                    <p className='text-sm text-muted-foreground whitespace-pre-line'>
-                      {suggestion.instructions}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+              originalSuggestion={suggestion}
+              targetMacros={targetMacros}
+              onOptimizationComplete={(optimizedMeal) => {
+                console.log("Optimization completed:", optimizedMeal);
+                // You can handle the optimized meal here if needed
+              }}
+            />
           ))}
         </div>
       )}
