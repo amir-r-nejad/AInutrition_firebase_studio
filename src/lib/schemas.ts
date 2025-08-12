@@ -961,54 +961,6 @@ export type SuggestMealsForMacrosInput = z.infer<
   typeof SuggestMealsForMacrosInputSchema
 >;
 
-// Single Meal Optimization Schemas
-export const SuggestSingleMealInputSchema = z.object({
-  meal_name: z.string(),
-  target_calories: z.number().positive(),
-  target_protein_grams: z.number().nonnegative(),
-  target_carbs_grams: z.number().nonnegative(),
-  target_fat_grams: z.number().nonnegative(),
-  age: z.number().nullable().optional(),
-  gender: z.string().nullable().optional(),
-  activity_level: z.string().nullable().optional(),
-  diet_goal: z.string().nullable().optional(),
-  preferred_diet: z.string().nullable().optional(),
-  preferred_cuisines: z.array(z.string()).nullable().optional(),
-  dispreferrred_cuisines: z.array(z.string()).nullable().optional(),
-  preferred_ingredients: z.array(z.string()).nullable().optional(),
-  dispreferrred_ingredients: z.array(z.string()).nullable().optional(),
-  allergies: z.array(z.string()).nullable().optional(),
-  medical_conditions: z.array(z.string()).nullable().optional(),
-  preferences: z.string().optional(),
-});
-
-export type SuggestSingleMealInput = z.infer<typeof SuggestSingleMealInputSchema>;
-
-export const OptimizedIngredientSchema = z.object({
-  name: z.string(),
-  amount: z.number(),
-  calories: z.number(),
-  protein: z.number(),
-  carbs: z.number(),
-  fat: z.number(),
-});
-
-export const OptimizedMealResultSchema = z.object({
-  dishName: z.string(),
-  description: z.string(),
-  optimizedIngredients: z.array(OptimizedIngredientSchema),
-  achievedMacros: z.object({
-    calories: z.number(),
-    protein: z.number(),
-    carbs: z.number(),
-    fat: z.number(),
-  }),
-  optimizationStatus: z.string(),
-  totalDeviation: z.number().optional(),
-});
-
-export type OptimizedMealResult = z.infer<typeof OptimizedMealResultSchema>;
-
 export const SuggestMealsForMacrosSimpleInputSchema = z.object({
   meal_name: z.string(),
   target_calories: z.number(),
