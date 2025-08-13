@@ -1,5 +1,8 @@
 "use server";
 
+// Ensure Node types for process in TS without @types/node
+declare const process: any;
+
 import {
   SuggestMealsForMacrosInputSchema,
   SuggestMealsForMacrosOutputSchema,
@@ -31,14 +34,21 @@ async function generateWithOpenAI(
         messages: [
           {
             role: "system",
-            content: `You are NutriMind, an expert AI nutritionist. Generate meal suggestions and return them in JSON format.`,
+            content: `You are NutriMind, an expert AI nutritionist. Always:
+ - Respect ALL user preferences, allergies, and medical conditions strictly
+ - Suggest exactly ONE meal (not a plan), with a protein source + carb source + fat source + up to 2 vegetables
+ - Use reliable nutrition references (USDA FoodData Central typical per-100g values). If uncertain, use the fallback table provided in the user prompt
+ - Compute macros per-ingredient using (grams/100) * per-100g values and provide totals
+ - Hit target macros within ±5% (Calories, Protein, Carbs, Fat)
+ - Return ONLY valid JSON matching the requested schema. No extra text, no commentary.`,
           },
           {
             role: "user",
             content: prompt,
           },
         ],
-        temperature: 0.5,
+        temperature: 0.7,
+        top_p: 0.9,
         max_tokens: 3000,
       }),
     });
@@ -120,24 +130,49 @@ async function generateWithOpenAI(
 
 function buildPrompt(input: SuggestMealsForMacrosInput): string {
   const allergiesText =
-    input.allergies && input.allergies.length > 0
+    Array.isArray(input.allergies) && input.allergies?.length
       ? input.allergies.join(", ")
       : "None";
   const medicalConditionsText =
-    input.medical_conditions && input.medical_conditions.length > 0
+    Array.isArray(input.medical_conditions) && input.medical_conditions?.length
       ? input.medical_conditions.join(", ")
       : "None";
   const preferencesText = input.preferences || "None";
+  const preferredDietText = input.preferred_diet || "None";
+  const preferredCuisinesText =
+    Array.isArray(input.preferred_cuisines) && input.preferred_cuisines?.length
+      ? input.preferred_cuisines.join(", ")
+      : "None";
+  const dispreferredCuisinesText =
+    Array.isArray(input.dispreferrred_cuisines) &&
+    input.dispreferrred_cuisines?.length
+      ? input.dispreferrred_cuisines.join(", ")
+      : "None";
+  const preferredIngredientsText =
+    Array.isArray(input.preferred_ingredients) &&
+    input.preferred_ingredients?.length
+      ? input.preferred_ingredients.join(", ")
+      : "None";
+  const dispreferredIngredientsText =
+    Array.isArray(input.dispreferrred_ingredients) &&
+    input.dispreferrred_ingredients?.length
+      ? input.dispreferrred_ingredients.join(", ")
+      : "None";
 
   return `
-Generate ONE personalized meal suggestion for ${input.meal_name} that includes sources of protein, carbohydrates, and fat.
+Generate ONE personalized meal suggestion for ${input.meal_name} that includes explicit sources of protein, carbohydrates, and fat.
 
 **User Profile:**
 - Age: ${input.age}
 - Gender: ${input.gender}
 - Activity Level: ${input.activity_level}
 - Diet Goal: ${input.diet_goal}
-- Preferences: ${preferencesText}
+- Preferred Diet (MUST respect): ${preferredDietText}
+- Preferences (MUST respect): ${preferencesText}
+- Preferred Cuisines: ${preferredCuisinesText}
+- Dispreferred Cuisines: ${dispreferredCuisinesText}
+- Preferred Ingredients: ${preferredIngredientsText}
+- Dispreferred Ingredients: ${dispreferredIngredientsText}
 - Allergies: ${allergiesText}
 - Medical Conditions: ${medicalConditionsText}
 
@@ -148,22 +183,25 @@ Generate ONE personalized meal suggestion for ${input.meal_name} that includes s
 - Fat: ${input.target_fat_grams}g
 
 **Requirements:**
-1. ONE meal only with 4-5 ingredients
-2. Must include: protein source + carb source + fat source + 1-2 vegetables
-3. Use exact nutritional values from database below
-4. Total macros must match targets within 5% margin
+1. ONE meal with 5–8 ingredients minimum (at least: 2 protein sources, 1-2 carb sources, 1 fat source, and 2-3 vegetables)
+2. STRICTLY respect preferences/allergies/medical conditions (e.g., avoid excluded ingredients, match cuisine/halal/vegetarian requests, cooking method preferences)
+   - If preferred diet includes "vegetarian": do NOT include meat, poultry, or fish (eggs/dairy allowed). If "vegan": exclude all animal products
+   - For diabetes: prefer lower-glycemic carbs and whole grains; avoid added sugars
+3. Use nutritional values from USDA FoodData Central (typical per-100g). If uncertain, use this fallback table exactly as numeric references
+4. For high protein targets (>40g): combine 2+ protein sources (e.g., tofu + lentils, eggs + Greek yogurt)
+5. For high carb targets (>70g): use 1-2 carb sources with good amounts (e.g., quinoa + sweet potato)
+6. Keep fat sources reasonable (5-15g from nuts/oils, moderate amounts from avocado/tahini)
+7. Total macros must match targets within ±3% margin. Calculate precisely: (amount_grams ÷ 100) × per_100g_values
+8. Favor variety and ensure NO ingredient is 0g in the final result
 
-**Nutrition Database (per 100g):**
-**Proteins:** Chicken (165 cal, 31g protein, 0g carbs, 3.6g fat), Turkey (189 cal, 29g protein, 0g carbs, 7.4g fat), Salmon (208 cal, 25.4g protein, 0g carbs, 12.4g fat), Eggs (155 cal, 13g protein, 1.1g carbs, 11g fat), Tofu (144 cal, 15.8g protein, 4.3g carbs, 8.7g fat)
-
-**Carbs:** Rice (130 cal, 2.7g protein, 28g carbs, 0.3g fat), Quinoa (120 cal, 4.4g protein, 21.3g carbs, 1.9g fat), Sweet Potato (86 cal, 1.6g protein, 20.1g carbs, 0.1g fat), Pasta (131 cal, 5g protein, 25g carbs, 1.1g fat), Oats (389 cal, 16.9g protein, 66.3g carbs, 6.9g fat)
-
-**Fats:** Olive Oil (884 cal, 0g protein, 0g carbs, 100g fat), Avocado (160 cal, 2g protein, 8.5g carbs, 14.7g fat), Almonds (579 cal, 21.2g protein, 21.6g carbs, 49.9g fat)
-
-**Vegetables:** Spinach (23 cal, 2.9g protein, 3.6g carbs, 0.4g fat), Broccoli (34 cal, 2.8g protein, 7g carbs, 0.4g fat), Bell Peppers (31 cal, 1g protein, 7g carbs, 0.3g fat)
+**Fallback Nutrition Table (per 100g, use only if USDA value not available):**
+Vegetarian Proteins: Eggs (155 cal, 13g P, 1.1g C, 11g F), Tofu (144 cal, 15.8g P, 4.3g C, 8.7g F), Tempeh (193 cal, 19g P, 9g C, 11g F), Greek Yogurt (100 cal, 10g P, 4g C, 5g F), Cottage Cheese (98 cal, 11g P, 3.4g C, 4.3g F), Lentils cooked (116 cal, 9g P, 20g C, 0.4g F), Chickpeas (164 cal, 8.9g P, 27g C, 2.6g F), Black Beans (132 cal, 8.9g P, 23g C, 0.5g F)
+Carbs: Rice Brown (112 cal, 2.6g P, 23g C, 0.9g F), Quinoa (120 cal, 4.4g P, 21.3g C, 1.9g F), Sweet Potato (86 cal, 1.6g P, 20.1g C, 0.1g F), Whole Wheat Pasta (124 cal, 4.5g P, 25g C, 1.1g F), Oats (389 cal, 16.9g P, 66.3g C, 6.9g F), Barley (123 cal, 2.3g P, 28g C, 0.4g F)
+Healthy Fats: Olive Oil (884 cal, 0g P, 0g C, 100g F), Avocado (160 cal, 2g P, 8.5g C, 14.7g F), Almonds (579 cal, 21.2g P, 21.6g C, 49.9g F), Walnuts (654 cal, 15.2g P, 13.7g C, 65.2g F), Tahini (595 cal, 17g P, 21g C, 54g F), Hemp Seeds (553 cal, 31g P, 4.7g C, 49g F)
+Vegetables: Spinach (23 cal, 2.9g P, 3.6g C, 0.4g F), Broccoli (34 cal, 2.8g P, 7g C, 0.4g F), Bell Pepper (31 cal, 1g P, 7g C, 0.3g F), Tomato (18 cal, 0.9g P, 3.9g C, 0.2g F), Kale (35 cal, 2.9g P, 4.4g C, 1.5g F), Cauliflower (25 cal, 1.9g P, 5g C, 0.3g F)
 
 **Calculation:** For each ingredient, calculate: (amount_grams ÷ 100) × nutrition_per_100g
-**Verify:** Sum of all ingredient macros = target macros
+**Verify:** Sum of all ingredient macros matches targets within ±5%
 
 **IMPORTANT: Return ONLY valid JSON in this exact format:**
 {
@@ -191,7 +229,7 @@ Generate ONE personalized meal suggestion for ${input.meal_name} that includes s
   ]
 }
 
-Return exactly ONE meal suggestion with precise calculations.
+Return exactly ONE meal suggestion with precise calculations. JSON only.
 `;
 }
 
