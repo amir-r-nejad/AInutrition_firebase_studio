@@ -955,6 +955,7 @@ export const SuggestMealsForMacrosInputSchema = z.object({
   dispreferrred_ingredients: z.array(z.string()).nullable().optional(),
   allergies: z.array(z.string()).nullable().optional(),
   medical_conditions: z.array(z.string()).nullable().optional(),
+  medications: z.array(z.string()).nullable().optional(),
 });
 
 export type SuggestMealsForMacrosInput = z.infer<

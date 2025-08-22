@@ -1,49 +1,49 @@
-import { defaultMacroPercentages } from '@/lib/constants';
+import { defaultMacroPercentages } from "@/lib/constants";
 import {
   SuggestMealsForMacrosInput,
   type MacroSplitterFormValues,
-} from '@/lib/schemas';
-import { UseFormReturn } from 'react-hook-form';
+} from "@/lib/schemas";
+import { UseFormReturn } from "react-hook-form";
 import {
   AiMealInputTypes,
   CalculatedMealMacros,
   TotalMacros,
-} from '../types/toolsGlobalTypes';
+} from "../types/toolsGlobalTypes";
 
 export function customMacroSplit(
   totalMacros: TotalMacros,
-  mealMacroDistribution: MacroSplitterFormValues['meal_distributions']
+  mealMacroDistribution: MacroSplitterFormValues["meal_distributions"],
 ): CalculatedMealMacros[] {
   return mealMacroDistribution.map((mealPct) => ({
     mealName: mealPct.mealName,
     Calories: Number(
-      (totalMacros.calories * ((mealPct.calories_pct || 0) / 100)).toFixed(1)
+      (totalMacros.calories * ((mealPct.calories_pct || 0) / 100)).toFixed(1),
     ),
-    'Protein (g)': Number(
-      (totalMacros.protein_g * ((mealPct.calories_pct || 0) / 100)).toFixed(1)
+    "Protein (g)": Number(
+      (totalMacros.protein_g * ((mealPct.calories_pct || 0) / 100)).toFixed(1),
     ),
-    'Carbs (g)': Number(
-      (totalMacros.carbs_g * ((mealPct.calories_pct || 0) / 100)).toFixed(1)
+    "Carbs (g)": Number(
+      (totalMacros.carbs_g * ((mealPct.calories_pct || 0) / 100)).toFixed(1),
     ),
-    'Fat (g)': Number(
-      (totalMacros.fat_g * ((mealPct.calories_pct || 0) / 100)).toFixed(1)
+    "Fat (g)": Number(
+      (totalMacros.fat_g * ((mealPct.calories_pct || 0) / 100)).toFixed(1),
     ),
   }));
 }
 
 export function getMealMacroStats(
-  form: UseFormReturn<MacroSplitterFormValues>
+  form: UseFormReturn<MacroSplitterFormValues>,
 ) {
-  const watchedMealDistributions = form.watch('meal_distributions');
-  const calculateColumnSum = (macroKey: 'calories_pct') => {
+  const watchedMealDistributions = form.watch("meal_distributions");
+  const calculateColumnSum = (macroKey: "calories_pct") => {
     return watchedMealDistributions.reduce(
       (sum, meal) => sum + (Number(meal[macroKey]) || 0),
-      0
+      0,
     );
   };
 
   const columnSums = {
-    calories_pct: calculateColumnSum('calories_pct'),
+    calories_pct: calculateColumnSum("calories_pct"),
   };
 
   return { columnSums, watchedMealDistributions };
@@ -62,16 +62,16 @@ export function getExampleTargetsForMeal(mealName: string) {
   return {
     mealName,
     calories: Math.round(
-      exampleDailyTotals.targetCalories * (mealDistribution.calories_pct / 100)
+      exampleDailyTotals.targetCalories * (mealDistribution.calories_pct / 100),
     ),
     protein: Math.round(
-      exampleDailyTotals.targetProtein * (mealDistribution.protein_pct / 100)
+      exampleDailyTotals.targetProtein * (mealDistribution.protein_pct / 100),
     ),
     carbs: Math.round(
-      exampleDailyTotals.targetCarbs * (mealDistribution.carbs_pct / 100)
+      exampleDailyTotals.targetCarbs * (mealDistribution.carbs_pct / 100),
     ),
     fat: Math.round(
-      exampleDailyTotals.targetFat * (mealDistribution.fat_pct / 100)
+      exampleDailyTotals.targetFat * (mealDistribution.fat_pct / 100),
     ),
   };
 }
@@ -91,6 +91,11 @@ export function prepareAiMealInput({
     activity_level: profile.physical_activity_level ?? undefined,
     diet_goal: profile.primary_diet_goal ?? undefined,
     preferred_diet: profile.preferred_diet ?? undefined,
+    preferences: profile.preferences ?? undefined,
+    preferred_cuisines: profile.preferred_cuisines ?? undefined,
+    dispreferrred_cuisines: profile.dispreferrred_cuisines ?? undefined,
+    preferred_ingredients: profile.preferred_ingredients ?? undefined,
+    dispreferrred_ingredients: profile.dispreferrred_ingredients ?? undefined,
     allergies: profile.allergies ?? undefined,
     medical_conditions: profile.medical_conditions ?? undefined,
     medications: profile.medications ?? undefined,
@@ -99,7 +104,7 @@ export function prepareAiMealInput({
   Object.keys(aiInput).forEach(
     (key) =>
       aiInput[key as keyof SuggestMealsForMacrosInput] === undefined &&
-      delete aiInput[key as keyof SuggestMealsForMacrosInput]
+      delete aiInput[key as keyof SuggestMealsForMacrosInput],
   );
 
   return aiInput;

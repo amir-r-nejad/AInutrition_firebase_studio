@@ -77,9 +77,9 @@ export async function editAiPlan(
 
     const { data, error } = await supabase
       .from("meal_plans")
-      .upsert(upsertData, { 
+      .upsert(upsertData, {
         onConflict: "user_id",
-        ignoreDuplicates: false 
+        ignoreDuplicates: false,
       })
       .select("ai_plan")
       .single();
@@ -101,10 +101,15 @@ export async function editAiPlan(
 
         if (insertError) {
           console.error("Insert error:", JSON.stringify(insertError, null, 2));
-          throw new Error(`Failed to create AI-generated plan: ${insertError.message}`);
+          throw new Error(
+            `Failed to create AI-generated plan: ${insertError.message}`,
+          );
         }
 
-        console.log("Successfully inserted ai_plan:", JSON.stringify(insertData.ai_plan, null, 2));
+        console.log(
+          "Successfully inserted ai_plan:",
+          JSON.stringify(insertData.ai_plan, null, 2),
+        );
         revalidatePath("/meal-plan/current");
         revalidateTag("meal_plan");
         return insertData.ai_plan as GeneratePersonalizedMealPlanOutput;
@@ -144,17 +149,49 @@ export async function loadMealPlan(
 
   if (error) {
     console.error("Error loading meal plan:", JSON.stringify(error, null, 2));
-    if (error.code === "PGRST116")
-      throw new Error("No meal plan found for this user");
+    if (error.code === "PGRST116") {
+      // Gracefully handle missing record by returning an empty AI plan
+      const emptyPlan: GeneratePersonalizedMealPlanOutput = {
+        weeklyMealPlan: [],
+        weeklySummary: {
+          totalCalories: 0,
+          totalProtein: 0,
+          totalCarbs: 0,
+          totalFat: 0,
+        },
+      };
+      console.log("No meal plan found, returning empty AI plan");
+      return emptyPlan;
+    }
     throw new Error(`Failed to load meal plan: ${error.message}`);
   }
 
   if (!data) {
-    throw new Error("No meal plan found for this user");
+    const emptyPlan: GeneratePersonalizedMealPlanOutput = {
+      weeklyMealPlan: [],
+      weeklySummary: {
+        totalCalories: 0,
+        totalProtein: 0,
+        totalCarbs: 0,
+        totalFat: 0,
+      },
+    };
+    console.log("No meal plan data, returning empty AI plan");
+    return emptyPlan;
   }
 
   if (!data.ai_plan) {
-    throw new Error("No AI plan generated yet - please generate an AI meal plan first");
+    const emptyPlan: GeneratePersonalizedMealPlanOutput = {
+      weeklyMealPlan: [],
+      weeklySummary: {
+        totalCalories: 0,
+        totalProtein: 0,
+        totalCarbs: 0,
+        totalFat: 0,
+      },
+    };
+    console.log("No AI plan generated yet, returning empty AI plan");
+    return emptyPlan;
   }
 
   let parsedPlan: GeneratePersonalizedMealPlanOutput;
@@ -172,7 +209,6 @@ export async function loadMealPlan(
     if (!parsedPlan.weeklyMealPlan || !parsedPlan.weeklySummary) {
       throw new Error("Invalid meal plan structure - missing required fields");
     }
-
   } catch (parseError) {
     console.error(
       "Error parsing ai_plan:",

@@ -422,15 +422,21 @@ export default function MealPlanGenerator({
           try {
             console.log("Auto-refreshing meal plan before page reload...");
             const refreshedPlan = await loadMealPlan();
-            console.log("Auto-refreshed meal plan:", JSON.stringify(refreshedPlan, null, 2));
+            console.log(
+              "Auto-refreshed meal plan:",
+              JSON.stringify(refreshedPlan, null, 2),
+            );
             setGeneratedPlan(refreshedPlan);
-            
+
             // Give a moment for the state to update, then refresh page
             setTimeout(() => {
               window.location.reload();
             }, 500);
           } catch (error) {
-            console.error("Auto-refresh failed, proceeding with page reload:", error);
+            console.error(
+              "Auto-refresh failed, proceeding with page reload:",
+              error,
+            );
             window.location.reload();
           }
         }, 2000); // Refresh after 2 seconds to show the toast first
@@ -627,7 +633,19 @@ export default function MealPlanGenerator({
         {/* Meal Plan Display */}
         <div>
           {(generatedPlan || loadingPlan) && (
-            <MealPlanOverview mealPlan={{ ai_plan: generatedPlan }} />
+            <MealPlanOverview
+              mealPlan={{ ai_plan: generatedPlan }}
+              userTargets={
+                userPlan
+                  ? {
+                      calories: userPlan.target_daily_calories || 0,
+                      protein: userPlan.target_protein_g || 0,
+                      carbs: userPlan.target_carbs_g || 0,
+                      fat: userPlan.target_fat_g || 0,
+                    }
+                  : undefined
+              }
+            />
           )}
         </div>
       </div>
