@@ -609,65 +609,90 @@ function iterativeHelperSelection(
 ): OptimizationResult {
   let currentIngredients = [...baseIngredients];
   let iteration = 0;
-  const maxIterations = 5; // Maximum 5 helpers
-  const targetAccuracy = 0.05; // ±5% tolerance
+  const maxIterations = 3; // Maximum 3 helpers - keep it minimal
+  const targetAccuracy = 0.08; // ±8% tolerance - more realistic
+
+  // First try to optimize with base ingredients only
+  console.log("\n🔄 === BASE OPTIMIZATION ===");
+  console.log(`🧪 Base ingredients (${currentIngredients.length}):`, currentIngredients.map(i => i.name));
+  
+  let bestSolution = solveQuadraticSubproblem(currentIngredients, targets);
+  if (!bestSolution) {
+    throw new Error("Failed to solve with base ingredients");
+  }
+
+  console.log("📊 Base solution accuracy:", calculateAccuracyPercentages(bestSolution.achieved, targets));
+
+  // Check if base solution is already good enough
+  if (isWithinTargetAccuracy(bestSolution.achieved, targets, targetAccuracy)) {
+    console.log("🎉 Base ingredients already meet target accuracy!");
+    return bestSolution;
+  }
 
   while (iteration < maxIterations) {
     iteration++;
     console.log(`\n🔄 === ITERATION ${iteration} ===`);
 
-    // Step 1: Optimize with current ingredients
-    console.log(`🧪 Current ingredients (${currentIngredients.length}):`, currentIngredients.map(i => i.name));
-    const currentSolution = solveQuadraticSubproblem(currentIngredients, targets);
+    // Analyze deficits to determine if we need helpers
+    const deficits = analyzeDeficits(bestSolution.achieved, targets);
+    console.log("📊 Current deficits:", deficits);
 
-    if (!currentSolution) {
-      console.log("❌ Failed to solve with current ingredients");
+    // Only add helper if there's a significant deficit (>10%)
+    const needsHelper = deficits.urgentNeeds.some(need => Math.abs(need.value) > 0.10);
+    if (!needsHelper) {
+      console.log("✅ No significant deficits, current solution is acceptable");
       break;
     }
 
-    // Step 2: Analyze deficits
-    const deficits = analyzeDeficits(currentSolution.achieved, targets);
-    console.log("📊 Current deficits:", deficits);
-
-    // Step 3: Check if we've reached target accuracy
-    if (isWithinTargetAccuracy(currentSolution.achieved, targets, targetAccuracy)) {
-      console.log("🎉 Target accuracy reached! No more helpers needed.");
-      return currentSolution;
-    }
-
-    // Step 4: Find best helper to address biggest deficit
+    // Find best helper - more selective
     const bestHelper = findBestHelper(helperPool, deficits, currentIngredients);
 
     if (!bestHelper) {
-      console.log("⚠️ No suitable helper found, stopping iteration");
-      return currentSolution;
+      console.log("⚠️ No suitable helper found, keeping current solution");
+      break;
     }
 
     console.log(`➕ Adding helper: ${bestHelper.name}`);
     console.log(`📈 Helper profile: cal=${bestHelper.cal.toFixed(3)}, prot=${bestHelper.prot.toFixed(3)}, carb=${bestHelper.carb.toFixed(3)}, fat=${bestHelper.fat.toFixed(3)}`);
 
-    // Step 5: Add helper and continue
-    currentIngredients.push(bestHelper);
+    // Add helper and test the solution
+    const testIngredients = [...currentIngredients, bestHelper];
+    const testSolution = solveQuadraticSubproblem(testIngredients, targets);
 
-    // Remove the used helper from pool to avoid duplicates
-    const helperIndex = helperPool.findIndex(h => h.name === bestHelper.name);
-    if (helperIndex >= 0) {
-      helperPool.splice(helperIndex, 1);
+    if (testSolution) {
+      const newAccuracy = calculateOverallError(testSolution.achieved, targets);
+      const currentAccuracy = calculateOverallError(bestSolution.achieved, targets);
+
+      // Only keep helper if it actually improves the solution significantly
+      if (newAccuracy < currentAccuracy * 0.85) { // Must improve by at least 15%
+        console.log(`✅ Helper improves accuracy: ${currentAccuracy.toFixed(3)} → ${newAccuracy.toFixed(3)}`);
+        currentIngredients = testIngredients;
+        bestSolution = testSolution;
+
+        // Remove used helper
+        const helperIndex = helperPool.findIndex(h => h.name === bestHelper.name);
+        if (helperIndex >= 0) {
+          helperPool.splice(helperIndex, 1);
+        }
+
+        // Check if we've reached good accuracy
+        if (isWithinTargetAccuracy(testSolution.achieved, targets, targetAccuracy)) {
+          console.log("🎉 Target accuracy reached!");
+          break;
+        }
+      } else {
+        console.log(`❌ Helper doesn't improve solution significantly: ${currentAccuracy.toFixed(3)} → ${newAccuracy.toFixed(3)}`);
+        break;
+      }
     }
   }
 
-  // Final optimization with all selected helpers
-  console.log("\n🏁 Final optimization with all selected helpers...");
-  const finalSolution = solveQuadraticSubproblem(currentIngredients, targets);
+  console.log("\n🏁 Final optimization result:");
+  console.log("📈 Achieved macros:", bestSolution.achieved);
+  console.log("🎯 Final accuracy:", calculateAccuracyPercentages(bestSolution.achieved, targets));
+  console.log(`🧪 Total ingredients used: ${currentIngredients.length}`);
 
-  if (finalSolution) {
-    console.log("🏆 Final solution:");
-    console.log("📈 Achieved macros:", finalSolution.achieved);
-    console.log("🎯 Target accuracy:", calculateAccuracy(finalSolution.achieved, targets));
-    return finalSolution;
-  }
-
-  throw new Error("Failed to find solution even with helpers");
+  return bestSolution;
 }
 
 // Analyze macro deficits and surpluses
@@ -808,6 +833,29 @@ function isWithinTargetAccuracy(achieved: any, targets: Targets, tolerance: numb
   return allWithinTolerance;
 }
 
+// Calculate accuracy percentages for display
+function calculateAccuracyPercentages(achieved: any, targets: Targets) {
+  return {
+    calories: `${((achieved.calories / targets.calories) * 100).toFixed(1)}%`,
+    protein: `${((achieved.protein / targets.protein) * 100).toFixed(1)}%`,
+    carbs: `${((achieved.carbs / targets.carbs) * 100).toFixed(1)}%`,
+    fat: `${((achieved.fat / targets.fat) * 100).toFixed(1)}%`
+  };
+}
+
+// Calculate overall error for comparison
+function calculateOverallError(achieved: any, targets: Targets): number {
+  const relativeErrors = [
+    Math.abs(achieved.calories - targets.calories) / targets.calories,
+    Math.abs(achieved.protein - targets.protein) / targets.protein,
+    Math.abs(achieved.carbs - targets.carbs) / targets.carbs,
+    Math.abs(achieved.fat - targets.fat) / targets.fat
+  ];
+
+  // Weighted average (calories and protein get higher priority)
+  return (relativeErrors[0] * 1.2 + relativeErrors[1] * 1.5 + relativeErrors[2] * 1.0 + relativeErrors[3] * 1.0) / 4.7;
+}
+
 // Deduplicate ingredients
 function deduplicateIngredients(ingredients: Ingredient[]): Ingredient[] {
   const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").replace(/\([^)]*\)/g, "").trim();
@@ -825,34 +873,57 @@ function deduplicateIngredients(ingredients: Ingredient[]): Ingredient[] {
   return unique;
 }
 
-// Generate strategic helper pool
+// Generate strategic helper pool - context-aware
 function generateHelperPool(baseIngredients: Ingredient[]): Ingredient[] {
   const helpers: Ingredient[] = [];
   const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").replace(/\([^)]*\)/g, "").trim();
   const existing = new Set(baseIngredients.map(i => normalize(i.name)));
 
-  // Strategic helpers categorized by primary function
-  const helperDefinitions = [
-    // High-protein, low-fat helpers
-    { name: "Chicken Breast", key: "chicken breast", priority: 1 },
-    { name: "Egg White", key: "egg white", priority: 1 },
-    { name: "Greek Yogurt Non-Fat", key: "greek yogurt non-fat", priority: 2 },
+  // Determine meal context from base ingredients
+  const hasNuts = baseIngredients.some(i => /almond|walnut|cashew|peanut|pistachio/.test(i.name.toLowerCase()));
+  const hasYogurt = baseIngredients.some(i => /yogurt/.test(i.name.toLowerCase()));
+  const hasProtein = baseIngredients.some(i => /chicken|beef|egg|protein/.test(i.name.toLowerCase()));
+  
+  // If it looks like a snack (nuts + yogurt, no major proteins), prioritize snack-appropriate helpers
+  const isSnackContext = (hasNuts || hasYogurt) && !hasProtein && baseIngredients.length <= 4;
+  
+  console.log(`📋 Meal context analysis: isSnack=${isSnackContext}, hasNuts=${hasNuts}, hasYogurt=${hasYogurt}, hasProtein=${hasProtein}`);
 
-    // High-carb helpers
-    { name: "White Rice Raw", key: "white rice raw", priority: 1 },
-    { name: "Brown Rice Raw", key: "brown rice raw", priority: 2 },
-    { name: "Sweet Potato Raw", key: "sweet potato raw", priority: 2 },
-    { name: "Pasta Raw", key: "pasta raw", priority: 3 },
+  let helperDefinitions;
+  
+  if (isSnackContext) {
+    // Snack-appropriate helpers - small portions, complementary
+    helperDefinitions = [
+      // Light protein additions
+      { name: "Greek Yogurt Non-Fat", key: "greek yogurt non-fat", priority: 1 },
+      { name: "Egg White", key: "egg white", priority: 2 },
+      
+      // Simple carbs for energy
+      { name: "Blueberries", key: "blueberries", priority: 1 },
+      { name: "Sweet Potato Raw", key: "sweet potato raw", priority: 2 },
+      
+      // Minimal additions
+      { name: "Spinach", key: "spinach", priority: 2 },
+      { name: "Chia Seeds", key: "chia seeds", priority: 3 }
+    ];
+  } else {
+    // Full meal helpers
+    helperDefinitions = [
+      // High-protein helpers
+      { name: "Chicken Breast", key: "chicken breast", priority: 1 },
+      { name: "Egg White", key: "egg white", priority: 1 },
+      { name: "Greek Yogurt Non-Fat", key: "greek yogurt non-fat", priority: 2 },
 
-    // Low-cal, high-volume helpers
-    { name: "Broccoli Raw", key: "broccoli raw", priority: 2 },
-    { name: "Spinach", key: "spinach", priority: 2 },
-    { name: "Cucumber Raw", key: "cucumber raw", priority: 3 },
+      // High-carb helpers
+      { name: "White Rice Raw", key: "white rice raw", priority: 1 },
+      { name: "Brown Rice Raw", key: "brown rice raw", priority: 2 },
+      { name: "Sweet Potato Raw", key: "sweet potato raw", priority: 2 },
 
-    // Controlled fat helpers
-    { name: "Olive Oil", key: "olive oil", priority: 3 },
-    { name: "Avocado", key: "avocado", priority: 3 }
-  ];
+      // Vegetables
+      { name: "Broccoli Raw", key: "broccoli raw", priority: 2 },
+      { name: "Spinach", key: "spinach", priority: 2 }
+    ];
+  }
 
   // Add helpers that aren't already in base ingredients
   for (const def of helperDefinitions) {
@@ -868,6 +939,7 @@ function generateHelperPool(baseIngredients: Ingredient[]): Ingredient[] {
     }
   }
 
+  console.log(`🆘 Generated ${helpers.length} context-appropriate helpers:`, helpers.map(h => h.name));
   return helpers;
 }
 
@@ -1016,47 +1088,73 @@ function branchAndBoundOptimize(
   return bestSolution;
 }
 
-// Quadratic Programming solver for subproblems
+// Quadratic Programming solver for subproblems - improved accuracy
 function solveQuadraticSubproblem(ingredients: Ingredient[], targets: Targets): OptimizationResult | null {
   const n = ingredients.length;
   if (n === 0) return null;
 
-  // Initialize with smart starting point
-  let x = ingredients.map(() => 30); // Start with 30g each
+  // Smart initialization based on target ratios
+  let x = ingredients.map((ing, i) => {
+    // Start by estimating how much of each ingredient we might need
+    let estimate = 50; // default
+    
+    // If this ingredient is high in a macro we need a lot of, start with more
+    const totalCalNeed = targets.calories;
+    const totalProtNeed = targets.protein;
+    const totalCarbNeed = targets.carbs;
+    const totalFatNeed = targets.fat;
+    
+    if (ing.cal > 2) estimate = Math.min(100, totalCalNeed / (ing.cal * n * 1.5));
+    if (ing.prot > 0.2) estimate = Math.max(estimate, Math.min(120, totalProtNeed / (ing.prot * n * 1.5)));
+    if (ing.carb > 0.3) estimate = Math.max(estimate, Math.min(100, totalCarbNeed / (ing.carb * n * 1.5)));
+    if (ing.fat > 0.1) estimate = Math.max(estimate, Math.min(80, totalFatNeed / (ing.fat * n * 1.5)));
 
-  // Quadratic objective: minimize ||Ax - b||² + λ||x||²
-  const lambda = 0.001; // Regularization parameter
-  const maxIter = 200;
-  const tolerance = 1e-6;
+    const bounds = getAmountBounds(ing.name);
+    return Math.max(bounds.min, Math.min(bounds.max, estimate));
+  });
+
+  const lambda = 0.0001; // Lower regularization
+  const maxIter = 300; // More iterations
+  const tolerance = 1e-7;
 
   // Build constraint matrix A and target vector b
   const A = [
-    ingredients.map(ing => ing.cal),   // calories constraint
-    ingredients.map(ing => ing.prot),  // protein constraint  
-    ingredients.map(ing => ing.carb),  // carbs constraint
-    ingredients.map(ing => ing.fat)    // fat constraint
+    ingredients.map(ing => ing.cal),
+    ingredients.map(ing => ing.prot),  
+    ingredients.map(ing => ing.carb),
+    ingredients.map(ing => ing.fat)
   ];
   const b = [targets.calories, targets.protein, targets.carbs, targets.fat];
 
-  // Weights for different macro priorities
-  const weights = [1.0, 1.5, 1.2, 2.0]; // Higher weight on fat accuracy
+  // Dynamic weights based on current error
+  let bestSolution = null;
+  let bestError = Infinity;
 
   for (let iter = 0; iter < maxIter; iter++) {
-    // Compute gradient: ∇f = 2A^T W (Ax - b) + 2λx
+    // Calculate current macros
     const Ax = A.map(row => row.reduce((sum, a, j) => sum + a * x[j], 0));
+    
+    // Dynamic weights - emphasize the most problematic macros
+    const errors = Ax.map((val, i) => Math.abs(val - b[i]) / Math.max(b[i], 1));
+    const maxError = Math.max(...errors);
+    const weights = errors.map(err => err === maxError ? 3.0 : 1.0 + err);
+    
     const residual = Ax.map((val, i) => weights[i] * (val - b[i]));
 
+    // Calculate gradient
     const gradient = x.map((_, j) => {
-      let grad = 2 * lambda * x[j]; // Regularization term
+      let grad = 2 * lambda * x[j];
       for (let i = 0; i < 4; i++) {
         grad += 2 * A[i][j] * residual[i];
       }
       return grad;
     });
 
-    // Adaptive step size with line search
-    let stepSize = 0.1;
-    for (let lsIter = 0; lsIter < 10; lsIter++) {
+    // Adaptive step size with better line search
+    let stepSize = 0.2 / (1 + iter / 100); // Decreasing step size
+    let improved = false;
+    
+    for (let lsIter = 0; lsIter < 15; lsIter++) {
       const newX = x.map((val, j) => {
         const updated = val - stepSize * gradient[j];
         const bounds = getAmountBounds(ingredients[j].name);
@@ -1068,17 +1166,28 @@ function solveQuadraticSubproblem(ingredients: Ingredient[], targets: Targets): 
 
       if (newObjective < oldObjective) {
         x = newX;
+        improved = true;
         break;
       }
-      stepSize *= 0.5;
+      stepSize *= 0.6;
+    }
+
+    // Track best solution found
+    const currentError = Math.sqrt(residual.reduce((sum, r) => sum + r * r, 0));
+    if (currentError < bestError) {
+      bestError = currentError;
+      bestSolution = [...x];
     }
 
     // Check convergence
     const gradNorm = Math.sqrt(gradient.reduce((sum, g) => sum + g * g, 0));
-    if (gradNorm < tolerance) break;
+    if (gradNorm < tolerance || (!improved && iter > 50)) break;
   }
 
-  // Build result
+  // Use best solution found
+  if (bestSolution) x = bestSolution;
+
+  // Final achieved macros
   const achieved = {
     calories: A[0].reduce((sum, a, j) => sum + a * x[j], 0),
     protein: A[1].reduce((sum, a, j) => sum + a * x[j], 0),
@@ -1098,9 +1207,9 @@ function solveQuadraticSubproblem(ingredients: Ingredient[], targets: Targets): 
     }
   };
 
-  // Filter out ingredients with negligible amounts
+  // Only include ingredients with meaningful amounts
   ingredients.forEach((ing, j) => {
-    if (x[j] >= 5) { // Minimum 5g threshold
+    if (x[j] >= 8) { // Minimum 8g threshold for practicality
       result.ingredients[ing.name] = Math.round(x[j] * 100) / 100;
     }
   });
