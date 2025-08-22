@@ -1,0 +1,32 @@
+🧮 All ingredients for conversion: 
+(8) ["Low-fat Yogurt", "Almonds", "Walnuts", "Pasta Raw", "Chicken Breast", "Brown Rice Raw", "Egg White", "Greek Yogurt Non-Fat"]
+🔄 convertOptimizationToMeal - Input optimization result: 
+Object {feasible: true, result: 0, ingredients: {…}, achieved: {…}}
+🔄 convertOptimizationToMeal - Available ingredients: 
+(8) ["Low-fat Yogurt", "Almonds", "Walnuts", "Pasta Raw", "Chicken Breast", "Brown Rice Raw", "Egg White", "Greek Yogurt Non-Fat"]
+🔍 Processing ingredient: Low-fat Yogurt with amount: 50
+✅ Added ingredient: Low-fat Yogurt - 50g
+🔍 Processing ingredient: Almonds with amount: 10
+✅ Added ingredient: Almonds - 10g
+🔍 Processing ingredient: Walnuts with amount: 10
+✅ Added ingredient: Walnuts - 10g
+🔍 Processing ingredient: Pasta Raw with amount: 10
+✅ Added ingredient: Pasta Raw - 10g
+🔍 Processing ingredient: Chicken Breast with amount: 50
+✅ Added ingredient: Chicken Breast - 50g
+🔍 Processing ingredient: Brown Rice Raw with amount: 60
+✅ Added ingredient: Brown Rice Raw - 60g
+🔍 Processing ingredient: Egg White with amount: 50
+✅ Added ingredient: Egg White - 50g
+🔍 Processing ingredient: Greek Yogurt Non-Fat with amount: 50
+✅ Added ingredient: Greek Yogurt Non-Fat - 50g
+🧮 Final optimized ingredients count: 8
+🧮 Final optimized ingredients: 
+(8) ["Low-fat Yogurt: 50g", "Almonds: 10g", "Walnuts: 10g", "Pasta Raw: 10g", "Chicken Breast: 50g", "Brown Rice Raw: 60g", "Egg White: 50g", "Greek Yogurt Non-Fat: 50g"]
+✅ Converted meal: 
+Object {mealTitle: "Protein-Packed Persian Snack", description: "Optimized version of Protein-Packed Persian Snack - adjusted ingredient quantities to match your…", ingredients: Array(8), totalCalories: 547.1, totalProtein: 38.66, …}
+Optimization completed: 
+Object {mealTitle: "Protein-Packed Persian Snack", description: "Optimized version of Protein-Packed Persian Snack - adjusted ingredient quantities to match your…", ingredients: Array(8), totalCalories: 547.1, totalProtein: 38.66, …}
+🏁 handleOptimize finished
+این پاسخ رو میده که نه optimization درسته، نه ingredient هایی که اضافه کرده مناسب afternoon snack هست
+و نه تعداد مناسبی اضافه کرده
