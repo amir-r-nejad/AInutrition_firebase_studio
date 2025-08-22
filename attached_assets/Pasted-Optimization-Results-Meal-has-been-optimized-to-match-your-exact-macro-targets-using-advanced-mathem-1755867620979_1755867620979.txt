@@ -1,0 +1,172 @@
+Optimization Results
+Meal has been optimized to match your exact macro targets using advanced mathematical programming (linear optimization with PuLP). Since the original ingredients could not achieve the targets (minimum achievable fat was 20.84g, exceeding the 14.18g target), an additional ingredient—grilled chicken breast—was added as a lean protein source to make it feasible. Macros per gram for chicken breast: 1.51 cal, 0.306g protein, 0g carbs, 0.032g fat (based on standard nutrition data).
+Optimized Preparation: Cook ingredients according to preference. Season to taste and serve.
+Target Macros
+Calories: 637.2 kcal
+Protein: 47.7g
+Carbs: 79.65g
+Fat: 14.18g
+Achieved Macros
+Calories: 637.20 kcal
+Protein: 47.70g
+Carbs: 79.65g
+Fat: 14.18g
+Optimized Ingredients:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+IngredientAmountUnitCaloriesMacros (P/C/F)Ground Beef25.31g50.625.10g P / 0g C / 3.83g FGrilled Tomato421.42g84.285.57g P / 22.25g C / 0g FQuinoa400.44g400.4416.37g P / 57.40g C / 8.21g FChicken Breast67.45g101.8520.64g P / 0g C / 2.16g F
+Optimized Totals:
+Calories: 637.20 kcal
+Protein: 47.70g
+Carbs: 79.65g
+Fat: 14.18g
+For a more advanced optimization approach using a genetic algorithm (as an alternative to linear programming), here's a sample TypeScript code implementation. This uses a simple real-valued genetic algorithm to optimize ingredient amounts (variables) to minimize the sum of absolute deviations from the targets. It assumes bounds on amounts (0-1000g for simplicity) and includes the original ingredients plus chicken breast. Run it in a Node.js environment.
+typescript// Sample Genetic Algorithm in TypeScript for Meal Optimization
+
+// Define interfaces
+interface Ingredient {
+    name: string;
+    calPerG: number;
+    pPerG: number;
+    cPerG: number;
+    fPerG: number;
+}
+
+interface Targets {
+    cal: number;
+    p: number;
+    c: number;
+    f: number;
+}
+
+// Ingredients data (per gram)
+const ingredients: Ingredient[] = [
+    { name: 'beef', calPerG: 2.0, pPerG: 0.2014, cPerG: 0, fPerG: 0.1511 },
+    { name: 'onion', calPerG: 0.4, pPerG: 0.0079, cPerG: 0.0872, fPerG: 0 },
+    { name: 'saffron', calPerG: 0.5, pPerG: 0, cPerG: 0, fPerG: 0 },
+    { name: 'pita', calPerG: 2.7997, pPerG: 0.0797, cPerG: 0.5444, fPerG: 0.0266 },
+    { name: 'tomato', calPerG: 0.2, pPerG: 0.0132, cPerG: 0.0528, fPerG: 0 },
+    { name: 'quinoa', calPerG: 1.0, pPerG: 0.0409, cPerG: 0.1433, fPerG: 0.0205 },
+    { name: 'chicken', calPerG: 1.51, pPerG: 0.306, cPerG: 0, fPerG: 0.032 }
+];
+
+const targets: Targets = { cal: 637.2, p: 47.7, c: 79.65, f: 14.18 };
+
+// GA parameters
+const populationSize = 100;
+const generations = 500;
+const mutationRate = 0.01;
+const maxAmount = 1000; // Upper bound per ingredient
+
+// Calculate fitness (lower is better: sum of abs deviations)
+function calculateFitness(amounts: number[]): number {
+    let cal = 0, p = 0, c = 0, f = 0;
+    for (let i = 0; i < ingredients.length; i++) {
+        cal += amounts[i] * ingredients[i].calPerG;
+        p += amounts[i] * ingredients[i].pPerG;
+        c += amounts[i] * ingredients[i].cPerG;
+        f += amounts[i] * ingredients[i].fPerG;
+    }
+    return Math.abs(cal - targets.cal) + Math.abs(p - targets.p) + Math.abs(c - targets.c) + Math.abs(f - targets.f);
+}
+
+// Create initial population
+function createIndividual(): number[] {
+    return ingredients.map(() => Math.random() * maxAmount);
+}
+
+let population: number[][] = Array.from({ length: populationSize }, createIndividual);
+
+// Selection: tournament selection
+function select(pop: number[][]): number[] {
+    const tournamentSize = 3;
+    const tournament = Array.from({ length: tournamentSize }, () => pop[Math.floor(Math.random() * pop.length)]);
+    return tournament.reduce((best, curr) => calculateFitness(curr) < calculateFitness(best) ? curr : best);
+}
+
+// Crossover: single-point
+function crossover(parent1: number[], parent2: number[]): number[] {
+    const point = Math.floor(Math.random() * ingredients.length);
+    return [...parent1.slice(0, point), ...parent2.slice(point)];
+}
+
+// Mutation: random adjustment
+function mutate(individual: number[]): void {
+    for (let i = 0; i < individual.length; i++) {
+        if (Math.random() < mutationRate) {
+            individual[i] += (Math.random() - 0.5) * 100; // Adjust by up to 50g
+            individual[i] = Math.max(0, Math.min(maxAmount, individual[i]));
+        }
+    }
+}
+
+// Run GA
+for (let gen = 0; gen < generations; gen++) {
+    const newPopulation: number[][] = [];
+    for (let i = 0; i < populationSize; i++) {
+        const parent1 = select(population);
+        const parent2 = select(population);
+        let child = crossover(parent1, parent2);
+        mutate(child);
+        newPopulation.push(child);
+    }
+    population = newPopulation;
+}
+
+// Find best
+const best = population.reduce((best, curr) => calculateFitness(curr) < calculateFitness(best) ? curr : best);
+const bestFitness = calculateFitness(best);
+
+// Output results
+console.log('Best Amounts:');
+ingredients.forEach((ing, i) => {
+    if (best[i] > 0) console.log(`${ing.name.capitalize()}: ${best[i].toFixed(2)} g`);
+});
+console.log(`Fitness (deviation sum): ${bestFitness.toFixed(2)}`);
+let cal = 0, p = 0, c = 0, f = 0;
+for (let i = 0; i < ingredients.length; i++) {
+    cal += best[i] * ingredients[i].calPerG;
+    p += best[i] * ingredients[i].pPerG;
+    c += best[i] * ingredients[i].cPerG;
+    f += best[i] * ingredients[i].fPerG;
+}
+console.log(`Achieved: Cal ${cal.toFixed(2)}, P ${p.toFixed(2)}, C ${c.toFixed(2)}, F ${f.toFixed(2)}`);
+This GA code is a basic example; it may not always converge to zero deviation like linear programming but demonstrates the concept for stochastic optimization. Adjust parameters as needed for better results.10 web pages
