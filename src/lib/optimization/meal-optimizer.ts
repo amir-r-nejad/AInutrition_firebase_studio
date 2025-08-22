@@ -1,4 +1,5 @@
-// Advanced Meal Optimization using Mathematical Programming
+
+// Advanced Meal Optimization using Mathematical Programming with Context Intelligence
 export interface Ingredient {
   name: string;
   cal: number; // Calories per gram
@@ -49,175 +50,222 @@ export interface OptimizedMealSuggestion {
   instructions?: string;
 }
 
-// Enhanced nutrition database with research-based values
-const NUTRITION_FALLBACKS: Record<
-  string,
-  { cal: number; prot: number; carb: number; fat: number }
-> = {
-  // Nuts and Seeds (per 100g)
+// Enhanced nutrition database with research-based values (per 100g)
+const NUTRITION_DATABASE: Record<string, { cal: number; prot: number; carb: number; fat: number }> = {
+  // Protein Powders & Supplements
+  "whey protein powder": { cal: 412, prot: 85.0, carb: 4.0, fat: 5.0 },
+  "casein protein powder": { cal: 380, prot: 80.0, carb: 4.0, fat: 2.0 },
+  "plant protein powder": { cal: 390, prot: 75.0, carb: 8.0, fat: 6.0 },
+
+  // Nuts and Seeds (snack-friendly additions)
   "almonds": { cal: 579, prot: 21.2, carb: 21.6, fat: 49.9 },
   "walnuts": { cal: 654, prot: 15.2, carb: 13.7, fat: 65.2 },
   "pistachios": { cal: 560, prot: 20.2, carb: 27.2, fat: 45.3 },
   "cashews": { cal: 553, prot: 18.2, carb: 30.2, fat: 43.8 },
-  "peanuts": { cal: 567, prot: 25.8, carb: 16.1, fat: 49.2 },
   "chia seeds": { cal: 486, prot: 16.5, carb: 42.1, fat: 30.7 },
   "flax seeds": { cal: 534, prot: 18.3, carb: 28.9, fat: 42.2 },
+  "hemp hearts": { cal: 553, prot: 31.6, carb: 8.7, fat: 48.8 },
   "pumpkin seeds": { cal: 559, prot: 30.2, carb: 10.7, fat: 49.1 },
 
-  // Dairy Products
+  // Dairy & Protein Sources
   "greek yogurt non-fat": { cal: 59, prot: 10.0, carb: 3.6, fat: 0.4 },
-  "low-fat yogurt": { cal: 63, prot: 5.3, carb: 7.0, fat: 1.6 },
   "cottage cheese low-fat": { cal: 72, prot: 12.4, carb: 4.3, fat: 1.0 },
-  "milk skim": { cal: 34, prot: 3.4, carb: 5.0, fat: 0.1 },
-  "cheese mozzarella": { cal: 280, prot: 22.2, carb: 2.2, fat: 22.4 },
-
-  // Proteins
-  "chicken breast": { cal: 165, prot: 31.0, carb: 0, fat: 3.6 },
-  "egg white": { cal: 52, prot: 10.9, carb: 0.7, fat: 0.2 },
+  "mozzarella cheese": { cal: 280, prot: 22.2, carb: 2.2, fat: 22.4 },
+  "parmesan cheese": { cal: 431, prot: 38.5, carb: 4.1, fat: 29.0 },
+  "feta cheese": { cal: 264, prot: 14.2, carb: 4.1, fat: 21.3 },
+  "egg whites": { cal: 52, prot: 10.9, carb: 0.7, fat: 0.2 },
   "whole eggs": { cal: 155, prot: 13.0, carb: 1.1, fat: 11.0 },
-  "salmon": { cal: 208, prot: 22.0, carb: 0, fat: 13.0 },
-  "tuna": { cal: 132, prot: 28.0, carb: 0, fat: 1.3 },
-  "tofu": { cal: 144, prot: 17.3, carb: 2.8, fat: 9.0 },
 
-  // Fruits suitable for snacks
-  "apple": { cal: 52, prot: 0.3, carb: 13.8, fat: 0.2 },
-  "banana": { cal: 89, prot: 1.1, carb: 22.8, fat: 0.3 },
-  "berries mixed": { cal: 57, prot: 0.7, carb: 14.5, fat: 0.3 },
-  "grapes": { cal: 62, prot: 0.6, carb: 16.0, fat: 0.2 },
-  "orange": { cal: 47, prot: 0.9, carb: 11.8, fat: 0.1 },
-  "dates": { cal: 277, prot: 1.8, carb: 75.0, fat: 0.2 },
-  "raisins": { cal: 299, prot: 3.1, carb: 79.2, fat: 0.5 },
+  // Healthy Fats & Oils
+  "olive oil extra virgin": { cal: 884, prot: 0, carb: 0, fat: 100 },
+  "avocado oil": { cal: 884, prot: 0, carb: 0, fat: 100 },
+  "coconut oil": { cal: 862, prot: 0, carb: 0, fat: 100 },
+  "avocado": { cal: 160, prot: 2.0, carb: 8.5, fat: 14.7 },
+  "tahini": { cal: 595, prot: 17.0, carb: 21.2, fat: 53.8 },
 
-  // Vegetables for snacks
-  "carrot sticks": { cal: 41, prot: 0.9, carb: 9.6, fat: 0.2 },
-  "celery": { cal: 14, prot: 0.7, carb: 3.0, fat: 0.1 },
-  "cucumber": { cal: 16, prot: 0.7, carb: 3.6, fat: 0.1 },
-  "bell pepper": { cal: 31, prot: 1.0, carb: 7.0, fat: 0.3 },
-  "cherry tomatoes": { cal: 18, prot: 0.9, carb: 3.9, fat: 0.2 },
+  // Herbs, Spices & Flavor Enhancers (minimal calories)
+  "fresh herbs": { cal: 36, prot: 3.0, carb: 6.3, fat: 0.7 },
+  "garlic": { cal: 149, prot: 6.4, carb: 33.1, fat: 0.5 },
+  "lemon juice": { cal: 22, prot: 0.4, carb: 6.9, fat: 0.2 },
+  "balsamic vinegar": { cal: 88, prot: 0.5, carb: 17.0, fat: 0.0 },
 
-  // Grains and starches
-  "oats": { cal: 389, prot: 16.9, carb: 66.3, fat: 6.9 },
+  // Light Carb Additions
   "quinoa": { cal: 368, prot: 14.1, carb: 64.2, fat: 6.1 },
   "brown rice": { cal: 370, prot: 7.9, carb: 77.0, fat: 2.9 },
-  "sweet potato": { cal: 86, prot: 1.6, carb: 20.1, fat: 0.1 },
-  "whole wheat bread": { cal: 247, prot: 13.0, carb: 41.0, fat: 4.2 },
+  "bulgur wheat": { cal: 342, prot: 12.3, carb: 75.9, fat: 1.3 },
+  "couscous": { cal: 376, prot: 12.8, carb: 77.4, fat: 0.6 },
 
-  // Snack-appropriate additions
-  "dark chocolate 70%": { cal: 598, prot: 7.8, carb: 45.9, fat: 42.6 },
-  "honey": { cal: 304, prot: 0.3, carb: 82.4, fat: 0.0 },
-  "peanut butter": { cal: 588, prot: 25.1, carb: 19.6, fat: 50.4 },
-  "hummus": { cal: 166, prot: 8.0, carb: 14.3, fat: 9.6 },
+  // Vegetables (for volume & nutrients)
+  "spinach": { cal: 23, prot: 2.9, carb: 3.6, fat: 0.4 },
+  "kale": { cal: 35, prot: 2.9, carb: 4.4, fat: 1.5 },
+  "arugula": { cal: 25, prot: 2.6, carb: 3.7, fat: 0.7 },
+  "cucumber": { cal: 16, prot: 0.7, carb: 3.6, fat: 0.1 },
+  "bell peppers": { cal: 31, prot: 1.0, carb: 7.0, fat: 0.3 },
+  "cherry tomatoes": { cal: 18, prot: 0.9, carb: 3.9, fat: 0.2 },
+  "red onion": { cal: 40, prot: 1.1, carb: 9.3, fat: 0.1 },
+
+  // Fruits (for natural sweetness)
+  "berries mixed": { cal: 57, prot: 0.7, carb: 14.5, fat: 0.3 },
+  "apple": { cal: 52, prot: 0.3, carb: 13.8, fat: 0.2 },
+  "banana": { cal: 89, prot: 1.1, carb: 22.8, fat: 0.3 },
+  "dates": { cal: 277, prot: 1.8, carb: 75.0, fat: 0.2 },
+
+  // Persian/Middle Eastern Specific
+  "pomegranate seeds": { cal: 83, prot: 1.7, carb: 18.7, fat: 1.2 },
+  "sumac": { cal: 329, prot: 4.6, carb: 71.2, fat: 13.8 },
+  "saffron": { cal: 310, prot: 11.4, carb: 65.4, fat: 5.9 },
+  "dried mint": { cal: 285, prot: 24.8, carb: 52.0, fat: 6.8 },
+  "persian cucumber": { cal: 15, prot: 0.6, carb: 3.6, fat: 0.1 },
+  "barberries": { cal: 316, prot: 4.0, carb: 73.8, fat: 3.2 },
 };
 
-// Meal context analysis for intelligent helper selection
-interface MealContext {
-  type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  timeOfDay: 'morning' | 'afternoon' | 'evening';
-  characteristics: {
-    isPortable: boolean;
-    requiresCooking: boolean;
-    maxPreparationTime: number; // minutes
-    targetVolume: 'light' | 'moderate' | 'filling';
-  };
+// Intelligent meal analysis for contextual helper selection
+interface MealAnalysis {
+  cuisineType: string;
+  mainProtein: string[];
+  cookingMethod: string[];
+  mealStructure: 'rice-based' | 'bread-based' | 'salad-based' | 'soup-based' | 'mixed';
+  flavorProfile: 'mediterranean' | 'persian' | 'arabic' | 'indian' | 'neutral';
+  servingStyle: 'hot' | 'cold' | 'mixed';
 }
 
-function analyzeMealContext(mealName: string, baseIngredients: Ingredient[]): MealContext {
-  const name = mealName.toLowerCase();
+function analyzeMealIntelligently(mealTitle: string, ingredients: Ingredient[]): MealAnalysis {
+  const title = mealTitle.toLowerCase();
+  const ingredientNames = ingredients.map(i => i.name.toLowerCase()).join(' ');
 
-  // Determine meal type and time
-  let type: MealContext['type'] = 'snack';
-  let timeOfDay: MealContext['timeOfDay'] = 'afternoon';
+  // Detect cuisine
+  let cuisineType = 'neutral';
+  if (/kabab|persian|iranian|kebab|polo|tahdig|ghormeh/i.test(title)) cuisineType = 'persian';
+  else if (/mediterranean|greek|italian/i.test(title)) cuisineType = 'mediterranean';
+  else if (/arabic|lebanese|hummus|falafel/i.test(title)) cuisineType = 'arabic';
 
-  if (name.includes('breakfast') || name.includes('morning')) {
-    type = 'breakfast';
-    timeOfDay = 'morning';
-  } else if (name.includes('lunch') || name.includes('midday')) {
-    type = 'lunch';
-    timeOfDay = 'afternoon';
-  } else if (name.includes('dinner') || name.includes('evening')) {
-    type = 'dinner';
-    timeOfDay = 'evening';
-  } else if (name.includes('snack')) {
-    type = 'snack';
-    if (name.includes('morning')) timeOfDay = 'morning';
-    else if (name.includes('evening')) timeOfDay = 'evening';
-  }
+  // Detect main proteins
+  const mainProteins: string[] = [];
+  if (/beef|kabab|koobideh/i.test(ingredientNames)) mainProteins.push('beef');
+  if (/chicken|joojeh/i.test(ingredientNames)) mainProteins.push('chicken');
+  if (/fish|salmon|cod/i.test(ingredientNames)) mainProteins.push('seafood');
+  if (/lamb/i.test(ingredientNames)) mainProteins.push('lamb');
 
-  // Analyze base ingredients for context clues
-  const hasNuts = baseIngredients.some(i => /almond|walnut|cashew|peanut|pistachio/.test(i.name.toLowerCase()));
-  const hasYogurt = baseIngredients.some(i => /yogurt/.test(i.name.toLowerCase()));
-  const hasProteinSource = baseIngredients.some(i => /chicken|beef|egg|fish|tofu/.test(i.name.toLowerCase()));
+  // Detect cooking methods
+  const cookingMethods: string[] = [];
+  if (/grill/i.test(title + ingredientNames)) cookingMethods.push('grilled');
+  if (/baked|roast/i.test(title + ingredientNames)) cookingMethods.push('baked');
+  if (/fried|crispy/i.test(title + ingredientNames)) cookingMethods.push('fried');
+
+  // Detect meal structure
+  let mealStructure: MealAnalysis['mealStructure'] = 'mixed';
+  if (/rice|basmati|polo/i.test(ingredientNames)) mealStructure = 'rice-based';
+  else if (/bread|pita|naan/i.test(ingredientNames)) mealStructure = 'bread-based';
+  else if (/salad|mixed greens/i.test(ingredientNames)) mealStructure = 'salad-based';
+
+  // Detect flavor profile
+  let flavorProfile: MealAnalysis['flavorProfile'] = 'neutral';
+  if (cuisineType === 'persian') flavorProfile = 'persian';
+  else if (cuisineType === 'mediterranean') flavorProfile = 'mediterranean';
+  else if (cuisineType === 'arabic') flavorProfile = 'arabic';
+
+  // Detect serving style
+  let servingStyle: MealAnalysis['servingStyle'] = 'hot';
+  if (/salad|cold|chilled/i.test(title + ingredientNames)) servingStyle = 'cold';
 
   return {
-    type,
-    timeOfDay,
-    characteristics: {
-      isPortable: type === 'snack' || (hasNuts && hasYogurt),
-      requiresCooking: hasProteinSource && type !== 'snack',
-      maxPreparationTime: type === 'snack' ? 5 : type === 'breakfast' ? 15 : 30,
-      targetVolume: type === 'snack' ? 'light' : type === 'breakfast' ? 'moderate' : 'filling'
-    }
+    cuisineType,
+    mainProtein: mainProteins,
+    cookingMethod: cookingMethods,
+    mealStructure,
+    flavorProfile,
+    servingStyle
   };
 }
 
-// Context-aware helper pool generation
-function generateContextualHelpers(context: MealContext, baseIngredients: Ingredient[]): Ingredient[] {
+// Context-intelligent helper generation
+function generateIntelligentHelpers(
+  mealAnalysis: MealAnalysis, 
+  baseIngredients: Ingredient[],
+  targets: Targets,
+  mealName: string
+): Ingredient[] {
   const existing = new Set(baseIngredients.map(i => i.name.toLowerCase().trim()));
   const helpers: Ingredient[] = [];
 
-  // Define helper categories based on meal context
-  let helperCategories: string[] = [];
+  console.log("🧠 Intelligent meal analysis:", mealAnalysis);
+  
+  // Calculate macro deficits to prioritize helper types
+  const currentMacros = calculateCurrentMacros(baseIngredients);
+  const deficits = {
+    protein: Math.max(0, targets.protein - currentMacros.protein),
+    carbs: Math.max(0, targets.carbs - currentMacros.carbs),
+    fat: Math.max(0, targets.fat - currentMacros.fat),
+    calories: Math.max(0, targets.calories - currentMacros.calories)
+  };
 
-  if (context.type === 'snack') {
-    if (context.timeOfDay === 'afternoon') {
-      // Afternoon snack helpers - focus on sustained energy and protein
-      helperCategories = [
-        'greek yogurt non-fat', // Protein boost
-        'berries mixed', // Natural sugars and fiber
-        'dates', // Quick energy
-        'apple', // Fiber and natural sweetness
-        'cottage cheese low-fat', // High protein, low fat
-        'carrot sticks', // Crunch and vitamins
-        'dark chocolate 70%', // Small indulgence
-        'honey' // Natural sweetener
-      ];
-    } else if (context.timeOfDay === 'evening') {
-      // Evening snack helpers - lighter, less stimulating
-      helperCategories = [
-        'greek yogurt non-fat',
-        'berries mixed',
-        'cottage cheese low-fat',
-        'cucumber',
-        'cherry tomatoes',
-        'celery'
-      ];
-    } else { // morning snack
-      // Morning snack helpers - energy and protein
-      helperCategories = [
-        'greek yogurt non-fat',
-        'banana',
-        'oats',
-        'berries mixed',
-        'honey',
-        'cottage cheese low-fat'
-      ];
+  console.log("📊 Calculated deficits:", deficits);
+
+  // Helper categories based on meal analysis and deficits
+  const helperCategories: string[] = [];
+
+  // PERSIAN/MIDDLE EASTERN CUISINE HELPERS
+  if (mealAnalysis.flavorProfile === 'persian') {
+    // For rice-based Persian dishes
+    if (mealAnalysis.mealStructure === 'rice-based') {
+      if (deficits.protein > 5) {
+        helperCategories.push('almonds', 'pistachios', 'greek yogurt non-fat');
+      }
+      if (deficits.fat > 3) {
+        helperCategories.push('olive oil extra virgin', 'tahini');
+      }
+      // Persian-specific garnishes
+      helperCategories.push('pomegranate seeds', 'fresh herbs', 'barberries');
     }
-  } else if (context.type === 'breakfast') {
-    helperCategories = [
-      'oats', 'greek yogurt non-fat', 'berries mixed', 'banana', 
-      'whole eggs', 'milk skim', 'honey', 'cottage cheese low-fat'
-    ];
-  } else if (context.type === 'lunch' || context.type === 'dinner') {
-    helperCategories = [
-      'chicken breast', 'quinoa', 'brown rice', 'sweet potato',
-      'bell pepper', 'spinach', 'carrot sticks', 'olive oil'
-    ];
   }
 
-  // Create helper ingredients
-  for (const category of helperCategories) {
+  // PROTEIN DEFICIT HELPERS (contextual)
+  if (deficits.protein > 8) {
+    if (mealName.toLowerCase().includes('snack')) {
+      helperCategories.push('greek yogurt non-fat', 'cottage cheese low-fat', 'almonds', 'hemp hearts');
+    } else {
+      // For meals, add compatible protein sources
+      if (!mealAnalysis.mainProtein.includes('beef')) {
+        helperCategories.push('parmesan cheese', 'mozzarella cheese', 'egg whites');
+      }
+    }
+  }
+
+  // FAT DEFICIT HELPERS (healthy fats only)
+  if (deficits.fat > 5) {
+    if (mealAnalysis.servingStyle === 'cold' || mealAnalysis.mealStructure === 'salad-based') {
+      helperCategories.push('olive oil extra virgin', 'avocado', 'tahini');
+    } else {
+      helperCategories.push('olive oil extra virgin', 'almonds', 'cashews');
+    }
+  }
+
+  // CARB DEFICIT HELPERS (compatible with meal structure)
+  if (deficits.carbs > 10) {
+    if (mealAnalysis.mealStructure === 'rice-based') {
+      // Don't add competing carbs to rice dishes
+      helperCategories.push('dates', 'pomegranate seeds');
+    } else {
+      helperCategories.push('quinoa', 'bulgur wheat');
+    }
+  }
+
+  // VOLUME & NUTRIENT HELPERS (low-calorie additions)
+  if (mealAnalysis.servingStyle !== 'cold') {
+    helperCategories.push('fresh herbs', 'garlic', 'lemon juice');
+  }
+
+  // FLAVOR-COMPATIBLE HELPERS
+  if (mealAnalysis.flavorProfile === 'persian') {
+    helperCategories.push('sumac', 'dried mint', 'persian cucumber');
+  } else if (mealAnalysis.flavorProfile === 'mediterranean') {
+    helperCategories.push('feta cheese', 'arugula', 'balsamic vinegar');
+  }
+
+  // Convert categories to ingredients
+  for (const category of [...new Set(helperCategories)].slice(0, 8)) { // Limit to 8 helpers
     if (!existing.has(category)) {
-      const nutrition = NUTRITION_FALLBACKS[category];
+      const nutrition = NUTRITION_DATABASE[category];
       if (nutrition) {
         helpers.push({
           name: formatIngredientName(category),
@@ -231,40 +279,43 @@ function generateContextualHelpers(context: MealContext, baseIngredients: Ingred
     }
   }
 
+  console.log("🎯 Generated intelligent helpers:", helpers.map(h => h.name));
   return helpers;
 }
 
-function formatIngredientName(key: string): string {
-  return key.split(' ').map(word => 
-    word.charAt(0).toUpperCase() + word.slice(1)
-  ).join(' ');
+function calculateCurrentMacros(ingredients: Ingredient[]): { protein: number; carbs: number; fat: number; calories: number } {
+  // Estimate current macros assuming average portion sizes
+  const avgPortionSize = 80; // grams average
+  return ingredients.reduce((total, ing) => ({
+    protein: total.protein + (ing.prot * avgPortionSize),
+    carbs: total.carbs + (ing.carb * avgPortionSize),
+    fat: total.fat + (ing.fat * avgPortionSize),
+    calories: total.calories + (ing.cal * avgPortionSize)
+  }), { protein: 0, carbs: 0, fat: 0, calories: 0 });
 }
 
-// Advanced Multi-Objective Optimization using MIQP principles
+// High-precision mathematical optimization using advanced algorithms
 export function optimizeMealAdvanced(
   ingredients: Ingredient[],
   targets: Targets,
-  mealName: string = 'snack'
+  mealName: string = 'meal'
 ): OptimizationResult {
-  console.log("🎯 Starting Advanced Multi-Objective Optimization");
+  console.log("🎯 Starting Advanced Precision Meal Optimization");
   console.log("📊 Targets:", targets);
   console.log("🧪 Input ingredients:", ingredients.map(i => i.name));
 
   try {
-    // Phase 1: Meal context analysis
-    const context = analyzeMealContext(mealName, ingredients);
-    console.log("📋 Meal context:", context);
-
-    // Phase 2: Deduplicate base ingredients
+    // Phase 1: Intelligent meal analysis
     const baseIngredients = deduplicateIngredients(ingredients);
-    console.log("🧪 Base ingredients:", baseIngredients.map(i => i.name));
+    const mealAnalysis = analyzeMealIntelligently(mealName, baseIngredients);
+    console.log("🧠 Meal analysis completed");
 
-    // Phase 3: Generate contextual helpers
-    const contextualHelpers = generateContextualHelpers(context, baseIngredients);
-    console.log("🆘 Contextual helpers:", contextualHelpers.map(h => h.name));
+    // Phase 2: Generate intelligent helpers
+    const intelligentHelpers = generateIntelligentHelpers(mealAnalysis, baseIngredients, targets, mealName);
+    console.log("🎯 Intelligent helpers generated:", intelligentHelpers.length);
 
-    // Phase 4: Advanced mathematical optimization
-    return advancedMathematicalOptimization(baseIngredients, contextualHelpers, targets, context);
+    // Phase 3: High-precision optimization
+    return performHighPrecisionOptimization(baseIngredients, intelligentHelpers, targets, mealAnalysis);
 
   } catch (error: any) {
     console.error("❌ Advanced optimization failed:", error);
@@ -278,45 +329,45 @@ export function optimizeMealAdvanced(
   }
 }
 
-// Advanced Mathematical Optimization using Mixed Integer Quadratic Programming
-function advancedMathematicalOptimization(
+// High-precision optimization using advanced mathematical programming
+function performHighPrecisionOptimization(
   baseIngredients: Ingredient[],
   helpers: Ingredient[],
   targets: Targets,
-  context: MealContext
+  mealAnalysis: MealAnalysis
 ): OptimizationResult {
-  console.log("\n🔬 === ADVANCED MATHEMATICAL OPTIMIZATION ===");
+  console.log("\n🔬 === HIGH-PRECISION MATHEMATICAL OPTIMIZATION ===");
 
-  // Step 1: Try base ingredients with enhanced QP solver
-  console.log("📊 Phase 1: Enhanced Base Optimization");
-  let bestSolution = solveEnhancedQuadraticProblem(baseIngredients, targets, context);
+  // Step 1: Try base ingredients with ultra-high precision
+  console.log("📊 Phase 1: Ultra-High Precision Base Optimization");
+  let bestSolution = solveUltraHighPrecisionProblem(baseIngredients, targets, mealAnalysis);
 
   if (!bestSolution) {
     throw new Error("Failed to solve base optimization problem");
   }
 
-  console.log("📈 Base solution accuracy:", calculateAccuracyMetrics(bestSolution.achieved, targets));
+  const baseAccuracy = calculatePrecisionScore(bestSolution.achieved, targets);
+  console.log("📈 Base solution precision score:", baseAccuracy.toFixed(4));
 
-  // Step 2: Precision check with tighter tolerances
-  const precisionThreshold = 0.05; // ±5% for all macros
-  if (isWithinPrecisionThreshold(bestSolution.achieved, targets, precisionThreshold)) {
-    console.log("✅ Base ingredients meet precision requirements!");
+  // Step 2: Ultra-tight precision check (±2% for all macros)
+  const ultraPrecisionThreshold = 0.02;
+  if (isWithinUltraPrecisionThreshold(bestSolution.achieved, targets, ultraPrecisionThreshold)) {
+    console.log("✅ Base ingredients meet ultra-precision requirements!");
     return bestSolution;
   }
 
-  // Step 3: Strategic helper addition using mathematical programming
-  console.log("📊 Phase 2: Strategic Helper Optimization");
-  const enhancedSolution = strategicHelperOptimization(
+  // Step 3: Intelligent helper optimization
+  console.log("📊 Phase 2: Intelligent Helper Optimization");
+  const enhancedSolution = performIntelligentHelperOptimization(
     baseIngredients, 
     helpers, 
     targets, 
-    context,
+    mealAnalysis,
     bestSolution
   );
 
-  if (enhancedSolution && calculateOverallError(enhancedSolution.achieved, targets) < 
-      calculateOverallError(bestSolution.achieved, targets)) {
-    console.log("🎉 Helper optimization improved solution!");
+  if (enhancedSolution && calculatePrecisionScore(enhancedSolution.achieved, targets) > baseAccuracy) {
+    console.log("🎉 Helper optimization achieved better precision!");
     return enhancedSolution;
   }
 
@@ -324,56 +375,57 @@ function advancedMathematicalOptimization(
   return bestSolution;
 }
 
-// Enhanced Quadratic Programming with context-aware constraints
-function solveEnhancedQuadraticProblem(
+// Ultra-high precision quadratic programming solver
+function solveUltraHighPrecisionProblem(
   ingredients: Ingredient[],
   targets: Targets,
-  context: MealContext
+  mealAnalysis: MealAnalysis
 ): OptimizationResult | null {
   const n = ingredients.length;
   if (n === 0) return null;
 
-  // Build constraint matrix A and target vector b
+  console.log("🔢 Solving with", n, "ingredients for ultra-high precision");
+
+  // Build enhanced constraint matrix
   const A = [
     ingredients.map(ing => ing.cal),   // Calories
-    ingredients.map(ing => ing.prot),  // Protein
+    ingredients.map(ing => ing.prot),  // Protein  
     ingredients.map(ing => ing.carb),  // Carbs
     ingredients.map(ing => ing.fat)    // Fat
   ];
   const b = [targets.calories, targets.protein, targets.carbs, targets.fat];
 
-  // Context-aware bounds
-  const bounds = ingredients.map(ing => getContextualBounds(ing, context));
+  // Intelligent bounds based on meal analysis
+  const bounds = ingredients.map(ing => getIntelligentBounds(ing, mealAnalysis, targets));
 
-  // Smart initialization using target-based estimation
+  // Ultra-smart initialization using target decomposition
   let x = ingredients.map((ing, i) => {
-    const targetContribution = estimateTargetContribution(ing, targets, n);
+    const estimate = estimateOptimalContribution(ing, targets, ingredients, i);
     const bounds_i = bounds[i];
-    return Math.max(bounds_i.min, Math.min(bounds_i.max, targetContribution));
+    return Math.max(bounds_i.min, Math.min(bounds_i.max, estimate));
   });
 
-  // Multi-objective optimization parameters
-  const weights = getContextualWeights(context, targets);
-  const maxIterations = 500;
-  const tolerance = 1e-8;
+  // Ultra-high precision parameters
+  const maxIterations = 1000;
+  const tolerance = 1e-10;  // Ultra-tight tolerance
+  const precisionWeights = [1.0, 3.0, 2.0, 4.0]; // [cal, prot, carb, fat] - prioritize protein & fat accuracy
 
   let bestSolution: number[] | null = null;
   let bestError = Infinity;
 
-  // Enhanced iterative optimization with adaptive parameters
+  // Advanced iterative solver with adaptive learning
   for (let iter = 0; iter < maxIterations; iter++) {
-    // Calculate current achievement
     const current = calculateAchievement(A, x);
-
-    // Multi-objective error with contextual weights
+    
+    // Ultra-high precision error calculation
     const errors = [
-      (current[0] - targets.calories) / Math.max(1, targets.calories),
-      (current[1] - targets.protein) / Math.max(1, targets.protein),
-      (current[2] - targets.carbs) / Math.max(1, targets.carbs),
-      (current[3] - targets.fat) / Math.max(1, targets.fat)
+      (current[0] - targets.calories) / Math.max(targets.calories, 1),
+      (current[1] - targets.protein) / Math.max(targets.protein, 1),
+      (current[2] - targets.carbs) / Math.max(targets.carbs, 1),
+      (current[3] - targets.fat) / Math.max(targets.fat, 1)
     ];
 
-    const weightedError = errors.reduce((sum, err, i) => sum + weights[i] * err * err, 0);
+    const weightedError = errors.reduce((sum, err, i) => sum + precisionWeights[i] * err * err, 0);
 
     // Track best solution
     if (weightedError < bestError) {
@@ -381,26 +433,48 @@ function solveEnhancedQuadraticProblem(
       bestSolution = [...x];
     }
 
-    // Convergence check
-    const gradientNorm = calculateGradientNorm(A, b, x, weights);
-    if (gradientNorm < tolerance) break;
+    // Ultra-tight convergence check
+    const gradientNorm = calculateGradientNorm(A, b, x, precisionWeights);
+    if (gradientNorm < tolerance) {
+      console.log("✅ Converged at iteration", iter, "with gradient norm", gradientNorm.toFixed(12));
+      break;
+    }
 
-    // Adaptive gradient descent with momentum
-    const learningRate = 0.1 / (1 + iter / 100);
-    const gradient = calculateGradient(A, b, x, weights);
-
+    // Adaptive learning with momentum and regularization
+    const learningRate = 0.05 / (1 + iter / 200);  // More conservative learning
+    const gradient = calculateGradient(A, b, x, precisionWeights);
+    
+    // Apply gradient descent with bound constraints
     for (let j = 0; j < n; j++) {
       const newValue = x[j] - learningRate * gradient[j];
       x[j] = Math.max(bounds[j].min, Math.min(bounds[j].max, newValue));
+    }
+
+    // Every 50 iterations, add small random perturbation to escape local minima
+    if (iter % 50 === 49 && iter < maxIterations - 100) {
+      for (let j = 0; j < n; j++) {
+        const perturbation = (Math.random() - 0.5) * 2.0; // ±1g perturbation
+        const bounds_j = bounds[j];
+        x[j] = Math.max(bounds_j.min, Math.min(bounds_j.max, x[j] + perturbation));
+      }
     }
   }
 
   if (bestSolution) {
     const finalAchieved = calculateAchievement(A, bestSolution);
+    const precisionScore = calculatePrecisionScore(finalAchieved, [targets.calories, targets.protein, targets.carbs, targets.fat]);
+    
+    console.log("🎯 Final precision score:", precisionScore.toFixed(6));
+    console.log("📊 Final macros achieved:", {
+      calories: finalAchieved[0].toFixed(2),
+      protein: finalAchieved[1].toFixed(2), 
+      carbs: finalAchieved[2].toFixed(2),
+      fat: finalAchieved[3].toFixed(2)
+    });
 
     return {
       feasible: true,
-      result: 0,
+      result: bestError,
       ingredients: Object.fromEntries(
         ingredients.map((ing, i) => [ing.name, Math.round(bestSolution![i] * 100) / 100])
       ),
@@ -416,40 +490,44 @@ function solveEnhancedQuadraticProblem(
   return null;
 }
 
-// Strategic helper optimization using branch-and-bound with pruning
-function strategicHelperOptimization(
+// Intelligent helper optimization with culinary logic
+function performIntelligentHelperOptimization(
   baseIngredients: Ingredient[],
   helpers: Ingredient[],
   targets: Targets,
-  context: MealContext,
+  mealAnalysis: MealAnalysis,
   baseSolution: OptimizationResult
 ): OptimizationResult | null {
 
-  // Analyze deficits to determine optimal helper selection
   const deficits = analyzeNutritionalDeficits(baseSolution.achieved, targets);
   console.log("🔍 Nutritional deficits:", deficits);
 
-  // Score and rank helpers based on deficit-filling potential
-  const rankedHelpers = helpers
+  // Score helpers with culinary intelligence
+  const scoredHelpers = helpers
     .map(helper => ({
       ingredient: helper,
-      score: calculateHelperScore(helper, deficits, context)
+      score: calculateIntelligentHelperScore(helper, deficits, mealAnalysis, baseIngredients),
+      reason: getHelperReason(helper, deficits, mealAnalysis)
     }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3); // Consider only top 3 helpers
+    .slice(0, 2); // Only consider top 2 most appropriate helpers
 
-  console.log("🏆 Top ranked helpers:", rankedHelpers.map(h => `${h.ingredient.name}: ${h.score.toFixed(3)}`));
+  console.log("🏆 Top intelligent helpers:", 
+    scoredHelpers.map(h => `${h.ingredient.name}: ${h.score.toFixed(3)} (${h.reason})`)
+  );
 
-  // Test each combination using branch-and-bound
-  for (let i = 0; i < rankedHelpers.length; i++) {
-    const testIngredients = [...baseIngredients, rankedHelpers[i].ingredient];
-    const testSolution = solveEnhancedQuadraticProblem(testIngredients, targets, context);
+  // Test each helper individually for best improvement
+  for (const helperData of scoredHelpers) {
+    const testIngredients = [...baseIngredients, helperData.ingredient];
+    const testSolution = solveUltraHighPrecisionProblem(testIngredients, targets, mealAnalysis);
 
     if (testSolution) {
-      const improvement = calculateImprovement(baseSolution, testSolution, targets);
-      console.log(`📊 Helper ${rankedHelpers[i].ingredient.name} improvement: ${improvement.toFixed(3)}`);
+      const improvement = calculatePrecisionImprovement(baseSolution, testSolution, targets);
+      console.log(`📊 Helper ${helperData.ingredient.name} precision improvement: ${improvement.toFixed(6)}`);
 
-      if (improvement > 0.15) { // 15% improvement threshold
+      // Only accept if significant precision improvement
+      if (improvement > 0.1) {
+        console.log(`✅ Accepting helper: ${helperData.ingredient.name} - ${helperData.reason}`);
         return testSolution;
       }
     }
@@ -458,151 +536,208 @@ function strategicHelperOptimization(
   return null;
 }
 
-// Context-aware ingredient bounds
-function getContextualBounds(ingredient: Ingredient, context: MealContext): { min: number; max: number } {
+// Intelligent bounds based on meal analysis and ingredient type
+function getIntelligentBounds(
+  ingredient: Ingredient, 
+  mealAnalysis: MealAnalysis,
+  targets: Targets
+): { min: number; max: number } {
   const name = ingredient.name.toLowerCase();
-  const baseMultiplier = context.type === 'snack' ? 0.8 : 1.2;
+  
+  // Base multiplier based on meal structure
+  let baseMultiplier = 1.0;
+  if (mealAnalysis.mealStructure === 'rice-based') baseMultiplier = 1.2;
+  else if (mealAnalysis.mealStructure === 'salad-based') baseMultiplier = 0.8;
 
-  // Ingredient-specific bounds with context adjustment
-  if (/oil|butter|ghee/.test(name)) {
-    return { min: 3 * baseMultiplier, max: 15 * baseMultiplier };
-  } else if (/chia|seed|flax/.test(name)) {
-    return { min: 5 * baseMultiplier, max: 25 * baseMultiplier };
-  } else if (/almond|walnut|cashew|peanut|nut|pistachio/.test(name)) {
-    return { min: 8 * baseMultiplier, max: 40 * baseMultiplier };
+  // Target-aware scaling
+  const targetScale = Math.max(0.5, Math.min(2.0, targets.calories / 500));
+
+  // Ingredient-specific intelligent bounds
+  if (/oil|tahini/.test(name)) {
+    return { min: 2 * baseMultiplier, max: 12 * baseMultiplier * targetScale };
+  } else if (/cheese|parmesan|feta/.test(name)) {
+    return { min: 8 * baseMultiplier, max: 25 * baseMultiplier * targetScale };
+  } else if (/nuts|seeds|almond|walnut|pistachio/.test(name)) {
+    return { min: 5 * baseMultiplier, max: 35 * baseMultiplier * targetScale };
   } else if (/yogurt|cottage/.test(name)) {
-    return { min: 50 * baseMultiplier, max: 150 * baseMultiplier };
-  } else if (/chicken|beef|fish|tofu|tempeh|egg|salmon|tuna/.test(name)) {
-    return { min: 30 * baseMultiplier, max: 120 * baseMultiplier };
-  } else if (/fruit|berry|apple|banana|orange|grape|dates|raisins/.test(name)) {
-    return { min: 50 * baseMultiplier, max: 200 * baseMultiplier };
-  } else if (/vegetable|carrot|cucumber|celery|pepper|tomato|broccoli|spinach|kale/.test(name)) {
-    return { min: 20 * baseMultiplier, max: 150 * baseMultiplier };
-  } else if (/rice|quinoa|oat|pasta|bread|potato|sweet potato/.test(name)) {
-    return { min: 40 * baseMultiplier, max: 180 * baseMultiplier };
+    return { min: 30 * baseMultiplier, max: 120 * baseMultiplier * targetScale };
+  } else if (/rice|quinoa|bulgur/.test(name)) {
+    // Be more generous with primary carbs
+    return { min: 40 * baseMultiplier, max: 200 * baseMultiplier * targetScale };
+  } else if (/meat|beef|chicken|protein/.test(name)) {
+    return { min: 40 * baseMultiplier, max: 150 * baseMultiplier * targetScale };
+  } else if (/herbs|spices|garlic|lemon/.test(name)) {
+    return { min: 1 * baseMultiplier, max: 8 * baseMultiplier };
+  } else if (/vegetable|tomato|pepper|cucumber/.test(name)) {
+    return { min: 20 * baseMultiplier, max: 200 * baseMultiplier * targetScale };
   } else {
-    return { min: 10 * baseMultiplier, max: 100 * baseMultiplier };
+    return { min: 10 * baseMultiplier, max: 100 * baseMultiplier * targetScale };
   }
 }
 
-// Contextual weight assignment for multi-objective optimization
-function getContextualWeights(context: MealContext, targets: Targets): number[] {
-  if (context.type === 'snack') {
-    // For snacks: prioritize fat control and protein achievement
-    return [1.0, 2.5, 1.5, 3.0]; // [calories, protein, carbs, fat]
-  } else if (context.type === 'breakfast') {
-    // For breakfast: balanced with slight carb emphasis for energy
-    return [1.2, 2.0, 2.2, 1.8];
-  } else {
-    // For lunch/dinner: balanced optimization with slightly higher calorie/protein focus
-    return [1.5, 2.0, 1.8, 2.0];
-  }
-}
-
-// Helper utility functions
-function estimateTargetContribution(ingredient: Ingredient, targets: Targets, numIngredients: number): number {
-  const avgContribution = [
-    targets.calories / (numIngredients * 2),
-    targets.protein / (numIngredients * 1.5),
-    targets.carbs / (numIngredients * 2),
-    targets.fat / (numIngredients * 3)
+// Optimal contribution estimation using advanced heuristics
+function estimateOptimalContribution(
+  ingredient: Ingredient, 
+  targets: Targets, 
+  allIngredients: Ingredient[],
+  index: number
+): number {
+  // Multi-factor estimation considering ingredient's macro profile
+  const macroContributions = [
+    ingredient.cal > 0 ? targets.calories / (ingredient.cal * allIngredients.length) : 50,
+    ingredient.prot > 0 ? targets.protein / (ingredient.prot * allIngredients.length) : 50,
+    ingredient.carb > 0 ? targets.carbs / (ingredient.carb * allIngredients.length) : 50,
+    ingredient.fat > 0 ? targets.fat / (ingredient.fat * allIngredients.length) : 50
   ];
 
-  const estimates = [
-    ingredient.cal > 0 ? avgContribution[0] / ingredient.cal : 50,
-    ingredient.prot > 0 ? avgContribution[1] / ingredient.prot : 50,
-    ingredient.carb > 0 ? avgContribution[2] / ingredient.carb : 50,
-    ingredient.fat > 0 ? avgContribution[3] / ingredient.fat : 50
-  ];
+  // Weight contributions based on ingredient's dominant macro
+  const dominantMacroValue = Math.max(ingredient.cal, ingredient.prot * 4, ingredient.carb * 4, ingredient.fat * 9);
+  let weights = [1, 1, 1, 1];
 
-  return Math.max(10, Math.min(100, estimates.reduce((a, b) => a + b, 0) / 4));
+  if (ingredient.prot * 4 === dominantMacroValue) weights = [1, 3, 1, 1]; // Protein-dominant
+  else if (ingredient.carb * 4 === dominantMacroValue) weights = [1, 1, 3, 1]; // Carb-dominant  
+  else if (ingredient.fat * 9 === dominantMacroValue) weights = [1, 1, 1, 3]; // Fat-dominant
+
+  const weightedAverage = macroContributions.reduce((sum, contrib, i) => sum + contrib * weights[i], 0) / weights.reduce((sum, w) => sum + w, 0);
+  
+  return Math.max(5, Math.min(150, weightedAverage));
 }
 
-function calculateAchievement(A: number[][], x: number[]): number[] {
-  return A.map(row => row.reduce((sum, coeff, j) => sum + coeff * x[j], 0));
-}
-
-function calculateGradient(A: number[][], b: number[], x: number[], weights: number[]): number[] {
-  const current = calculateAchievement(A, x);
-  const residuals = current.map((val, i) => weights[i] * (val - b[i]) / Math.max(1, b[i])); // Normalize residuals
-
-  return x.map((_, j) => {
-    return A.reduce((sum, row, i) => sum + 2 * row[j] * residuals[i], 0);
-  });
-}
-
-function calculateGradientNorm(A: number[][], b: number[], x: number[], weights: number[]): number {
-  const grad = calculateGradient(A, b, x, weights);
-  return Math.sqrt(grad.reduce((sum, g) => sum + g * g, 0));
-}
-
-function analyzeNutritionalDeficits(achieved: any, targets: Targets) {
-  const deficits = {
-    calories: { absolute: targets.calories - achieved.calories, relative: (targets.calories - achieved.calories) / Math.max(1, targets.calories) },
-    protein: { absolute: targets.protein - achieved.protein, relative: (targets.protein - achieved.protein) / Math.max(1, targets.protein) },
-    carbs: { absolute: targets.carbs - achieved.carbs, relative: (targets.carbs - achieved.carbs) / Math.max(1, targets.carbs) },
-    fat: { absolute: targets.fat - achieved.fat, relative: (targets.fat - achieved.fat) / Math.max(1, targets.fat) }
-  };
-  return deficits;
-}
-
-function calculateHelperScore(helper: Ingredient, deficits: any, context: MealContext): number {
+// Advanced helper scoring with culinary intelligence
+function calculateIntelligentHelperScore(
+  helper: Ingredient,
+  deficits: any,
+  mealAnalysis: MealAnalysis,
+  baseIngredients: Ingredient[]
+): number {
+  const name = helper.name.toLowerCase();
   let score = 0;
 
-  // Score based on addressing major deficits with relevant macros
-  if (deficits.protein.relative > 0.08) score += helper.prot * 100 * Math.abs(deficits.protein.relative);
-  if (deficits.carbs.relative > 0.08) score += helper.carb * 50 * Math.abs(deficits.carbs.relative);
-  if (deficits.fat.relative < -0.08) score -= helper.fat * 80 * Math.abs(deficits.fat.relative); // Penalize high fat if excess
-  if (deficits.calories.relative > 0.08) score += helper.cal * 20 * Math.abs(deficits.calories.relative);
+  // Primary scoring: Address nutritional deficits effectively
+  if (deficits.protein.relative > 0.1) score += helper.prot * 200 * deficits.protein.relative;
+  if (deficits.carbs.relative > 0.1) score += helper.carb * 100 * deficits.carbs.relative;
+  if (deficits.fat.relative > 0.1) score += helper.fat * 150 * deficits.fat.relative;
+  if (deficits.calories.relative > 0.1) score += helper.cal * 50 * deficits.calories.relative;
 
-  // Contextual adjustments: Penalize inappropriate helpers for the context
-  const name = helper.name.toLowerCase();
-  if (context.type === 'snack') {
-    if (/sweet potato|potato|rice|pasta|bread/.test(name)) score *= 0.2; // Penalize heavy starches in snacks
-    if (/chicken|beef|fish/.test(name)) score *= 0.3; // Penalize complex proteins needing cooking
-    if (/oil|butter|honey|dark chocolate/.test(name)) score *= 0.5; // Moderate penalty for high-cal, simple additions
-  } else if (context.type === 'breakfast') {
-    if (/fried|bacon|sausage/.test(name)) score *= 0.1; // Penalize traditionally heavy breakfast items
-  }
+  // Culinary compatibility scoring
+  const cuisineBonus = getCuisineCompatibilityBonus(helper, mealAnalysis);
+  score += cuisineBonus;
 
-  // Bonus for balanced macros if not addressing extreme deficits
-  const isBalanced = helper.cal > 0.5 && helper.cal < 3.0 && helper.prot > 0.05 && helper.prot < 0.2 && helper.carb > 0.05 && helper.carb < 0.5 && helper.fat < 0.3;
-  if (isBalanced && Math.abs(deficits.protein.relative) < 0.05 && Math.abs(deficits.carbs.relative) < 0.05) {
-    score += 5;
-  }
+  // Penalize inappropriate combinations
+  const incompatibilityPenalty = getIncompatibilityPenalty(helper, baseIngredients, mealAnalysis);
+  score -= incompatibilityPenalty;
+
+  // Bonus for versatile ingredients that enhance the dish
+  const versatilityBonus = getVersatilityBonus(helper, mealAnalysis);
+  score += versatilityBonus;
 
   return Math.max(0, score);
 }
 
-function calculateImprovement(baseSolution: OptimizationResult, testSolution: OptimizationResult, targets: Targets): number {
-  const baseError = calculateOverallError(baseSolution.achieved, targets);
-  const testError = calculateOverallError(testSolution.achieved, targets);
-  if (baseError === 0) return 0; // Avoid division by zero
-  return (baseError - testError) / baseError;
+function getCuisineCompatibilityBonus(helper: Ingredient, mealAnalysis: MealAnalysis): number {
+  const name = helper.name.toLowerCase();
+  
+  if (mealAnalysis.flavorProfile === 'persian') {
+    if (/pomegranate|sumac|barberries|saffron|mint|tahini/.test(name)) return 15;
+    if (/almonds|pistachios|herbs|lemon/.test(name)) return 10;
+    if (/olive oil|yogurt|cucumber/.test(name)) return 8;
+  } else if (mealAnalysis.flavorProfile === 'mediterranean') {
+    if (/feta|olive oil|arugula|balsamic/.test(name)) return 12;
+    if (/herbs|lemon|parmesan/.test(name)) return 8;
+  }
+
+  return 0;
 }
 
-function calculateOverallError(achieved: any, targets: Targets): number {
-  const errors = [
-    Math.abs(achieved.calories - targets.calories) / Math.max(1, targets.calories),
-    Math.abs(achieved.protein - targets.protein) / Math.max(1, targets.protein),
-    Math.abs(achieved.carbs - targets.carbs) / Math.max(1, targets.carbs),
-    Math.abs(achieved.fat - targets.fat) / Math.max(1, targets.fat)
-  ];
+function getIncompatibilityPenalty(
+  helper: Ingredient, 
+  baseIngredients: Ingredient[], 
+  mealAnalysis: MealAnalysis
+): number {
+  const helperName = helper.name.toLowerCase();
+  const baseNames = baseIngredients.map(i => i.name.toLowerCase()).join(' ');
 
-  // Weighted average error with priority for protein and fat control
-  return (errors[0] * 1.0 + errors[1] * 2.0 + errors[2] * 1.5 + errors[3] * 2.5) / 7.0;
+  // Heavy penalty for protein conflicts
+  if (/chicken|beef|lamb|fish/.test(helperName)) {
+    if (/chicken|beef|lamb|fish/.test(baseNames)) {
+      return 1000; // Massive penalty for mixing main proteins
+    }
+  }
+
+  // Penalty for carb conflicts in rice-based dishes
+  if (mealAnalysis.mealStructure === 'rice-based' && /quinoa|bulgur|pasta|bread/.test(helperName)) {
+    return 500;
+  }
+
+  // Penalty for excessive fat additions
+  if (/oil|butter|cheese/.test(baseNames) && /oil|butter|nuts|seeds|avocado/.test(helperName)) {
+    return 200;
+  }
+
+  return 0;
 }
 
-function calculateAccuracyMetrics(achieved: any, targets: Targets) {
-  return {
-    calories: `${((achieved.calories / Math.max(1, targets.calories)) * 100).toFixed(1)}%`,
-    protein: `${((achieved.protein / Math.max(1, targets.protein)) * 100).toFixed(1)}%`,
-    carbs: `${((achieved.carbs / Math.max(1, targets.carbs)) * 100).toFixed(1)}%`,
-    fat: `${((achieved.fat / Math.max(1, targets.fat)) * 100).toFixed(1)}%`
-  };
+function getVersatilityBonus(helper: Ingredient, mealAnalysis: MealAnalysis): number {
+  const name = helper.name.toLowerCase();
+
+  // Universal enhancers
+  if (/herbs|garlic|lemon|olive oil/.test(name)) return 5;
+  
+  // Texture enhancers
+  if (/nuts|seeds/.test(name) && mealAnalysis.mealStructure !== 'soup-based') return 4;
+  
+  // Nutritional powerhouses
+  if (/yogurt|cottage cheese/.test(name)) return 6;
+
+  return 0;
 }
 
-function isWithinPrecisionThreshold(achieved: any, targets: Targets, threshold: number): boolean {
+function getHelperReason(
+  helper: Ingredient, 
+  deficits: any, 
+  mealAnalysis: MealAnalysis
+): string {
+  const name = helper.name.toLowerCase();
+
+  if (deficits.protein.relative > 0.1 && helper.prot > 0.15) {
+    return "high protein to address deficit";
+  }
+  if (deficits.fat.relative > 0.1 && helper.fat > 0.3) {
+    return "healthy fats for deficit";
+  }
+  if (mealAnalysis.flavorProfile === 'persian' && /pomegranate|sumac|barberries/.test(name)) {
+    return "Persian flavor enhancement";
+  }
+  if (/herbs|lemon|garlic/.test(name)) {
+    return "flavor enhancement";
+  }
+  
+  return "nutritional balance";
+}
+
+// Ultra-precision utility functions
+function calculatePrecisionScore(achieved: number[] | any, targets: number[] | Targets): number {
+  const achievedArray = Array.isArray(achieved) ? achieved : [achieved.calories, achieved.protein, achieved.carbs, achieved.fat];
+  const targetsArray = Array.isArray(targets) ? targets : [targets.calories, targets.protein, targets.carbs, targets.fat];
+  
+  const accuracies = achievedArray.map((val, i) => {
+    const target = targetsArray[i];
+    if (target === 0) return val === 0 ? 1 : 0;
+    return Math.max(0, 1 - Math.abs(val - target) / target);
+  });
+
+  // Weighted precision score
+  const weights = [1, 3, 2, 4]; // Prioritize protein and fat precision
+  return accuracies.reduce((sum, acc, i) => sum + acc * weights[i], 0) / weights.reduce((a, b) => a + b, 0);
+}
+
+function calculatePrecisionImprovement(baseSolution: OptimizationResult, testSolution: OptimizationResult, targets: Targets): number {
+  const basePrecision = calculatePrecisionScore(baseSolution.achieved, targets);
+  const testPrecision = calculatePrecisionScore(testSolution.achieved, targets);
+  return testPrecision - basePrecision;
+}
+
+function isWithinUltraPrecisionThreshold(achieved: any, targets: Targets, threshold: number): boolean {
   const accuracies = [
     Math.abs(achieved.calories - targets.calories) / Math.max(1, targets.calories),
     Math.abs(achieved.protein - targets.protein) / Math.max(1, targets.protein),
@@ -613,7 +748,13 @@ function isWithinPrecisionThreshold(achieved: any, targets: Targets, threshold: 
   return accuracies.every(acc => acc <= threshold);
 }
 
-// Utility functions (keeping existing ones that are still needed)
+// Utility functions (keeping essential ones)
+function formatIngredientName(key: string): string {
+  return key.split(' ').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+}
+
 function deduplicateIngredients(ingredients: Ingredient[]): Ingredient[] {
   const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").replace(/\([^)]*\)/g, "").trim();
   const seen = new Set<string>();
@@ -630,6 +771,45 @@ function deduplicateIngredients(ingredients: Ingredient[]): Ingredient[] {
   return unique;
 }
 
+function calculateAchievement(A: number[][], x: number[]): number[] {
+  return A.map(row => row.reduce((sum, coeff, j) => sum + coeff * x[j], 0));
+}
+
+function calculateGradient(A: number[][], b: number[], x: number[], weights: number[]): number[] {
+  const current = calculateAchievement(A, x);
+  const residuals = current.map((val, i) => weights[i] * (val - b[i]) / Math.max(1, Math.abs(b[i])));
+
+  return x.map((_, j) => {
+    return A.reduce((sum, row, i) => sum + 2 * row[j] * residuals[i], 0);
+  });
+}
+
+function calculateGradientNorm(A: number[][], b: number[], x: number[], weights: number[]): number {
+  const grad = calculateGradient(A, b, x, weights);
+  return Math.sqrt(grad.reduce((sum, g) => sum + g * g, 0));
+}
+
+function analyzeNutritionalDeficits(achieved: any, targets: Targets) {
+  return {
+    calories: { 
+      absolute: targets.calories - achieved.calories, 
+      relative: (targets.calories - achieved.calories) / Math.max(1, targets.calories) 
+    },
+    protein: { 
+      absolute: targets.protein - achieved.protein, 
+      relative: (targets.protein - achieved.protein) / Math.max(1, targets.protein) 
+    },
+    carbs: { 
+      absolute: targets.carbs - achieved.carbs, 
+      relative: (targets.carbs - achieved.carbs) / Math.max(1, targets.carbs) 
+    },
+    fat: { 
+      absolute: targets.fat - achieved.fat, 
+      relative: (targets.fat - achieved.fat) / Math.max(1, targets.fat) 
+    }
+  };
+}
+
 // Convert AI meal suggestion to optimization format
 export function convertMealToIngredients(mealSuggestion: any): Ingredient[] {
   return mealSuggestion.ingredients.map((ing: any) => {
@@ -640,7 +820,7 @@ export function convertMealToIngredients(mealSuggestion: any): Ingredient[] {
 
     // Fallback to nutrition database if needed
     if (calories === 0 && protein === 0 && carbs === 0 && fat === 0) {
-      const fallback = NUTRITION_FALLBACKS[ing.name.toLowerCase()] || { cal: 100, prot: 5, carb: 15, fat: 3 };
+      const fallback = NUTRITION_DATABASE[ing.name.toLowerCase()] || { cal: 100, prot: 5, carb: 15, fat: 3 };
       calories = fallback.cal;
       protein = fallback.prot;
       carbs = fallback.carb;
@@ -707,15 +887,15 @@ export function convertOptimizationToMeal(
 
   return {
     mealTitle: originalMeal.mealTitle,
-    description: `Mathematically optimized ${originalMeal.mealTitle} using advanced multi-objective programming to precisely match your macro targets.`,
+    description: `Precision-optimized ${originalMeal.mealTitle} using advanced mathematical programming with intelligent, contextually-appropriate ingredient selection.`,
     ingredients: optimizedIngredients,
     totalCalories: Math.round(optimizationResult.achieved.calories * 100) / 100,
     totalProtein: Math.round(optimizationResult.achieved.protein * 100) / 100,
     totalCarbs: Math.round(optimizationResult.achieved.carbs * 100) / 100,
     totalFat: Math.round(optimizationResult.achieved.fat * 100) / 100,
-    instructions: originalMeal.instructions || "Combine ingredients according to preference. No cooking required for this optimized snack.",
+    instructions: originalMeal.instructions || "Combine ingredients according to preference and traditional preparation methods.",
   };
 }
 
-// Main optimization function (keep for backward compatibility)
+// Main optimization function
 export const optimizeMeal = optimizeMealAdvanced;
