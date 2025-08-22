@@ -211,6 +211,21 @@ function generateContextualHelpers(
   const existing = new Set(baseIngredients.map(ing => ing.name.toLowerCase()));
   const helpers: Ingredient[] = [];
 
+  // Check for existing protein types to avoid conflicts
+  const existingMeats = new Set<string>();
+  const meatProteins = ['beef', 'chicken', 'turkey', 'pork', 'lamb', 'fish', 'salmon', 'tuna', 'cod'];
+  
+  baseIngredients.forEach(ing => {
+    const ingName = ing.name.toLowerCase();
+    meatProteins.forEach(meat => {
+      if (ingName.includes(meat)) {
+        existingMeats.add(meat);
+      }
+    });
+  });
+
+  console.log("🥩 Existing meat proteins detected:", Array.from(existingMeats));
+
   // Analyze deficits
   const estimatedBase = {
     calories: baseIngredients.reduce((sum, ing) => sum + ing.cal * 100, 0),
@@ -230,9 +245,18 @@ function generateContextualHelpers(
   const helperCategories: string[] = [];
 
   // Protein helpers (highest priority if deficit > 10g)
+  // Only add non-conflicting protein sources
   if (deficits.protein > 10) {
-    helperCategories.push('chicken breast grilled', 'greek yogurt non-fat', 'egg whites');
+    // If meat already exists, prefer dairy/egg proteins
+    if (existingMeats.size > 0) {
+      console.log("🚫 Meat detected, avoiding additional meat proteins");
+      helperCategories.push('greek yogurt non-fat', 'egg whites', 'cottage cheese low-fat');
+    } else {
+      // No meat exists, can add chicken as primary protein
+      helperCategories.push('chicken breast grilled', 'greek yogurt non-fat', 'egg whites');
+    }
   } else if (deficits.protein > 5) {
+    // For smaller protein needs, always prefer dairy/egg
     helperCategories.push('greek yogurt non-fat', 'cottage cheese low-fat');
   }
 
@@ -271,6 +295,7 @@ function generateContextualHelpers(
     }
   }
 
+  console.log("🆘 Final helpers selected:", helpers.map(h => h.name));
   return helpers;
 }
 
