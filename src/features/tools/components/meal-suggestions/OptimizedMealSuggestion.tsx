@@ -19,6 +19,42 @@ import {
   convertOptimizationToMeal,
 } from "@/lib/optimization/meal-optimizer";
 
+// Import the getFallbackNutrition function for helper ingredients
+function getFallbackNutrition(ingredientName: string) {
+  const NUTRITION_FALLBACKS: Record<string, { cal: number; prot: number; carb: number; fat: number }> = {
+    "greek yogurt": { cal: 59, prot: 10, carb: 3.6, fat: 0.4 },
+    "greek yogurt non-fat": { cal: 59, prot: 10, carb: 3.6, fat: 0.4 },
+    "chicken breast": { cal: 165, prot: 31, carb: 0, fat: 3.6 },
+    "egg white": { cal: 52, prot: 10.9, carb: 1.1, fat: 0.2 },
+    "white rice raw": { cal: 365, prot: 7.1, carb: 80, fat: 0.7 },
+    "brown rice raw": { cal: 370, prot: 7.9, carb: 77, fat: 2.9 },
+    "pasta raw": { cal: 371, prot: 13, carb: 75, fat: 1.5 },
+    "broccoli raw": { cal: 34, prot: 2.8, carb: 7.0, fat: 0.4 },
+    "spinach": { cal: 23, prot: 2.9, carb: 3.6, fat: 0.4 },
+    "cucumber raw": { cal: 16, prot: 0.7, carb: 3.6, fat: 0.1 },
+    "olive oil": { cal: 884, prot: 0, carb: 0, fat: 100 },
+    "avocado": { cal: 160, prot: 2, carb: 8.5, fat: 14.7 },
+    "sweet potato raw": { cal: 86, prot: 1.6, carb: 20.1, fat: 0.1 },
+  };
+
+  const name = ingredientName.toLowerCase().trim();
+  
+  // Try exact match first
+  if (NUTRITION_FALLBACKS[name]) {
+    return NUTRITION_FALLBACKS[name];
+  }
+
+  // Try partial matches
+  for (const [key, value] of Object.entries(NUTRITION_FALLBACKS)) {
+    if (name.includes(key) || key.includes(name)) {
+      return value;
+    }
+  }
+
+  // Default fallback
+  return { cal: 100, prot: 5, carb: 15, fat: 3 };
+}
+
 interface OptimizedMealSuggestionProps {
   originalSuggestion: any;
   targetMacros: any;
@@ -73,10 +109,36 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
       if (result.feasible) {
         // Convert the optimization result back to meal format
         console.log("🔄 Converting result back to meal...");
+        
+        // Create complete ingredient list including any helpers that were added
+        const allIngredients = [...ingredients];
+        
+        // Add any helpers that appear in the result but weren't in original ingredients
+        Object.keys(result.ingredients).forEach(ingredientName => {
+          const exists = allIngredients.find(ing => 
+            ing.name.toLowerCase().trim() === ingredientName.toLowerCase().trim()
+          );
+          
+          if (!exists) {
+            // This is a helper ingredient, add it with fallback nutrition
+            console.log(`🆘 Adding helper ingredient to conversion: ${ingredientName}`);
+            const helperNutrition = getFallbackNutrition(ingredientName);
+            allIngredients.push({
+              name: ingredientName,
+              cal: helperNutrition.cal / 100,
+              prot: helperNutrition.prot / 100,
+              carb: helperNutrition.carb / 100,
+              fat: helperNutrition.fat / 100
+            });
+          }
+        });
+        
+        console.log("🧮 All ingredients for conversion:", allIngredients.map(i => i.name));
+        
         const optimized = convertOptimizationToMeal(
           originalSuggestion,
           result,
-          ingredients,
+          allIngredients,
         );
         console.log("✅ Converted meal:", optimized);
 

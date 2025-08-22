@@ -2210,48 +2210,57 @@ export function convertOptimizationToMeal(
   optimizationResult: OptimizationResult,
   ingredients: Ingredient[],
 ): OptimizedMealSuggestion {
-  // Normalize names to ensure mapping works even if casing/format differs
-  const normalizeName = (s: string) =>
-    (s || "")
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .replace(/\([^)]*\)/g, "")
-      .trim();
+  console.log("🔄 convertOptimizationToMeal - Input optimization result:", optimizationResult);
+  console.log("🔄 convertOptimizationToMeal - Available ingredients:", ingredients.map(i => i.name));
+  
+  // Create optimized ingredients list from ALL ingredients that have amounts > 0
+  const optimizedIngredients: MealSuggestionIngredient[] = [];
+  
+  // Process each ingredient in the optimization result
+  Object.entries(optimizationResult.ingredients).forEach(([ingredientName, amount]) => {
+    if (amount > 0) {
+      console.log(`🔍 Processing ingredient: ${ingredientName} with amount: ${amount}`);
+      
+      // Find the ingredient data
+      const ingredientData = ingredients.find(ing => 
+        ing.name.toLowerCase().trim() === ingredientName.toLowerCase().trim()
+      );
+      
+      if (ingredientData) {
+        const calories = amount * ingredientData.cal;
+        const protein = amount * ingredientData.prot;
+        const carbs = amount * ingredientData.carb;
+        const fat = amount * ingredientData.fat;
 
-  const amountByNormalized: Record<string, number> = {};
-  Object.entries(optimizationResult.ingredients).forEach(([name, amt]) => {
-    amountByNormalized[normalizeName(name)] = amt as number;
+        optimizedIngredients.push({
+          name: ingredientData.name,
+          amount: Math.round(amount * 100) / 100,
+          unit: "g",
+          calories: Math.round(calories * 100) / 100,
+          protein: Math.round(protein * 100) / 100,
+          carbs: Math.round(carbs * 100) / 100,
+          fat: Math.round(fat * 100) / 100,
+          macrosString: `${Math.round(calories)} cal, ${Math.round(protein)}g protein, ${Math.round(carbs)}g carbs, ${Math.round(fat)}g fat`,
+        });
+        
+        console.log(`✅ Added ingredient: ${ingredientData.name} - ${amount}g`);
+      } else {
+        console.warn(`⚠️ Ingredient data not found for: ${ingredientName}`);
+      }
+    }
   });
 
-  const optimizedIngredients: MealSuggestionIngredient[] = ingredients.map(
-    (ing) => {
-      const amount = amountByNormalized[normalizeName(ing.name)] ?? 0;
-      const calories = amount * ing.cal;
-      const protein = amount * ing.prot;
-      const carbs = amount * ing.carb;
-      const fat = amount * ing.fat;
-
-      return {
-        name: ing.name,
-        amount: Math.round(amount * 100) / 100, // Round to 2 decimal places
-        unit: "g",
-        calories: Math.round(calories * 100) / 100,
-        protein: Math.round(protein * 100) / 100,
-        carbs: Math.round(carbs * 100) / 100,
-        fat: Math.round(fat * 100) / 100,
-        macrosString: `${Math.round(calories)} cal, ${Math.round(protein)}g protein, ${Math.round(carbs)}g carbs, ${Math.round(fat)}g fat`,
-      };
-    },
-  );
+  console.log(`🧮 Final optimized ingredients count: ${optimizedIngredients.length}`);
+  console.log("🧮 Final optimized ingredients:", optimizedIngredients.map(i => `${i.name}: ${i.amount}g`));
 
   return {
     mealTitle: originalMeal.mealTitle,
-    description: `Optimized version of ${originalMeal.mealTitle} - adjusted ingredient quantities to match your exact macro targets using linear optimization.`,
+    description: `Optimized version of ${originalMeal.mealTitle} - adjusted ingredient quantities to match your exact macro targets using iterative helper selection.`,
     ingredients: optimizedIngredients,
     totalCalories: Math.round(optimizationResult.achieved.calories * 100) / 100,
     totalProtein: Math.round(optimizationResult.achieved.protein * 100) / 100,
     totalCarbs: Math.round(optimizationResult.achieved.carbs * 100) / 100,
     totalFat: Math.round(optimizationResult.achieved.fat * 100) / 100,
-    instructions: originalMeal.instructions,
+    instructions: originalMeal.instructions || "Cook ingredients according to preference. Season to taste and serve.",
   };
 }
