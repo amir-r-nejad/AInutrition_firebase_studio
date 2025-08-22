@@ -267,7 +267,7 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
             </CardTitle>
             <CardDescription className="text-sm">
               Meal has been optimized to match your exact macro targets using
-              advanced mathematical programming with contextual helper selection.
+              advanced linear programming with intelligent helper ingredient selection for precise macro achievement.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -320,12 +320,19 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
                             optimizedMeal.totalCalories - targetMacros.calories,
                           ) /
                             targetMacros.calories <=
-                          0.05
+                          0.02
                             ? "bg-green-100 text-green-800"
-                            : "bg-orange-100 text-orange-800"
+                            : Math.abs(
+                                optimizedMeal.totalCalories - targetMacros.calories,
+                              ) /
+                                targetMacros.calories <=
+                              0.05
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
                         }
                       >
-                        Calories: {optimizedMeal.totalCalories}g
+                        Calories: {optimizedMeal.totalCalories} kcal
+                        {Math.abs(optimizedMeal.totalCalories - targetMacros.calories) <= 1 && " ✓"}
                       </Badge>
                       <Badge
                         variant="secondary"
@@ -334,12 +341,19 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
                             optimizedMeal.totalProtein - targetMacros.protein,
                           ) /
                             targetMacros.protein <=
-                          0.05
+                          0.02
                             ? "bg-green-100 text-green-800"
-                            : "bg-orange-100 text-orange-800"
+                            : Math.abs(
+                                optimizedMeal.totalProtein - targetMacros.protein,
+                              ) /
+                                targetMacros.protein <=
+                              0.05
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
                         }
                       >
                         Protein: {optimizedMeal.totalProtein}g
+                        {Math.abs(optimizedMeal.totalProtein - targetMacros.protein) <= 0.5 && " ✓"}
                       </Badge>
                       <Badge
                         variant="secondary"
@@ -348,24 +362,36 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
                             optimizedMeal.totalCarbs - targetMacros.carbs,
                           ) /
                             targetMacros.carbs <=
-                          0.05
+                          0.02
                             ? "bg-green-100 text-green-800"
-                            : "bg-orange-100 text-orange-800"
+                            : Math.abs(
+                                optimizedMeal.totalCarbs - targetMacros.carbs,
+                              ) /
+                                targetMacros.carbs <=
+                              0.05
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
                         }
                       >
                         Carbs: {optimizedMeal.totalCarbs}g
+                        {Math.abs(optimizedMeal.totalCarbs - targetMacros.carbs) <= 0.5 && " ✓"}
                       </Badge>
                       <Badge
                         variant="secondary"
                         className={
                           Math.abs(optimizedMeal.totalFat - targetMacros.fat) /
                             targetMacros.fat <=
-                          0.05
+                          0.02
                             ? "bg-green-100 text-green-800"
-                            : "bg-orange-100 text-orange-800"
+                            : Math.abs(optimizedMeal.totalFat - targetMacros.fat) /
+                                targetMacros.fat <=
+                              0.05
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
                         }
                       >
                         Fat: {optimizedMeal.totalFat}g
+                        {Math.abs(optimizedMeal.totalFat - targetMacros.fat) <= 0.5 && " ✓"}
                       </Badge>
                     </div>
                   </div>
