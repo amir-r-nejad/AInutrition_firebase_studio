@@ -1,4 +1,5 @@
-// Advanced Meal Optimization using Mathematical Programming with Context Intelligence
+
+// Advanced Meal Optimization using Genetic Algorithm
 export interface Ingredient {
   name: string;
   cal: number; // Calories per gram
@@ -94,90 +95,237 @@ const NUTRITION_DATABASE: Record<string, { cal: number; prot: number; carb: numb
   "apple": { cal: 52, prot: 0.3, carb: 13.8, fat: 0.2 },
 };
 
-// Linear Programming Solver using Simplex-like algorithm
-function optimizeLinear(
+// Genetic Algorithm Parameters
+const GA_CONFIG = {
+  populationSize: 150,
+  generations: 800,
+  mutationRate: 0.12,
+  crossoverRate: 0.8,
+  eliteSize: 10,
+  maxAmount: 500, // Max grams per ingredient
+  tournamentSize: 5
+};
+
+// Individual in genetic algorithm
+interface Individual {
+  genes: number[]; // Amount of each ingredient in grams
+  fitness: number;
+}
+
+// Calculate fitness (lower is better - sum of weighted absolute deviations)
+function calculateFitness(genes: number[], ingredients: Ingredient[], targets: Targets): number {
+  let totalCal = 0, totalProt = 0, totalCarb = 0, totalFat = 0;
+  
+  for (let i = 0; i < ingredients.length; i++) {
+    const amount = genes[i];
+    totalCal += amount * ingredients[i].cal;
+    totalProt += amount * ingredients[i].prot;
+    totalCarb += amount * ingredients[i].carb;
+    totalFat += amount * ingredients[i].fat;
+  }
+
+  // Weighted deviations (prioritize protein and fat accuracy)
+  const calDeviation = Math.abs(totalCal - targets.calories);
+  const protDeviation = Math.abs(totalProt - targets.protein) * 3; // Higher weight
+  const carbDeviation = Math.abs(totalCarb - targets.carbs) * 2;
+  const fatDeviation = Math.abs(totalFat - targets.fat) * 4; // Highest weight
+
+  return calDeviation + protDeviation + carbDeviation + fatDeviation;
+}
+
+// Calculate achieved macros from genes
+function calculateMacros(genes: number[], ingredients: Ingredient[]) {
+  let calories = 0, protein = 0, carbs = 0, fat = 0;
+  
+  for (let i = 0; i < ingredients.length; i++) {
+    const amount = genes[i];
+    calories += amount * ingredients[i].cal;
+    protein += amount * ingredients[i].prot;
+    carbs += amount * ingredients[i].carb;
+    fat += amount * ingredients[i].fat;
+  }
+
+  return {
+    calories: Math.round(calories * 100) / 100,
+    protein: Math.round(protein * 100) / 100,
+    carbs: Math.round(carbs * 100) / 100,
+    fat: Math.round(fat * 100) / 100
+  };
+}
+
+// Create random individual
+function createIndividual(ingredientsCount: number): Individual {
+  const genes = Array.from({ length: ingredientsCount }, () => 
+    Math.random() * GA_CONFIG.maxAmount
+  );
+  
+  return { genes, fitness: Infinity };
+}
+
+// Tournament selection
+function selectParent(population: Individual[]): Individual {
+  const tournament: Individual[] = [];
+  
+  for (let i = 0; i < GA_CONFIG.tournamentSize; i++) {
+    const randomIndex = Math.floor(Math.random() * population.length);
+    tournament.push(population[randomIndex]);
+  }
+  
+  return tournament.reduce((best, current) => 
+    current.fitness < best.fitness ? current : best
+  );
+}
+
+// Single-point crossover
+function crossover(parent1: Individual, parent2: Individual): Individual[] {
+  if (Math.random() > GA_CONFIG.crossoverRate) {
+    return [{ ...parent1 }, { ...parent2 }];
+  }
+
+  const crossoverPoint = Math.floor(Math.random() * parent1.genes.length);
+  
+  const child1Genes = [
+    ...parent1.genes.slice(0, crossoverPoint),
+    ...parent2.genes.slice(crossoverPoint)
+  ];
+  
+  const child2Genes = [
+    ...parent2.genes.slice(0, crossoverPoint),
+    ...parent1.genes.slice(crossoverPoint)
+  ];
+
+  return [
+    { genes: child1Genes, fitness: Infinity },
+    { genes: child2Genes, fitness: Infinity }
+  ];
+}
+
+// Gaussian mutation
+function mutate(individual: Individual): void {
+  for (let i = 0; i < individual.genes.length; i++) {
+    if (Math.random() < GA_CONFIG.mutationRate) {
+      // Gaussian mutation with adaptive step size
+      const stepSize = GA_CONFIG.maxAmount * 0.1;
+      const mutation = (Math.random() - 0.5) * 2 * stepSize;
+      
+      individual.genes[i] += mutation;
+      individual.genes[i] = Math.max(0, Math.min(GA_CONFIG.maxAmount, individual.genes[i]));
+    }
+  }
+}
+
+// Main genetic algorithm optimization
+function optimizeWithGeneticAlgorithm(
   ingredients: Ingredient[],
   targets: Targets
 ): OptimizationResult {
-  const n = ingredients.length;
+  console.log("🧬 Starting Genetic Algorithm Optimization");
+  console.log("📊 Population:", GA_CONFIG.populationSize, "Generations:", GA_CONFIG.generations);
 
-  // Build coefficient matrix [calories, protein, carbs, fat]
-  const A = [
-    ingredients.map(ing => ing.cal),   // Calories row
-    ingredients.map(ing => ing.prot),  // Protein row  
-    ingredients.map(ing => ing.carb),  // Carbs row
-    ingredients.map(ing => ing.fat)    // Fat row
-  ];
+  // Initialize population
+  let population: Individual[] = Array.from({ length: GA_CONFIG.populationSize }, 
+    () => createIndividual(ingredients.length)
+  );
 
-  const b = [targets.calories, targets.protein, targets.carbs, targets.fat];
+  // Evaluate initial population
+  population.forEach(individual => {
+    individual.fitness = calculateFitness(individual.genes, ingredients, targets);
+  });
 
-  // Try to solve the linear system using least squares with bounds
-  let bestSolution: number[] | null = null;
-  let bestError = Infinity;
+  let bestFitness = Infinity;
+  let bestIndividual: Individual | null = null;
+  let generationsWithoutImprovement = 0;
 
-  // Multiple starting points to find global optimum
-  for (let trial = 0; trial < 50; trial++) {
-    let x = ingredients.map(() => Math.random() * 200); // Random start 0-200g
+  // Evolution loop
+  for (let generation = 0; generation < GA_CONFIG.generations; generation++) {
+    // Sort population by fitness
+    population.sort((a, b) => a.fitness - b.fitness);
 
-    // Gradient descent with momentum
-    let momentum = new Array(n).fill(0);
-    const learningRate = 0.1;
-    const momentumFactor = 0.9;
-
-    for (let iter = 0; iter < 1000; iter++) {
-      // Calculate current achievement
-      const current = A.map(row => 
-        row.reduce((sum, coeff, j) => sum + coeff * x[j], 0)
-      );
-
-      // Calculate errors with different weights for each macro
-      const errors = current.map((val, i) => val - b[i]);
-      const weights = [1, 3, 2, 4]; // Prioritize protein and fat accuracy
-      const totalError = errors.reduce((sum, err, i) => 
-        sum + weights[i] * err * err, 0
-      );
-
-      if (totalError < bestError) {
-        bestError = totalError;
-        bestSolution = [...x];
-      }
-
-      // Calculate gradients
-      const gradients = x.map((_, j) => {
-        return A.reduce((sum, row, i) => 
-          sum + 2 * weights[i] * errors[i] * row[j], 0
-        );
-      });
-
-      // Update with momentum
-      for (let j = 0; j < n; j++) {
-        momentum[j] = momentumFactor * momentum[j] - learningRate * gradients[j];
-        x[j] += momentum[j];
-        x[j] = Math.max(0, Math.min(500, x[j])); // Bounds: 0-500g
-      }
-
-      // Early stopping if very close
-      if (totalError < 0.01) break;
+    // Track best solution
+    if (population[0].fitness < bestFitness) {
+      bestFitness = population[0].fitness;
+      bestIndividual = { ...population[0] };
+      generationsWithoutImprovement = 0;
+    } else {
+      generationsWithoutImprovement++;
     }
+
+    // Early stopping if no improvement for many generations
+    if (generationsWithoutImprovement > 100) {
+      console.log(`🔄 Early stopping at generation ${generation} (no improvement for 100 generations)`);
+      break;
+    }
+
+    // Log progress every 100 generations
+    if (generation % 100 === 0) {
+      const currentBest = calculateMacros(population[0].genes, ingredients);
+      console.log(`🧬 Gen ${generation}: Fitness=${population[0].fitness.toFixed(2)}, ` +
+                  `Macros: ${currentBest.calories}cal/${currentBest.protein}p/${currentBest.carbs}c/${currentBest.fat}f`);
+    }
+
+    // Create new generation
+    const newPopulation: Individual[] = [];
+
+    // Keep elite individuals
+    for (let i = 0; i < GA_CONFIG.eliteSize; i++) {
+      newPopulation.push({ ...population[i] });
+    }
+
+    // Generate offspring
+    while (newPopulation.length < GA_CONFIG.populationSize) {
+      const parent1 = selectParent(population);
+      const parent2 = selectParent(population);
+      
+      const [child1, child2] = crossover(parent1, parent2);
+      
+      mutate(child1);
+      mutate(child2);
+      
+      // Evaluate children
+      child1.fitness = calculateFitness(child1.genes, ingredients, targets);
+      child2.fitness = calculateFitness(child2.genes, ingredients, targets);
+      
+      newPopulation.push(child1);
+      if (newPopulation.length < GA_CONFIG.populationSize) {
+        newPopulation.push(child2);
+      }
+    }
+
+    population = newPopulation;
   }
 
-  if (bestSolution) {
-    const finalAchieved = A.map(row => 
-      row.reduce((sum, coeff, j) => sum + coeff * bestSolution![j], 0)
-    );
+  // Return best solution
+  if (bestIndividual) {
+    const achieved = calculateMacros(bestIndividual.genes, ingredients);
+    
+    // Convert to result format
+    const ingredientAmounts: { [key: string]: number } = {};
+    ingredients.forEach((ingredient, index) => {
+      if (bestIndividual!.genes[index] > 0.5) { // Only include meaningful amounts
+        ingredientAmounts[ingredient.name] = Math.round(bestIndividual!.genes[index] * 100) / 100;
+      }
+    });
+
+    console.log("🎯 GA Optimization Complete!");
+    console.log("📊 Best fitness:", bestFitness.toFixed(2));
+    console.log("🥗 Final macros:", achieved);
+
+    // Check if solution is acceptable (within 10% tolerance)
+    const toleranceCheck = {
+      calories: Math.abs(achieved.calories - targets.calories) / targets.calories <= 0.1,
+      protein: Math.abs(achieved.protein - targets.protein) / targets.protein <= 0.1,
+      carbs: Math.abs(achieved.carbs - targets.carbs) / targets.carbs <= 0.1,
+      fat: Math.abs(achieved.fat - targets.fat) / targets.fat <= 0.1
+    };
+
+    const isAcceptable = Object.values(toleranceCheck).every(check => check);
 
     return {
-      feasible: true,
-      result: bestError,
-      ingredients: Object.fromEntries(
-        ingredients.map((ing, i) => [ing.name, Math.round(bestSolution![i] * 100) / 100])
-      ),
-      achieved: {
-        calories: Math.round(finalAchieved[0] * 100) / 100,
-        protein: Math.round(finalAchieved[1] * 100) / 100,
-        carbs: Math.round(finalAchieved[2] * 100) / 100,
-        fat: Math.round(finalAchieved[3] * 100) / 100
-      }
+      feasible: isAcceptable,
+      result: bestFitness,
+      ingredients: ingredientAmounts,
+      achieved,
+      error: isAcceptable ? undefined : "Could not achieve targets within 10% tolerance"
     };
   }
 
@@ -186,20 +334,8 @@ function optimizeLinear(
     result: 0,
     ingredients: {},
     achieved: { calories: 0, protein: 0, carbs: 0, fat: 0 },
-    error: "Could not find solution"
+    error: "Genetic algorithm failed to find solution"
   };
-}
-
-// Check if solution is within acceptable tolerance (±2%)
-function isWithinTolerance(achieved: any, targets: Targets, tolerance = 0.02): boolean {
-  const checks = [
-    Math.abs(achieved.calories - targets.calories) / targets.calories <= tolerance,
-    Math.abs(achieved.protein - targets.protein) / targets.protein <= tolerance,
-    Math.abs(achieved.carbs - targets.carbs) / targets.carbs <= tolerance,
-    Math.abs(achieved.fat - targets.fat) / targets.fat <= tolerance
-  ];
-
-  return checks.every(check => check);
 }
 
 // Generate contextual helper ingredients
@@ -279,7 +415,7 @@ function generateContextualHelpers(
   helperCategories.push('spinach', 'broccoli', 'tomatoes');
 
   // Convert to ingredients
-  for (const category of helperCategories.slice(0, 8)) { // Limit to 8 helpers
+  for (const category of helperCategories.slice(0, 6)) { // Limit to 6 helpers
     if (!existing.has(category)) {
       const nutrition = NUTRITION_DATABASE[category];
       if (nutrition) {
@@ -305,16 +441,23 @@ export function optimizeMealAdvanced(
   targets: Targets,
   mealName: string = 'meal'
 ): OptimizationResult {
-  console.log("🎯 Starting Advanced Linear Programming Optimization");
+  console.log("🧬 Starting Advanced Genetic Algorithm Optimization");
   console.log("📊 Targets:", targets);
   console.log("🧪 Base ingredients:", ingredients.map(i => i.name));
 
   try {
     // Phase 1: Try with original ingredients
     console.log("📊 Phase 1: Optimizing with original ingredients");
-    let result = optimizeLinear(ingredients, targets);
+    let result = optimizeWithGeneticAlgorithm(ingredients, targets);
 
-    if (result.feasible && isWithinTolerance(result.achieved, targets, 0.05)) {
+    // Check if result is within acceptable tolerance (5%)
+    const isWithinTolerance = result.feasible && result.achieved && 
+      Math.abs(result.achieved.calories - targets.calories) / targets.calories <= 0.05 &&
+      Math.abs(result.achieved.protein - targets.protein) / targets.protein <= 0.05 &&
+      Math.abs(result.achieved.carbs - targets.carbs) / targets.carbs <= 0.05 &&
+      Math.abs(result.achieved.fat - targets.fat) / targets.fat <= 0.05;
+
+    if (isWithinTolerance) {
       console.log("✅ Original ingredients achieved targets within 5% tolerance");
       return result;
     }
@@ -327,7 +470,7 @@ export function optimizeMealAdvanced(
     const enhancedIngredients = [...ingredients, ...helpers];
 
     // Try optimization with helpers
-    const enhancedResult = optimizeLinear(enhancedIngredients, targets);
+    const enhancedResult = optimizeWithGeneticAlgorithm(enhancedIngredients, targets);
 
     if (enhancedResult.feasible) {
       // Check which helpers were actually used (amount > 1g)
@@ -335,7 +478,7 @@ export function optimizeMealAdvanced(
         .filter(helper => enhancedResult.ingredients[helper.name] > 1)
         .map(helper => helper.name);
 
-      console.log("✅ Optimization with helpers completed");
+      console.log("✅ Genetic Algorithm optimization with helpers completed");
       console.log("🆘 Helpers used:", helpersUsed);
 
       return {
@@ -348,7 +491,7 @@ export function optimizeMealAdvanced(
     return result; // Return original attempt
 
   } catch (error: any) {
-    console.error("❌ Optimization failed:", error);
+    console.error("❌ Genetic Algorithm optimization failed:", error);
     return {
       feasible: false,
       result: 0,
@@ -441,8 +584,8 @@ export function convertOptimizationToMeal(
     }
   });
 
-  // Create description mentioning helpers if any were added
-  let description = `Mathematically optimized ${originalMeal.mealTitle} using advanced linear programming to achieve exact macro targets.`;
+  // Create description mentioning genetic algorithm
+  let description = `Optimized ${originalMeal.mealTitle} using advanced genetic algorithm to achieve precise macro targets with intelligent ingredient selection.`;
 
   if (optimizationResult.helpers_added && optimizationResult.helpers_added.length > 0) {
     description += ` Additional ingredients (${optimizationResult.helpers_added.join(', ')}) were added to make the targets achievable.`;

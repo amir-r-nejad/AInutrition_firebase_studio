@@ -154,7 +154,7 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
         toast({
           title: "Optimization Complete!",
           description:
-            "Meal has been optimized to match your exact macro targets using advanced mathematical programming.",
+            "Meal has been optimized to match your exact macro targets using advanced genetic algorithm.",
           variant: "default",
         });
 
@@ -267,7 +267,7 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
             </CardTitle>
             <CardDescription className="text-sm">
               Meal has been optimized to match your exact macro targets using
-              advanced linear programming with intelligent helper ingredient selection for precise macro achievement.
+              advanced genetic algorithm with intelligent helper ingredient selection for precise macro achievement.
             </CardDescription>
           </CardHeader>
           <CardContent>
