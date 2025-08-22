@@ -38,7 +38,7 @@ function getFallbackNutrition(ingredientName: string) {
   };
 
   const name = ingredientName.toLowerCase().trim();
-  
+
   // Try exact match first
   if (NUTRITION_FALLBACKS[name]) {
     return NUTRITION_FALLBACKS[name];
@@ -99,7 +99,8 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
       console.log("🚀 Calling optimizeMeal...");
       let result: any;
       try {
-        result = optimizeMealIterative(ingredients, targets);
+        const mealName = targetMacros.mealName || 'snack';
+        result = optimizeMealIterative(ingredients, targets, mealName);
         console.log("✅ Optimization result:", result);
       } catch (error) {
         console.error("💥 optimizeMeal crashed:", error);
@@ -109,16 +110,16 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
       if (result.feasible) {
         // Convert the optimization result back to meal format
         console.log("🔄 Converting result back to meal...");
-        
+
         // Create complete ingredient list including any helpers that were added
         const allIngredients = [...ingredients];
-        
+
         // Add any helpers that appear in the result but weren't in original ingredients
         Object.keys(result.ingredients).forEach(ingredientName => {
           const exists = allIngredients.find(ing => 
             ing.name.toLowerCase().trim() === ingredientName.toLowerCase().trim()
           );
-          
+
           if (!exists) {
             // This is a helper ingredient, add it with fallback nutrition
             console.log(`🆘 Adding helper ingredient to conversion: ${ingredientName}`);
@@ -132,9 +133,9 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
             });
           }
         });
-        
+
         console.log("🧮 All ingredients for conversion:", allIngredients.map(i => i.name));
-        
+
         const optimized = convertOptimizationToMeal(
           originalSuggestion,
           result,
