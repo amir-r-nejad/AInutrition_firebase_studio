@@ -190,92 +190,91 @@ function generateIntelligentHelpers(
 
   console.log("🧠 Intelligent meal analysis:", mealAnalysis);
   
-  // Calculate macro deficits to prioritize helper types
-  const currentMacros = calculateCurrentMacros(baseIngredients);
+  // Calculate current macros from base ingredients (estimate with reasonable portions)
+  const baseCalories = baseIngredients.reduce((total, ing) => total + (ing.cal * 100), 0); // Estimate 100g per ingredient
+  const baseProtein = baseIngredients.reduce((total, ing) => total + (ing.prot * 100), 0);
+  const baseCarbs = baseIngredients.reduce((total, ing) => total + (ing.carb * 100), 0);
+  const baseFat = baseIngredients.reduce((total, ing) => total + (ing.fat * 100), 0);
+
   const deficits = {
-    protein: Math.max(0, targets.protein - currentMacros.protein),
-    carbs: Math.max(0, targets.carbs - currentMacros.carbs),
-    fat: Math.max(0, targets.fat - currentMacros.fat),
-    calories: Math.max(0, targets.calories - currentMacros.calories)
+    calories: targets.calories - baseCalories,
+    protein: targets.protein - baseProtein,
+    carbs: targets.carbs - baseCarbs,
+    fat: targets.fat - baseFat
   };
 
+  console.log("📊 Current base estimate:", { calories: baseCalories, protein: baseProtein, carbs: baseCarbs, fat: baseFat });
   console.log("📊 Calculated deficits:", deficits);
 
-  // Helper categories based on meal analysis and deficits
+  // Helper categories based on macro deficits
   const helperCategories: string[] = [];
 
-  // PERSIAN/MIDDLE EASTERN CUISINE HELPERS
-  if (mealAnalysis.flavorProfile === 'persian') {
-    console.log("🏛️ Adding Persian-specific helpers");
-    
-    // High-protein helpers that work with Persian kabab/meat dishes
-    if (deficits.protein > 5) {
-      helperCategories.push('greek yogurt non-fat', 'cottage cheese low-fat', 'feta cheese');
-      helperCategories.push('almonds', 'pistachios', 'walnuts'); // Traditional Persian nuts
-    }
-    
-    // Persian-compatible carbs
-    if (deficits.carbs > 10) {
-      helperCategories.push('brown rice', 'quinoa'); // Don't compete with bread
-    }
-    
-    // Traditional Persian additions
-    helperCategories.push('pomegranate seeds', 'fresh herbs', 'sumac');
-    
-    // Healthy fats compatible with Persian cuisine
-    if (deficits.fat > 2) {
-      helperCategories.push('olive oil extra virgin', 'tahini');
-    }
-  }
-
-  // PROTEIN DEFICIT HELPERS (aggressive for lunch meals)
-  if (deficits.protein > 10) {
-    console.log("💪 Major protein deficit - adding protein-rich helpers");
-    
-    if (mealName.toLowerCase().includes('snack')) {
-      helperCategories.push('greek yogurt non-fat', 'cottage cheese low-fat', 'almonds', 'hemp hearts');
-    } else {
-      // For meals, add high-protein helpers that won't conflict
-      helperCategories.push('greek yogurt non-fat', 'cottage cheese low-fat', 'parmesan cheese', 'egg whites');
-      
-      // Add protein-rich nuts/seeds
-      helperCategories.push('almonds', 'hemp hearts', 'chia seeds');
-    }
-  }
-
-  // MODERATE PROTEIN DEFICIT 
-  else if (deficits.protein > 5) {
-    helperCategories.push('greek yogurt non-fat', 'almonds', 'cottage cheese low-fat');
-  }
-
-  // FAT DEFICIT HELPERS
-  if (deficits.fat > 3) {
-    if (mealAnalysis.servingStyle === 'cold' || mealAnalysis.mealStructure === 'salad-based') {
-      helperCategories.push('olive oil extra virgin', 'avocado', 'tahini');
-    } else {
-      helperCategories.push('olive oil extra virgin', 'almonds', 'cashews', 'walnuts');
-    }
+  // MAJOR PROTEIN DEFICIT - Add high-protein helpers first
+  if (deficits.protein > 15) {
+    console.log("💪 Major protein deficit detected - adding high-protein helpers");
+    helperCategories.push('whey protein powder', 'chicken breast', 'greek yogurt non-fat', 'cottage cheese low-fat', 'egg whites');
+  } else if (deficits.protein > 5) {
+    console.log("🥩 Moderate protein deficit - adding protein sources");
+    helperCategories.push('greek yogurt non-fat', 'cottage cheese low-fat', 'chicken breast', 'egg whites');
   }
 
   // CARB DEFICIT HELPERS
-  if (deficits.carbs > 15) {
-    // For bread-based meals, add complementary carbs
-    helperCategories.push('brown rice', 'quinoa', 'sweet potato raw');
-    helperCategories.push('dates', 'berries mixed'); // Natural sugars
+  if (deficits.carbs > 20) {
+    console.log("🍞 Major carb deficit - adding carb sources");
+    helperCategories.push('brown rice', 'quinoa', 'sweet potato raw', 'oats');
+  } else if (deficits.carbs > 10) {
+    helperCategories.push('quinoa', 'sweet potato raw', 'brown rice');
   }
 
-  // FLAVOR ENHANCERS (always helpful)
-  helperCategories.push('fresh herbs', 'garlic', 'lemon juice');
+  // FAT DEFICIT HELPERS
+  if (deficits.fat > 5) {
+    console.log("🥑 Fat deficit - adding healthy fats");
+    helperCategories.push('olive oil extra virgin', 'almonds', 'avocado', 'nuts mixture');
+  } else if (deficits.fat > 2) {
+    helperCategories.push('olive oil extra virgin', 'almonds');
+  }
 
-  // PERSIAN-SPECIFIC FLAVOR HELPERS
+  // CALORIE DEFICIT HELPERS (if overall calories are low)
+  if (deficits.calories > 100) {
+    console.log("⚡ Major calorie deficit - adding calorie-dense helpers");
+    helperCategories.push('almonds', 'walnuts', 'olive oil extra virgin', 'avocado');
+  }
+
+  // PERSIAN/MIDDLE EASTERN SPECIFIC HELPERS
   if (mealAnalysis.flavorProfile === 'persian') {
-    helperCategories.push('sumac', 'dried mint', 'persian cucumber', 'barberries');
+    console.log("🏛️ Adding Persian-compatible helpers");
+    
+    // Persian protein sources that work well with kabab dishes
+    if (deficits.protein > 10) {
+      helperCategories.push('kashk (persian yogurt)', 'feta cheese', 'pistachios');
+    }
+    
+    // Persian flavor enhancers
+    helperCategories.push('pomegranate seeds', 'sumac', 'fresh herbs', 'barberries');
+    
+    // Persian healthy fats
+    if (deficits.fat > 2) {
+      helperCategories.push('tahini', 'pistachios', 'walnuts');
+    }
   }
+
+  // MEAL-SPECIFIC HELPERS
+  if (mealName.toLowerCase().includes('lunch')) {
+    // Lunch-appropriate helpers
+    helperCategories.push('grilled chicken breast', 'quinoa', 'mixed vegetables');
+  } else if (mealName.toLowerCase().includes('snack')) {
+    // Snack-appropriate helpers
+    helperCategories.push('greek yogurt non-fat', 'almonds', 'berries mixed');
+  }
+
+  // ALWAYS USEFUL HELPERS
+  helperCategories.push('spinach', 'olive oil extra virgin', 'garlic', 'lemon juice');
 
   // Convert categories to ingredients, prioritizing by deficit severity
   const prioritizedCategories = [...new Set(helperCategories)];
   
-  for (const category of prioritizedCategories.slice(0, 10)) { // Allow more helpers
+  // Limit to most important helpers (but be more generous)
+  for (const category of prioritizedCategories.slice(0, 15)) {
     if (!existing.has(category)) {
       const nutrition = NUTRITION_DATABASE[category];
       if (nutrition) {
@@ -287,12 +286,26 @@ function generateIntelligentHelpers(
           fat: nutrition.fat / 100
         });
         existing.add(category);
+      } else {
+        // Fallback for missing ingredients
+        if (category.includes('protein') || category.includes('chicken')) {
+          helpers.push({
+            name: formatIngredientName(category),
+            cal: 1.65, prot: 0.31, carb: 0, fat: 0.036
+          });
+        } else if (category.includes('rice') || category.includes('quinoa')) {
+          helpers.push({
+            name: formatIngredientName(category),
+            cal: 3.70, prot: 0.079, carb: 0.77, fat: 0.029
+          });
+        }
+        existing.add(category);
       }
     }
   }
 
   console.log("🎯 Generated intelligent helpers:", helpers.map(h => h.name));
-  console.log(`📊 Helper count: ${helpers.length} (protein-rich: ${helpers.filter(h => h.prot > 0.05).length})`);
+  console.log(`📊 Helper count: ${helpers.length} (protein-rich: ${helpers.filter(h => h.prot > 0.1).length})`);
   
   return helpers;
 }
@@ -516,16 +529,16 @@ function performIntelligentHelperOptimization(
   const deficits = analyzeNutritionalDeficits(baseSolution.achieved, targets);
   console.log("🔍 Nutritional deficits:", deficits);
 
-  // Identify critical deficits (>15% off target)
+  // Identify critical deficits (>10% off target instead of 15% to be more aggressive)
   const criticalDeficits = [];
-  if (Math.abs(deficits.protein.relative) > 0.15) criticalDeficits.push('protein');
-  if (Math.abs(deficits.carbs.relative) > 0.15) criticalDeficits.push('carbs');  
-  if (Math.abs(deficits.fat.relative) > 0.15) criticalDeficits.push('fat');
-  if (Math.abs(deficits.calories.relative) > 0.15) criticalDeficits.push('calories');
+  if (Math.abs(deficits.protein.relative) > 0.10) criticalDeficits.push('protein');
+  if (Math.abs(deficits.carbs.relative) > 0.10) criticalDeficits.push('carbs');  
+  if (Math.abs(deficits.fat.relative) > 0.10) criticalDeficits.push('fat');
+  if (Math.abs(deficits.calories.relative) > 0.10) criticalDeficits.push('calories');
 
   console.log("🚨 Critical deficits needing helpers:", criticalDeficits);
 
-  // If we have critical deficits, be more aggressive about adding helpers
+  // If we have ANY critical deficits, be aggressive about adding helpers
   const shouldForceHelpers = criticalDeficits.length > 0;
 
   // Score helpers with culinary intelligence
@@ -534,89 +547,121 @@ function performIntelligentHelperOptimization(
       ingredient: helper,
       score: calculateIntelligentHelperScore(helper, deficits, mealAnalysis, baseIngredients),
       reason: getHelperReason(helper, deficits, mealAnalysis),
-      addresses: getDeficitsAddressed(helper, deficits)
+      addresses: getDeficitsAddressed(helper, deficits),
+      deficitFix: calculateDeficitFix(helper, deficits)
     }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3); // Consider top 3 helpers
+    .slice(0, 5); // Consider top 5 helpers instead of 3
 
   console.log("🏆 Top intelligent helpers:", 
-    scoredHelpers.map(h => `${h.ingredient.name}: ${h.score.toFixed(3)} (${h.reason}) - addresses: ${h.addresses.join(', ')}`)
+    scoredHelpers.map(h => `${h.ingredient.name}: ${h.score.toFixed(3)} (${h.reason}) - fixes: ${h.deficitFix.toFixed(3)}`)
   );
 
-  // For Persian kabab meals with protein deficit, add specific helpers
-  if (mealAnalysis.flavorProfile === 'persian' && deficits.protein.relative > 0.2) {
-    console.log("🎯 Persian meal with major protein deficit - adding contextual protein helpers");
-    
-    // Add yogurt-based helpers for Persian meals
-    const proteinHelpers = [
-      { name: 'Greek Yogurt Non-Fat', cal: 0.59, prot: 0.10, carb: 0.036, fat: 0.004 },
-      { name: 'Kashk', cal: 1.20, prot: 0.08, carb: 0.12, fat: 0.01 },  // Persian dried yogurt
-      { name: 'Cottage Cheese Low-Fat', cal: 0.72, prot: 0.124, carb: 0.043, fat: 0.01 }
-    ];
+  // Try helpers that specifically address the biggest deficits first
+  const biggestDeficit = Math.max(
+    Math.abs(deficits.protein.relative),
+    Math.abs(deficits.carbs.relative),
+    Math.abs(deficits.fat.relative)
+  );
 
-    for (const helper of proteinHelpers) {
-      const testIngredients = [...baseIngredients, helper];
+  console.log(`🎯 Biggest deficit: ${biggestDeficit.toFixed(3)} (threshold for forcing helpers: 0.15)`);
+
+  // If we have a major deficit (>15%), be very aggressive
+  if (biggestDeficit > 0.15) {
+    console.log("🚨 Major deficit detected - forcing helper addition");
+    
+    // Try each helper and accept ANY improvement
+    for (const helperData of scoredHelpers) {
+      const testIngredients = [...baseIngredients, helperData.ingredient];
       const testSolution = solveUltraHighPrecisionProblem(testIngredients, targets, mealAnalysis);
 
       if (testSolution) {
-        const proteinImprovement = Math.abs(testSolution.achieved.protein - targets.protein) < Math.abs(baseSolution.achieved.protein - targets.protein);
-        const overallAccuracy = calculatePrecisionScore(testSolution.achieved, targets);
+        const improvement = calculatePrecisionImprovement(baseSolution, testSolution, targets);
+        const baseAccuracy = calculatePrecisionScore(baseSolution.achieved, targets);
+        const newAccuracy = calculatePrecisionScore(testSolution.achieved, targets);
         
-        console.log(`📊 Persian helper ${helper.name}: protein improvement: ${proteinImprovement}, accuracy: ${overallAccuracy.toFixed(4)}`);
-        
-        if (proteinImprovement && overallAccuracy > 0.6) {
-          console.log(`🎉 Adding Persian helper: ${helper.name} for protein deficit`);
+        console.log(`📊 Helper ${helperData.ingredient.name} improvement: ${improvement.toFixed(6)} (${baseAccuracy.toFixed(4)} → ${newAccuracy.toFixed(4)})`);
+
+        // Accept ANY improvement when we have major deficits
+        if (improvement > -0.05) { // Even small negative improvements are acceptable
+          console.log(`✅ Forcing helper: ${helperData.ingredient.name} - addressing major deficit`);
           return testSolution;
         }
       }
     }
   }
 
-  // Test each helper individually
-  for (const helperData of scoredHelpers) {
-    const testIngredients = [...baseIngredients, helperData.ingredient];
-    const testSolution = solveUltraHighPrecisionProblem(testIngredients, targets, mealAnalysis);
+  // For moderate deficits, be more selective but still aggressive
+  if (shouldForceHelpers) {
+    console.log("⚡ Critical deficits detected - trying targeted helpers");
+    
+    // Try helpers in order of their ability to fix deficits
+    for (const helperData of scoredHelpers) {
+      const testIngredients = [...baseIngredients, helperData.ingredient];
+      const testSolution = solveUltraHighPrecisionProblem(testIngredients, targets, mealAnalysis);
 
-    if (testSolution) {
-      const improvement = calculatePrecisionImprovement(baseSolution, testSolution, targets);
-      const baseAccuracy = calculatePrecisionScore(baseSolution.achieved, targets);
-      const newAccuracy = calculatePrecisionScore(testSolution.achieved, targets);
-      
-      console.log(`📊 Helper ${helperData.ingredient.name}: improvement: ${improvement.toFixed(6)}, accuracy: ${baseAccuracy.toFixed(4)} → ${newAccuracy.toFixed(4)}`);
+      if (testSolution) {
+        const improvement = calculatePrecisionImprovement(baseSolution, testSolution, targets);
+        const newAccuracy = calculatePrecisionScore(testSolution.achieved, targets);
+        
+        console.log(`📊 Helper ${helperData.ingredient.name} precision improvement: ${improvement.toFixed(6)}, accuracy: ${newAccuracy.toFixed(4)}`);
 
-      // Accept helper if it improves accuracy or addresses critical deficits
-      const shouldAccept = improvement > 0.05 || 
-                          (shouldForceHelpers && newAccuracy > 0.5 && helperData.addresses.some(d => criticalDeficits.includes(d)));
+        // Accept if it improves precision OR addresses critical deficit
+        const addressesCritical = helperData.addresses.some(d => criticalDeficits.includes(d));
+        const shouldAccept = improvement > 0.01 || (addressesCritical && newAccuracy > 0.4);
 
-      if (shouldAccept) {
-        console.log(`✅ Accepting helper: ${helperData.ingredient.name} - ${helperData.reason}`);
-        return testSolution;
+        if (shouldAccept) {
+          console.log(`✅ Accepting helper: ${helperData.ingredient.name} - ${addressesCritical ? 'addresses critical deficit' : 'improves precision'}`);
+          return testSolution;
+        }
       }
     }
-  }
 
-  // If we have critical deficits and no helper worked well, try combinations
-  if (shouldForceHelpers && scoredHelpers.length >= 2) {
-    console.log("🔄 Trying helper combinations for critical deficits...");
+    // If single helpers don't work, try combinations
+    console.log("🔄 Trying helper combinations for stubborn deficits...");
     
-    const combo = [scoredHelpers[0].ingredient, scoredHelpers[1].ingredient];
-    const testIngredients = [...baseIngredients, ...combo];
-    const testSolution = solveUltraHighPrecisionProblem(testIngredients, targets, mealAnalysis);
-    
-    if (testSolution) {
-      const newAccuracy = calculatePrecisionScore(testSolution.achieved, targets);
-      const baseAccuracy = calculatePrecisionScore(baseSolution.achieved, targets);
-      
-      console.log(`📊 Helper combination accuracy: ${baseAccuracy.toFixed(4)} → ${newAccuracy.toFixed(4)}`);
-      
-      if (newAccuracy > baseAccuracy + 0.05) {
-        console.log(`✅ Accepting helper combination: ${combo.map(h => h.name).join(' + ')}`);
-        return testSolution;
+    for (let i = 0; i < Math.min(3, scoredHelpers.length); i++) {
+      for (let j = i + 1; j < Math.min(3, scoredHelpers.length); j++) {
+        const combo = [scoredHelpers[i].ingredient, scoredHelpers[j].ingredient];
+        const testIngredients = [...baseIngredients, ...combo];
+        const testSolution = solveUltraHighPrecisionProblem(testIngredients, targets, mealAnalysis);
+        
+        if (testSolution) {
+          const improvement = calculatePrecisionImprovement(baseSolution, testSolution, targets);
+          const newAccuracy = calculatePrecisionScore(testSolution.achieved, targets);
+          
+          console.log(`📊 Combo ${combo.map(h => h.name).join(' + ')}: improvement: ${improvement.toFixed(6)}, accuracy: ${newAccuracy.toFixed(4)}`);
+          
+          if (improvement > 0.02 || newAccuracy > 0.6) {
+            console.log(`✅ Accepting helper combination: ${combo.map(h => h.name).join(' + ')}`);
+            return testSolution;
+          }
+        }
       }
     }
   }
 
   return null;
+}
+
+function calculateDeficitFix(helper: Ingredient, deficits: any): number {
+  let fix = 0;
+  
+  // Calculate how much this helper could potentially fix each deficit
+  if (deficits.protein.relative > 0.1 && helper.prot > 0.05) {
+    fix += helper.prot * 100 * Math.abs(deficits.protein.relative);
+  }
+  if (deficits.carbs.relative > 0.1 && helper.carb > 0.1) {
+    fix += helper.carb * 100 * Math.abs(deficits.carbs.relative);
+  }
+  if (deficits.fat.relative > 0.1 && helper.fat > 0.05) {
+    fix += helper.fat * 100 * Math.abs(deficits.fat.relative);
+  }
+  if (deficits.calories.relative > 0.1 && helper.cal > 1) {
+    fix += helper.cal * Math.abs(deficits.calories.relative);
+  }
+  
+  return fix;
 }
 
 function getDeficitsAddressed(helper: Ingredient, deficits: any): string[] {
