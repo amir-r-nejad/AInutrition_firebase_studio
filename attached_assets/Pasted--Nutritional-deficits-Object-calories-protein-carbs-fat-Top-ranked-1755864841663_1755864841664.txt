@@ -1,0 +1,65 @@
+🔍 Nutritional deficits: 
+Object {calories: {…}, protein: {…}, carbs: {…}, fat: {…}}
+🏆 Top ranked helpers: 
+(3) ["Chicken Breast: 19.560", "Quinoa: 14.583", "Brown Rice: 11.350"]
+📊 Helper Chicken Breast improvement: 0.569
+🎉 Helper optimization improved solution!
+✅ Optimization result: 
+Object {feasible: true, result: 0, ingredients: {…}, achieved: {…}}
+🔄 Converting result back to meal...
+🆘 Adding helper ingredient to conversion: Chicken Breast
+🧮 All ingredients for conversion: 
+(5) ["Ground Beef", "Basmati Rice", "Grilled Tomato", "Grilled Pepper", "Chicken Breast"]
+🔄 Converting optimization result to meal format
+✅ Converted meal: 
+Object {mealTitle: "Kabab Koobideh with Basmati Rice and Grilled Vegetables", description: "Mathematically optimized Kabab Koobideh with Basmati Rice and Grilled Vegetables using advanced…", ingredients: Array(5), totalCalories: 601.65, totalProtein: 38.22, …}
+Optimization completed: 
+Object {mealTitle: "Kabab Koobideh with Basmati Rice and Grilled Vegetables", description: "Mathematically optimized Kabab Koobideh with Basmati Rice and Grilled Vegetables using advanced…", ingredients: Array(5), totalCalories: 601.65, totalProtein: 38.22, …}
+🏁 handleOptimize finished
+🔍 handleOptimize called!
+🚀 Starting optimization with new Iterative Helper Selection Algorithm
+📥 Original suggestion: 
+Object {mealTitle: "Kabab Koobideh with Basmati Rice and Grilled Vegetables", description: "This meal is high in protein and has a moderate amount of carbs and fats, suitable for muscle gain…", ingredients: Array(4), totalCalories: 1372.5, totalProtein: 74.83, …}
+🎯 Target macros: 
+Object {mealName: "Lunch", calories: 637.2, protein: 47.7, carbs: 79.65, fat: 14.18}
+🔄 Converting meal to ingredients...
+✅ Converted ingredients: 
+(4) [{…}, {…}, {…}, {…}]
+🔄 Creating targets...
+✅ Created targets: 
+Object {calories: 637.2, protein: 47.7, carbs: 79.65, fat: 14.18}
+📊 Optimization inputs: 
+Object {ingredients: Array(4), targets: {…}}
+🚀 Calling optimizeMeal...
+🎯 Starting Advanced Multi-Objective Optimization
+📊 Targets: 
+Object {calories: 637.2, protein: 47.7, carbs: 79.65, fat: 14.18}
+🧪 Input ingredients: 
+(4) ["Ground Beef", "Basmati Rice", "Grilled Tomato", "Grilled Pepper"]
+📋 Meal context: 
+Object {type: "lunch", timeOfDay: "afternoon", characteristics: {…}}
+🧪 Base ingredients: 
+(4) ["Ground Beef", "Basmati Rice", "Grilled Tomato", "Grilled Pepper"]
+🆘 Contextual helpers: 
+(6) ["Chicken Breast", "Quinoa", "Brown Rice", "Sweet Potato", "Bell Pepper", "Carrot Sticks"]
+
+🔬 === ADVANCED MATHEMATICAL OPTIMIZATION ===
+📊 Phase 1: Enhanced Base Optimization
+📈 Base solution accuracy: 
+Object {calories: "90.3%", protein: "47.2%", carbs: "119.9%", fat: "86.5%"}
+📊 Phase 2: Strategic Helper Optimization
+🔍 Nutritional deficits: 
+Object {calories: {…}, protein: {…}, carbs: {…}, fat: {…}}
+🏆 Top ranked helpers: 
+(3) ["Chicken Breast: 19.560", "Quinoa: 14.583", "Brown Rice: 11.350"]
+📊 Helper Chicken Breast improvement: 0.569
+🎉 Helper optimization improved solution!
+✅ Optimization result: 
+Object {feasible: true, result: 0, ingredients: {…}, achieved: {…}}
+🔄 Converting result back to meal...
+🆘 Adding helper ingredient to conversion: Chicken Breast
+🧮 All ingredients for conversion: 
+(5) ["Ground Beef", "Basmati Rice", "Grilled Tomato", "Grilled Pepper", "Chicken Breast"]
+🔄 Converting optimization result to meal format
+✅ Converted meal: 
+Object {mealTitle: "Kabab Koobideh with Basmati Rice and Grilled Vegetables", description: "Mathematically optimized Kabab Koobideh with Basmati Rice and Grilled Vegetables using advanced…", ingredients: Array(5), totalCalories: 601.65, totalProtein: 38.22, …}
