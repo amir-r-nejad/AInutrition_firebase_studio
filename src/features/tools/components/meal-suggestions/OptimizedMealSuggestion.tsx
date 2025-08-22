@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Zap, Target, Loader2 } from "lucide-react";
 import {
-  optimizeMealIterative,
+  optimizeMeal,
   convertMealToIngredients,
   createTargetsFromMacros,
   convertOptimizationToMeal,
@@ -95,12 +95,12 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
 
       console.log("📊 Optimization inputs:", { ingredients, targets });
 
-      // Use the new iterative optimizer (no external solver dependency)
+      // Use the advanced mathematical optimizer
       console.log("🚀 Calling optimizeMeal...");
       let result: any;
       try {
         const mealName = targetMacros.mealName || 'snack';
-        result = optimizeMealIterative(ingredients, targets, mealName);
+        result = optimizeMeal(ingredients, targets, mealName);
         console.log("✅ Optimization result:", result);
       } catch (error) {
         console.error("💥 optimizeMeal crashed:", error);
@@ -154,7 +154,7 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
         toast({
           title: "Optimization Complete!",
           description:
-            "Meal has been optimized to match your exact macro targets using iterative helper selection.",
+            "Meal has been optimized to match your exact macro targets using advanced mathematical programming.",
           variant: "default",
         });
 
@@ -267,7 +267,7 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
             </CardTitle>
             <CardDescription className="text-sm">
               Meal has been optimized to match your exact macro targets using
-              advanced iterative helper selection.
+              advanced mathematical programming with contextual helper selection.
             </CardDescription>
           </CardHeader>
           <CardContent>
