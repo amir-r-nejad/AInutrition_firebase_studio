@@ -15,7 +15,9 @@ import {
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import AIMealSuggestionSection from '@/features/tools/components/meal-suggestions/AIMealSuggestionSection';
 import MealFormSection from '@/features/tools/components/meal-suggestions/MealFormSection';
-import { ChefHat, Settings } from 'lucide-react';
+import { MealOptimizationTest } from '@/components/MealOptimizationTest';
+import SingleMealOptimizationTest from '@/components/SingleMealOptimizationTest';
+import { ChefHat, Settings, Target } from 'lucide-react';
 import { Suspense } from 'react';
 
 export default function MealSuggestionsPage() {
@@ -25,11 +27,11 @@ export default function MealSuggestionsPage() {
         <CardHeader>
           <CardTitle className='text-3xl font-bold flex items-center'>
             <ChefHat className='mr-3 h-8 w-8 text-primary' />
-            AI Meal Suggestions
+            AI Meal Suggestions & Optimization
           </CardTitle>
           <CardDescription>
-            Select a meal, adjust preferences if needed, and get AI-powered
-            ideas tailored to your macronutrient targets.
+            Get AI-powered meal suggestions and optimize them using our advanced Single Meal Optimization API 
+            to perfectly match your macronutrient targets with personalized recommendations.
           </CardDescription>
         </CardHeader>
 
@@ -66,6 +68,36 @@ export default function MealSuggestionsPage() {
           <Suspense key='suggesstion-key' fallback={<p>Loading...</p>}>
             <AIMealSuggestionSection />
           </Suspense>
+        </CardContent>
+      </Card>
+
+      {/* Single Meal Optimization API Test Section */}
+      <Card className='shadow-xl'>
+        <CardHeader>
+          <CardTitle className='text-xl font-semibold'>
+            Single Meal Optimization API Test
+          </CardTitle>
+          <CardDescription>
+            Test the connection to the Single Meal Optimization API
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SingleMealOptimizationTest />
+        </CardContent>
+      </Card>
+
+      {/* Legacy API Test Section */}
+      <Card className='shadow-xl'>
+        <CardHeader>
+          <CardTitle className='text-xl font-semibold'>
+            Legacy API Connection Test
+          </CardTitle>
+          <CardDescription>
+            Test the connection to the Legacy Meal Optimization API
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <MealOptimizationTest />
         </CardContent>
       </Card>
     </div>

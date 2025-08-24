@@ -627,7 +627,15 @@ export default function MealPlanGenerator({
         {/* Meal Plan Display */}
         <div>
           {(generatedPlan || loadingPlan) && (
-            <MealPlanOverview mealPlan={{ ai_plan: generatedPlan }} />
+            <MealPlanOverview 
+              mealPlan={{ ai_plan: generatedPlan }}
+              userTargets={userPlan ? {
+                calories: userPlan.target_daily_calories || 0,
+                protein: userPlan.target_protein_g || 0,
+                carbs: userPlan.target_carbs_g || 0,
+                fat: userPlan.target_fat_g || 0,
+              } : undefined}
+            />
           )}
         </div>
       </div>

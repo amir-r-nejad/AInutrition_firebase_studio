@@ -26,7 +26,7 @@ import {
   UserPlan,
   SuggestMealsForMacrosOutput,
 } from "@/lib/schemas";
-import { AlertTriangle, Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, Loader2, Sparkles, Target, ChefHat } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
@@ -38,7 +38,12 @@ import {
 import { useMealUrlParams } from "../../hooks/useMealUrlParams";
 import { getExampleTargetsForMeal, prepareAiMealInput } from "../../lib/utils";
 import { getUserProfile } from "@/lib/supabase/data-service";
-import OptimizedMealSuggestion from "./OptimizedMealSuggestion";
+import { MealOptimizationForm } from '@/components/MealOptimizationForm';
+import { MealOptimizationResults } from "@/components/MealOptimizationResults";
+import { SingleMealOptimizationForm } from "@/components/SingleMealOptimizationForm";
+import SingleMealOptimizationResults from "@/components/SingleMealOptimizationResults";
+import { MealOptimizationResponse, RAGResponse, SingleMealOptimizationResponse } from '@/types/meal-optimization';
+import { Badge } from "@/components/ui/badge";
 
 function AIMealSuggestionGenerator({
   profile,
@@ -58,10 +63,15 @@ function AIMealSuggestionGenerator({
 
   const [error, setError] = useState<string | null>(null);
   const [isLoadingAiSuggestions, startLoadingAiSuggestions] = useTransition();
+  const [isLoadingOptimization, setIsLoadingOptimization] = useState(false);
 
   const [suggestions, setSuggestions] = useState<
     SuggestMealsForMacrosOutput["suggestions"]
   >([]);
+
+  const [optimizationResult, setOptimizationResult] = useState<MealOptimizationResponse | null>(null);
+  const [singleMealOptimizationResult, setSingleMealOptimizationResult] = useState<SingleMealOptimizationResponse | null>(null);
+  const [showOptimization, setShowOptimization] = useState(false);
 
   // Derive values from URL query parameters
   const selectedMealName = useMemo(() => {
@@ -99,6 +109,9 @@ function AIMealSuggestionGenerator({
 
     setSuggestions([]);
     setError(null);
+    setOptimizationResult(null);
+    setSingleMealOptimizationResult(null);
+    setShowOptimization(false);
 
     const missingFields = getMissingProfileFields(profile);
 
@@ -171,6 +184,9 @@ function AIMealSuggestionGenerator({
   function handleMealSelectionChange(mealValue: string) {
     setSuggestions([]);
     setError(null);
+    setOptimizationResult(null);
+    setSingleMealOptimizationResult(null);
+    setShowOptimization(false);
 
     updateUrlWithMeal(mealValue);
   }
@@ -184,23 +200,27 @@ function AIMealSuggestionGenerator({
           variant: "destructive",
         });
         return;
-        console.log("RETURNED");
       }
 
       setError(null);
       setSuggestions([]);
+      setOptimizationResult(null);
+      setSingleMealOptimizationResult(null);
+      setShowOptimization(false);
 
       try {
         const profile = await getUserProfile();
         const aiInput = prepareAiMealInput({ targetMacros, profile });
         const data = await suggestMealsForMacros(aiInput);
 
-        if (data) setSuggestions(data.suggestions);
-        else {
-          setError(error);
+        if (data && data.suggestions) {
+          setSuggestions(data.suggestions);
+          setShowOptimization(true);
+        } else {
+          setError("No suggestions received from AI");
           toast({
             title: "AI Response Error",
-            description: error,
+            description: "No suggestions received from AI",
             variant: "destructive",
           });
         }
@@ -215,6 +235,32 @@ function AIMealSuggestionGenerator({
       }
     });
   }
+
+  const handleOptimizationComplete = (result: MealOptimizationResponse) => {
+    setOptimizationResult(result);
+    toast({
+      title: "Optimization Complete!",
+      description: "Your meal plan has been optimized successfully!",
+      variant: "default",
+    });
+  };
+
+  const handleSingleMealOptimizationComplete = (result: SingleMealOptimizationResponse) => {
+    setSingleMealOptimizationResult(result);
+    toast({
+      title: "Single Meal Optimization Complete!",
+      description: `Your ${result.meal.meal_time} has been optimized successfully!`,
+      variant: "default",
+    });
+  };
+
+  const handleReset = () => {
+    setSuggestions([]);
+    setOptimizationResult(null);
+    setSingleMealOptimizationResult(null);
+    setShowOptimization(false);
+    setError(null);
+  };
 
   const showContentBelowSelection = selectedMealName && targetMacros;
 
@@ -324,22 +370,113 @@ function AIMealSuggestionGenerator({
         </div>
       )}
 
+      {/* AI Suggestions Display */}
       {suggestions && suggestions.length > 0 && !isLoadingAiSuggestions && (
         <div className="space-y-4">
           <h2 className="text-2xl font-semibold text-primary mt-8 mb-4">
-            AI Meal Suggestion for your {targetMacros?.mealName || "meal"}:
+            AI Meal Suggestions for your {targetMacros?.mealName || "meal"}:
           </h2>
+          
           {suggestions.map((suggestion, index) => (
-            <OptimizedMealSuggestion
-              key={index}
-              originalSuggestion={suggestion}
-              targetMacros={targetMacros}
-              onOptimizationComplete={(optimizedMeal) => {
-                console.log("Optimization completed:", optimizedMeal);
-                // You can handle the optimized meal here if needed
-              }}
-            />
+            <Card key={index} className="shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                  <ChefHat className="h-5 w-5 text-primary" />
+                  {suggestion.mealTitle || `Meal ${index + 1}`}
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  {suggestion.description || "AI-generated meal suggestion"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4">
+                  <h4 className="font-medium text-md mb-2 text-primary">
+                    Macros:
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">
+                      Calories: {suggestion.totalCalories?.toFixed(1) || 0} kcal
+                    </Badge>
+                    <Badge variant="outline">
+                      Protein: {suggestion.totalProtein?.toFixed(1) || 0}g
+                    </Badge>
+                    <Badge variant="outline">
+                      Carbs: {suggestion.totalCarbs?.toFixed(1) || 0}g
+                    </Badge>
+                    <Badge variant="outline">
+                      Fat: {suggestion.totalFat?.toFixed(1) || 0}g
+                    </Badge>
+                  </div>
+                </div>
+
+                {suggestion.ingredients && suggestion.ingredients.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="font-medium text-md mb-2 text-primary">
+                      Ingredients:
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {suggestion.ingredients.map((ingredient, ingIndex) => (
+                        <div key={ingIndex} className="flex justify-between items-center p-2 border rounded">
+                          <span className="font-medium">{ingredient.name}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {ingredient.amount} {ingredient.unit}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {suggestion.instructions && (
+                  <div className="mb-4">
+                    <h4 className="font-medium text-md mb-2 text-primary">
+                      Instructions:
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      {suggestion.instructions}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           ))}
+        </div>
+      )}
+
+      {/* Meal Optimization Section */}
+      {showOptimization && suggestions && suggestions.length > 0 && !isLoadingAiSuggestions && targetMacros && (
+        <div className="mt-8 space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold text-primary mb-2">
+              Optimize Your {targetMacros.mealName || 'Meal'}
+            </h2>
+            <p className="text-muted-foreground">
+              Use our advanced Single Meal Optimization API to perfect your macros and get personalized recommendations
+            </p>
+          </div>
+
+          {!singleMealOptimizationResult ? (
+            <SingleMealOptimizationForm
+              ragResponse={{
+                suggestions: suggestions,
+                success: true,
+                message: "AI-generated meal suggestions"
+              }}
+              onOptimizationComplete={handleSingleMealOptimizationComplete}
+              targetMacros={{
+                calories: targetMacros.calories,
+                protein: targetMacros.protein,
+                carbs: targetMacros.carbs,
+                fat: targetMacros.fat
+              }}
+              mealType={targetMacros.mealName || 'meal'}
+            />
+          ) : (
+            <SingleMealOptimizationResults
+              result={singleMealOptimizationResult}
+              onReset={handleReset}
+            />
+          )}
         </div>
       )}
     </>

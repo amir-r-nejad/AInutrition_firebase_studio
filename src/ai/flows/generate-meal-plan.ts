@@ -11,6 +11,12 @@ import {
 import { daysOfWeek } from "@/lib/constants";
 import { getAIApiErrorMessage } from "@/lib/utils";
 import { editAiPlan } from "@/features/meal-plan/lib/data-service";
+import {
+  convertMealToIngredients,
+  createTargetsFromMacros,
+  optimizeMeal,
+  type Ingredient,
+} from "@/lib/optimization/meal-optimizer";
 
 export type { GeneratePersonalizedMealPlanOutput };
 
@@ -106,14 +112,43 @@ async function generateDailyMealPlan(
     )
     .join("\n");
 
-  const prompt = `Create ${mealTargets.length} meals for ${dayOfWeek}:
+  const prompt = `You are NutriMind, an expert AI nutritionist and innovative chef. Generate ${mealTargets.length} diverse, nutrition-rich, and optimized meals for ${dayOfWeek} that match the macro targets within ±5% for calories and protein, and as close as possible for carbs and fat.
 
+IMPORTANT OUTPUT RULES:
+- Return RAW INGREDIENTS ONLY (no cooked/composite recipes). Use single raw items like Greek yogurt, oats, blueberries, tofu, olive oil, tomato paste, etc.
+- Each ingredient must include precise grams and per-100g nutrition values so we can optimize mathematically later.
+- Ensure every meal is optimization-ready: include foods that cover protein, carbs, and fat so quantities can be tuned to hit targets exactly.
+
+Targets per meal:
 ${mealTargetsString}
 
-${preferences.preferredDiet ? `Diet: ${preferences.preferredDiet}` : ""}
-${preferences.allergies && preferences.allergies.length > 0 ? `Avoid: ${preferences.allergies.join(", ")}` : ""}
+Dietary rules:
+${preferences.preferredDiet ? `- Preferred diet: ${preferences.preferredDiet}` : "- Preferred diet: Any"}
+${preferences.allergies && preferences.allergies.length > 0 ? `- Avoid strictly: ${preferences.allergies.join(", ")}` : "- Allergies: None"}
+${preferences.preferredIngredients && preferences.preferredIngredients.length > 0 ? `- Prefer ingredients: ${preferences.preferredIngredients.join(", ")}` : "- Prefer ingredients: None"}
+${preferences.dispreferredIngredients && preferences.dispreferredIngredients.length > 0 ? `- Avoid disliked ingredients: ${preferences.dispreferredIngredients.join(", ")}` : "- Disliked ingredients: None"}
+${preferences.medicalConditions && preferences.medicalConditions.length > 0 ? `- Medical conditions: ${preferences.medicalConditions.join(", ")}` : "- Medical conditions: None"}
 
-Create delicious meals with creative dish names. Include amounts in ingredient names.
+Critical Requirements:
+1. **Nutrition Diversity**: Each meal MUST contain at least:
+   - 2+ protein sources (animal/plant proteins, dairy, legumes)
+   - 2+ carbohydrate sources (complex carbs, fruits/vegetables with natural sugars)
+   - 1–2 healthy fat sources (nuts, oils, avocado, seeds)
+   - 2–3 vegetables for micronutrients and fiber
+2. **Meal Type Appropriateness**: Consider meal timing (e.g., lighter proteins for breakfast, hearty meals for dinner)
+3. **Macro Distribution**: Ensure foods are rich in all macro sources to enable optimization:
+   - Include foods with significant protein (>10g per 100g)
+   - Include foods with substantial carbs (>15g per 100g)
+   - Include foods with good fat content (>5g per 100g)
+4. **Quantity Precision**: All quantities in grams with precise nutritional calculations
+5. **Cultural Variety**: Draw from diverse cuisines and cooking methods
+6. **Optimization-Ready**: Select ingredients that can be mathematically optimized to hit exact targets (avoid composite cooked recipes)
+
+Nutritional Calculation Rules:
+- Use USDA FoodData Central values or reliable nutrition databases
+- Provide per-100g nutrition, and compute totals as: (grams ÷ 100) × per_100g_values
+- Ensure total meal macros are within ±5% of targets
+- Round nutrition values to 1 decimal place
 
 JSON format:
 {
@@ -124,11 +159,13 @@ ${mealTargets
       "meal_title": "Creative dish name for ${target.mealName}",
       "ingredients": [
         {
-          "name": "ingredient (amount)",
-          "calories": number,
-          "protein": number,
-          "carbs": number,
-          "fat": number
+          "name": "RAW ingredient name",
+          "quantity": 100,
+          "unit": "g",
+          "calories": 165,
+          "protein": 31,
+          "carbs": 0,
+          "fat": 3.6
         }
       ],
       "total_macros": {
@@ -346,13 +383,26 @@ async function generatePersonalizedMealPlanFlow(
         mealFromAI.ingredients.length > 0
       ) {
         // Enhanced ingredient processing
-        const sanitizedIngredients = mealFromAI.ingredients.map((ing: any) => ({
-          name: ing.name || "Ingredient",
-          calories: Math.round((Number(ing.calories) || 0) * 100) / 100,
-          protein: Math.round((Number(ing.protein) || 0) * 100) / 100,
-          carbs: Math.round((Number(ing.carbs) || 0) * 100) / 100,
-          fat: Math.round((Number(ing.fat) || 0) * 100) / 100,
-        }));
+        const sanitizedIngredients = mealFromAI.ingredients.map((ing: any) => {
+          const calories = Number(
+            ing.calories ?? ing.kcal ?? ing.cal ?? ing.energy_kcal ?? 0,
+          );
+          const protein = Number(
+            ing.protein ?? ing.prot ?? ing.proteins ?? ing.protein_g ?? 0,
+          );
+          const carbs = Number(
+            ing.carbs ?? ing.carb ?? ing.carbohydrates ?? ing.carbohydrates_g ?? 0,
+          );
+          const fat = Number(ing.fat ?? ing.fats ?? ing.fat_g ?? 0);
+
+          return {
+            name: ing.name || "Ingredient",
+            calories: Math.round((calories || 0) * 100) / 100,
+            protein: Math.round((protein || 0) * 100) / 100,
+            carbs: Math.round((carbs || 0) * 100) / 100,
+            fat: Math.round((fat || 0) * 100) / 100,
+          };
+        });
 
         const mealTotals = sanitizedIngredients.reduce(
           (
@@ -407,12 +457,12 @@ async function generatePersonalizedMealPlanFlow(
     processedWeeklyPlan.push({
       day: dayOfWeek,
       meals: processedMeals,
-      daily_totals: {
-        calories: Math.round(dailyTotals.calories * 100) / 100,
-        protein: Math.round(dailyTotals.protein * 100) / 100,
-        carbs: Math.round(dailyTotals.carbs * 100) / 100,
-        fat: Math.round(dailyTotals.fat * 0.1) / 100,
-      },
+        daily_totals: {
+          calories: Math.round(dailyTotals.calories * 100) / 100,
+          protein: Math.round(dailyTotals.protein * 100) / 100,
+          carbs: Math.round(dailyTotals.carbs * 100) / 100,
+          fat: Math.round(dailyTotals.fat * 100) / 100,
+        },
     });
 
     weeklySummary.totalCalories += dailyTotals.calories;
