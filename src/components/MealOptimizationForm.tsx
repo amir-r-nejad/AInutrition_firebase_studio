@@ -59,6 +59,10 @@ export const MealOptimizationForm: React.FC<MealOptimizationFormProps> = ({
     diet_type: "high_protein",
     allergies: [] as string[],
     preferences: ["low_sodium", "organic"],
+    calorie_preference: "moderate" as "low" | "moderate" | "high",
+    protein_preference: "high" as "low" | "moderate" | "high",
+    carb_preference: "moderate" as "low" | "moderate" | "high",
+    fat_preference: "moderate" as "low" | "moderate" | "high",
   });
 
   const [dietaryRestrictionsInput, setDietaryRestrictionsInput] = useState("");
@@ -90,7 +94,7 @@ export const MealOptimizationForm: React.FC<MealOptimizationFormProps> = ({
         target_macros: {
           calories: targetMacros.calories,
           protein: targetMacros.protein,
-          carbohydrates: targetMacros.carbs,
+          carbs: targetMacros.carbs,
           fat: targetMacros.fat,
         },
         user_preferences: userPreferences,
@@ -99,7 +103,7 @@ export const MealOptimizationForm: React.FC<MealOptimizationFormProps> = ({
 
       console.log("Sending request to API:", request);
 
-      const result = await optimizeMeal(request, useFallback);
+      const result = await optimizeMeal(request);
       console.log("Optimization result received:", result);
 
       // ذخیره آخرین نتیجه

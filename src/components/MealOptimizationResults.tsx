@@ -12,8 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle,
-  AlertCircle,
-  Clock,
   ShoppingCart,
   TrendingUp,
   Target,
@@ -38,7 +36,8 @@ export const MealOptimizationResults: React.FC<
 
   const isFallback =
     result.isFallback ||
-    result.optimization_result.optimization_method.includes("Fallback");
+    (typeof result.optimization_result.optimization_method === "string" &&
+      result.optimization_result.optimization_method.includes("Fallback"));
 
   return (
     <div className="space-y-6">
@@ -51,7 +50,7 @@ export const MealOptimizationResults: React.FC<
               Using Fallback Optimization Service
             </CardTitle>
             <CardDescription className="text-orange-700">
-              The external Meal Optimization API is currently unavailable. We're
+              The external Meal Optimization API is currently unavailable. We&apos;re
               using our built-in fallback service to provide you with meal
               plans.
             </CardDescription>
@@ -205,7 +204,11 @@ export const MealOptimizationResults: React.FC<
                           key={itemIndex}
                           className="flex justify-between text-sm"
                         >
-                          <span>{item.ingredient.name}</span>
+                          <span>
+                            {typeof item.ingredient === "string"
+                              ? item.ingredient
+                              : (item.ingredient as { name: string }).name}
+                          </span>
                           <span className="text-muted-foreground">
                             {item.quantity_grams}g
                           </span>
@@ -219,17 +222,33 @@ export const MealOptimizationResults: React.FC<
                     <div className="space-y-1 text-sm text-muted-foreground">
                       <div>
                         Calories:{" "}
-                        {meal.items[0]?.ingredient.calories_per_100g || 0} kcal
+                        {typeof meal.items[0]?.ingredient === "object" && meal.items[0]?.ingredient !== null && "calories_per_100g" in meal.items[0].ingredient
+                          ? (meal.items[0].ingredient as any).calories_per_100g || 0
+                          : 0} kcal
                       </div>
                       <div>
                         Protein:{" "}
-                        {meal.items[0]?.ingredient.protein_per_100g || 0}g
+                        {typeof meal.items[0]?.ingredient === "object" &&
+                        meal.items[0]?.ingredient !== null &&
+                        "protein_per_100g" in meal.items[0].ingredient
+                          ? (meal.items[0].ingredient as any).protein_per_100g || 0
+                          : 0}g
                       </div>
                       <div>
-                        Carbs: {meal.items[0]?.ingredient.carbs_per_100g || 0}g
+                        Carbs:{" "}
+                        {typeof meal.items[0]?.ingredient === "object" &&
+                        meal.items[0]?.ingredient !== null &&
+                        "carbs_per_100g" in meal.items[0].ingredient
+                          ? (meal.items[0].ingredient as any).carbs_per_100g || 0
+                          : 0}g
                       </div>
                       <div>
-                        Fat: {meal.items[0]?.ingredient.fat_per_100g || 0}g
+                        Fat:{" "}
+                        {typeof meal.items[0]?.ingredient === "object" &&
+                        meal.items[0]?.ingredient !== null &&
+                        "fat_per_100g" in meal.items[0].ingredient
+                          ? (meal.items[0].ingredient as any).fat_per_100g || 0
+                          : 0}g
                       </div>
                     </div>
                   </div>
@@ -249,7 +268,7 @@ export const MealOptimizationResults: React.FC<
               Shopping List
             </CardTitle>
             <CardDescription>
-              Ingredients you'll need to purchase
+              Ingredients you&apos;ll need to purchase
             </CardDescription>
           </CardHeader>
           <CardContent>

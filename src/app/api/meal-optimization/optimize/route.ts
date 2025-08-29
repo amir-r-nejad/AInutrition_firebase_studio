@@ -145,8 +145,9 @@ export async function POST(request: NextRequest) {
             status: 'error'
           },
           { status: 400 }
-        );
-      }
+        )
+      );
+    }
 
     console.log('✅ Request validation passed');
     console.log('🔍 Processing optimization request...');
@@ -253,7 +254,7 @@ export async function POST(request: NextRequest) {
         carbs: externalResult.nutritional_totals?.carbs || 0,
         fat: externalResult.nutritional_totals?.fat || 0,
       },
-      meal: (externalResult.meal || []).map(item => ({
+      meal: (externalResult.meal || []).map((item: any) => ({
         name: item.name || 'Unknown Ingredient',
         quantity_needed: item.quantity_needed || 0,
         protein_per_100g: item.protein_per_100g || 0,
