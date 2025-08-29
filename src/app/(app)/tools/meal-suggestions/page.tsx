@@ -15,6 +15,8 @@ import {
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import AIMealSuggestionSection from "@/features/tools/components/meal-suggestions/AIMealSuggestionSection";
 import MealFormSection from "@/features/tools/components/meal-suggestions/MealFormSection";
+import SingleMealOptimizationTest from "@/components/SingleMealOptimizationTest";
+import { MealOptimizationTest } from "@/components/MealOptimizationTest";
 import { ChefHat } from "lucide-react";
 import { Suspense } from "react";
 

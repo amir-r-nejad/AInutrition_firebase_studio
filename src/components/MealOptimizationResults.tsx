@@ -145,7 +145,7 @@ export const MealOptimizationResults: React.FC<
             </div>
             <div className="text-center p-3 border rounded-lg bg-yellow-50">
               <p className="text-2xl font-bold text-yellow-600">
-                {result.daily_totals.carbohydrates.toFixed(1)}g
+                {result.daily_totals.carbs.toFixed(1)}g
               </p>
               <p className="text-sm text-yellow-700">Carbs</p>
             </div>
