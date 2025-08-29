@@ -325,7 +325,10 @@ export async function suggestMealsForMacros(
 
     // Log the RAG response for debugging
     console.log("RAG Response:", JSON.stringify(result, null, 2));
+    // Log the RAG response for debugging
+    console.log("RAG Response:", JSON.stringify(result, null, 2));
 
+    // Return the RAG response directly without strict validation
     // Return the RAG response directly without strict validation
     // The optimization step will handle any formatting issues
     return result;

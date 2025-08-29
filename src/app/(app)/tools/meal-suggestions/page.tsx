@@ -69,6 +69,36 @@ export default function MealSuggestionsPage() {
           </Suspense>
         </CardContent>
       </Card>
+
+      {/* Single Meal Optimization API Test Section */}
+      <Card className='shadow-xl'>
+        <CardHeader>
+          <CardTitle className='text-xl font-semibold'>
+            Single Meal Optimization API Test
+          </CardTitle>
+          <CardDescription>
+            Test the connection to the Single Meal Optimization API
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SingleMealOptimizationTest />
+        </CardContent>
+      </Card>
+
+      {/* Legacy API Test Section */}
+      <Card className='shadow-xl'>
+        <CardHeader>
+          <CardTitle className='text-xl font-semibold'>
+            Legacy API Connection Test
+          </CardTitle>
+          <CardDescription>
+            Test the connection to the Legacy Meal Optimization API
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <MealOptimizationTest />
+        </CardContent>
+      </Card>
     </div>
   );
 }

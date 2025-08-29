@@ -505,3 +505,5 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
 };
 
 export default OptimizedMealSuggestion;
+
+export default OptimizedMealSuggestion;
