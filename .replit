@@ -43,3 +43,6 @@ args = "npm run dev"
 
 [deployment]
 run = ["sh", "-c", "npm run dev"]
+
+[agent]
+expertMode = true

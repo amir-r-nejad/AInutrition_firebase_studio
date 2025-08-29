@@ -18,10 +18,15 @@ import {
   createTargetsFromMacros,
   convertOptimizationToMeal,
 } from "@/lib/optimization/meal-optimizer";
+import { useLastOptimizationResult } from "@/hooks/useLastOptimizationResult";
+import { LastOptimizationResult } from "@/components/LastOptimizationResult";
 
 // Import the getFallbackNutrition function for helper ingredients
 function getFallbackNutrition(ingredientName: string) {
-  const NUTRITION_FALLBACKS: Record<string, { cal: number; prot: number; carb: number; fat: number }> = {
+  const NUTRITION_FALLBACKS: Record<
+    string,
+    { cal: number; prot: number; carb: number; fat: number }
+  > = {
     "greek yogurt": { cal: 59, prot: 10, carb: 3.6, fat: 0.4 },
     "greek yogurt non-fat": { cal: 59, prot: 10, carb: 3.6, fat: 0.4 },
     "chicken breast": { cal: 165, prot: 31, carb: 0, fat: 3.6 },
@@ -30,10 +35,10 @@ function getFallbackNutrition(ingredientName: string) {
     "brown rice raw": { cal: 370, prot: 7.9, carb: 77, fat: 2.9 },
     "pasta raw": { cal: 371, prot: 13, carb: 75, fat: 1.5 },
     "broccoli raw": { cal: 34, prot: 2.8, carb: 7.0, fat: 0.4 },
-    "spinach": { cal: 23, prot: 2.9, carb: 3.6, fat: 0.4 },
+    spinach: { cal: 23, prot: 2.9, carb: 3.6, fat: 0.4 },
     "cucumber raw": { cal: 16, prot: 0.7, carb: 3.6, fat: 0.1 },
     "olive oil": { cal: 884, prot: 0, carb: 0, fat: 100 },
-    "avocado": { cal: 160, prot: 2, carb: 8.5, fat: 14.7 },
+    avocado: { cal: 160, prot: 2, carb: 8.5, fat: 14.7 },
     "sweet potato raw": { cal: 86, prot: 1.6, carb: 20.1, fat: 0.1 },
   };
 
@@ -72,6 +77,12 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
   const [optimizationResult, setOptimizationResult] = useState<any>(null);
   const { toast } = useToast();
 
+  // استفاده از hook برای مدیریت آخرین نتیجه
+  const { lastResult, saveResult, clearResult } = useLastOptimizationResult(
+    "meal-suggestion",
+    "meal-suggestion",
+  );
+
   const handleOptimize = async () => {
     console.log("🔍 handleOptimize called!");
     setIsOptimizing(true);
@@ -99,7 +110,7 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
       console.log("🚀 Calling optimizeMeal...");
       let result: any;
       try {
-        const mealName = targetMacros.mealName || 'snack';
+        const mealName = targetMacros.mealName || "snack";
         result = optimizeMeal(ingredients, targets, mealName);
         console.log("✅ Optimization result:", result);
       } catch (error) {
@@ -108,6 +119,9 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
       }
 
       if (result.feasible) {
+        // ذخیره آخرین نتیجه
+        saveResult(result);
+
         // Convert the optimization result back to meal format
         console.log("🔄 Converting result back to meal...");
 
@@ -115,26 +129,33 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
         const allIngredients = [...ingredients];
 
         // Add any helpers that appear in the result but weren't in original ingredients
-        Object.keys(result.ingredients).forEach(ingredientName => {
-          const exists = allIngredients.find(ing => 
-            ing.name.toLowerCase().trim() === ingredientName.toLowerCase().trim()
+        Object.keys(result.ingredients).forEach((ingredientName) => {
+          const exists = allIngredients.find(
+            (ing) =>
+              ing.name.toLowerCase().trim() ===
+              ingredientName.toLowerCase().trim(),
           );
 
           if (!exists) {
             // This is a helper ingredient, add it with fallback nutrition
-            console.log(`🆘 Adding helper ingredient to conversion: ${ingredientName}`);
+            console.log(
+              `🆘 Adding helper ingredient to conversion: ${ingredientName}`,
+            );
             const helperNutrition = getFallbackNutrition(ingredientName);
             allIngredients.push({
               name: ingredientName,
               cal: helperNutrition.cal / 100,
               prot: helperNutrition.prot / 100,
               carb: helperNutrition.carb / 100,
-              fat: helperNutrition.fat / 100
+              fat: helperNutrition.fat / 100,
             });
           }
         });
 
-        console.log("🧮 All ingredients for conversion:", allIngredients.map(i => i.name));
+        console.log(
+          "🧮 All ingredients for conversion:",
+          allIngredients.map((i) => i.name),
+        );
 
         const optimized = convertOptimizationToMeal(
           originalSuggestion,
@@ -237,6 +258,12 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
             )}
           </Button>
 
+          {/* نمایش آخرین نتیجه */}
+          <LastOptimizationResult
+            lastResult={lastResult}
+            onClear={clearResult}
+          />
+
           {targetMacros && (
             <div className="mb-4">
               <h4 className="font-medium text-md mb-2 text-primary">
@@ -267,7 +294,8 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
             </CardTitle>
             <CardDescription className="text-sm">
               Meal has been optimized to match your exact macro targets using
-              advanced genetic algorithm with intelligent helper ingredient selection for precise macro achievement.
+              advanced genetic algorithm with intelligent helper ingredient
+              selection for precise macro achievement.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -323,16 +351,19 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
                           0.02
                             ? "bg-green-100 text-green-800"
                             : Math.abs(
-                                optimizedMeal.totalCalories - targetMacros.calories,
-                              ) /
-                                targetMacros.calories <=
-                              0.05
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
+                                  optimizedMeal.totalCalories -
+                                    targetMacros.calories,
+                                ) /
+                                  targetMacros.calories <=
+                                0.05
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
                         }
                       >
                         Calories: {optimizedMeal.totalCalories} kcal
-                        {Math.abs(optimizedMeal.totalCalories - targetMacros.calories) <= 1 && " ✓"}
+                        {Math.abs(
+                          optimizedMeal.totalCalories - targetMacros.calories,
+                        ) <= 1 && " ✓"}
                       </Badge>
                       <Badge
                         variant="secondary"
@@ -344,16 +375,19 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
                           0.02
                             ? "bg-green-100 text-green-800"
                             : Math.abs(
-                                optimizedMeal.totalProtein - targetMacros.protein,
-                              ) /
-                                targetMacros.protein <=
-                              0.05
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
+                                  optimizedMeal.totalProtein -
+                                    targetMacros.protein,
+                                ) /
+                                  targetMacros.protein <=
+                                0.05
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
                         }
                       >
                         Protein: {optimizedMeal.totalProtein}g
-                        {Math.abs(optimizedMeal.totalProtein - targetMacros.protein) <= 0.5 && " ✓"}
+                        {Math.abs(
+                          optimizedMeal.totalProtein - targetMacros.protein,
+                        ) <= 0.5 && " ✓"}
                       </Badge>
                       <Badge
                         variant="secondary"
@@ -365,16 +399,18 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
                           0.02
                             ? "bg-green-100 text-green-800"
                             : Math.abs(
-                                optimizedMeal.totalCarbs - targetMacros.carbs,
-                              ) /
-                                targetMacros.carbs <=
-                              0.05
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
+                                  optimizedMeal.totalCarbs - targetMacros.carbs,
+                                ) /
+                                  targetMacros.carbs <=
+                                0.05
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
                         }
                       >
                         Carbs: {optimizedMeal.totalCarbs}g
-                        {Math.abs(optimizedMeal.totalCarbs - targetMacros.carbs) <= 0.5 && " ✓"}
+                        {Math.abs(
+                          optimizedMeal.totalCarbs - targetMacros.carbs,
+                        ) <= 0.5 && " ✓"}
                       </Badge>
                       <Badge
                         variant="secondary"
@@ -383,15 +419,18 @@ const OptimizedMealSuggestion: React.FC<OptimizedMealSuggestionProps> = ({
                             targetMacros.fat <=
                           0.02
                             ? "bg-green-100 text-green-800"
-                            : Math.abs(optimizedMeal.totalFat - targetMacros.fat) /
-                                targetMacros.fat <=
-                              0.05
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
+                            : Math.abs(
+                                  optimizedMeal.totalFat - targetMacros.fat,
+                                ) /
+                                  targetMacros.fat <=
+                                0.05
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
                         }
                       >
                         Fat: {optimizedMeal.totalFat}g
-                        {Math.abs(optimizedMeal.totalFat - targetMacros.fat) <= 0.5 && " ✓"}
+                        {Math.abs(optimizedMeal.totalFat - targetMacros.fat) <=
+                          0.5 && " ✓"}
                       </Badge>
                     </div>
                   </div>

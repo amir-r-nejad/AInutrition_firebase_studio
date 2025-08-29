@@ -3,48 +3,49 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
+} from "@/components/ui/accordion";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 
-import LoadingScreen from '@/components/ui/LoadingScreen';
-import AIMealSuggestionSection from '@/features/tools/components/meal-suggestions/AIMealSuggestionSection';
-import MealFormSection from '@/features/tools/components/meal-suggestions/MealFormSection';
-import { ChefHat, Settings } from 'lucide-react';
-import { Suspense } from 'react';
+import LoadingScreen from "@/components/ui/LoadingScreen";
+import AIMealSuggestionSection from "@/features/tools/components/meal-suggestions/AIMealSuggestionSection";
+import MealFormSection from "@/features/tools/components/meal-suggestions/MealFormSection";
+import { ChefHat } from "lucide-react";
+import { Suspense } from "react";
 
 export default function MealSuggestionsPage() {
   return (
-    <div className='space-y-6'>
-      <Card className='shadow-xl'>
+    <div className="space-y-6">
+      <Card className="shadow-xl">
         <CardHeader>
-          <CardTitle className='text-3xl font-bold flex items-center'>
-            <ChefHat className='mr-3 h-8 w-8 text-primary' />
-            AI Meal Suggestions
+          <CardTitle className="text-3xl font-bold flex items-center">
+            <ChefHat className="mr-3 h-8 w-8 text-primary" />
+            AI Meal Suggestions & Optimization
           </CardTitle>
           <CardDescription>
-            Select a meal, adjust preferences if needed, and get AI-powered
-            ideas tailored to your macronutrient targets.
+            Get AI-powered meal suggestions and optimize them using our advanced
+            Single Meal Optimization API to perfectly match your macronutrient
+            targets with personalized recommendations.
           </CardDescription>
         </CardHeader>
 
-        <CardContent className='space-y-6'>
+        <CardContent className="space-y-6">
           <Accordion
-            type='single'
+            type="single"
             collapsible
-            className='w-full'
-            defaultValue='preferences'
+            className="w-full"
+            defaultValue="preferences"
           >
-            <AccordionItem value='preferences'>
+            <AccordionItem value="preferences">
               <AccordionTrigger>
-                <div className='flex items-center gap-2'>
-                  <Settings className='h-5 w-5 text-primary' />
-                  <span className='text-lg font-semibold'>
+                <div className="flex items-center gap-2">
+                  <ChefHat className="h-5 w-5 text-primary" />
+                  <span className="text-lg font-semibold">
                     1. Adjust Preferences for this Suggestion (Optional)
                   </span>
                 </div>
@@ -52,9 +53,9 @@ export default function MealSuggestionsPage() {
 
               <AccordionContent>
                 <Suspense
-                  key='form-key'
+                  key="form-key"
                   fallback={
-                    <LoadingScreen loadingLabel='loading your preferences...' />
+                    <LoadingScreen loadingLabel="loading your preferences..." />
                   }
                 >
                   <MealFormSection />
@@ -63,7 +64,7 @@ export default function MealSuggestionsPage() {
             </AccordionItem>
           </Accordion>
 
-          <Suspense key='suggesstion-key' fallback={<p>Loading...</p>}>
+          <Suspense key="suggesstion-key" fallback={<p>Loading...</p>}>
             <AIMealSuggestionSection />
           </Suspense>
         </CardContent>
