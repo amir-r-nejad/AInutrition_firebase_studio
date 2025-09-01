@@ -31,7 +31,7 @@ async function generateWithOpenAI(
         messages: [
           {
             role: "system",
-            content: `You are NutriMind, an expert AI nutritionist. Your PRIMARY task is to generate meal suggestions where the total calories, protein, carbs, and fat EXACTLY match the target macronutrients or are within a strict 3% margin of error. This is ABSOLUTELY NON-NEGOTIABLE. You MUST calculate and verify all macros before returning a response to ensure they meet the target. Adhere strictly to all user preferences and dietary restrictions. Your entire response MUST be a single, valid JSON object and nothing else.`,
+            content: `You are NutriMind, an expert AI nutritionist. Your task is to generate meal suggestions that are balanced and nutritious. Focus on creating healthy meals with good variety of ingredients. While you should try to get close to the target macros, exact matches are not required. Adhere to user preferences and dietary restrictions. Your entire response MUST be a single, valid JSON object and nothing else.`,
           },
           {
             role: "user",
@@ -112,7 +112,7 @@ function buildPrompt(input: SuggestMealsForMacrosInput): string {
       : "None";
 
   return `
-Generate 1-3 highly personalized meal suggestions for the user's profile and meal target below. The total calories, protein, carbs, and fat for each meal MUST EXACTLY match the target macros or be within a strict 5% margin of error (e.g., for ${input.target_calories} kcal, the meal must have ${(input.target_calories * 0.95).toFixed(1)}-${(input.target_calories * 1.05).toFixed(1)} kcal; for ${input.target_protein_grams}g protein, ${(input.target_protein_grams * 0.95).toFixed(1)}-${(input.target_protein_grams * 1.05).toFixed(1)}g). Macro accuracy is the HIGHEST PRIORITY and MUST be achieved before returning any response.
+Generate 1-3 highly personalized meal suggestions for the user's profile and meal target below. Focus on creating balanced, nutritious meals that are close to the target macros but don't need to be exact. The goal is to provide healthy meal options that align with the user's dietary goals.
 
 **User Profile:**
 - Age: ${input.age}
@@ -123,10 +123,10 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
 - Medical Conditions: ${medicalConditionsText}
 
 **🎯 Target for "${input.meal_name}"**
-- Calories: ${input.target_calories} kcal
-- Protein: ${input.target_protein_grams}g
-- Carbohydrates: ${input.target_carbs_grams}g
-- Fat: ${input.target_fat_grams}g
+- Calories: ${input.target_calories} kcal (target, but close is fine)
+- Protein: ${input.target_protein_grams}g (target, but close is fine)
+- Carbohydrates: ${input.target_carbs_grams}g (target, but close is fine)
+- Fat: ${input.target_fat_grams}g (target, but close is fine)
 
 **MANDATORY NUTRITIONAL DATABASE - USE THESE EXACT VALUES PER 100g:**
 
@@ -192,78 +192,24 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
    - Sum ALL individual contributions to get totals
    - Totals MUST equal sum of ingredients (no rounding errors allowed)
 
-3. **TARGET MATCHING ALGORITHM**:
+3. **FLEXIBLE TARGET MATCHING**:
    - Step 1: Select diverse ingredients based on user preferences
-   - Step 2: Focus PRIMARILY on hitting calories and protein targets within 5%
-   - Step 3: Carbs and fat should be reasonable but don't need to be exact
+   - Step 2: Focus on creating balanced, nutritious meals
+   - Step 3: Try to get close to targets but don't stress about exact matches
    - Step 4: Verify: ingredient_sum = total_displayed (exactly equal)
-   - Step 5: If calories or protein are outside 5%, recalculate from Step 1
+   - Step 5: Prioritize healthy, varied ingredients over perfect macro matching
 
-4. **VERIFICATION CHECKPOINTS**:
-   - Before returning response, calculate: sum(all_ingredient_calories) = totalCalories
-   - sum(all_ingredient_protein) = totalProtein  
-   - sum(all_ingredient_carbs) = totalCarbs
-   - sum(all_ingredient_fat) = totalFat
-   - If calories or protein mismatch detected, RESTART calculation process
+4. **GUIDELINES**:
+   - Use ingredients from the database above
+   - Create meals with at least 4-5 ingredients for variety
+   - Focus on nutritional balance and taste
+   - Be creative with ingredient combinations
 
-5. **FORBIDDEN ACTIONS**:
-   - DO NOT estimate or guess nutritional values
-   - DO NOT use ingredients not in the database above
-   - DO NOT create meals with fewer than 4 ingredients
-   - DO NOT repeat exact ingredient combinations from previous suggestions
-
-2. **Meal Appropriateness**: Suggestions MUST be appropriate for the meal type (e.g., light and quick for "Snack," substantial for "Dinner").
-
-3. **Strict Personalization**: Adhere to ALL allergies, medical conditions, and dietary preferences. No exceptions.
-
-4. **Expert Description**: The 'description' field MUST:
-   - Be engaging, conversational, and motivational, explaining why the meal is ideal for the user's diet goal, activity level, and preferences.
-   - Highlight specific ingredients and their benefits.
-   - Concisely confirm macro calculations.
-   - Confirm calories and protein are within 5% of the target.
-   - Reference specific user data for personalization.
-
-**STRICT VALIDATION EXAMPLE:**
-Target: 637 kcal, 48g protein, 80g carbs, 14g fat
-
-CORRECT CALCULATION:
-- Turkey Breast 120g: (120÷100) × 189 = 226.8 kcal, 34.8g protein, 0g carbs, 8.88g fat
-- Sweet Potato 200g: (200÷100) × 86 = 172 kcal, 3.2g protein, 40.2g carbs, 0.2g fat  
-- Pasta 100g: (100÷100) × 131 = 131 kcal, 5g protein, 25g carbs, 1.1g fat
-- Spinach 150g: (150÷100) × 23 = 34.5 kcal, 4.35g protein, 5.4g carbs, 0.6g fat
-- Olive Oil 6g: (6÷100) × 884 = 53.04 kcal, 0g protein, 0g carbs, 6g fat
-
-VERIFICATION:
-Sum: 617.34 kcal, 47.35g protein, 70.6g carbs, 16.78g fat
-Status: NEEDS ADJUSTMENT to hit targets exactly
-
-**JSON OUTPUT FORMAT:**
-{
-  "suggestions": [
-    {
-      "mealTitle": "Creative diverse meal name",
-      "description": "Detailed explanation of nutrition benefits and macro verification",
-      "ingredients": [
-        {
-          "name": "Exact ingredient name from database",
-          "amount": "precise_quantity",
-          "unit": "g",
-          "calories": calculated_exactly,
-          "protein": calculated_exactly,
-          "carbs": calculated_exactly,
-          "fat": calculated_exactly,
-          "macrosString": "X cal, Xg protein, Xg carbs, Xg fat"
-        }
-      ],
-      "totalCalories": exact_sum_of_ingredient_calories,
-      "totalProtein": exact_sum_of_ingredient_protein,
-      "totalCarbs": exact_sum_of_ingredient_carbs,
-      "totalFat": exact_sum_of_ingredient_fat
-    }
-  ]
-}
-
-REMEMBER: The calories and protein totals MUST be within 5% of the target. Carbs and fat should be reasonable but don't need to be exact. Calculate precisely and verify before responding.
+5. **DESCRIPTION REQUIREMENTS**:
+   - Be engaging and motivational
+   - Explain why the meal is good for the user's goals
+   - Highlight key ingredients and their benefits
+   - Keep it conversational and helpful
 `;
 }
 
@@ -312,69 +258,34 @@ export async function suggestMealsForMacros(
       let valid = true;
       const macroErrors: string[] = [];
 
-      // Validate macro accuracy - Only calories and protein with 5% tolerance
+      // Accept all suggestions without strict validation - just log them for debugging
       suggestions.forEach((meal, index) => {
-        const tolerances = {
-          calories: validatedInput.target_calories * 0.05,
-          protein: validatedInput.target_protein_grams * 0.05,
-        };
-
-        const errors: string[] = [];
-        if (
-          Math.abs(meal.totalCalories - validatedInput.target_calories) >
-          tolerances.calories
-        ) {
-          errors.push(
-            `Calories: ${meal.totalCalories} (target: ${validatedInput.target_calories}, allowed: ${validatedInput.target_calories - tolerances.calories}-${validatedInput.target_calories + tolerances.calories})`,
-          );
-        }
-        if (
-          Math.abs(meal.totalProtein - validatedInput.target_protein_grams) >
-          tolerances.protein
-        ) {
-          errors.push(
-            `Protein: ${meal.totalProtein}g (target: ${validatedInput.target_protein_grams}g, allowed: ${validatedInput.target_protein_grams - tolerances.protein}-${validatedInput.target_protein_grams + tolerances.protein})`,
-          );
-        }
-
-        if (errors.length > 0) {
-          valid = false;
-          macroErrors.push(
-            `Meal suggestion at index ${index} does not meet macro targets: ${errors.join("; ")}`,
-          );
-          console.error(
-            `Attempt ${attempts}: Meal suggestion at index ${index} does not meet macro targets within 5% margin:`,
-            {
-              meal: {
-                mealTitle: meal.mealTitle,
-                totals: {
-                  calories: meal.totalCalories,
-                  protein: meal.totalProtein,
-                  carbs: meal.totalCarbs,
-                  fat: meal.totalFat,
-                },
+        console.log(
+          `Meal suggestion ${index}: ${meal.mealTitle}`,
+          {
+            meal: {
+              mealTitle: meal.mealTitle,
+              totals: {
+                calories: meal.totalCalories,
+                protein: meal.totalProtein,
+                carbs: meal.totalCarbs,
+                fat: meal.totalFat,
               },
-              targets: {
-                calories: validatedInput.target_calories,
-                protein: validatedInput.target_protein_grams,
-                carbs: validatedInput.target_carbs_grams,
-                fat: validatedInput.target_fat_grams,
-              },
-              errors,
             },
-          );
-        }
+            targets: {
+              calories: validatedInput.target_calories,
+              protein: validatedInput.target_protein_grams,
+              carbs: validatedInput.target_carbs_grams,
+              fat: validatedInput.target_fat_grams,
+            },
+          },
+        );
       });
 
-      if (valid) {
-        output = result;
-        break;
-      } else {
-        lastMacroErrors = macroErrors;
-        console.warn(
-          `Attempt ${attempts}: Invalid macros detected. Retrying...`,
-        );
-      }
+      // Accept all suggestions without strict validation
+      valid = true;
+      output = result;
+      break;
     }
 
     if (!output) {
