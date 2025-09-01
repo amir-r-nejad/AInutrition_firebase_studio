@@ -14,9 +14,9 @@ import { Slider } from '@/components/ui/slider';
 import SubmitButton from '@/components/ui/SubmitButton';
 import { useToast } from '@/hooks/use-toast';
 import {
-  BaseProfileData,
+  UserProfile,
   GlobalCalculatedTargets,
-  UserPlanType,
+  UserPlan,
 } from '@/lib/schemas';
 import { formatNumber } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,8 +31,8 @@ import { editPlan } from '@/features/profile/actions/apiUserPlan';
 import { SubmitHandler } from 'react-hook-form';
 
 type CustomizePlanFormProps = {
-  plan: UserPlanType;
-  profile: BaseProfileData;
+  plan: UserPlan;
+  profile: UserProfile;
   clientId?: string;
 };
 
@@ -200,29 +200,26 @@ function CustomizePlanForm({
       calculatedCarbCalories +
       calculatedFatCalories;
 
+    const proteinPercentage = finalCustomTotalCalories > 0
+      ? Math.round((calculatedProteinCalories / finalCustomTotalCalories) * 100)
+      : calculatedProteinGrams > 0 ? 100 : 0;
+    
+    const carbPercentage = finalCustomTotalCalories > 0
+      ? Math.round((calculatedCarbCalories / finalCustomTotalCalories) * 100)
+      : 0;
+    
+    const fatPercentage = finalCustomTotalCalories > 0
+      ? Math.round((calculatedFatCalories / finalCustomTotalCalories) * 100)
+      : 0;
+
     const newCustomPlan: GlobalCalculatedTargets = {
       custom_total_calories_final: Math.round(finalCustomTotalCalories),
       custom_protein_g: Math.round(calculatedProteinGrams),
-      custom_protein_percentage:
-        finalCustomTotalCalories > 0
-          ? Math.round(
-              (calculatedProteinCalories / finalCustomTotalCalories) * 100
-            )
-          : calculatedProteinGrams > 0
-          ? 100
-          : 0,
+      custom_protein_percentage: proteinPercentage,
       custom_carbs_g: Math.round(calculatedCarbGrams),
-      custom_carbs_percentage:
-        finalCustomTotalCalories > 0
-          ? Math.round(
-              (calculatedCarbCalories / finalCustomTotalCalories) * 100
-            )
-          : 0,
+      custom_carbs_percentage: carbPercentage,
       custom_fat_g: Math.round(calculatedFatGrams),
-      custom_fat_percentage:
-        finalCustomTotalCalories > 0
-          ? Math.round((calculatedFatCalories / finalCustomTotalCalories) * 100)
-          : 0,
+      custom_fat_percentage: fatPercentage,
       bmr_kcal: plan.bmr_kcal,
       maintenance_calories_tdee: plan.maintenance_calories_tdee,
 
