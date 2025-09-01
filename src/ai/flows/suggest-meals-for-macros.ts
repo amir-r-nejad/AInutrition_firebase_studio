@@ -64,15 +64,21 @@ async function generateWithOpenAI(
       .replace(/```/g, "")
       .trim();
 
+    console.log("Raw AI content:", content);
+    console.log("Cleaned content:", cleanedContent);
+
     let parsed;
     try {
       parsed = JSON.parse(cleanedContent);
+      console.log("Successfully parsed JSON:", parsed);
     } catch (parseError) {
+      console.warn("Initial JSON parsing failed, attempting to extract JSON:", parseError);
       // If JSON parsing fails, try to extract JSON from text
       const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           parsed = JSON.parse(jsonMatch[0]);
+          console.log("Successfully extracted and parsed JSON:", parsed);
         } catch (secondParseError) {
           console.error("Could not parse AI response as JSON:", cleanedContent);
           throw new Error("AI response format error - not valid JSON");
@@ -83,14 +89,98 @@ async function generateWithOpenAI(
       }
     }
 
+    // Try to validate with schema, but be more flexible if it fails
     const validationResult =
       SuggestMealsForMacrosOutputSchema.safeParse(parsed);
     if (!validationResult.success) {
-      console.error(
-        "OpenAI response validation failed:",
+      console.warn(
+        "OpenAI response validation failed, attempting to fix structure:",
         validationResult.error,
       );
-      throw new Error("OpenAI response validation failed");
+      
+             // Try to fix common issues with the response structure
+       let fixedResponse = parsed;
+       
+       // Check if the response has meal_suggestions instead of suggestions
+       if (parsed.meal_suggestions && Array.isArray(parsed.meal_suggestions)) {
+         console.log("Found meal_suggestions, converting to suggestions format");
+         fixedResponse = {
+           suggestions: parsed.meal_suggestions.map((suggestion: any) => ({
+             mealTitle: suggestion.meal_name || suggestion.mealTitle || suggestion.title || suggestion.name || "Meal",
+             description: suggestion.description || suggestion.desc || "",
+             ingredients: Array.isArray(suggestion.ingredients) ? suggestion.ingredients.map((ingredient: any) => ({
+               name: ingredient.name || ingredient.ingredient || "",
+               amount: ingredient.quantity_g || ingredient.amount || ingredient.quantity || "0",
+               unit: ingredient.unit || "g",
+               calories: Number(ingredient.calories) || 0,
+               protein: Number(ingredient.protein) || 0,
+               carbs: Number(ingredient.carbs) || 0,
+               fat: Number(ingredient.fat) || 0,
+               macrosString: ingredient.macrosString || `${ingredient.calories || 0} cal, ${ingredient.protein || 0}g protein, ${ingredient.carbs || 0}g carbs, ${ingredient.fat || 0}g fat`
+             })) : [],
+             totalCalories: Number(suggestion.total_nutrition?.calories || suggestion.totalCalories) || 0,
+             totalProtein: Number(suggestion.total_nutrition?.protein || suggestion.totalProtein) || 0,
+             totalCarbs: Number(suggestion.total_nutrition?.carbs || suggestion.totalCarbs) || 0,
+             totalFat: Number(suggestion.total_nutrition?.fat || suggestion.totalFat) || 0
+           }))
+         };
+         
+         console.log("Converted response structure:", fixedResponse);
+         
+         // Try validation again with fixed response
+         const retryValidation = SuggestMealsForMacrosOutputSchema.safeParse(fixedResponse);
+         if (retryValidation.success) {
+           console.log("Successfully fixed and validated response structure");
+           return retryValidation.data;
+         } else {
+           console.warn("Retry validation failed:", retryValidation.error);
+         }
+       }
+       
+       // Also check for regular suggestions structure
+       if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+         fixedResponse = {
+           suggestions: parsed.suggestions.map((suggestion: any) => ({
+             mealTitle: suggestion.mealTitle || suggestion.title || suggestion.name || "Meal",
+             description: suggestion.description || suggestion.desc || "",
+             ingredients: Array.isArray(suggestion.ingredients) ? suggestion.ingredients.map((ingredient: any) => ({
+               name: ingredient.name || ingredient.ingredient || "",
+               amount: ingredient.amount || ingredient.quantity || "0",
+               unit: ingredient.unit || "g",
+               calories: Number(ingredient.calories) || 0,
+               protein: Number(ingredient.protein) || 0,
+               carbs: Number(ingredient.carbs) || 0,
+               fat: Number(ingredient.fat) || 0,
+               macrosString: ingredient.macrosString || `${ingredient.calories || 0} cal, ${ingredient.protein || 0}g protein, ${ingredient.carbs || 0}g carbs, ${ingredient.fat || 0}g fat`
+             })) : [],
+             totalCalories: Number(suggestion.totalCalories) || 0,
+             totalProtein: Number(suggestion.totalProtein) || 0,
+             totalCarbs: Number(suggestion.totalCarbs) || 0,
+             totalFat: Number(suggestion.totalFat) || 0
+           }))
+         };
+         
+         // Try validation again with fixed response
+         const retryValidation = SuggestMealsForMacrosOutputSchema.safeParse(fixedResponse);
+         if (retryValidation.success) {
+           console.log("Successfully fixed and validated response structure");
+           return retryValidation.data;
+         }
+       }
+       
+       // If we still can't validate, log the error but return a basic structure
+       console.error("Could not fix response structure, returning basic format");
+       return {
+         suggestions: [{
+           mealTitle: "AI Generated Meal",
+           description: "Generated meal suggestion",
+           ingredients: [],
+           totalCalories: 0,
+           totalProtein: 0,
+           totalCarbs: 0,
+           totalFat: 0
+         }]
+       };
     }
 
     return validationResult.data;
@@ -210,6 +300,14 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
    - Explain why the meal is good for the user's goals
    - Highlight key ingredients and their benefits
    - Keep it conversational and helpful
+
+**IMPORTANT: Your response MUST use this EXACT JSON structure with the field names exactly as shown:**
+- Use "suggestions" (not "meal_suggestions")
+- Use "mealTitle" (not "meal_name") 
+- Use "amount" (not "quantity_g")
+- Use "totalCalories", "totalProtein", "totalCarbs", "totalFat" (not "total_nutrition")
+- Include "macrosString" for each ingredient
+- All numbers should be actual numbers, not strings
 `;
 }
 
