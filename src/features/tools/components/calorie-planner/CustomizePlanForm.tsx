@@ -49,7 +49,7 @@ function CustomizePlanForm({
       ...plan,
       ...{
         remaining_calories_carbs_percentage:
-          plan.remaining_calories_carbs_percentage ?? 50,
+          plan.remaining_calories_carbs_percentage ?? 75,
       },
     },
   });
@@ -72,7 +72,7 @@ function CustomizePlanForm({
         ...form.getValues(),
         custom_total_calories: null,
         custom_protein_per_kg: null,
-        remaining_calories_carbs_percentage: 50,
+        remaining_calories_carbs_percentage: 75,
       });
       setCustomPlanResults(null);
 
@@ -178,7 +178,7 @@ function CustomizePlanForm({
     let calculatedFatCalories = 0;
 
     if (remainingCaloriesForCustom > 0) {
-      const carbRatio = (remainingCarbPct ?? 50) / 100;
+      const carbRatio = (remainingCarbPct ?? 75) / 100;
       const fatRatio = 1 - carbRatio;
 
       calculatedCarbCalories = remainingCaloriesForCustom * carbRatio;

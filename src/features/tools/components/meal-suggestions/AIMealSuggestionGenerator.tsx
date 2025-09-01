@@ -138,12 +138,13 @@ function AIMealSuggestionGenerator({
 
       let mealDistribution;
       const userMealDistributions = profile.meal_distributions;
-      if (!userMealDistributions)
+      if (!userMealDistributions) {
         mealDistribution = defaultMacroPercentages[selectedMealName];
-      else
+      } else {
         mealDistribution = userMealDistributions.filter(
           (meal: any) => meal.mealName === selectedMealName,
         )[0];
+      }
 
       if (
         dailyTotals.targetCalories &&
@@ -151,18 +152,16 @@ function AIMealSuggestionGenerator({
         dailyTotals.targetCarbs &&
         dailyTotals.targetFat &&
         mealDistribution &&
-        mealDistribution.protein_pct &&
-        mealDistribution.carbs_pct &&
-        mealDistribution.fat_pct
+        mealDistribution.calories_pct
       ) {
         const newTargets = {
           mealName: selectedMealName,
           calories:
             dailyTotals.targetCalories * (mealDistribution.calories_pct / 100),
           protein:
-            dailyTotals.targetProtein * (mealDistribution.protein_pct / 100),
-          carbs: dailyTotals.targetCarbs * (mealDistribution.carbs_pct / 100),
-          fat: dailyTotals.targetFat * (mealDistribution.fat_pct / 100),
+            dailyTotals.targetProtein * ((mealDistribution.protein_pct ?? mealDistribution.calories_pct) / 100),
+          carbs: dailyTotals.targetCarbs * ((mealDistribution.carbs_pct ?? mealDistribution.calories_pct) / 100),
+          fat: dailyTotals.targetFat * ((mealDistribution.fat_pct ?? mealDistribution.calories_pct) / 100),
         };
 
         // Update URL with calculated targets
