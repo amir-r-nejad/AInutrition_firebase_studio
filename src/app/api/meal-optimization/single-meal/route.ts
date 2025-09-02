@@ -234,6 +234,7 @@ export async function POST(request: NextRequest) {
         success: externalResult.optimization_result?.success || false,
         target_achieved: externalResult.target_achievement?.overall || false,
         method: externalResult.optimization_result?.method || "Unknown",
+        optimization_method: externalResult.optimization_result?.method || "Unknown",
         computation_time:
           externalResult.optimization_result?.computation_time || 0,
         objective_value: 0, // Not provided by API

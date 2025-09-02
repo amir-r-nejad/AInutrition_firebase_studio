@@ -295,6 +295,7 @@ export class SingleMealOptimizationService {
           success: externalResult.optimization_result?.success || false,
           target_achieved: externalResult.target_achievement?.overall || false,
           method: externalResult.optimization_result?.method || "Unknown",
+          optimization_method: externalResult.optimization_result?.method || "Unknown",
           computation_time:
             externalResult.optimization_result?.computation_time || 0,
           objective_value: 0, // Not provided by API
@@ -423,12 +424,13 @@ export class SingleMealOptimizationService {
       // Transform external API response to frontend format
       // Based on actual API response from /optimize-single-meal-rag
       const transformedResult: SingleMealOptimizationResponse = {
-        user_id: externalResult.user_id || "default_user",
-        success: externalResult.success || false,
+        user_id: externalResult.user_id ?? "default_user",
+        success: externalResult.success ?? false,
         optimization_result: {
-          success: externalResult.optimization_result?.success || false,
-          target_achieved: externalResult.target_achievement?.overall || false,
-          method: externalResult.optimization_result?.method || "Unknown",
+          success: externalResult.optimization_result?.success ?? false,
+          optimization_method: externalResult.optimization_result?.method ?? "Unknown",
+          target_achieved: externalResult.target_achievement?.overall ?? false,
+          method: externalResult.optimization_result?.method ?? "Unknown",
           computation_time:
             externalResult.optimization_result?.computation_time || 0,
           objective_value: 0, // Not provided by API

@@ -15,8 +15,7 @@ import {
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import AIMealSuggestionSection from "@/features/tools/components/meal-suggestions/AIMealSuggestionSection";
 import MealFormSection from "@/features/tools/components/meal-suggestions/MealFormSection";
-import SingleMealOptimizationTest from "@/components/SingleMealOptimizationTest";
-import { MealOptimizationTest } from "@/components/MealOptimizationTest";
+
 import { ChefHat } from "lucide-react";
 import { Suspense } from "react";
 
@@ -31,7 +30,7 @@ export default function MealSuggestionsPage() {
           </CardTitle>
           <CardDescription>
             Get AI-powered meal suggestions and optimize them using our advanced
-            Single Meal Optimization API to perfectly match your macronutrient
+            AI genetic algorithm to perfectly match your macronutrient
             targets with personalized recommendations.
           </CardDescription>
         </CardHeader>
@@ -72,35 +71,7 @@ export default function MealSuggestionsPage() {
         </CardContent>
       </Card>
 
-      {/* Single Meal Optimization API Test Section */}
-      <Card className='shadow-xl'>
-        <CardHeader>
-          <CardTitle className='text-xl font-semibold'>
-            Single Meal Optimization API Test
-          </CardTitle>
-          <CardDescription>
-            Test the connection to the Single Meal Optimization API
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SingleMealOptimizationTest />
-        </CardContent>
-      </Card>
 
-      {/* Legacy API Test Section */}
-      <Card className='shadow-xl'>
-        <CardHeader>
-          <CardTitle className='text-xl font-semibold'>
-            Legacy API Connection Test
-          </CardTitle>
-          <CardDescription>
-            Test the connection to the Legacy Meal Optimization API
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <MealOptimizationTest />
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -38,6 +38,7 @@ export interface MealOptimizationRequest {
 }
 
 export interface OptimizationResult {
+  optimization_method: any;
   success: boolean;
   target_achieved?: boolean; // Optional in backend response
   method: string; // Actual field name in backend response
@@ -66,6 +67,7 @@ export interface MealPlan {
 }
 
 export interface DailyTotals {
+  carbohydrates: any;
   calories: number;
   protein: number;
   carbs: number; // Changed from carbohydrates to carbs

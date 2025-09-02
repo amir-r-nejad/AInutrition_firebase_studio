@@ -203,8 +203,8 @@ export default function MealPlanGenerator({
           JSON.stringify(mealTargets, null, 2),
         );
 
-        // Generate AI meal plan using OpenAI
-        console.log("🤖 API: Calling OpenAI meal plan generation...");
+        // Generate meal plan using RAG API (like meal suggestion)
+        console.log("🤖 API: Calling RAG meal plan generation...");
 
         // Enhanced retry logic with exponential backoff
         const maxRetries = 3;
@@ -214,14 +214,14 @@ export default function MealPlanGenerator({
           let timeoutId: NodeJS.Timeout | undefined;
           try {
             console.log(
-              `🌐 Making fetch request to /api/meal-plan/generate... (attempt ${attempt})`,
+              `🌐 Making fetch request to /api/meal-plan/generate-rag... (attempt ${attempt})`,
             );
 
             // Create AbortController for timeout per attempt
             const controller = new AbortController();
             timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes per attempt
 
-            const response = await fetch("/api/meal-plan/generate", {
+            const response = await fetch("/api/meal-plan/generate-rag", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -465,7 +465,7 @@ export default function MealPlanGenerator({
           error.message.includes("fetch")
         ) {
           errorMessage =
-            "Network error: Failed to connect to AI service. The meal plan may have been generated successfully. Please click 'Refresh Meal Plan' to check, or try generating again.";
+            "Network error: Failed to connect to RAG service. The meal plan may have been generated successfully. Please click 'Refresh Meal Plan' to check, or try generating again.";
           toastTitle = "Network Connection Issue";
           toastVariant = "default";
         } else if (error.message?.includes("Invalid input data")) {

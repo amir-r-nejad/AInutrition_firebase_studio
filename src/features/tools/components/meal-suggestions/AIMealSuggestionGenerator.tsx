@@ -44,15 +44,8 @@ import {
 import { useMealUrlParams } from "../../hooks/useMealUrlParams";
 import { getExampleTargetsForMeal, prepareAiMealInput } from "../../lib/utils";
 import { getUserProfile } from "@/lib/supabase/data-service";
-import { MealOptimizationForm } from "@/components/MealOptimizationForm";
-import { MealOptimizationResults } from "@/components/MealOptimizationResults";
-import { SingleMealOptimizationForm } from "@/components/SingleMealOptimizationForm";
-import SingleMealOptimizationResults from "@/components/SingleMealOptimizationResults";
-import {
-  MealOptimizationResponse,
-  RAGResponse,
-  SingleMealOptimizationResponse,
-} from "@/types/meal-optimization";
+import { OpenAIMealOptimizationForm } from "@/components/OpenAIMealOptimizationForm";
+import OpenAIMealOptimizationResults from "@/components/OpenAIMealOptimizationResults";
 import { Badge } from "@/components/ui/badge";
 
 function AIMealSuggestionGenerator({
@@ -79,10 +72,8 @@ function AIMealSuggestionGenerator({
     SuggestMealsForMacrosOutput["suggestions"]
   >([]);
 
-  const [optimizationResult, setOptimizationResult] =
-    useState<MealOptimizationResponse | null>(null);
-  const [singleMealOptimizationResult, setSingleMealOptimizationResult] =
-    useState<SingleMealOptimizationResponse | null>(null);
+  const [openaiOptimizationResult, setOpenaiOptimizationResult] =
+    useState<any>(null);
   const [showOptimization, setShowOptimization] = useState(false);
 
   // Derive values from URL query parameters
@@ -121,8 +112,7 @@ function AIMealSuggestionGenerator({
 
     setSuggestions([]);
     setError(null);
-    setOptimizationResult(null);
-    setSingleMealOptimizationResult(null);
+    setOpenaiOptimizationResult(null);
     setShowOptimization(false);
 
     const missingFields = getMissingProfileFields(profile);
@@ -197,8 +187,7 @@ function AIMealSuggestionGenerator({
   function handleMealSelectionChange(mealValue: string) {
     setSuggestions([]);
     setError(null);
-    setOptimizationResult(null);
-    setSingleMealOptimizationResult(null);
+    setOpenaiOptimizationResult(null);
     setShowOptimization(false);
 
     updateUrlWithMeal(mealValue);
@@ -217,8 +206,7 @@ function AIMealSuggestionGenerator({
 
       setError(null);
       setSuggestions([]);
-      setOptimizationResult(null);
-      setSingleMealOptimizationResult(null);
+      setOpenaiOptimizationResult(null);
       setShowOptimization(false);
 
       try {
@@ -249,30 +237,18 @@ function AIMealSuggestionGenerator({
     });
   }
 
-  const handleOptimizationComplete = (result: MealOptimizationResponse) => {
-    setOptimizationResult(result);
+  const handleOpenAIOptimizationComplete = (result: any) => {
+    setOpenaiOptimizationResult(result);
     toast({
-      title: "Optimization Complete!",
-      description: "Your meal plan has been optimized successfully!",
-      variant: "default",
-    });
-  };
-
-  const handleSingleMealOptimizationComplete = (
-    result: SingleMealOptimizationResponse,
-  ) => {
-    setSingleMealOptimizationResult(result);
-    toast({
-      title: "Single Meal Optimization Complete!",
-      description: `Your meal has been optimized successfully!`,
+      title: "AI Optimization Complete!",
+      description: "Your meal has been optimized using AI genetic algorithm!",
       variant: "default",
     });
   };
 
   const handleReset = () => {
     setSuggestions([]);
-    setOptimizationResult(null);
-    setSingleMealOptimizationResult(null);
+    setOpenaiOptimizationResult(null);
     setShowOptimization(false);
     setError(null);
   };
@@ -479,13 +455,13 @@ function AIMealSuggestionGenerator({
                 Optimize Your {targetMacros.mealName || "Meal"}
               </h2>
               <p className="text-muted-foreground">
-                Use our advanced Single Meal Optimization API to perfect your
+                Use our advanced AI with genetic algorithm principles to optimize your
                 macros and get personalized recommendations
               </p>
             </div>
 
-            {!singleMealOptimizationResult ? (
-              <SingleMealOptimizationForm
+            {!openaiOptimizationResult ? (
+              <OpenAIMealOptimizationForm
                 ragResponse={{
                   suggestions: suggestions.map((suggestion) => ({
                     ingredients: suggestion.ingredients.map((ingredient) => {
@@ -505,48 +481,21 @@ function AIMealSuggestionGenerator({
                         }
                       }
 
-                      // 🔍 DEBUG: Log the original ingredient data
-                      console.log(
-                        `🔍 Original ingredient ${ingredient.name}:`,
-                        {
-                          amount: ingredient.amount,
-                          original_quantity: originalQuantity,
-                          total_calories: ingredient.calories,
-                          total_protein: ingredient.protein,
-                          total_carbs: ingredient.carbs,
-                          total_fat: ingredient.fat,
-                        },
-                      );
+                                             // Convert total values to per 100g values
+                       const conversionFactor = 100 / originalQuantity;
 
-                      // Convert total values to per 100g values
-                      const conversionFactor = 100 / originalQuantity;
-
-                      const per100gValues = {
-                        name: ingredient.name,
-                        protein_per_100g:
-                          Math.round(
-                            (ingredient.protein || 0) * conversionFactor * 100,
-                          ) / 100,
-                        carbs_per_100g:
-                          Math.round(
-                            (ingredient.carbs || 0) * conversionFactor * 100,
-                          ) / 100,
-                        fat_per_100g:
-                          Math.round(
-                            (ingredient.fat || 0) * conversionFactor * 100,
-                          ) / 100,
-                        calories_per_100g:
-                          Math.round(
-                            (ingredient.calories || 0) * conversionFactor * 100,
-                          ) / 100,
-                        quantity_needed: 100, // Standard per 100g basis for optimization
-                      };
-
-                      // 🔍 DEBUG: Log the converted values
-                      console.log(
-                        `🔍 Converted ${ingredient.name} to per 100g:`,
-                        per100gValues,
-                      );
+                       const per100gValues = {
+                         name: ingredient.name,
+                         protein_per_100g:
+                           (ingredient.protein || 0) * conversionFactor,
+                         carbs_per_100g:
+                           (ingredient.carbs || 0) * conversionFactor,
+                         fat_per_100g:
+                           (ingredient.fat || 0) * conversionFactor,
+                         calories_per_100g:
+                           (ingredient.calories || 0) * conversionFactor,
+                         quantity_needed: 100, // Standard per 100g basis for optimization
+                       };
 
                       return per100gValues;
                     }),
@@ -554,7 +503,7 @@ function AIMealSuggestionGenerator({
                   success: true,
                   message: "AI-generated meal suggestions",
                 }}
-                onOptimizationComplete={handleSingleMealOptimizationComplete}
+                onOptimizationComplete={handleOpenAIOptimizationComplete}
                 targetMacros={{
                   calories: targetMacros.calories,
                   protein: targetMacros.protein,
@@ -564,8 +513,9 @@ function AIMealSuggestionGenerator({
                 mealType={targetMacros.mealName || "meal"}
               />
             ) : (
-              <SingleMealOptimizationResults
-                result={singleMealOptimizationResult}
+              <OpenAIMealOptimizationResults
+                result={openaiOptimizationResult}
+                targetMacros={targetMacros}
                 onReset={handleReset}
               />
             )}

@@ -129,16 +129,37 @@ export default function OptimizedAiMealPlan({
           targetMacros,
         });
 
-        const response = await fetch("/api/meal-plan/optimize-ai", {
+        // Use the same optimization API as meal suggestion
+        const response = await fetch("/api/meal-optimization/single-meal", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            mealPlan,
-            dayIndex,
-            mealIndex,
-            targetMacros,
+            rag_response: {
+              suggestions: [{
+                ingredients: mealPlan.weeklyMealPlan[dayIndex].meals[mealIndex].ingredients.map((ingredient: any) => ({
+                  name: ingredient.name,
+                  protein_per_100g: (ingredient.protein / ingredient.quantity) * 100,
+                  carbs_per_100g: (ingredient.carbs / ingredient.quantity) * 100,
+                  fat_per_100g: (ingredient.fat / ingredient.quantity) * 100,
+                  calories_per_100g: (ingredient.calories / ingredient.quantity) * 100,
+                  quantity_needed: ingredient.quantity,
+                }))
+              }]
+            },
+            target_macros: {
+              calories: targetMacros.calories,
+              protein: targetMacros.protein,
+              carbs: targetMacros.carbs,
+              fat: targetMacros.fat,
+            },
+            user_preferences: {
+              diet_type: "balanced",
+              allergies: [],
+              preferences: []
+            },
+            meal_type: mealPlan.weeklyMealPlan[dayIndex].meals[mealIndex].meal_name,
           }),
         });
 
@@ -503,10 +524,13 @@ export default function OptimizedAiMealPlan({
                                       (ingredient as any).fats ??
                                       (ingredient as any).fat_g ??
                                       0;
+                                    // Fix: 'amount' property does not exist on type, so check 'quantity' and 'unit'
                                     const amount =
-                                      ingredient.amount ??
-                                      ingredient.quantity ??
-                                      "-";
+                                      ingredient.quantity !== undefined
+                                        ? ingredient.unit
+                                          ? `${ingredient.quantity} ${ingredient.unit}`
+                                          : ingredient.quantity
+                                        : "-";
                                     return (
                                       <tr
                                         key={ingIndex}
