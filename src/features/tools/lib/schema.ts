@@ -7,14 +7,16 @@ export const customizePlanFormSchema = z.object({
     z.coerce
       .number()
       .int('Custom calories must be a whole number if provided.')
-      .positive('Custom calories must be positive if provided.')
+      .min(1400, 'Calories must be between 1,400 and 3,400 kcal/day.')
+      .max(3400, 'Calories must be between 1,400 and 3,400 kcal/day.')
       .nullable()
   ),
   custom_protein_per_kg: z.preprocess(
     preprocessOptionalNumber,
     z.coerce
       .number()
-      .min(0, 'Protein per kg must be non-negative if provided.')
+      .min(0.7, 'Protein per kg must be between 0.7 and 2.5 g/kg/day.')
+      .max(2.5, 'Protein per kg must be between 0.7 and 2.5 g/kg/day.')
       .nullable()
   ),
   remaining_calories_carbs_percentage: z.preprocess(
@@ -22,9 +24,9 @@ export const customizePlanFormSchema = z.object({
     z.coerce
       .number()
       .int('Carb percentage must be a whole number.')
-      .min(0, 'Carb percentage must be between 0 and 100.')
-      .max(100, 'Carb percentage must be between 0 and 100.')
-      .default(50)
+      .min(75, 'Remaining calories from Carbs must be between 75% and 90%.')
+      .max(90, 'Remaining calories from Carbs must be between 75% and 90%.')
+      .default(75)
       .nullable()
   ),
 
