@@ -35,9 +35,9 @@ import {
 } from '@/lib/constants';
 import { calculateBMR, calculateTDEE } from '@/lib/nutrition-calculator';
 import {
-  BaseProfileData,
+  UserProfile,
   SmartCaloriePlannerFormSchema,
-  UserPlanType,
+  UserPlan,
   type GlobalCalculatedTargets,
   type SmartCaloriePlannerFormValues,
 } from '@/lib/schemas';
@@ -47,8 +47,8 @@ import { useEffect, useState } from 'react';
 import { FieldPath, useForm, SubmitHandler } from 'react-hook-form';
 
 type PlannerFormProps = {
-  plan: UserPlanType;
-  profile: BaseProfileData;
+  plan: UserPlan;
+  profile: UserProfile;
   clientId?: string;
 };
 
@@ -118,7 +118,7 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
         key,
         value === null ? undefined : value,
       ])
-    ) as Partial<BaseProfileData>;
+    ) as Partial<UserProfile>;
 
     try {
       await editProfile(profileUpdate, undefined, clientId);
@@ -305,7 +305,7 @@ function PlannerForm({ plan, profile, clientId }: PlannerFormProps) {
         key,
         value === null ? undefined : value,
       ])
-    ) as Partial<BaseProfileData>;
+    ) as Partial<UserProfile>;
 
     try {
       await editProfile(profileUpdate, undefined, clientId);
