@@ -21,6 +21,7 @@ async function generateWithOpenAI(
   }
 
   try {
+    console.log("Sending request to OpenAI with prompt:", prompt.substring(0, 200) + "...");
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -47,8 +48,10 @@ async function generateWithOpenAI(
     if (!response.ok) {
       const errorText = await response.text();
       console.error("OpenAI API Error:", errorText);
+      console.error("Response status:", response.status);
+      console.error("Response headers:", Object.fromEntries(response.headers.entries()));
       throw new Error(
-        `OpenAI API error: ${response.status} ${response.statusText}`,
+        `OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`,
       );
     }
 
