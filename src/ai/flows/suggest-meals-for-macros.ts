@@ -109,6 +109,22 @@ function buildPrompt(input: SuggestMealsForMacrosInput): string {
     ? input.medical_conditions.join(", ") 
     : "None";
 
+  const preferredCuisinesText = input.preferred_cuisines && input.preferred_cuisines.length > 0 
+    ? input.preferred_cuisines.join(", ") 
+    : "None";
+  
+  const dispreferredCuisinesText = input.dispreferrred_cuisines && input.dispreferrred_cuisines.length > 0 
+    ? input.dispreferrred_cuisines.join(", ") 
+    : "None";
+
+  const preferredIngredientsText = input.preferred_ingredients && input.preferred_ingredients.length > 0 
+    ? input.preferred_ingredients.join(", ") 
+    : "None";
+  
+  const dispreferredIngredientsText = input.dispreferrred_ingredients && input.dispreferrred_ingredients.length > 0 
+    ? input.dispreferrred_ingredients.join(", ") 
+    : "None";
+
   return `
 Generate 1-3 highly personalized meal suggestions for the user's profile and meal target below. The total calories, protein, carbs, and fat for each meal MUST EXACTLY match the target macros or be within a strict 5% margin of error (e.g., for ${input.target_calories} kcal, the meal must have ${(input.target_calories * 0.95).toFixed(1)}-${(input.target_calories * 1.05).toFixed(1)} kcal; for ${input.target_protein_grams}g protein, ${(input.target_protein_grams * 0.95).toFixed(1)}-${(input.target_protein_grams * 1.05).toFixed(1)}g). Macro accuracy is the HIGHEST PRIORITY and MUST be achieved before returning any response.
 
@@ -117,6 +133,11 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
 - Gender: ${input.gender}
 - Activity Level: ${input.activity_level}
 - Primary Diet Goal: ${input.diet_goal}
+- Preferred Diet: ${input.preferred_diet || "None"}
+- Preferred Cuisines: ${preferredCuisinesText}
+- Dispreferred Cuisines: ${dispreferredCuisinesText}
+- Preferred Ingredients: ${preferredIngredientsText}
+- Dispreferred Ingredients: ${dispreferredIngredientsText}
 - Allergies: ${allergiesText}
 - Medical Conditions: ${medicalConditionsText}
 
@@ -128,8 +149,8 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
 
 **CRITICAL RULES - NON-NEGOTIABLE:**
 1. **Meal Generation and Macro Accuracy**:
-   - First, generate a meal concept that aligns with the user's dietary preferences, restrictions, meal type (e.g., snack, breakfast), and ingredient preferences/avoidances.
-   - Select ingredients from a broad nutritional database, prioritizing user preferences and avoiding allergies.
+   - First, generate a meal concept that aligns with the user's dietary preferences, restrictions, meal type (e.g., snack, breakfast), preferred/dispreferred cuisines, and ingredient preferences/avoidances.
+   - Select ingredients from a broad nutritional database, prioritizing user preferences, preferred cuisines, and avoiding allergies and dispreferred cuisines/ingredients.
    - Use standard nutritional data for ingredients (e.g., provide accurate kcal, protein, carbs, and fat per unit, such as per 100g or per piece).
    - Calculate the macro contribution of each ingredient based on its quantity.
    - Iteratively adjust ingredient quantities to minimize the difference between total macros and targets, ensuring ALL macros are within the 5% margin.
@@ -139,14 +160,14 @@ Generate 1-3 highly personalized meal suggestions for the user's profile and mea
 
 2. **Meal Appropriateness**: Suggestions MUST be appropriate for the meal type (e.g., light and quick for "Snack," substantial for "Dinner").
 
-3. **Strict Personalization**: Adhere to ALL allergies, medical conditions, and dietary preferences. No exceptions.
+3. **Strict Personalization**: Adhere to ALL allergies, medical conditions, dietary preferences, preferred/dispreferred cuisines, and ingredient preferences. No exceptions.
 
 4. **Expert Description**: The 'description' field MUST:
-   - Be engaging, conversational, and motivational, explaining why the meal is ideal for the user's diet goal, activity level, and preferences.
-   - Highlight specific ingredients and their benefits.
+   - Be engaging, conversational, and motivational, explaining why the meal is ideal for the user's diet goal, activity level, cuisine preferences, and dietary restrictions.
+   - Highlight specific ingredients and their benefits, mentioning how they align with preferred cuisines.
    - Concisely confirm macro calculations.
    - Confirm all macros are within 5% of the target.
-   - Reference specific user data for personalization.
+   - Reference specific user data for personalization, including cuisine preferences.
 
 **JSON OUTPUT:**
 Respond with ONLY a raw JSON object with a single root key: "suggestions".
