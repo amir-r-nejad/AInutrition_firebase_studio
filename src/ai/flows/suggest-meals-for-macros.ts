@@ -32,7 +32,7 @@ async function generateWithOpenAI(
         messages: [
           {
             role: "system",
-            content: `You are a nutrition expert. Create meal suggestions that match exact macro targets. Your response must be valid JSON only. Calculate macros precisely - totals must match targets within 5% tolerance.`,
+            content: `شما یک متخصص تغذیه هستید. با توجه به ورودی‌های کاربر، یک وعده غذایی بسازید که دقیقاً با target های macro مطابقت داشته باشد. پاسخ شما باید فقط JSON معتبر باشد. محاسبات macro باید دقیق باشد - مجموع باید با target ها مطابقت داشته باشد (حداکثر 5% خطا مجاز است).`,
           },
           {
             role: "user",
@@ -125,40 +125,42 @@ function buildPrompt(input: SuggestMealsForMacrosInput): string {
     ? input.dispreferrred_ingredients.join(", ") 
     : "None";
 
-  return `Create a meal suggestion that EXACTLY matches these macro targets:
+  return `با توجه به این ورودی‌ها یک وعده غذایی بده:
 
-**Target Macros:**
-- Calories: ${input.target_calories} kcal
-- Protein: ${input.target_protein_grams}g  
-- Carbs: ${input.target_carbs_grams}g
-- Fat: ${input.target_fat_grams}g
+**ورودی‌های کاربر:**
+- نام وعده: ${input.meal_name}
+- سن: ${input.age}
+- جنسیت: ${input.gender}
+- سطح فعالیت: ${input.activity_level}
+- هدف رژیم: ${input.diet_goal || "سلامت عمومی"}
+- رژیم ترجیحی: ${input.preferred_diet || "هیچ"}
+- غذاهای مورد علاقه: ${preferredCuisinesText}
+- غذاهای غیرمورد علاقه: ${dispreferredCuisinesText}
+- مواد اولیه مورد علاقه: ${preferredIngredientsText}
+- مواد اولیه غیرمورد علاقه: ${dispreferredIngredientsText}
+- حساسیت‌ها: ${allergiesText}
+- شرایط پزشکی: ${medicalConditionsText}
 
-**User Preferences:**
-- Meal: ${input.meal_name}
-- Diet Goal: ${input.diet_goal || "General health"}
-- Preferred Cuisines: ${preferredCuisinesText}
-- Avoid Cuisines: ${dispreferredCuisinesText}
-- Allergies: ${allergiesText}
-- Medical Conditions: ${medicalConditionsText}
+**Target های مورد نیاز:**
+- کالری: ${input.target_calories} کیلوکالری
+- پروتئین: ${input.target_protein_grams} گرم
+- کربوهیدرات: ${input.target_carbs_grams} گرم
+- چربی: ${input.target_fat_grams} گرم
 
-**Instructions:**
-1. Create ONE meal suggestion that matches the exact macro targets (within 5% tolerance)
-2. Use real ingredients with accurate nutritional values
-3. Avoid any allergens or dispreferred cuisines
-4. Make it appropriate for the meal type (${input.meal_name})
-5. Calculate totals precisely - they MUST match targets
+**دستورالعمل:**
+یک وعده غذایی با تمام ingredient ها و macro nutrition ها بساز که جمعشون برسه به target های بالا (حداکثر 5% خطا مجاز است).
 
-**Output Format (JSON only):**
+**فرمت خروجی (فقط JSON):**
 {
   "suggestions": [
     {
-      "mealTitle": "Meal Name",
-      "description": "Brief description of the meal and why it fits your goals",
+      "mealTitle": "نام وعده غذایی",
+      "description": "توضیح کوتاه وعده غذایی",
       "ingredients": [
         {
-          "name": "Ingredient Name",
+          "name": "نام ماده اولیه",
           "amount": "100",
-          "unit": "g", 
+          "unit": "g",
           "calories": 100,
           "protein": 10,
           "carbs": 10,
@@ -174,7 +176,7 @@ function buildPrompt(input: SuggestMealsForMacrosInput): string {
   ]
 }
 
-CRITICAL: The totalCalories, totalProtein, totalCarbs, and totalFat MUST exactly match the targets above.`;
+مهم: totalCalories، totalProtein، totalCarbs، و totalFat باید دقیقاً با target های بالا مطابقت داشته باشد.`;
 }
 
 // Main entry function using OpenAI
