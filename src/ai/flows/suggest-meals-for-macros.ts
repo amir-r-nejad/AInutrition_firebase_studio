@@ -32,14 +32,14 @@ async function generateWithOpenAI(
         messages: [
           {
             role: "system",
-            content: `You are NutriMind, an expert AI nutritionist. Your PRIMARY task is to generate meal suggestions where the total calories, protein, carbs, and fat EXACTLY match the target macronutrients or are within a strict 5% margin of error. This is ABSOLUTELY NON-NEGOTIABLE. You MUST calculate and verify all macros before returning a response to ensure they meet the target. Adhere strictly to all user preferences and dietary restrictions. Your entire response MUST be a single, valid JSON object and nothing else.`,
+            content: `You are a nutrition expert. Create meal suggestions that match exact macro targets. Your response must be valid JSON only. Calculate macros precisely - totals must match targets within 5% tolerance.`,
           },
           {
             role: "user",
             content: prompt,
           },
         ],
-        temperature: 0.7,
+        temperature: 0.3,
         max_tokens: 3000,
       }),
     });
@@ -125,64 +125,40 @@ function buildPrompt(input: SuggestMealsForMacrosInput): string {
     ? input.dispreferrred_ingredients.join(", ") 
     : "None";
 
-  return `
-Generate 1-3 highly personalized meal suggestions for the user's profile and meal target below. The total calories, protein, carbs, and fat for each meal MUST EXACTLY match the target macros or be within a strict 5% margin of error (e.g., for ${input.target_calories} kcal, the meal must have ${(input.target_calories * 0.95).toFixed(1)}-${(input.target_calories * 1.05).toFixed(1)} kcal; for ${input.target_protein_grams}g protein, ${(input.target_protein_grams * 0.95).toFixed(1)}-${(input.target_protein_grams * 1.05).toFixed(1)}g). Macro accuracy is the HIGHEST PRIORITY and MUST be achieved before returning any response.
+  return `Create a meal suggestion that EXACTLY matches these macro targets:
 
-**User Profile:**
-- Age: ${input.age}
-- Gender: ${input.gender}
-- Activity Level: ${input.activity_level}
-- Primary Diet Goal: ${input.diet_goal}
-- Preferred Diet: ${input.preferred_diet || "None"}
+**Target Macros:**
+- Calories: ${input.target_calories} kcal
+- Protein: ${input.target_protein_grams}g  
+- Carbs: ${input.target_carbs_grams}g
+- Fat: ${input.target_fat_grams}g
+
+**User Preferences:**
+- Meal: ${input.meal_name}
+- Diet Goal: ${input.diet_goal || "General health"}
 - Preferred Cuisines: ${preferredCuisinesText}
-- Dispreferred Cuisines: ${dispreferredCuisinesText}
-- Preferred Ingredients: ${preferredIngredientsText}
-- Dispreferred Ingredients: ${dispreferredIngredientsText}
+- Avoid Cuisines: ${dispreferredCuisinesText}
 - Allergies: ${allergiesText}
 - Medical Conditions: ${medicalConditionsText}
 
-**🎯 Target for "${input.meal_name}"**
-- Calories: ${input.target_calories} kcal
-- Protein: ${input.target_protein_grams}g
-- Carbohydrates: ${input.target_carbs_grams}g
-- Fat: ${input.target_fat_grams}g
+**Instructions:**
+1. Create ONE meal suggestion that matches the exact macro targets (within 5% tolerance)
+2. Use real ingredients with accurate nutritional values
+3. Avoid any allergens or dispreferred cuisines
+4. Make it appropriate for the meal type (${input.meal_name})
+5. Calculate totals precisely - they MUST match targets
 
-**CRITICAL RULES - NON-NEGOTIABLE:**
-1. **Meal Generation and Macro Accuracy**:
-   - First, generate a meal concept that aligns with the user's dietary preferences, restrictions, meal type (e.g., snack, breakfast), preferred/dispreferred cuisines, and ingredient preferences/avoidances.
-   - Select ingredients from a broad nutritional database, prioritizing user preferences, preferred cuisines, and avoiding allergies and dispreferred cuisines/ingredients.
-   - Use standard nutritional data for ingredients (e.g., provide accurate kcal, protein, carbs, and fat per unit, such as per 100g or per piece).
-   - Calculate the macro contribution of each ingredient based on its quantity.
-   - Iteratively adjust ingredient quantities to minimize the difference between total macros and targets, ensuring ALL macros are within the 5% margin.
-   - Verify the final totals for calories, protein, carbs, and fat against the target ranges before returning the response.
-   - If any macro is outside the 5% margin, adjust quantities and recalculate until ALL macros are within range.
-   - All nutritional values (calories, protein, carbs, fat) MUST be numbers, not null, undefined, or "n/a".
-
-2. **Meal Appropriateness**: Suggestions MUST be appropriate for the meal type (e.g., light and quick for "Snack," substantial for "Dinner").
-
-3. **Strict Personalization**: Adhere to ALL allergies, medical conditions, dietary preferences, preferred/dispreferred cuisines, and ingredient preferences. No exceptions.
-
-4. **Expert Description**: The 'description' field MUST:
-   - Be engaging, conversational, and motivational, explaining why the meal is ideal for the user's diet goal, activity level, cuisine preferences, and dietary restrictions.
-   - Highlight specific ingredients and their benefits, mentioning how they align with preferred cuisines.
-   - Concisely confirm macro calculations.
-   - Confirm all macros are within 5% of the target.
-   - Reference specific user data for personalization, including cuisine preferences.
-
-**JSON OUTPUT:**
-Respond with ONLY a raw JSON object with a single root key: "suggestions".
-
-**EXAMPLE OUTPUT:**
+**Output Format (JSON only):**
 {
   "suggestions": [
     {
-      "mealTitle": "Personalized Protein-Packed Snack",
-      "description": "This snack is tailored for your ${input.diet_goal} goal, providing high protein to keep you full and steady carbs for energy. Ingredient A delivers 10g protein, Ingredient B adds 5g, totaling 15g protein (within 5% of target). With ${input.target_calories} kcal, ${input.target_carbs_grams}g carbs, and ${input.target_fat_grams}g fat, this snack supports your ${input.activity_level} lifestyle!",
+      "mealTitle": "Meal Name",
+      "description": "Brief description of the meal and why it fits your goals",
       "ingredients": [
         {
           "name": "Ingredient Name",
           "amount": "100",
-          "unit": "g",
+          "unit": "g", 
           "calories": 100,
           "protein": 10,
           "carbs": 10,
@@ -198,8 +174,7 @@ Respond with ONLY a raw JSON object with a single root key: "suggestions".
   ]
 }
 
-REMEMBER: The totals MUST be within 5% of the target macros. Calculate precisely and verify before responding.
-`;
+CRITICAL: The totalCalories, totalProtein, totalCarbs, and totalFat MUST exactly match the targets above.`;
 }
 
 // Main entry function using OpenAI
