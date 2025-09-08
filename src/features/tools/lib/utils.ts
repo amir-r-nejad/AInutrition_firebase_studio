@@ -97,7 +97,6 @@ export function prepareAiMealInput({
     dispreferrred_ingredients: profile.dispreferrred_ingredients ?? undefined,
     allergies: profile.allergies ?? undefined,
     medical_conditions: profile.medical_conditions ?? undefined,
-    medications: profile.medications ?? undefined,
   };
 
   Object.keys(aiInput).forEach(

@@ -31,9 +31,9 @@ import { getMissingProfileFields } from '@/features/meal-plan/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { defaultMacroPercentages, mealNames } from '@/lib/constants';
 import {
-  BaseProfileData,
+  UserProfile,
   SuggestMealsForMacrosOutput,
-  UserPlanType,
+  UserPlan,
 } from '@/lib/schemas';
 import { AlertTriangle, Loader2, Sparkles } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -52,8 +52,8 @@ function AIMealSuggestionGenerator({
   profile,
   plan,
 }: {
-  plan: UserPlanType;
-  profile: BaseProfileData;
+  plan: UserPlan;
+  profile: UserProfile;
 }) {
   const { updateUrlWithMeal, getQueryParams, getCurrentMealParams } =
     useMealUrlParams();
@@ -125,7 +125,7 @@ function AIMealSuggestionGenerator({
         mealDistribution = defaultMacroPercentages[selectedMealName];
       else
         mealDistribution = userMealDistributions.filter(
-          (meal) => meal.mealName === selectedMealName
+          (meal: any) => meal.mealName === selectedMealName
         )[0];
 
       if (
@@ -203,7 +203,33 @@ function AIMealSuggestionGenerator({
         const aiInput = prepareAiMealInput({ targetMacros, profile });
         const data = await suggestMealsForMacros(aiInput);
 
-        if (data) setSuggestions(data.suggestions);
+        console.log("AI Response Data:", JSON.stringify(data, null, 2));
+
+        if (data) {
+          // Calculate correct totals from ingredients
+          const correctedSuggestions = data.suggestions.map(suggestion => {
+            const calculatedTotals = suggestion.ingredients.reduce(
+              (totals, ingredient) => ({
+                calories: totals.calories + (ingredient.calories || 0),
+                protein: totals.protein + (ingredient.protein || 0),
+                carbs: totals.carbs + (ingredient.carbs || 0),
+                fat: totals.fat + (ingredient.fat || 0),
+              }),
+              { calories: 0, protein: 0, carbs: 0, fat: 0 }
+            );
+
+            return {
+              ...suggestion,
+              totalCalories: calculatedTotals.calories,
+              totalProtein: calculatedTotals.protein,
+              totalCarbs: calculatedTotals.carbs,
+              totalFat: calculatedTotals.fat,
+            };
+          });
+
+          console.log("Corrected Suggestions:", JSON.stringify(correctedSuggestions, null, 2));
+          setSuggestions(correctedSuggestions);
+        }
         else {
           setError(error);
           toast({

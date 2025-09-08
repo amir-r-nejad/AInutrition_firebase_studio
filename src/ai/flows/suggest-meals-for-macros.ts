@@ -33,15 +33,15 @@ async function generateWithOpenAI(
         messages: [
           {
             role: "system",
-            content: `You are a nutrition expert. Create meal suggestions that match exact macro targets. Your response must be valid JSON only. Calculate macros precisely - totals must match targets within 5% tolerance.`,
+            content: `You are a nutrition expert. Your ONLY job is to create meals where the total calories, protein, carbs, and fat EXACTLY match the target numbers provided. Calculate each ingredient's macros and adjust quantities until the totals equal the targets. Your response must be valid JSON only.`,
           },
           {
             role: "user",
             content: prompt,
           },
         ],
-        temperature: 0.3,
-        max_tokens: 3000,
+        temperature: 1,
+        max_tokens: 16384,
       }),
     });
 
@@ -104,6 +104,20 @@ async function generateWithOpenAI(
 }
 
 function buildPrompt(input: SuggestMealsForMacrosInput): string {
+  console.log("Input data received:", {
+    meal_name: input.meal_name,
+    preferred_cuisines: input.preferred_cuisines,
+    dispreferrred_cuisines: input.dispreferrred_cuisines,
+    preferred_ingredients: input.preferred_ingredients,
+    dispreferrred_ingredients: input.dispreferrred_ingredients,
+    allergies: input.allergies,
+    medical_conditions: input.medical_conditions,
+    target_calories: input.target_calories,
+    target_protein_grams: input.target_protein_grams,
+    target_carbs_grams: input.target_carbs_grams,
+    target_fat_grams: input.target_fat_grams
+  });
+
   const allergiesText = input.allergies && input.allergies.length > 0 
     ? input.allergies.join(", ") 
     : "None";
@@ -128,31 +142,32 @@ function buildPrompt(input: SuggestMealsForMacrosInput): string {
     ? input.dispreferrred_ingredients.join(", ") 
     : "None";
 
-  return `Based on these inputs, create a meal with all ingredients and macro nutrition that reaches these targets:
+  const prompt = `Act like an expert nutritionist, meal planner, and macro-tracking specialist.
 
-**Inputs:**
-- Meal Type: ${input.meal_name}
-- Age: ${input.age}
-- Gender: ${input.gender}
-- Activity Level: ${input.activity_level}
-- Diet Goal: ${input.diet_goal || "General health"}
-- Preferred Diet: ${input.preferred_diet || "None"}
-- Preferred Cuisines: ${preferredCuisinesText}
-- Avoid Cuisines: ${dispreferredCuisinesText}
-- Preferred Ingredients: ${preferredIngredientsText}
-- Avoid Ingredients: ${dispreferredIngredientsText}
-- Allergies: ${allergiesText}
-- Medical Conditions: ${medicalConditionsText}
+Your objective is to create a ${input.meal_name} meal that EXACTLY matches the specified macro targets. No approximations are allowed. Totals must be precise.
 
-**Target Macros:**
+TARGETS (MUST MATCH EXACTLY):
 - Calories: ${input.target_calories} kcal
 - Protein: ${input.target_protein_grams}g
 - Carbs: ${input.target_carbs_grams}g
 - Fat: ${input.target_fat_grams}g
 
-Create a meal that uses the preferred cuisines and ingredients, avoids allergens and dispreferred items, and matches the macro targets exactly.
+USER PREFERENCES:
+- Preferred cuisines: ${preferredCuisinesText}
+- Avoid cuisines: ${dispreferredCuisinesText}
+- Preferred ingredients: ${preferredIngredientsText}
+- Avoid ingredients: ${dispreferredIngredientsText}
+- Allergies: ${allergiesText}
 
-**Output (JSON only):**
+STEP-BY-STEP INSTRUCTIONS:
+1. Select ingredients that align with user preferences and avoid restricted items or allergens.  
+2. For each ingredient, calculate the exact macros: calories, protein, carbs, and fat.  
+3. Display each ingredient’s macros clearly, both individually and as a “macrosString” field.  
+4. Sum all ingredient macros and compare against the target values.  
+5. If totals do not match EXACTLY, iteratively adjust ingredient quantities until the totals match the target values with no deviations.  
+6. Recalculate after each adjustment and confirm the totals meet the targets precisely.  
+7. Present the final meal in JSON format only, using the following schema:
+
 {
   "suggestions": [
     {
@@ -160,7 +175,7 @@ Create a meal that uses the preferred cuisines and ingredients, avoids allergens
       "description": "Description of the meal",
       "ingredients": [
         {
-          "name": "Ingredient Name",
+          "name": "Ingredient",
           "amount": "100",
           "unit": "g",
           "calories": 100,
@@ -176,7 +191,18 @@ Create a meal that uses the preferred cuisines and ingredients, avoids allergens
       "totalFat": ${input.target_fat_grams}
     }
   ]
-}`;
+}
+
+FINAL REQUIREMENTS:
+- The JSON output must strictly adhere to the schema above.  
+- Totals must equal the targets exactly—no rounding errors.  
+- Do not include explanatory text outside the JSON.  
+
+Take a deep breath and work on this problem step by step.
+`;
+
+  console.log("Generated prompt for AI:", prompt);
+  return prompt;
 }
 
 // Main entry function using OpenAI
@@ -186,12 +212,20 @@ export async function suggestMealsForMacros(
   try {
     // Log input for debugging
     console.log(
-      "Input to suggestMealsForMacros (OpenAI):",
+      "Raw input to suggestMealsForMacros (OpenAI):",
       JSON.stringify(input, null, 2),
     );
+    
+    console.log("Input keys:", Object.keys(input));
+    console.log("Input values:", Object.values(input));
 
     // Validate input
     const validatedInput = SuggestMealsForMacrosInputSchema.parse(input);
+    
+    console.log(
+      "Validated input after schema parsing:",
+      JSON.stringify(validatedInput, null, 2),
+    );
 
     let output;
     let attempts = 0;
@@ -203,7 +237,9 @@ export async function suggestMealsForMacros(
       attempts++;
       console.log(`Attempt ${attempts} to generate valid meal suggestions with OpenAI`);
 
-      const prompt = buildPrompt(validatedInput);
+      // Add retry context to prompt for better results
+      const retryContext = attempts > 1 ? `\n\n**RETRY ATTEMPT ${attempts}:** Previous attempt did not match targets. Please recalculate and ensure totals match exactly.` : '';
+      const prompt = buildPrompt(validatedInput) + retryContext;
       const result = await generateWithOpenAI(prompt, validatedInput);
 
       if (!result || !result.suggestions) {
