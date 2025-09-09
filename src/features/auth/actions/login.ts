@@ -1,7 +1,7 @@
-'use server';
+"use server";
 
-import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
 type loginFormTypes = {
   email: string;
@@ -14,43 +14,52 @@ type ActionType = {
 };
 
 export async function loginAction(
-  formData: loginFormTypes
+  formData: loginFormTypes,
 ): Promise<ActionType> {
   try {
     const supabase = await createClient();
     const { email, password } = formData;
 
-    const { error } = await supabase.auth.signInWithPassword({
+    console.log('Attempting login with:', { email, password: '[REDACTED]' });
+
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    console.log('Login response:', { data: data?.user?.id, error: error?.message });
+
     if (error) {
       // Check if error is related to email confirmation
-      if (error.message.includes('email not confirmed') || error.message.includes('Email not confirmed')) {
-        return { 
-          isSuccess: false, 
-          error: 'لطفاً ابتدا ایمیل خود را تأیید کنید. لینک تأیید به ایمیل شما ارسال شده است.' 
+      if (
+        error.message.includes("email not confirmed") ||
+        error.message.includes("Email not confirmed")
+      ) {
+        return {
+          isSuccess: false,
+          error:
+            "Please verify your email first. A verification link has been sent to your email.",
         };
       }
-      
-      if (error.message.includes('Invalid login credentials')) {
-        return { 
-          isSuccess: false, 
-          error: 'ایمیل یا پسورد اشتباه است. اگر حساب کاربری ندارید، ابتدا ثبت‌نام کنید.' 
+
+      if (error.message.includes("Invalid login credentials")) {
+        return {
+          isSuccess: false,
+          error:
+            "Incorrect email or password. If you don't have an account, sign up first.",
         };
       }
-      
+
       return { isSuccess: false, error: error.message };
     }
 
-    revalidatePath('/', 'layout');
+    revalidatePath("/", "layout");
     return { isSuccess: true, error: null };
   } catch {
     return {
       isSuccess: false,
       error:
-        'Something went wrong while logging in. Please check your internet connection and try again.',
+        "Something went wrong while logging in. Please check your internet connection and try again.",
     };
   }
 }
