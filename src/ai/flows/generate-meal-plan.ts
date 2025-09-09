@@ -106,14 +106,71 @@ async function generateDailyMealPlan(
     )
     .join("\n");
 
-  const prompt = `Create ${mealTargets.length} meals for ${dayOfWeek}:
+  const allergiesText = preferences.allergies && preferences.allergies.length > 0 
+    ? preferences.allergies.join(", ") 
+    : "None";
+  
+  const medicalConditionsText = preferences.medicalConditions && preferences.medicalConditions.length > 0 
+    ? preferences.medicalConditions.join(", ") 
+    : "None";
 
+  const preferredCuisinesText = preferences.preferredCuisines && preferences.preferredCuisines.length > 0 
+    ? preferences.preferredCuisines.join(", ") 
+    : "None";
+  
+  const dispreferredCuisinesText = preferences.dispreferredCuisines && preferences.dispreferredCuisines.length > 0 
+    ? preferences.dispreferredCuisines.join(", ") 
+    : "None";
+
+
+  const targetedMicronutrientsText = preferences.targetedMicronutrients && preferences.targetedMicronutrients.length > 0 
+    ? preferences.targetedMicronutrients.join(", ") 
+    : "None";
+
+  const medicationsText = preferences.medications && preferences.medications.length > 0 
+    ? preferences.medications.join(", ") 
+    : "None";
+
+  const prompt = `Act like an expert nutritionist, meal planner, and macro-tracking specialist. Your goal is to create ${mealTargets.length} meals for ${dayOfWeek} that match the specified macro targets exactly. No approximations are allowed. Totals must be mathematically exact.
+
+TARGETS FOR EACH MEAL (MUST MATCH EXACTLY)
 ${mealTargetsString}
 
-${preferences.preferredDiet ? `Diet: ${preferences.preferredDiet}` : ""}
-${preferences.allergies && preferences.allergies.length > 0 ? `Avoid: ${preferences.allergies.join(", ")}` : ""}
+USER PREFERENCES & RESTRICTIONS
+- Preferred diet: ${preferences.preferredDiet || "None specified"}
+- Preferred cuisines: ${preferredCuisinesText}
+- Avoid cuisines: ${dispreferredCuisinesText}
+- Allergies: ${allergiesText}
+- Medical conditions: ${medicalConditionsText}
+- Targeted micronutrients: ${targetedMicronutrientsText}
+- Medications: ${medicationsText}
 
-Create delicious meals with creative dish names. Include amounts in ingredient names.
+RAW & REALISTIC RULES
+1. Prefer raw, uncooked ingredients: if an ingredient is normally consumed raw, use the format "Ingredient (raw)". Example: "carrot (raw)".  
+2. For ingredients usually consumed cooked, use the closest raw form if it exists; otherwise use the regular ingredient without "(raw)". Example: "potato (raw)" or "chicken breast (raw)".  
+3. Units and weights refer to the raw or natural weight of the ingredient.  
+4. Allow a mix of raw and non-raw ingredients as appropriate for realistic meals.
+
+STEP-BY-STEP PROCESS FOR EACH MEAL
+1. Candidate selection:
+   a. Select 4–8 ingredients based on dietary preferences, avoidances, and allergens. Include a protein source, a carbohydrate source, a fat source, and vegetables/fruits as needed.
+2. Data lookup:
+   a. For each ingredient, fetch authoritative nutrition data per 100 g (calories, protein, carbs, fat) from USDA FoodData Central or equivalent.
+3. Mathematical setup:
+   a. Let w_i be grams for ingredient i. Set up equations to exactly match target calories, protein, carbs, and fat:
+      - sum_i (cal_per100_i * w_i / 100) = target_calories
+      - sum_i (prot_per100_i * w_i / 100) = target_protein
+      - sum_i (carb_per100_i * w_i / 100) = target_carbs
+      - sum_i (fat_per100_i * w_i / 100) = target_fat
+   b. Solve exactly; if underdetermined, prioritize protein, then carbs/fat, keeping non-negative weights.
+4. Precision:
+   a. Keep fractional gram weights (up to 4 decimals or more) for exact arithmetic. Only round in final JSON to match totals exactly.
+5. Verification:
+   a. Compute each ingredient's macros and sum totals. Totals MUST match targets exactly.
+6. JSON output:
+   a. Use only this format. Include per-ingredient macros and totals. All numeric fields must sum exactly to targets.
+
+Create delicious meals with creative dish names that respect all dietary preferences and restrictions. Each meal should be unique and varied for the week.
 
 JSON format:
 {
@@ -124,7 +181,9 @@ ${mealTargets
       "meal_title": "Creative dish name for ${target.mealName}",
       "ingredients": [
         {
-          "name": "ingredient (amount)",
+          "name": "Ingredient Name (raw)",
+          "amount": number,
+          "unit": "g",
           "calories": number,
           "protein": number,
           "carbs": number,
@@ -141,7 +200,17 @@ ${mealTargets
   )
   .join("\n")}
   ]
-}`;
+}
+
+FINAL RULES
+- JSON must be the only output. No text outside JSON.  
+- Ingredient names must include "(raw)" only if appropriate.  
+- Totals must equal targets exactly. Use fractional grams if needed.  
+- Always provide detailed step-by-step cooking instructions in the "instructions" field.  
+- If exact solution is impossible, provide the best exact rational solution with totals matching targets if mathematically achievable.
+- Each meal should be unique and varied for the week.
+- Respect all dietary preferences, restrictions, and medical conditions.
+- IMPORTANT: Pay special attention to preferred cuisines and dietary restrictions. If user has specific cuisine preferences, create meals that reflect those cuisines.`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -155,15 +224,15 @@ ${mealTargets
         {
           role: "system",
           content:
-            "You are a world-class nutritionist and innovative chef. Always respond with valid JSON only, no additional text or formatting.",
+            "You are a nutrition expert. Your ONLY job is to create meals where the total calories, protein, carbs, and fat EXACTLY match the target numbers provided. Calculate each ingredient's macros and adjust quantities until the totals equal the targets. Your response must be valid JSON only.",
         },
         {
           role: "user",
           content: prompt,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 4000,
+      temperature: 1,
+      max_tokens: 16384,
     }),
   });
 
@@ -241,12 +310,24 @@ async function generatePersonalizedMealPlanFlow(
       input.dispreferrred_ingredients || input.dispreferredIngredients || [],
     preferredIngredients:
       input.preferred_ingredients || input.preferredIngredients || [],
-    preferredCuisines: input.preferredCuisines || [],
-    dispreferredCuisines: input.dispreferredCuisines || [],
+    preferredCuisines: input.preferred_cuisines || input.preferredCuisines || [],
+    dispreferredCuisines: input.dispreferrred_cuisines || input.dispreferredCuisines || [],
     medicalConditions:
       input.medical_conditions || input.medicalConditions || [],
     medications: input.medications || [],
+    targetedMicronutrients: input.preferred_micronutrients || input.preferredMicronutrients || [],
   };
+
+  // Debug logging
+  console.log("🔍 DEBUG: Full input received:", JSON.stringify(input, null, 2));
+  console.log("🔍 DEBUG: Available input keys:", Object.keys(input));
+  console.log("🔍 DEBUG: Cuisine fields check:", {
+    preferred_cuisines: input.preferred_cuisines,
+    preferredCuisines: input.preferredCuisines,
+    dispreferrred_cuisines: input.dispreferrred_cuisines,
+    dispreferredCuisines: input.dispreferredCuisines
+  });
+  console.log("🔍 DEBUG: Extracted preferences:", JSON.stringify(preferences, null, 2));
 
   // Generate all 7 days with enhanced creativity prompts
   for (let dayIndex = 0; dayIndex < daysOfWeek.length; dayIndex++) {
@@ -298,7 +379,7 @@ async function generatePersonalizedMealPlanFlow(
             `❌ Some meals missing ingredients for ${dayOfWeek}, retrying...`,
           );
           dailyOutput = null;
-          throw new Error(`Missing ingredients for ${dayOfWeek}`);
+          throw new Error(`AI generated meals with missing ingredients for ${dayOfWeek}`);
         }
 
         console.log(
@@ -320,17 +401,13 @@ async function generatePersonalizedMealPlanFlow(
       }
     }
 
-    // Enhanced fallback with dynamic variety
+    // No fallback - all data must come from AI
     if (
       !dailyOutput?.meals ||
       dailyOutput.meals.length !== input.mealTargets.length
     ) {
-      console.warn(`🔧 Creating enhanced fallback meals for ${dayOfWeek}`);
-      dailyOutput = createEnhancedFallbackMeals(
-        input.mealTargets,
-        dayOfWeek,
-        dayIndex,
-      );
+      console.error(`❌ AI failed to generate meals for ${dayOfWeek}`);
+      throw new Error(`AI failed to generate meals for ${dayOfWeek}`);
     }
 
     // Process and validate meals with better error handling
@@ -345,13 +422,15 @@ async function generatePersonalizedMealPlanFlow(
         mealFromAI.ingredients &&
         mealFromAI.ingredients.length > 0
       ) {
-        // Enhanced ingredient processing
+        // Enhanced ingredient processing with proper rounding
         const sanitizedIngredients = mealFromAI.ingredients.map((ing: any) => ({
           name: ing.name || "Ingredient",
-          calories: Math.round((Number(ing.calories) || 0) * 100) / 100,
-          protein: Math.round((Number(ing.protein) || 0) * 100) / 100,
-          carbs: Math.round((Number(ing.carbs) || 0) * 100) / 100,
-          fat: Math.round((Number(ing.fat) || 0) * 100) / 100,
+          quantity: Math.round(Number(ing.amount) || 0),
+          unit: ing.unit || "g",
+          calories: Math.round(Number(ing.calories) || 0),
+          protein: Math.round((Number(ing.protein) || 0) * 10) / 10,
+          carbs: Math.round((Number(ing.carbs) || 0) * 10) / 10,
+          fat: Math.round((Number(ing.fat) || 0) * 10) / 10,
         }));
 
         const mealTotals = sanitizedIngredients.reduce(
@@ -386,10 +465,9 @@ async function generatePersonalizedMealPlanFlow(
           total_fat: actualMacros.fat,
         });
       } else {
-        // Enhanced placeholder meal
-        processedMeals.push(
-          createEnhancedPlaceholderMeal(targetMeal, dayOfWeek, mealIndex),
-        );
+        // No fallback - throw error if AI doesn't provide valid meal
+        console.error(`❌ AI failed to generate valid meal ${mealIndex + 1} for ${dayOfWeek}`);
+        throw new Error(`AI failed to generate valid meal ${mealIndex + 1} for ${dayOfWeek}`);
       }
     }
 
@@ -440,141 +518,7 @@ async function generatePersonalizedMealPlanFlow(
   };
 }
 
-// Enhanced fallback meals with dynamic variety
-function createEnhancedFallbackMeals(
-  mealTargets: any[],
-  dayOfWeek: string,
-  dayIndex: number,
-): any {
-  console.log(`🔧 Creating enhanced fallback meals for ${dayOfWeek}`);
 
-  const cuisines = [
-    "West African",
-    "Malaysian",
-    "Colombian",
-    "Tunisian",
-    "Korean",
-    "Argentinian",
-    "Russian",
-  ];
-  const cuisine = cuisines[dayIndex % cuisines.length];
-
-  const fallbackMeals = mealTargets.map((target, index) => {
-    // Calculate precise ingredient distributions to meet exact macros
-    const proteinFromProteinSource = target.protein * 0.8;
-    const proteinFromOtherSources = target.protein * 0.2;
-
-    const carbsFromCarbSource = target.carbs * 0.85;
-    const carbsFromOtherSources = target.carbs * 0.15;
-
-    const fatFromFatSource = target.fat * 0.75;
-    const fatFromOtherSources = target.fat * 0.25;
-
-    return {
-      meal_title: `${cuisine} Inspired ${target.mealName}`,
-      ingredients: [
-        {
-          name: `${cuisine} Protein Source (120g)`,
-          calories: Math.round(
-            proteinFromProteinSource * 4 + fatFromOtherSources * 0.4 * 9,
-          ),
-          protein: Math.round(proteinFromProteinSource * 100) / 100,
-          carbs: Math.round(carbsFromOtherSources * 0.1 * 100) / 100,
-          fat: Math.round(fatFromOtherSources * 0.4 * 100) / 100,
-        },
-        {
-          name: `${cuisine} Carbohydrate Source (80g)`,
-          calories: Math.round(
-            carbsFromCarbSource * 4 + proteinFromOtherSources * 0.6 * 4,
-          ),
-          protein: Math.round(proteinFromOtherSources * 0.6 * 100) / 100,
-          carbs: Math.round(carbsFromCarbSource * 100) / 100,
-          fat: Math.round(fatFromOtherSources * 0.2 * 100) / 100,
-        },
-        {
-          name: `${cuisine} Healthy Fat (15g)`,
-          calories: Math.round(fatFromFatSource * 9),
-          protein: Math.round(proteinFromOtherSources * 0.1 * 100) / 100,
-          carbs: Math.round(carbsFromOtherSources * 0.1 * 100) / 100,
-          fat: Math.round(fatFromFatSource * 100) / 100,
-        },
-        {
-          name: `${cuisine} Vegetables (100g)`,
-          calories: Math.round(carbsFromOtherSources * 0.7 * 4),
-          protein: Math.round(proteinFromOtherSources * 0.3 * 100) / 100,
-          carbs: Math.round(carbsFromOtherSources * 0.7 * 100) / 100,
-          fat: Math.round(fatFromOtherSources * 0.3 * 100) / 100,
-        },
-        {
-          name: `${cuisine} Seasoning (5g)`,
-          calories: Math.round(carbsFromOtherSources * 0.1 * 4),
-          protein: 0,
-          carbs: Math.round(carbsFromOtherSources * 0.1 * 100) / 100,
-          fat: Math.round(fatFromOtherSources * 0.1 * 100) / 100,
-        },
-      ],
-    };
-  });
-
-  return { meals: fallbackMeals };
-}
-
-// Enhanced placeholder meal
-function createEnhancedPlaceholderMeal(
-  targetMeal: any,
-  dayOfWeek: string,
-  mealIndex: number,
-): AIGeneratedMeal {
-  const creativeCuisines = [
-    "Ethiopian",
-    "Vietnamese",
-    "Peruvian",
-    "Moroccan",
-    "Japanese",
-    "Brazilian",
-    "Indian",
-  ];
-  const cuisine = creativeCuisines[mealIndex % creativeCuisines.length];
-
-  return {
-    meal_name: targetMeal.mealName,
-    meal_title: `${cuisine} ${targetMeal.mealName}`,
-    ingredients: [
-      {
-        name: `${cuisine} Protein (150g)`,
-        calories: Math.round(targetMeal.calories * 0.4),
-        protein: Math.round(targetMeal.protein * 0.7),
-        carbs: Math.round(targetMeal.carbs * 0.1),
-        fat: Math.round(targetMeal.fat * 0.3),
-      },
-      {
-        name: `${cuisine} Carbohydrate (1 cup)`,
-        calories: Math.round(targetMeal.calories * 0.4),
-        protein: Math.round(targetMeal.protein * 0.2),
-        carbs: Math.round(targetMeal.carbs * 0.8),
-        fat: Math.round(targetMeal.fat * 0.1),
-      },
-      {
-        name: `${cuisine} Fat Source (2 tbsp)`,
-        calories: Math.round(targetMeal.calories * 0.15),
-        protein: Math.round(targetMeal.protein * 0.1),
-        carbs: Math.round(targetMeal.carbs * 0.1),
-        fat: Math.round(targetMeal.fat * 0.6),
-      },
-      {
-        name: `${cuisine} Vegetable (1 cup)`,
-        calories: Math.round(targetMeal.calories * 0.05),
-        protein: 0,
-        carbs: Math.round(targetMeal.carbs * 0.05),
-        fat: 0,
-      },
-    ],
-    total_calories: targetMeal.calories,
-    total_protein: targetMeal.protein,
-    total_carbs: targetMeal.carbs,
-    total_fat: targetMeal.fat,
-  };
-}
 
 export async function generatePersonalizedMealPlan(
   input: GeneratePersonalizedMealPlanInput,

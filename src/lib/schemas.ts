@@ -1174,10 +1174,13 @@ export const GeneratePersonalizedMealPlanInputSchema = z.object({
   preferredIngredients: z.array(z.string()).nullable().optional(),
   preferredCuisines: z.array(z.string()).nullable().optional(),
   dispreferredCuisines: z.array(z.string()).nullable().optional(),
+  preferred_cuisines: z.array(z.string()).nullable().optional(),
+  dispreferrred_cuisines: z.array(z.string()).nullable().optional(),
   medical_conditions: z.array(z.string()).nullable().optional(),
   medicalConditions: z.array(z.string()).nullable().optional(),
   medications: z.array(z.string()).nullable().optional(),
   preferredMicronutrients: z.array(z.string()).optional(),
+  preferred_micronutrients: z.array(z.string()).nullable().optional(),
   typicalMealsDescription: z.string().optional(),
   mealTargets: z.array(
     z.object({

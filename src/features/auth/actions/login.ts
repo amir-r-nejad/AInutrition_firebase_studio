@@ -26,18 +26,6 @@ export async function loginAction(
     });
 
     if (error) {
-      // Check if error is related to email confirmation
-      if (
-        error.message.includes("email not confirmed") ||
-        error.message.includes("Email not confirmed")
-      ) {
-        return {
-          isSuccess: false,
-          error:
-            "Please verify your email first. A verification link has been sent to your email.",
-        };
-      }
-
       if (error.message.includes("Invalid login credentials")) {
         return {
           isSuccess: false,

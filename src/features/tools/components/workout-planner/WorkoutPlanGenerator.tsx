@@ -22,6 +22,13 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
+// Utility function to safely handle arrays
+const safeArray = (arr: any): any[] => {
+  if (!arr) return [];
+  if (Array.isArray(arr)) return arr;
+  return [arr.toString()];
+};
+
 interface Exercise {
   exerciseName: string;
   targetMuscles: string[];
@@ -526,24 +533,26 @@ export default function WorkoutPlanGenerator({
                                 </div>
 
                                 {/* Target Muscles */}
-                                <div className='mb-4'>
-                                  <p className='text-sm font-medium text-gray-700 mb-2'>
-                                    Target Muscles:
-                                  </p>
-                                  <div className='flex flex-wrap gap-2'>
-                                    {exercise.targetMuscles.map(
-                                      (muscle, idx) => (
-                                        <Badge
-                                          key={idx}
-                                          variant='outline'
-                                          className='border-gray-300'
-                                        >
-                                          {muscle}
-                                        </Badge>
-                                      )
-                                    )}
+                                {safeArray(exercise.targetMuscles).length > 0 && (
+                                  <div className='mb-4'>
+                                    <p className='text-sm font-medium text-gray-700 mb-2'>
+                                      Target Muscles:
+                                    </p>
+                                    <div className='flex flex-wrap gap-2'>
+                                      {safeArray(exercise.targetMuscles).map(
+                                        (muscle, idx) => (
+                                          <Badge
+                                            key={idx}
+                                            variant='outline'
+                                            className='border-gray-300'
+                                          >
+                                            {muscle}
+                                          </Badge>
+                                        )
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
+                                )}
 
                                 <p className='text-gray-700 mb-4 leading-relaxed bg-blue-50 p-3 rounded-lg'>
                                   {exercise.instructions}
@@ -588,7 +597,7 @@ export default function WorkoutPlanGenerator({
 
                                       {isExpanded && (
                                         <div className='mt-4 space-y-3 animate-in slide-in-from-top-2 duration-200'>
-                                          {exercise.alternatives.map(
+                                          {safeArray(exercise.alternatives).map(
                                             (alt, altIdx) => (
                                               <div
                                                 key={altIdx}

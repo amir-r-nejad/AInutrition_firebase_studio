@@ -134,6 +134,13 @@ const exercisePlannerSchema = z.object({
 
 type ExercisePlannerFormData = z.infer<typeof exercisePlannerSchema>;
 
+// Utility function to safely handle arrays
+const safeArray = (arr: any): any[] => {
+  if (!arr) return [];
+  if (Array.isArray(arr)) return arr;
+  return [arr.toString()];
+};
+
 const medicalConditions = [
   "Asthma",
   "Hypertension",
@@ -1694,7 +1701,7 @@ export default function ExercisePlannerPage() {
                       <div className="text-center space-y-2">
                         <div className="text-3xl font-bold text-blue-600">
                           {generatedPlan.weeklyPlan
-                            ? Object.keys(generatedPlan.weeklyPlan).length
+                            ? Object.values(generatedPlan.weeklyPlan).filter((day: any) => day.isWorkoutDay).length
                             : 0}
                         </div>
                         <p className="text-blue-700 font-medium">
@@ -1704,11 +1711,13 @@ export default function ExercisePlannerPage() {
                       <div className="text-center space-y-2">
                         <div className="text-3xl font-bold text-green-600">
                           {generatedPlan.weeklyPlan
-                            ? Object.values(generatedPlan.weeklyPlan).reduce(
-                                (total: number, day: any) =>
-                                  total + (day.duration || 0),
-                                0,
-                              )
+                            ? Object.values(generatedPlan.weeklyPlan)
+                                .filter((day: any) => day.isWorkoutDay)
+                                .reduce(
+                                  (total: number, day: any) =>
+                                    total + (day.duration || 0),
+                                  0,
+                                )
                             : 0}
                         </div>
                         <p className="text-green-700 font-medium">
@@ -1718,19 +1727,21 @@ export default function ExercisePlannerPage() {
                       <div className="text-center space-y-2">
                         <div className="text-3xl font-bold text-purple-600">
                           {generatedPlan.weeklyPlan &&
-                          Object.keys(generatedPlan.weeklyPlan).length > 0
+                          Object.values(generatedPlan.weeklyPlan).filter((day: any) => day.isWorkoutDay).length > 0
                             ? Math.round(
-                                Object.values(generatedPlan.weeklyPlan).reduce(
-                                  (total: number, day: any) =>
-                                    total + (day.duration || 0),
-                                  0,
-                                ) /
-                                  Object.keys(generatedPlan.weeklyPlan).length,
+                                Object.values(generatedPlan.weeklyPlan)
+                                  .filter((day: any) => day.isWorkoutDay)
+                                  .reduce(
+                                    (total: number, day: any) =>
+                                      total + (day.duration || 0),
+                                    0,
+                                  ) /
+                                  Object.values(generatedPlan.weeklyPlan).filter((day: any) => day.isWorkoutDay).length,
                               )
                             : 0}
                         </div>
                         <p className="text-purple-700 font-medium">
-                          Avg Session
+                          Avg Minutes/Workout
                         </p>
                       </div>
                     </div>
@@ -1743,13 +1754,13 @@ export default function ExercisePlannerPage() {
                       .sort(([aKey], [bKey]) => {
                         // Sort days in proper weekly order
                         const dayOrder = [
-                          "Day1",
-                          "Day2",
-                          "Day3",
-                          "Day4",
-                          "Day5",
-                          "Day6",
-                          "Day7",
+                          "Monday",
+                          "Tuesday", 
+                          "Wednesday",
+                          "Thursday",
+                          "Friday",
+                          "Saturday",
+                          "Sunday",
                         ];
                         return dayOrder.indexOf(aKey) - dayOrder.indexOf(bKey);
                       })
@@ -1939,15 +1950,13 @@ export default function ExercisePlannerPage() {
                                                   </div>
                                                 </div>
 
-                                                {exercise.targetMuscles &&
-                                                  exercise.targetMuscles
-                                                    .length > 0 && (
+                                                {safeArray(exercise.targetMuscles).length > 0 && (
                                                     <div className="space-y-2">
                                                       <p className="font-medium text-blue-700">
                                                         Target Muscles:
                                                       </p>
                                                       <div className="flex flex-wrap gap-2">
-                                                        {exercise.targetMuscles.map(
+                                                        {safeArray(exercise.targetMuscles).map(
                                                           (
                                                             muscle: string,
                                                             muscleIdx: number,
@@ -2010,7 +2019,7 @@ export default function ExercisePlannerPage() {
                                                         exerciseKey
                                                       ] && (
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                                          {exercise.alternatives.map(
+                                                          {safeArray(exercise.alternatives).map(
                                                             (
                                                               alt: any,
                                                               altIdx: number,

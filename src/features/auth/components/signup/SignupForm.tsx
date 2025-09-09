@@ -36,7 +36,7 @@ function SignupForm() {
       toast({
         title: 'Sign Up Successful',
         description:
-          'We’ve sent a verification link to your email. Please check your inbox.',
+          'Your account has been created successfully!',
       });
 
       return router.push('/login');
