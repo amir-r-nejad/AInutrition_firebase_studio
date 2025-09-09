@@ -41,150 +41,39 @@ export async function POST(request: NextRequest) {
       .eq("user_id", user.id)
       .single();
 
-    // Optimized Prompt
-    const prompt = `You are a professional fitness trainer tasked with creating a personalized weekly exercise plan in JSON format, tailored to the user's available time per session and ensuring a professional, balanced, and progressive approach.
+    // Simple prompt for exercise plan generation
+    const prompt = `Create a ${preferences.exercise_days_per_week}-day workout plan.
 
-        CRITICAL INSTRUCTIONS:
-        - Return ONLY valid JSON without comments, explanations, or additional text.
-        - Ensure JSON is properly formatted with no trailing commas or syntax errors.
-        - Generate a complete 7-day weekly plan, with workouts distributed across ${preferences.exercise_days_per_week} days, including rest days.
-        - Distribute workout days evenly (e.g., 3 days: Monday, Wednesday, Friday; 4 days: Monday, Tuesday, Thursday, Friday; 5 days: Monday to Friday).
-        - Each workout day must include:
-          - Main exercises: Adjust number based on session duration:
-            - 15-20 min: 3-4 exercises (prioritize compound movements like burpees or squat-to-press for efficiency).
-            - 21-30 min: 4-5 exercises.
-            - 31-45 min: 5-6 exercises.
-            - 46-60 min: 6-8 exercises.
-          - Warm-up: 10-15% of session duration (3-8 minutes total, 1-2 exercises).
-          - Cool-down: 10-15% of session duration (3-5 minutes total, 1-2 exercises).
-          - Total time for warm-up, main workout, and cool-down must not exceed ${preferences.available_time_per_session} minutes.
-        - Each exercise (including sets, reps, and rest) should take 3-5 minutes, calculated as: (sets * (reps time + rest time)).
-        - Avoid repeating the same exercises across different days within the week, unless necessary for the user's goal (e.g., progressive overload for strength).
-        - Exercises must align with:
-          - Fitness level: ${preferences.fitness_level}
-          - Primary goal: ${preferences.primary_goal}
-          - Secondary goal: ${preferences.secondary_goal || "None"}
-          - Available equipment: ${
-            preferences.available_equipment?.join(", ") || "Bodyweight only"
-          }
-          - Space availability: ${preferences.space_availability || "Any space"}
-          - Machines access: ${preferences.machines_access ? "Yes" : "No"}
-          - Medical conditions: ${
-            preferences.existing_medical_conditions?.join(", ") || "None"
-          }
-          - Injuries/limitations: ${
-            preferences.injuries_or_limitations || "None"
-          }
-        - Assign appropriate focus areas (e.g., Upper Body Strength, Lower Body Strength, Core & Cardio, Full Body Circuit, Flexibility & Recovery) for each workout day.
-        - Ensure exercises are safe, considering medical conditions and injuries.
-        - Provide detailed instructions and YouTube search terms for each exercise and at least one alternative.
-        - Include a progression plan to increase intensity over weeks (e.g., increasing reps, sets, or weight).
-        - Include nutrition and recovery tips tailored to the user's goal in the JSON structure.
+User Info:
+- Fitness: ${preferences.fitness_level}
+- Experience: ${preferences.exercise_experience?.join(", ") || "Mixed"}
+- Goal: ${preferences.primary_goal}
+- Time: ${preferences.available_time_per_session} minutes per session
+- Equipment: ${preferences.available_equipment?.join(", ") || "Bodyweight"}
+- Location: ${preferences.exercise_location || "Home"}
+- Medical: ${preferences.existing_medical_conditions?.join(", ") || "None"}
+- Job: ${preferences.job_type || "Active"}
 
-        JSON STRUCTURE:
-        {
-          "weeklyPlan": {
-            "Day1": {
-              "dayName": "Monday",
-              "focus": "Upper Body Strength",
-              "isWorkoutDay": true,
-              "duration": ${preferences.available_time_per_session},
-              "warmup": {
-                "exercises": [
-                  {
-                    "name": "Dynamic Arm Circles",
-                    "duration": ${Math.max(
-                      2,
-                      Math.floor(preferences.available_time_per_session * 0.1),
-                    )},
-                    "instructions": "Stand with feet shoulder-width apart. Extend arms and perform small circles forward for 30 seconds, then backward for 30 seconds."
-                  }
-                ]
-              },
-              "mainWorkout": [
-                {
-                  "exerciseName": "Push-ups",
-                  "targetMuscles": ["Chest", "Shoulders", "Triceps"],
-                  "sets": 3,
-                  "reps": "8-12",
-                  "restSeconds": 60,
-                  "instructions": "Start in a plank position with hands slightly wider than shoulders. Lower your body until your chest nearly touches the floor, then push back up.",
-                  "youtubeSearchTerm": "push ups proper form tutorial beginner",
-                  "estimatedDurationMinutes": 4,
-                  "alternatives": [
-                    {
-                      "name": "Incline Push-ups",
-                      "instructions": "Place hands on an elevated surface like a bench. Perform push-ups with proper form.",
-                      "youtubeSearchTerm": "incline push ups tutorial"
-                    }
-                  ]
-                }
-              ],
-              "cooldown": {
-                "exercises": [
-                  {
-                    "name": "Upper Body Stretches",
-                    "duration": ${Math.max(
-                      2,
-                      Math.floor(preferences.available_time_per_session * 0.1),
-                    )},
-                    "instructions": "Perform chest, shoulder, and arm stretches, holding each for 20-30 seconds."
-                  }
-                ]
-              }
-            },
-            "Day2": {
-              "dayName": "Tuesday",
-              "focus": "Rest",
-              "isWorkoutDay": false,
-              "duration": 0,
-              "warmup": { "exercises": [] },
-              "mainWorkout": [],
-              "cooldown": { "exercises": [] }
-            }
-            // Continue for all 7 days
-          },
-          "progressionTips": [
-            "Week 2: Increase reps by 2-3 per set or add 5-10 seconds to holds.",
-            "Week 3: Increase sets by 1 for 1-2 exercises per session.",
-            "Week 4: Consider adding new exercises or increasing weights/difficulty.",
-            "Track your performance weekly and adjust intensity based on your progress."
-          ],
-          "safetyNotes": [
-            "Always warm up before exercising and cool down afterward.",
-            "Stop immediately if you experience pain or discomfort.",
-            "Maintain proper form over speed or heavy weights.",
-            "Stay hydrated throughout your workout.",
-            "Rest adequately between sets and training days."
-          ],
-          "nutritionTips": [
-            "For ${preferences.primary_goal}: High-protein diet supports muscle growth and recovery.",
-            "Stay hydrated with 2-3 liters of water daily.",
-            "Eat a small meal/snack 1-2 hours before workouts."
-          ],
-          "recoveryTips": [
-            "Aim for 7-8 hours of sleep nightly.",
-            "Incorporate active recovery (e.g., walking) on rest days.",
-            "Use foam rolling or stretching to reduce muscle soreness."
-          ]
-        }
+Create workout plan with exactly ${preferences.exercise_days_per_week} workout days distributed across the week. Rest days for non-workout days.
 
-        USER PREFERENCES:
-        - Exercise days per week: ${preferences.exercise_days_per_week}
-        - Session duration: ${preferences.available_time_per_session} minutes
-        - Preferred time: ${preferences.preferred_time_of_day || "Any time"}
-        - Target muscle groups: ${
-          preferences.muscle_groups_focus?.join(", ") || "All muscle groups"
-        }
-        - Exercise location: ${preferences.exercise_location || "Any location"}
-        - Job type/activity level: ${
-          preferences.job_type || "Moderate activity"
-        }
-        - Current medications: ${
-          preferences.current_medications?.join(", ") || "None"
-        }
+Return JSON only:
 
-        Ensure the plan is complete, balanced, tailored to session duration, and promotes progressive improvement.`;
+{
+  "weeklyPlan": {
+    "Day1": {
+      "dayName": "Monday",
+      "focus": "Upper Body",
+      "isWorkoutDay": true,
+      "duration": 15,
+      "warmup": {"exercises": [{"name": "Arm Circles", "duration": 2, "instructions": "..."}]},
+      "mainWorkout": [{"exerciseName": "Push-ups", "targetMuscles": ["Chest"], "sets": 3, "reps": "8-12", "restSeconds": 60, "instructions": "...", "youtubeSearchTerm": "push ups", "alternatives": [{"name": "Incline Push-ups", "instructions": "..."}]}],
+      "cooldown": {"exercises": [{"name": "Stretches", "duration": 2, "instructions": "..."}]}
+    },
+    "Day2-7": "Continue pattern based on workout days selected"
+  },
+  "progressionTips": ["Increase reps weekly"],
+  "safetyNotes": ["Warm up first"]
+}`;
 
     console.log("Sending request to OpenAI API...");
 
@@ -194,13 +83,12 @@ export async function POST(request: NextRequest) {
 
     while (retryCount <= maxRetries) {
       try {
-        // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
         const response = await openai.chat.completions.create({
-          model: "gpt-5",
+          model: "gpt-4o",
           messages: [
             {
               role: "system",
-              content: "You are a professional fitness trainer tasked with creating personalized weekly exercise plans in JSON format. Your response must be valid JSON only, without any comments, explanations, or additional text."
+              content: "You are a fitness trainer. Create exercise plans in JSON format only. No explanations."
             },
             {
               role: "user",
@@ -208,8 +96,8 @@ export async function POST(request: NextRequest) {
             }
           ],
           response_format: { type: "json_object" },
-          temperature: 0.7,
-          max_tokens: 16384
+          temperature: 1,
+          max_tokens: 16000
         });
 
         generatedPlan = response.choices[0]?.message?.content || "";

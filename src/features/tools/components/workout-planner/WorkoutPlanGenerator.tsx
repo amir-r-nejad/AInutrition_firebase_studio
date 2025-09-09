@@ -110,8 +110,10 @@ export default function WorkoutPlanGenerator({
         primary_goal: profile.exercise_goals?.[0] || 'Build muscle and improve fitness',
         secondary_goal: profile.exercise_goals?.[1] || 'Improve cardiovascular health',
         
-        // Lifestyle & Schedule - Always generate 7-day plan to fix the 5-day display issue
-        exercise_days_per_week: 7,
+        // Lifestyle & Schedule
+        exercise_days_per_week: profile.exercise_frequency === 'daily' ? 7 : 
+                               profile.exercise_frequency === '5-6_days' ? 6 :
+                               profile.exercise_frequency === '3-4_days' ? 4 : 3,
         available_time_per_session: 45, // Default as this field doesn't exist in schema
         preferred_time_of_day: 'Morning', // Default as this field doesn't exist in schema
         
@@ -151,7 +153,7 @@ export default function WorkoutPlanGenerator({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: `Generate a comprehensive ${comprehensivePreferences.exercise_days_per_week}-day English workout plan with complete fitness assessment:
+          prompt: `Generate a ${comprehensivePreferences.exercise_days_per_week}-day workout plan:
 
           BASIC FITNESS INFORMATION:
           - Experience Level: ${comprehensivePreferences.fitness_level}
