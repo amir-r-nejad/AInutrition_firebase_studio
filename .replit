@@ -71,3 +71,4 @@ run = ["sh", "-c", "npm run dev"]
 
 [agent]
 expertMode = true
+integrations = ["javascript_openai:1.0.0"]
