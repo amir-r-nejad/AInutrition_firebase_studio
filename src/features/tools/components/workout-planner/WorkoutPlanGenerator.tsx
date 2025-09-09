@@ -49,6 +49,7 @@ interface DayWorkout {
   dayName: string;
   focus: string;
   duration: number;
+  isWorkoutDay: boolean;
   warmup?: WarmupCooldown;
   mainWorkout: Exercise[];
   cooldown?: WarmupCooldown;
@@ -213,8 +214,9 @@ export default function WorkoutPlanGenerator({
     if (!generatedPlan?.weeklyPlan) return null;
 
     const days = Object.values(generatedPlan.weeklyPlan);
-    const totalWorkouts = days.length;
-    const totalDuration = days.reduce(
+    const workoutDays = days.filter(day => day.isWorkoutDay);
+    const totalWorkouts = workoutDays.length;
+    const totalDuration = workoutDays.reduce(
       (sum, day) => sum + (day.duration || 0),
       0
     );
@@ -389,9 +391,11 @@ export default function WorkoutPlanGenerator({
             </Card>
 
             {/* Weekly Plan Tabs */}
-            <Tabs defaultValue='Day1' className='w-full'>
-              <TabsList className='grid w-full grid-cols-7 bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-2'>
-                {Object.keys(generatedPlan.weeklyPlan).map((dayKey) => {
+            <Tabs defaultValue={Object.keys(generatedPlan.weeklyPlan).find(key => generatedPlan.weeklyPlan[key].isWorkoutDay)} className='w-full'>
+              <TabsList className={`grid w-full bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-2`} style={{ gridTemplateColumns: `repeat(${Object.values(generatedPlan.weeklyPlan).filter(day => day.isWorkoutDay).length}, 1fr)` }}>
+                {Object.keys(generatedPlan.weeklyPlan)
+                  .filter(dayKey => generatedPlan.weeklyPlan[dayKey].isWorkoutDay)
+                  .map((dayKey) => {
                   const day = generatedPlan.weeklyPlan[dayKey];
                   return (
                     <TabsTrigger
@@ -405,7 +409,9 @@ export default function WorkoutPlanGenerator({
                 })}
               </TabsList>
 
-              {Object.entries(generatedPlan.weeklyPlan).map(([dayKey, day]) => (
+              {Object.entries(generatedPlan.weeklyPlan)
+                .filter(([dayKey, day]) => day.isWorkoutDay)
+                .map(([dayKey, day]) => (
                 <TabsContent key={dayKey} value={dayKey} className='mt-6'>
                   <Card className='bg-white/90 backdrop-blur-sm border-green-200 shadow-xl'>
                     <CardHeader className='bg-gradient-to-r from-green-50 to-blue-50 rounded-t-lg'>
