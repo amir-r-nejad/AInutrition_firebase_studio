@@ -142,41 +142,56 @@ function buildPrompt(input: SuggestMealsForMacrosInput): string {
     ? input.dispreferrred_ingredients.join(", ") 
     : "None";
 
-  const prompt = `Act like an expert nutritionist, meal planner, and macro-tracking specialist.
+  const prompt = `Act like an expert nutritionist, meal planner, and macro-tracking specialist. Your goal is to create a ${input.meal_name} meal that matches the specified macro targets exactly. No approximations are allowed. Totals must be mathematically exact.
 
-Your objective is to create a ${input.meal_name} meal that EXACTLY matches the specified macro targets. No approximations are allowed. Totals must be precise.
-
-TARGETS (MUST MATCH EXACTLY):
+TARGETS (MUST MATCH EXACTLY)
 - Calories: ${input.target_calories} kcal
-- Protein: ${input.target_protein_grams}g
-- Carbs: ${input.target_carbs_grams}g
-- Fat: ${input.target_fat_grams}g
+- Protein: ${input.target_protein_grams} g
+- Carbs: ${input.target_carbs_grams} g
+- Fat: ${input.target_fat_grams} g
 
-USER PREFERENCES:
+USER PREFERENCES
 - Preferred cuisines: ${preferredCuisinesText}
 - Avoid cuisines: ${dispreferredCuisinesText}
 - Preferred ingredients: ${preferredIngredientsText}
 - Avoid ingredients: ${dispreferredIngredientsText}
 - Allergies: ${allergiesText}
 
-STEP-BY-STEP INSTRUCTIONS:
-1. Select ingredients that align with user preferences and avoid restricted items or allergens.  
-2. For each ingredient, calculate the exact macros: calories, protein, carbs, and fat.  
-3. Display each ingredient’s macros clearly, both individually and as a “macrosString” field.  
-4. Sum all ingredient macros and compare against the target values.  
-5. If totals do not match EXACTLY, iteratively adjust ingredient quantities until the totals match the target values with no deviations.  
-6. Recalculate after each adjustment and confirm the totals meet the targets precisely.  
-7. Present the final meal in JSON format only, using the following schema:
+RAW & REALISTIC RULES
+1. Prefer raw, uncooked ingredients: if an ingredient is normally consumed raw, use the format "Ingredient (raw)". Example: "carrot (raw)".  
+2. For ingredients usually consumed cooked, use the closest raw form if it exists; otherwise use the regular ingredient without "(raw)". Example: "potato (raw)" or "chicken breast (raw)".  
+3. Units and weights refer to the raw or natural weight of the ingredient.  
+4. Allow a mix of raw and non-raw ingredients as appropriate for realistic meals.
+
+STEP-BY-STEP PROCESS
+1. Candidate selection:
+   a. Select 4–8 ingredients based on preferences, avoidances, and allergens. Include a protein source, a carbohydrate source, a fat source, and vegetables/fruits as needed.
+2. Data lookup:
+   a. For each ingredient, fetch authoritative nutrition data per 100 g (calories, protein, carbs, fat) from USDA FoodData Central or equivalent.
+3. Mathematical setup:
+   a. Let w_i be grams for ingredient i. Set up equations to exactly match target calories, protein, carbs, and fat:
+      - sum_i (cal_per100_i * w_i / 100) = target_calories
+      - sum_i (prot_per100_i * w_i / 100) = target_protein
+      - sum_i (carb_per100_i * w_i / 100) = target_carbs
+      - sum_i (fat_per100_i * w_i / 100) = target_fat
+   b. Solve exactly; if underdetermined, prioritize protein, then carbs/fat, keeping non-negative weights.
+4. Precision:
+   a. Keep fractional gram weights (up to 4 decimals or more) for exact arithmetic. Only round in final JSON to match totals exactly.
+5. Verification:
+   a. Compute each ingredient’s macros and sum totals. Totals MUST match targets exactly.
+6. JSON output:
+   a. Use only this format. Include per-ingredient macros and totals. All numeric fields must sum exactly to targets.
+   b. Example:
 
 {
   "suggestions": [
     {
-      "mealTitle": "Meal Name",
-      "description": "Description of the meal",
+      "mealTitle": "meal name",
+      "description": "Brief description; must state the meal uses raw ingredients where applicable.",
       "ingredients": [
         {
-          "name": "Ingredient",
-          "amount": "100",
+          "name": "Ingredient Name (raw)",
+          "amount": 100,
           "unit": "g",
           "calories": 100,
           "protein": 10,
@@ -193,12 +208,12 @@ STEP-BY-STEP INSTRUCTIONS:
   ]
 }
 
-FINAL REQUIREMENTS:
-- The JSON output must strictly adhere to the schema above.  
-- Totals must equal the targets exactly—no rounding errors.  
-- Do not include explanatory text outside the JSON.  
-
-Take a deep breath and work on this problem step by step.
+FINAL RULES
+- JSON must be the only output. No text outside JSON.  
+- Ingredient names must include "(raw)" only if appropriate.  
+- Totals must equal targets exactly. Use fractional grams if needed.  
+- Do not provide cooking instructions.  
+- If exact solution is impossible, provide the best exact rational solution with totals matching targets if mathematically achievable.
 `;
 
   console.log("Generated prompt for AI:", prompt);

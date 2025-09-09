@@ -892,7 +892,7 @@ export type OnboardingFormValues = z.infer<typeof OnboardingFormSchema>;
 // AI Meal Generation Schemas
 export const IngredientDetailSchema = z.object({
   name: z.string(),
-  amount: z.string(),
+  amount: z.number(),
   unit: z.string(),
   calories: z.number(),
   protein: z.number(),
