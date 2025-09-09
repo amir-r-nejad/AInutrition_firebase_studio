@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
 
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_KEY || "");
+// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("Gemini API Key exists:", !!process.env.NEXT_PUBLIC_GEMINI_KEY);
+    console.log("OpenAI API Key exists:", !!process.env.OPENAI_API_KEY);
 
     const supabase = await createClient();
 
@@ -21,20 +22,17 @@ export async function POST(request: NextRequest) {
 
     const { prompt: userPrompt, preferences } = await request.json();
 
-    // Check if Gemini API key is available
-    if (!process.env.NEXT_PUBLIC_GEMINI_KEY) {
-      console.error("Gemini API key not found");
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.error("OpenAI API key not found");
       return NextResponse.json(
         {
-          error: "Gemini API key not configured",
-          details: "Please set NEXT_PUBLIC_GEMINI_KEY environment variable",
+          error: "OpenAI API key not configured",
+          details: "Please set OPENAI_API_KEY environment variable",
         },
         { status: 500 },
       );
     }
-
-    // Generate content with Gemini
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Get user profile data
     const { data: profileData } = await supabase
@@ -188,7 +186,7 @@ export async function POST(request: NextRequest) {
 
         Ensure the plan is complete, balanced, tailored to session duration, and promotes progressive improvement.`;
 
-    console.log("Sending request to Gemini API...");
+    console.log("Sending request to OpenAI API...");
 
     let generatedPlan = "";
     let retryCount = 0;
@@ -196,9 +194,25 @@ export async function POST(request: NextRequest) {
 
     while (retryCount <= maxRetries) {
       try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        generatedPlan = response.text();
+        // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        const response = await openai.chat.completions.create({
+          model: "gpt-5",
+          messages: [
+            {
+              role: "system",
+              content: "You are a professional fitness trainer tasked with creating personalized weekly exercise plans in JSON format. Your response must be valid JSON only, without any comments, explanations, or additional text."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+          max_tokens: 16384
+        });
+
+        generatedPlan = response.choices[0]?.message?.content || "";
 
         if (generatedPlan && generatedPlan.length > 100) {
           break;
@@ -212,7 +226,7 @@ export async function POST(request: NextRequest) {
           continue;
         }
       } catch (apiError) {
-        console.error("Gemini API error:", apiError);
+        console.error("OpenAI API error:", apiError);
         if (retryCount < maxRetries) {
           console.log(`Retry ${retryCount + 1}: API error, retrying...`);
           retryCount++;
@@ -224,7 +238,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log("Received response from Gemini API");
+    console.log("Received response from OpenAI API");
     console.log("Generated plan length:", generatedPlan.length);
 
     // Clean up the response to extract JSON
@@ -251,9 +265,9 @@ export async function POST(request: NextRequest) {
       }
 
       parsedPlan = JSON.parse(cleanedPlan);
-      console.log("Successfully parsed JSON from Gemini");
+      console.log("Successfully parsed JSON from OpenAI");
     } catch (parseError) {
-      console.error("Failed to parse JSON from Gemini:", parseError);
+      console.error("Failed to parse JSON from OpenAI:", parseError);
       console.log("Raw response length:", generatedPlan.length);
       console.log("Raw response preview:", generatedPlan.substring(0, 500));
 
@@ -565,7 +579,7 @@ export async function POST(request: NextRequest) {
           preferences.available_time_per_session *
           preferences.exercise_days_per_week,
         difficulty_level: preferences.fitness_level,
-        generated_by: "gemini",
+        generated_by: "openai",
         generation_prompt: prompt,
         generation_response: generatedPlan,
         is_active: true,
@@ -590,8 +604,8 @@ export async function POST(request: NextRequest) {
           parsed_plan: parsedPlan,
           generated_at: new Date().toISOString(),
         },
-        gemini_prompt: prompt,
-        gemini_response: generatedPlan,
+        openai_prompt: prompt,
+        openai_response: generatedPlan,
       })
       .eq("user_id", user.id);
 
