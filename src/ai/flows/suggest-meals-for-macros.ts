@@ -8,6 +8,8 @@ import {
   type SuggestMealsForMacrosOutput,
 } from "@/lib/schemas";
 import { getAIApiErrorMessage } from "@/lib/utils";
+import { saveMealSuggestions } from "@/lib/supabase/database/meal-suggestions-service";
+import { getUserProfile } from "@/lib/supabase/data-service";
 
 // OpenAI function for meal suggestions
 async function generateWithOpenAI(
@@ -177,11 +179,15 @@ STEP-BY-STEP PROCESS
    b. Solve exactly; if underdetermined, prioritize protein, then carbs/fat, keeping non-negative weights.
 4. Precision:
    a. Keep fractional gram weights (up to 4 decimals or more) for exact arithmetic. Only round in final JSON to match totals exactly.
+   b. CRITICAL: For each ingredient, calculate calories as: (calories_per_100g * amount_in_grams) / 100
+   c. CRITICAL: For each ingredient, calculate protein as: (protein_per_100g * amount_in_grams) / 100
+   d. CRITICAL: For each ingredient, calculate carbs as: (carbs_per_100g * amount_in_grams) / 100
+   e. CRITICAL: For each ingredient, calculate fat as: (fat_per_100g * amount_in_grams) / 100
 5. Verification:
-   a. Compute each ingredient’s macros and sum totals. Totals MUST match targets exactly.
+   a. Compute each ingredient's macros and sum totals. Totals MUST match targets exactly.
+   b. Double-check: Each ingredient's calories must equal (calories_per_100g * amount_in_grams) / 100
 6. JSON output:
    a. Use only this format. Include per-ingredient macros and totals. All numeric fields must sum exactly to targets.
-   b. Example:
 
 {
   "suggestions": [
@@ -190,14 +196,14 @@ STEP-BY-STEP PROCESS
       "description": "Brief description; must state the meal uses raw ingredients where applicable.",
       "ingredients": [
         {
-          "name": "Ingredient Name (raw)",
-          "amount": 100,
+          "name": "Walnuts (raw)",
+          "amount": 13.16,
           "unit": "g",
-          "calories": 100,
-          "protein": 10,
-          "carbs": 10,
-          "fat": 4,
-          "macrosString": "100 cal, 10g protein, 10g carbs, 4g fat"
+          "calories": 86.13,
+          "protein": 2.00,
+          "carbs": 1.80,
+          "fat": 8.58,
+          "macrosString": "86.13 cal, 2.00g protein, 1.80g carbs, 8.58g fat"
         }
       ],
       "totalCalories": ${input.target_calories},
@@ -215,6 +221,8 @@ FINAL RULES
 - Totals must equal targets exactly. Use fractional grams if needed.  
 - Always provide detailed step-by-step cooking instructions in the "instructions" field.  
 - If exact solution is impossible, provide the best exact rational solution with totals matching targets if mathematically achievable.
+- CRITICAL: Each ingredient's calories, protein, carbs, fat must be calculated as (nutrition_per_100g * amount_in_grams) / 100
+- NEVER use the per-100g values directly as the ingredient values
 `;
 
   console.log("Generated prompt for AI:", prompt);
@@ -367,6 +375,26 @@ export async function suggestMealsForMacros(
       "Final OpenAI suggestions:",
       JSON.stringify(output, null, 2),
     );
+
+    // Save suggestions to database
+    try {
+      const profile = await getUserProfile();
+      if (profile?.user_id) {
+        await saveMealSuggestions(
+          profile.user_id,
+          validatedInput.meal_name ?? "",
+          validatedInput.target_calories,
+          validatedInput.target_protein_grams,
+          validatedInput.target_carbs_grams,
+          validatedInput.target_fat_grams,
+          output
+        );
+        console.log("✅ Meal suggestions saved to database");
+      }
+    } catch (saveError) {
+      console.error("❌ Failed to save meal suggestions to database:", saveError);
+      // Don't throw error here, just log it - the suggestions are still valid
+    }
 
     return output;
   } catch (error: any) {

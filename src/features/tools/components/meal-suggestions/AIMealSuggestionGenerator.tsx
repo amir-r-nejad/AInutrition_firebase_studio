@@ -1,6 +1,7 @@
 'use client';
 
 import { suggestMealsForMacros } from '@/ai/flows/suggest-meals-for-macros';
+import { getMealSuggestions } from '@/lib/supabase/database/meal-suggestions-service';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -41,6 +42,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from 'react';
@@ -70,6 +72,9 @@ function AIMealSuggestionGenerator({
   const [suggestions, setSuggestions] = useState<
     SuggestMealsForMacrosOutput['suggestions']
   >([]);
+  
+  // Track if we've already loaded suggestions for current meal
+  const loadedMealRef = useRef<string | null>(null);
 
   // Derive values from URL query parameters
   const selectedMealName = useMemo(() => {
@@ -82,6 +87,74 @@ function AIMealSuggestionGenerator({
   const targetMacros = useMemo(() => {
     return getCurrentMealParams(selectedMealName);
   }, [getCurrentMealParams, selectedMealName]);
+
+  // Load cached suggestions when meal is selected
+  useEffect(() => {
+    async function loadCachedSuggestions() {
+      if (!selectedMealName || !targetMacros) return;
+      
+      // Prevent loading if we've already loaded suggestions for this meal
+      if (loadedMealRef.current === selectedMealName) return;
+
+      try {
+        const profile = await getUserProfile();
+        if (profile?.user_id) {
+          const existingSuggestions = await getMealSuggestions(profile.user_id, selectedMealName);
+          
+          if (existingSuggestions) {
+            console.log("Found cached suggestions, displaying automatically");
+            const cachedSuggestions = existingSuggestions.suggestions.suggestions;
+            
+            // Calculate correct totals from ingredients and round to whole numbers
+            const correctedSuggestions = cachedSuggestions.map(suggestion => {
+              const calculatedTotals = suggestion.ingredients.reduce(
+                (totals, ingredient) => ({
+                  calories: totals.calories + (ingredient.calories || 0),
+                  protein: totals.protein + (ingredient.protein || 0),
+                  carbs: totals.carbs + (ingredient.carbs || 0),
+                  fat: totals.fat + (ingredient.fat || 0),
+                }),
+                { calories: 0, protein: 0, carbs: 0, fat: 0 }
+              );
+
+              // Round all ingredient values to whole numbers
+              const roundedIngredients = suggestion.ingredients.map(ingredient => ({
+                ...ingredient,
+                amount: Math.round(ingredient.amount || 0),
+                calories: Math.round(ingredient.calories || 0),
+                protein: Math.round(ingredient.protein || 0),
+                carbs: Math.round(ingredient.carbs || 0),
+                fat: Math.round(ingredient.fat || 0),
+                macrosString: `${Math.round(ingredient.calories || 0)} cal, ${Math.round(ingredient.protein || 0)}g protein, ${Math.round(ingredient.carbs || 0)}g carbs, ${Math.round(ingredient.fat || 0)}g fat`
+              }));
+
+              return {
+                ...suggestion,
+                ingredients: roundedIngredients,
+                totalCalories: Math.round(calculatedTotals.calories),
+                totalProtein: Math.round(calculatedTotals.protein),
+                totalCarbs: Math.round(calculatedTotals.carbs),
+                totalFat: Math.round(calculatedTotals.fat),
+              };
+            });
+
+            console.log("Displaying cached suggestions:", JSON.stringify(correctedSuggestions, null, 2));
+            setSuggestions(correctedSuggestions);
+            loadedMealRef.current = selectedMealName; // Mark as loaded
+          } else {
+            // Clear suggestions if no cached data found
+            setSuggestions([]);
+            loadedMealRef.current = selectedMealName; // Mark as loaded even if no data
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load cached suggestions:", error);
+        // Don't show error to user, just log it
+      }
+    }
+
+    loadCachedSuggestions();
+  }, [selectedMealName, targetMacros]); // Include both selectedMealName and targetMacros
 
   // Function to update URL with all target macros
   const updateUrlWithTargets = useCallback(
@@ -197,8 +270,13 @@ function AIMealSuggestionGenerator({
 
       setError(null);
       setSuggestions([]);
+      
+      // Reset the loaded meal ref so cache will be checked again after AI generation
+      loadedMealRef.current = null;
 
       try {
+        // Always generate new AI suggestions (no cache check)
+        console.log("Generating new AI suggestions");
         const profile = await getUserProfile();
         const aiInput = prepareAiMealInput({ targetMacros, profile });
         const data = await suggestMealsForMacros(aiInput);
