@@ -25,7 +25,24 @@ export async function loginAction(
       password,
     });
 
-    if (error) return { isSuccess: false, error: error.message };
+    if (error) {
+      // Check if error is related to email confirmation
+      if (error.message.includes('email not confirmed') || error.message.includes('Email not confirmed')) {
+        return { 
+          isSuccess: false, 
+          error: 'لطفاً ابتدا ایمیل خود را تأیید کنید. لینک تأیید به ایمیل شما ارسال شده است.' 
+        };
+      }
+      
+      if (error.message.includes('Invalid login credentials')) {
+        return { 
+          isSuccess: false, 
+          error: 'ایمیل یا پسورد اشتباه است. اگر حساب کاربری ندارید، ابتدا ثبت‌نام کنید.' 
+        };
+      }
+      
+      return { isSuccess: false, error: error.message };
+    }
 
     revalidatePath('/', 'layout');
     return { isSuccess: true, error: null };

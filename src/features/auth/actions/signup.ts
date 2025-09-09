@@ -22,7 +22,16 @@ export async function signupAction(
     const supabase = await createClient();
     const { error } = await supabase.auth.signUp({ email, password });
 
-    if (error) return { isSuccess: false, userError: error.message };
+    if (error) {
+      if (error.message.includes('User already registered')) {
+        return { 
+          isSuccess: false, 
+          userError: 'این ایمیل قبلاً ثبت‌نام شده است. اگر پسورد را فراموش کرده‌اید، از گزینه "فراموشی پسورد" استفاده کنید یا با همین اطلاعات وارد شوید.' 
+        };
+      }
+      
+      return { isSuccess: false, userError: error.message };
+    }
 
     revalidatePath('/', 'layout');
     return { isSuccess: true, userError: null };
