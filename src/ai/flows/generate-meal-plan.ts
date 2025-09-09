@@ -489,7 +489,7 @@ async function generatePersonalizedMealPlanFlow(
         calories: Math.round(dailyTotals.calories * 100) / 100,
         protein: Math.round(dailyTotals.protein * 100) / 100,
         carbs: Math.round(dailyTotals.carbs * 100) / 100,
-        fat: Math.round(dailyTotals.fat * 0.1) / 100,
+        fat: Math.round(dailyTotals.fat * 100) / 100,
       },
     });
 
