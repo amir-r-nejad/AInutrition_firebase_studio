@@ -54,7 +54,17 @@ User Info:
 - Medical: ${preferences.existing_medical_conditions?.join(", ") || "None"}
 - Job: ${preferences.job_type || "Active"}
 
-Create workout plan with exactly ${preferences.exercise_days_per_week} workout days distributed across the week. Rest days for non-workout days.
+CRITICAL REQUIREMENT: 
+- If user wants ${preferences.exercise_days_per_week} workout days, create EXACTLY ${preferences.exercise_days_per_week} days with isWorkoutDay: true
+- For 7 workout days: Monday through Sunday ALL must be workout days (isWorkoutDay: true)
+- For 6 workout days: 6 days workout, 1 rest day  
+- For 5 workout days: 5 days workout, 2 rest days
+- For 4 workout days: 4 days workout, 3 rest days
+- For 3 workout days: 3 days workout, 4 rest days
+- For 2 workout days: 2 days workout, 5 rest days  
+- For 1 workout day: 1 day workout, 6 rest days
+
+Current request: ${preferences.exercise_days_per_week} workout days = ${preferences.exercise_days_per_week} days must have isWorkoutDay: true
 
 Return JSON only:
 
@@ -69,7 +79,12 @@ Return JSON only:
       "mainWorkout": [{"exerciseName": "Push-ups", "targetMuscles": ["Chest"], "sets": 3, "reps": "8-12", "restSeconds": 60, "instructions": "...", "youtubeSearchTerm": "push ups", "alternatives": [{"name": "Incline Push-ups", "instructions": "..."}]}],
       "cooldown": {"exercises": [{"name": "Stretches", "duration": 2, "instructions": "..."}]}
     },
-    "Day2-7": "Continue pattern based on workout days selected"
+    "Day2": {"dayName": "Tuesday", "focus": "Lower Body", "isWorkoutDay": true, "duration": 15, ...},
+    "Day3": {"dayName": "Wednesday", "focus": "Core", "isWorkoutDay": true, "duration": 15, ...},
+    "Day4": {"dayName": "Thursday", "focus": "Full Body", "isWorkoutDay": true, "duration": 15, ...},
+    "Day5": {"dayName": "Friday", "focus": "Upper Body", "isWorkoutDay": true, "duration": 15, ...},
+    "Day6": {"dayName": "Saturday", "focus": "Cardio", "isWorkoutDay": true, "duration": 15, ...},
+    "Day7": {"dayName": "Sunday", "focus": "Active Recovery", "isWorkoutDay": true, "duration": 15, ...}
   },
   "progressionTips": ["Increase reps weekly"],
   "safetyNotes": ["Warm up first"]
@@ -154,6 +169,50 @@ Return JSON only:
 
       parsedPlan = JSON.parse(cleanedPlan);
       console.log("Successfully parsed JSON from OpenAI");
+
+      // Validate workout day count and fix if incorrect
+      if (parsedPlan?.weeklyPlan) {
+        const workoutDays = Object.values(parsedPlan.weeklyPlan).filter((day: any) => day.isWorkoutDay);
+        const expectedWorkoutDays = preferences.exercise_days_per_week;
+        
+        console.log(`Expected workout days: ${expectedWorkoutDays}, Got: ${workoutDays.length}`);
+        
+        if (workoutDays.length !== expectedWorkoutDays) {
+          console.log("Workout day count mismatch, fixing...");
+          
+          // Fix the isWorkoutDay flags to match the expected count
+          const dayKeys = Object.keys(parsedPlan.weeklyPlan);
+          for (let i = 0; i < dayKeys.length; i++) {
+            const dayKey = dayKeys[i];
+            if (i < expectedWorkoutDays) {
+              // This should be a workout day
+              parsedPlan.weeklyPlan[dayKey].isWorkoutDay = true;
+              if (parsedPlan.weeklyPlan[dayKey].duration === 0) {
+                parsedPlan.weeklyPlan[dayKey].duration = preferences.available_time_per_session;
+              }
+              if (!parsedPlan.weeklyPlan[dayKey].mainWorkout || parsedPlan.weeklyPlan[dayKey].mainWorkout.length === 0) {
+                parsedPlan.weeklyPlan[dayKey].focus = parsedPlan.weeklyPlan[dayKey].focus !== "Rest" ? parsedPlan.weeklyPlan[dayKey].focus : "Full Body";
+                parsedPlan.weeklyPlan[dayKey].mainWorkout = [{
+                  exerciseName: "Bodyweight Exercise",
+                  targetMuscles: ["Full Body"],
+                  sets: 3,
+                  reps: "8-12",
+                  restSeconds: 60,
+                  instructions: "Perform bodyweight exercises appropriate for your fitness level.",
+                  youtubeSearchTerm: "bodyweight workout",
+                  alternatives: [{ name: "Modified version", instructions: "Reduce intensity as needed" }]
+                }];
+              }
+            } else {
+              // This should be a rest day
+              parsedPlan.weeklyPlan[dayKey].isWorkoutDay = false;
+              parsedPlan.weeklyPlan[dayKey].duration = 0;
+              parsedPlan.weeklyPlan[dayKey].focus = "Rest";
+              parsedPlan.weeklyPlan[dayKey].mainWorkout = [];
+            }
+          }
+        }
+      }
     } catch (parseError) {
       console.error("Failed to parse JSON from OpenAI:", parseError);
       console.log("Raw response length:", generatedPlan.length);
