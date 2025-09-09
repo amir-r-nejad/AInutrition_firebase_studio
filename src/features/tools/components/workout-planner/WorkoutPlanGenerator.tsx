@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BaseProfileData } from '@/lib/schemas';
+import { UserProfile } from '@/lib/schemas';
 import {
   Activity,
   Award,
@@ -64,7 +64,7 @@ interface AIGeneratedPlan {
 }
 
 interface WorkoutPlanGeneratorProps {
-  profile: BaseProfileData | null;
+  profile: UserProfile | null;
 }
 
 export default function WorkoutPlanGenerator({
@@ -96,6 +96,40 @@ export default function WorkoutPlanGenerator({
     setIsGenerating(true);
 
     try {
+      // Comprehensive preferences based on user profile and fitness information
+      const comprehensivePreferences = {
+        // Basic Fitness Information
+        fitness_level: profile.typical_exercise_intensity || 'moderate',
+        exercise_experience: profile.preferred_exercise_types || ['Mixed'],
+        
+        // Health & Medical Information
+        existing_medical_conditions: profile.medical_conditions || [],
+        injuries_or_limitations: profile.injuries?.join(', ') || '',
+        
+        // Fitness Goals
+        primary_goal: profile.exercise_goals?.[0] || 'Build muscle and improve fitness',
+        secondary_goal: profile.exercise_goals?.[1] || 'Improve cardiovascular health',
+        
+        // Lifestyle & Schedule
+        exercise_days_per_week: profile.exercise_frequency === 'daily' ? 7 : 
+                               profile.exercise_frequency === '5-6_days' ? 5 :
+                               profile.exercise_frequency === '3-4_days' ? 3 : 7,
+        available_time_per_session: 45, // Default as this field doesn't exist in schema
+        preferred_time_of_day: 'Morning', // Default as this field doesn't exist in schema
+        
+        // Equipment & Space
+        exercise_location: 'Home', // Default as this field doesn't exist in schema
+        available_equipment: profile.equipment_access || ['Bodyweight'],
+        machines_access: profile.equipment_access?.includes('gym_membership') || false,
+        space_availability: 'Small space', // Default as this field doesn't exist in schema
+        
+        // Preferences & Tracking
+        preferred_difficulty_level: profile.typical_exercise_intensity || 'moderate',
+        job_type: profile.physical_activity_level || 'moderate',
+        daily_step_count: 5000, // Default as this field doesn't exist in schema
+        sleep_quality: 'Good', // Default as this field doesn't exist in schema
+      };
+
       // First save preferences
       const preferencesResponse = await fetch(
         '/api/exercise-planner/save-preferences',
@@ -104,19 +138,7 @@ export default function WorkoutPlanGenerator({
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            fitness_level: profile.workout_experience || 'Beginner',
-            exercise_experience: [profile.preferred_workout_type || 'Mixed'],
-            primary_goal: 'Build muscle',
-            exercise_days_per_week: 3,
-            available_time_per_session: 30,
-            exercise_location: 'Gym',
-            available_equipment: ['Dumbbells'],
-            existing_medical_conditions: [],
-            injuries_or_limitations: '',
-            job_type: profile.physical_activity_level || 'Moderate',
-            preferred_difficulty_level: 'Medium',
-          }),
+          body: JSON.stringify(comprehensivePreferences),
         }
       );
 
@@ -124,25 +146,47 @@ export default function WorkoutPlanGenerator({
         throw new Error('Failed to save preferences');
       }
 
-      // Generate AI exercise plan
+      // Generate AI exercise plan with comprehensive prompt including all fitness information categories
       const generateResponse = await fetch('/api/exercise-planner/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: `Generate a comprehensive 7-day English workout plan for:
-          - Experience: ${profile.workout_experience || 'Beginner'}
-          - Goal: Build muscle and improve fitness
+          prompt: `Generate a comprehensive ${comprehensivePreferences.exercise_days_per_week}-day English workout plan with complete fitness assessment:
+
+          BASIC FITNESS INFORMATION:
+          - Experience Level: ${comprehensivePreferences.fitness_level}
+          - Exercise Background: ${comprehensivePreferences.exercise_experience.join(', ')}
           - Age: ${profile.age || 25}
-          - Activity Level: ${profile.physical_activity_level || 'Moderate'}
-          - Preferred Type: ${profile.preferred_workout_type || 'Mixed'}`,
-          preferences: {
-            fitness_level: profile.workout_experience || 'Beginner',
-            primary_goal: 'Build muscle',
-            exercise_days_per_week: 7,
-            available_time_per_session: 45,
-          },
+          - Physical Activity Level: ${comprehensivePreferences.job_type}
+          - Daily Steps: ${comprehensivePreferences.daily_step_count}
+
+          HEALTH & MEDICAL INFORMATION:
+          - Medical Conditions: ${comprehensivePreferences.existing_medical_conditions.length > 0 ? comprehensivePreferences.existing_medical_conditions.join(', ') : 'None'}
+          - Injuries/Limitations: ${comprehensivePreferences.injuries_or_limitations || 'None'}
+          - Sleep Quality: ${comprehensivePreferences.sleep_quality}
+
+          FITNESS GOALS:
+          - Primary Goal: ${comprehensivePreferences.primary_goal}
+          - Secondary Goal: ${comprehensivePreferences.secondary_goal}
+          - Preferred Intensity: ${comprehensivePreferences.preferred_difficulty_level}
+
+          LIFESTYLE & SCHEDULE:
+          - Workout Days Per Week: ${comprehensivePreferences.exercise_days_per_week}
+          - Available Time Per Session: ${comprehensivePreferences.available_time_per_session} minutes
+          - Preferred Time: ${comprehensivePreferences.preferred_time_of_day}
+
+          EQUIPMENT & SPACE:
+          - Exercise Location: ${comprehensivePreferences.exercise_location}
+          - Available Equipment: ${comprehensivePreferences.available_equipment.join(', ')}
+          - Gym/Machines Access: ${comprehensivePreferences.machines_access ? 'Yes' : 'No'}
+          - Space Availability: ${comprehensivePreferences.space_availability}
+
+          PREFERENCES & TRACKING:
+          - Difficulty Level: ${comprehensivePreferences.preferred_difficulty_level}
+          - Workout Type Preference: ${comprehensivePreferences.exercise_experience.join(', ')}`,
+          preferences: comprehensivePreferences,
         }),
       });
 
@@ -223,7 +267,7 @@ export default function WorkoutPlanGenerator({
                     variant='secondary'
                     className='bg-green-100 text-green-800 px-3 py-1 font-semibold'
                   >
-                    {profile.workout_experience || 'Beginner'}
+                    {profile.typical_exercise_intensity || 'Beginner'}
                   </Badge>
                 </div>
                 <div className='text-center p-4 bg-white/70 rounded-lg backdrop-blur-sm shadow-md'>
@@ -237,7 +281,7 @@ export default function WorkoutPlanGenerator({
                     variant='secondary'
                     className='bg-blue-100 text-blue-800 px-3 py-1 font-semibold'
                   >
-                    {profile.preferred_workout_type || 'Mixed'}
+                    {profile.preferred_exercise_types?.[0] || 'Mixed'}
                   </Badge>
                 </div>
                 <div className='text-center p-4 bg-white/70 rounded-lg backdrop-blur-sm shadow-md'>
