@@ -20,20 +20,9 @@ export async function loginAction(
     const supabase = await createClient();
     const { email, password } = formData;
 
-    console.log('Attempting login with:', { email, password: '[REDACTED]' });
-    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('Using anon key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 20) + '...');
-
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
-    });
-
-    console.log('Login response:', { 
-      userId: data?.user?.id, 
-      userEmail: data?.user?.email,
-      emailConfirmed: data?.user?.email_confirmed_at,
-      error: error?.message 
     });
 
     if (error) {

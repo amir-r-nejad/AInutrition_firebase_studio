@@ -20,12 +20,7 @@ export async function signupAction(
     const { email, password } = formData;
 
     const supabase = await createClient();
-    
-    console.log('Attempting signup with:', { email, password: '[REDACTED]' });
-    
     const { data, error } = await supabase.auth.signUp({ email, password });
-    
-    console.log('Signup response:', { data: data?.user?.id, error: error?.message });
 
     if (error) {
       if (error.message.includes("User already registered")) {
