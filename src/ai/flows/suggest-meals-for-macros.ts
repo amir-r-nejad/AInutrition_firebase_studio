@@ -203,7 +203,8 @@ STEP-BY-STEP PROCESS
       "totalCalories": ${input.target_calories},
       "totalProtein": ${input.target_protein_grams},
       "totalCarbs": ${input.target_carbs_grams},
-      "totalFat": ${input.target_fat_grams}
+      "totalFat": ${input.target_fat_grams},
+      "instructions": "Step-by-step cooking instructions for preparing this meal"
     }
   ]
 }
@@ -212,7 +213,7 @@ FINAL RULES
 - JSON must be the only output. No text outside JSON.  
 - Ingredient names must include "(raw)" only if appropriate.  
 - Totals must equal targets exactly. Use fractional grams if needed.  
-- Do not provide cooking instructions.  
+- Always provide detailed step-by-step cooking instructions in the "instructions" field.  
 - If exact solution is impossible, provide the best exact rational solution with totals matching targets if mathematically achievable.
 `;
 

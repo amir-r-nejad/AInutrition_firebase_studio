@@ -206,7 +206,7 @@ function AIMealSuggestionGenerator({
         console.log("AI Response Data:", JSON.stringify(data, null, 2));
 
         if (data) {
-          // Calculate correct totals from ingredients
+          // Calculate correct totals from ingredients and round to whole numbers
           const correctedSuggestions = data.suggestions.map(suggestion => {
             const calculatedTotals = suggestion.ingredients.reduce(
               (totals, ingredient) => ({
@@ -218,12 +218,24 @@ function AIMealSuggestionGenerator({
               { calories: 0, protein: 0, carbs: 0, fat: 0 }
             );
 
+            // Round all ingredient values to whole numbers
+            const roundedIngredients = suggestion.ingredients.map(ingredient => ({
+              ...ingredient,
+              amount: Math.round(ingredient.amount || 0),
+              calories: Math.round(ingredient.calories || 0),
+              protein: Math.round(ingredient.protein || 0),
+              carbs: Math.round(ingredient.carbs || 0),
+              fat: Math.round(ingredient.fat || 0),
+              macrosString: `${Math.round(ingredient.calories || 0)} cal, ${Math.round(ingredient.protein || 0)}g protein, ${Math.round(ingredient.carbs || 0)}g carbs, ${Math.round(ingredient.fat || 0)}g fat`
+            }));
+
             return {
               ...suggestion,
-              totalCalories: calculatedTotals.calories,
-              totalProtein: calculatedTotals.protein,
-              totalCarbs: calculatedTotals.carbs,
-              totalFat: calculatedTotals.fat,
+              ingredients: roundedIngredients,
+              totalCalories: Math.round(calculatedTotals.calories),
+              totalProtein: Math.round(calculatedTotals.protein),
+              totalCarbs: Math.round(calculatedTotals.carbs),
+              totalFat: Math.round(calculatedTotals.fat),
             };
           });
 
@@ -406,7 +418,7 @@ function AIMealSuggestionGenerator({
                             {ing.unit}
                           </TableCell>
                           <TableCell className='text-right py-1.5'>
-                            {ing.calories.toFixed(0)}
+                            {Math.round(ing.calories)}
                           </TableCell>
                           <TableCell className='text-right py-1.5 whitespace-nowrap'>
                             {ing.macrosString}
@@ -419,10 +431,10 @@ function AIMealSuggestionGenerator({
                 </ScrollArea>
 
                 <div className='text-sm font-semibold p-2 border-t border-muted-foreground/20 bg-muted/40 rounded-b-md'>
-                  Total: {suggestion.totalCalories.toFixed(0)} kcal | Protein:{' '}
-                  {suggestion.totalProtein.toFixed(1)}g | Carbs:{' '}
-                  {suggestion.totalCarbs.toFixed(1)}g | Fat:{' '}
-                  {suggestion.totalFat.toFixed(1)}g
+                  Total: {Math.round(suggestion.totalCalories)} kcal | Protein:{' '}
+                  {Math.round(suggestion.totalProtein)}g | Carbs:{' '}
+                  {Math.round(suggestion.totalCarbs)}g | Fat:{' '}
+                  {Math.round(suggestion.totalFat)}g
                 </div>
 
                 {suggestion.instructions && (

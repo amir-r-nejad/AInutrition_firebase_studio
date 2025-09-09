@@ -68,3 +68,6 @@ waitForPort = 5000
 
 [deployment]
 run = ["sh", "-c", "npm run dev"]
+
+[agent]
+expertMode = true
