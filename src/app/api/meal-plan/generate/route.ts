@@ -2,7 +2,7 @@ import { generatePersonalizedMealPlan } from "@/ai/flows/generate-meal-plan";
 import { getUser } from "@/features/profile/lib/data-services";
 import { NextRequest, NextResponse } from "next/server";
 
-export const maxDuration = 180; // 3 minutes timeout
+export const maxDuration = 300; // 5 minutes timeout
 
 export async function POST(request: NextRequest) {
   try {

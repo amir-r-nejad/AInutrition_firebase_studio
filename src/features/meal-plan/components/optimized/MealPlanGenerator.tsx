@@ -231,9 +231,16 @@ export default function MealPlanGenerator({
         setCurrentStep("generating");
         await new Promise(resolve => setTimeout(resolve, 500)); // Show generating step
         console.log("🤖 API: Calling OpenAI meal plan generation...");
+        
+        // Show progress message to user
+        toast({
+          title: "Generating Meal Plan",
+          description: "This may take up to 5 minutes. Please be patient...",
+          duration: 10000,
+        });
 
         // Enhanced retry logic with exponential backoff
-        const maxRetries = 3;
+        const maxRetries = 2; // Reduced from 3 to 2
         let result: GeneratePersonalizedMealPlanOutput | null = null;
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -245,7 +252,7 @@ export default function MealPlanGenerator({
 
             // Create AbortController for timeout per attempt
             const controller = new AbortController();
-            timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes per attempt
+            timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes per attempt
 
             const response = await fetch("/api/meal-plan/generate", {
               method: "POST",

@@ -237,8 +237,8 @@ FINAL RULES
           content: prompt,
         },
       ],
-      temperature: 1,
-      max_tokens: 16384,
+      temperature: 0.8, // Reduced from 1 to 0.8 for more consistent results
+      max_tokens: 12000, // Reduced from 16384 to 12000 for faster response
     }),
   });
 
@@ -346,7 +346,7 @@ async function generatePersonalizedMealPlanFlow(
 
     let dailyOutput = null;
     let retryCount = 0;
-    const maxRetries = 5;
+    const maxRetries = 3; // Reduced from 5 to 3 to speed up
 
     // Enhanced retry logic with better error handling
     while (retryCount <= maxRetries && !dailyOutput) {
@@ -401,9 +401,9 @@ async function generatePersonalizedMealPlanFlow(
         );
         retryCount++;
         if (retryCount <= maxRetries) {
-          // Exponential backoff
+          // Reduced backoff time
           await new Promise((resolve) =>
-            setTimeout(resolve, 1000 * retryCount),
+            setTimeout(resolve, 500 * retryCount),
           );
         }
       }
