@@ -46,7 +46,6 @@ async function createTable() {
         injuries_or_limitations TEXT,
         current_medications TEXT[],
         current_medications_other TEXT,
-        doctor_clearance BOOLEAN DEFAULT FALSE,
         
         -- Goals
         primary_goal TEXT CHECK (primary_goal IN ('Lose fat', 'Build muscle', 'Increase endurance', 'Flexibility', 'General fitness')),

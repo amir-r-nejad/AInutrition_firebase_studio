@@ -128,7 +128,7 @@ export async function editAiPlan(
 
 export async function loadMealPlan(
   userId?: string,
-): Promise<GeneratePersonalizedMealPlanOutput> {
+): Promise<GeneratePersonalizedMealPlanOutput | null> {
   const supabase = await createClient();
   const targetUserId = userId || (await getUser()).id;
 
@@ -154,7 +154,7 @@ export async function loadMealPlan(
   }
 
   if (!data.ai_plan) {
-    throw new Error("No AI plan generated yet - please generate an AI meal plan first");
+    return null; // Return null instead of throwing error when no AI plan exists
   }
 
   let parsedPlan: GeneratePersonalizedMealPlanOutput;

@@ -150,6 +150,11 @@ RAW & REALISTIC RULES
 2. For ingredients usually consumed cooked, use the closest raw form if it exists; otherwise use the regular ingredient without "(raw)". Example: "potato (raw)" or "chicken breast (raw)".  
 3. Units and weights refer to the raw or natural weight of the ingredient.  
 4. Allow a mix of raw and non-raw ingredients as appropriate for realistic meals.
+5. Use appropriate units for each ingredient:
+   - For spices and seasonings: use "mg", "tsp", "tbsp" (e.g., saffron: "mg", salt: "tsp")
+   - For liquids: use "ml", "cup", "tbsp" (e.g., oil: "ml", milk: "cup")
+   - For solid foods: use "g", "piece", "slice" (e.g., bread: "slice", apple: "piece")
+   - For small quantities: use "mg" or "tsp" (e.g., vanilla extract: "tsp")
 
 STEP-BY-STEP PROCESS FOR EACH MEAL
 1. Candidate selection:
@@ -183,7 +188,7 @@ ${mealTargets
         {
           "name": "Ingredient Name (raw)",
           "amount": number,
-          "unit": "g",
+          "unit": "appropriate unit (g, mg, tsp, tbsp, cup, piece, etc.)",
           "calories": number,
           "protein": number,
           "carbs": number,
@@ -210,7 +215,8 @@ FINAL RULES
 - If exact solution is impossible, provide the best exact rational solution with totals matching targets if mathematically achievable.
 - Each meal should be unique and varied for the week.
 - Respect all dietary preferences, restrictions, and medical conditions.
-- IMPORTANT: Pay special attention to preferred cuisines and dietary restrictions. If user has specific cuisine preferences, create meals that reflect those cuisines.`;
+- IMPORTANT: Pay special attention to preferred cuisines and dietary restrictions. If user has specific cuisine preferences, create meals that reflect those cuisines.
+- CRITICAL: Each meal MUST contain 4-8 ingredients minimum. Never create single-ingredient meals.`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -321,7 +327,9 @@ async function generatePersonalizedMealPlanFlow(
   // Debug logging
   console.log("🔍 DEBUG: Full input received:", JSON.stringify(input, null, 2));
   console.log("🔍 DEBUG: Available input keys:", Object.keys(input));
-  console.log("🔍 DEBUG: Cuisine fields check:", {
+  console.log("🔍 DEBUG: Diet and cuisine fields check:", {
+    preferred_diet: input.preferred_diet,
+    preferredDiet: input.preferredDiet,
     preferred_cuisines: input.preferred_cuisines,
     preferredCuisines: input.preferredCuisines,
     dispreferrred_cuisines: input.dispreferrred_cuisines,
@@ -426,7 +434,7 @@ async function generatePersonalizedMealPlanFlow(
         const sanitizedIngredients = mealFromAI.ingredients.map((ing: any) => ({
           name: ing.name || "Ingredient",
           quantity: Math.round(Number(ing.amount) || 0),
-          unit: ing.unit || "g",
+          unit: ing.unit || "g", // Preserve original unit from AI, fallback to "g" only if missing
           calories: Math.round(Number(ing.calories) || 0),
           protein: Math.round((Number(ing.protein) || 0) * 10) / 10,
           carbs: Math.round((Number(ing.carbs) || 0) * 10) / 10,

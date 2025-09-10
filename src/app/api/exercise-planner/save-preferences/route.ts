@@ -64,7 +64,6 @@ export async function POST(request: NextRequest) {
         ? preferences.current_medications
         : [],
       current_medications_other: preferences.current_medications_other || null,
-      doctor_clearance: Boolean(preferences.doctor_clearance),
       primary_goal:
         preferences.primary_goal && preferences.primary_goal !== ''
           ? preferences.primary_goal

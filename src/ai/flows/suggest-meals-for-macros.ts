@@ -108,6 +108,7 @@ async function generateWithOpenAI(
 function buildPrompt(input: SuggestMealsForMacrosInput): string {
   console.log("Input data received:", {
     meal_name: input.meal_name,
+    preferred_diet: input.preferred_diet,
     preferred_cuisines: input.preferred_cuisines,
     dispreferrred_cuisines: input.dispreferrred_cuisines,
     preferred_ingredients: input.preferred_ingredients,
@@ -144,6 +145,8 @@ function buildPrompt(input: SuggestMealsForMacrosInput): string {
     ? input.dispreferrred_ingredients.join(", ") 
     : "None";
 
+  const preferredDietText = input.preferred_diet || "None specified";
+
   const prompt = `Act like an expert nutritionist, meal planner, and macro-tracking specialist. Your goal is to create a ${input.meal_name} meal that matches the specified macro targets exactly. No approximations are allowed. Totals must be mathematically exact.
 
 TARGETS (MUST MATCH EXACTLY)
@@ -153,6 +156,7 @@ TARGETS (MUST MATCH EXACTLY)
 - Fat: ${input.target_fat_grams} g
 
 USER PREFERENCES
+- Preferred diet: ${preferredDietText}
 - Preferred cuisines: ${preferredCuisinesText}
 - Avoid cuisines: ${dispreferredCuisinesText}
 - Preferred ingredients: ${preferredIngredientsText}

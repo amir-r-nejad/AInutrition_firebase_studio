@@ -178,7 +178,16 @@ export default function MealPlanOverview({ mealPlan }: MealPlanOverviewProps) {
                                 (ingredient: any, ingIndex: number) => {
                                   // Parse ingredient name to extract amount and unit
                                   const parseIngredientName = (name: string) => {
-                                    // Look for patterns like "Oatmeal (1 cup cooked)" or "Almonds (20 whole)"
+                                    // ALWAYS prioritize structured data from AI response
+                                    if (ingredient.unit) {
+                                      return {
+                                        name: name,
+                                        amount: ingredient.quantity || ingredient.amount || null,
+                                        unit: ingredient.unit
+                                      };
+                                    }
+                                    
+                                    // Only use name parsing as fallback if no structured unit is available
                                     const match = name.match(/^(.+?)\s*\((.+?)\)$/);
                                     if (match) {
                                       const cleanName = match[1].trim();

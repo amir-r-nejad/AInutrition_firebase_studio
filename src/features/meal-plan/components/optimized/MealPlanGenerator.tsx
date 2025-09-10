@@ -8,6 +8,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import ProgressBar, { MEAL_PLAN_GENERATION_STEPS } from "@/components/ui/ProgressBar";
 import { useToast } from "@/hooks/use-toast";
 import {
   editAiPlan,
@@ -37,6 +38,8 @@ export default function MealPlanGenerator({
     );
   const [loadingPlan, setLoadingPlan] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState<string>("");
+  const [showProgress, setShowProgress] = useState<boolean>(false);
 
   // لود اولیه داده‌ها
   useEffect(() => {
@@ -45,8 +48,12 @@ export default function MealPlanGenerator({
         setLoadingPlan(true);
         setError(null);
         const plan = await loadMealPlan(); // لود داده‌ها از Supabase
-        setGeneratedPlan(plan);
-        console.log("Successfully loaded initial plan:", plan);
+        if (plan) {
+          setGeneratedPlan(plan);
+          console.log("Successfully loaded initial plan:", plan);
+        } else {
+          console.log("No AI plan found - will show generator");
+        }
       } catch (e) {
         const errorMessage =
           e instanceof Error ? e.message : "Unknown error loading meal plan";
@@ -78,6 +85,14 @@ export default function MealPlanGenerator({
   }, [initialMealPlan, generatedPlan, isLoading, loadingPlan]);
 
   async function handleGeneratePlan() {
+    // Set progress bar immediately when button is clicked
+    setShowProgress(true);
+    setError(null);
+    setCurrentStep("validating");
+    
+    // Longer delay to ensure progress bar is visible and user can see it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     startTransition(async () => {
       try {
         console.log(
@@ -91,6 +106,8 @@ export default function MealPlanGenerator({
 
         // Validate profile
         if (!profile || Object.keys(profile).length === 0) {
+          setCurrentStep("validating");
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Show validating step
           throw new Error("Profile is incomplete");
         }
 
@@ -100,7 +117,9 @@ export default function MealPlanGenerator({
           !Array.isArray(profile.meal_distributions) ||
           profile.meal_distributions.length !== 6
         ) {
-          throw new Error("Meal distributions must be configured for 6 meals");
+          setCurrentStep("validating");
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Show validating step
+          throw new Error("Please save your macro splitter settings first. Go to Tools > Macro Splitter and save your meal distributions before generating a meal plan.");
         }
 
         // Validate percentages
@@ -109,8 +128,10 @@ export default function MealPlanGenerator({
           0,
         );
         if (Math.abs(totalPercentage - 100) > 0.01) {
+          setCurrentStep("validating");
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Show validating step
           throw new Error(
-            `Meal percentages must sum to 100%. Current total: ${totalPercentage.toFixed(1)}%`,
+            `Please save your macro splitter settings first. Meal percentages must sum to 100%. Current total: ${totalPercentage.toFixed(1)}%. Go to Tools > Macro Splitter and save your meal distributions.`,
           );
         }
 
@@ -159,6 +180,9 @@ export default function MealPlanGenerator({
           );
         }
 
+        // Step 2: Preparing Input
+        setCurrentStep("preparing");
+        await new Promise(resolve => setTimeout(resolve, 800)); // Show preparing step
         console.log(
           "🚀 Generating AI meal plan with macroTargets:",
           JSON.stringify(macroTargets, null, 2),
@@ -203,7 +227,9 @@ export default function MealPlanGenerator({
           JSON.stringify(mealTargets, null, 2),
         );
 
-        // Generate AI meal plan using OpenAI
+        // Step 3: AI Generating
+        setCurrentStep("generating");
+        await new Promise(resolve => setTimeout(resolve, 500)); // Show generating step
         console.log("🤖 API: Calling OpenAI meal plan generation...");
 
         // Enhanced retry logic with exponential backoff
@@ -386,7 +412,13 @@ export default function MealPlanGenerator({
           throw new Error("Invalid meal plan data returned from API");
         }
 
-        // Save to database using editAiPlan
+        // Step 4: Processing
+        setCurrentStep("processing");
+        await new Promise(resolve => setTimeout(resolve, 500)); // Show processing step
+
+        // Step 5: Saving Plan
+        setCurrentStep("saving");
+        await new Promise(resolve => setTimeout(resolve, 500)); // Show saving step
         console.log(
           "Calling editAiPlan with:",
           JSON.stringify({ ai_plan: result }, null, 2),
@@ -405,11 +437,17 @@ export default function MealPlanGenerator({
 
         // Load updated data
         const updatedPlan = await loadMealPlan(); // Still use loadMealPlan to get the latest saved plan
-        console.log(
-          "Loaded updated meal plan:",
-          JSON.stringify(updatedPlan, null, 2),
-        );
-        setGeneratedPlan(updatedPlan);
+        if (updatedPlan) {
+          console.log(
+            "Loaded updated meal plan:",
+            JSON.stringify(updatedPlan, null, 2),
+          );
+          setGeneratedPlan(updatedPlan);
+        }
+
+        // Step 6: Completed
+        setCurrentStep("completed");
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Show completed step
 
         toast({
           title: "Success!",
@@ -422,8 +460,14 @@ export default function MealPlanGenerator({
           try {
             console.log("Auto-refreshing meal plan before page reload...");
             const refreshedPlan = await loadMealPlan();
-            console.log("Auto-refreshed meal plan:", JSON.stringify(refreshedPlan, null, 2));
-            setGeneratedPlan(refreshedPlan);
+            if (refreshedPlan) {
+              console.log("Auto-refreshed meal plan:", JSON.stringify(refreshedPlan, null, 2));
+              setGeneratedPlan(refreshedPlan);
+            }
+            
+            // Hide progress bar before page reload
+            setShowProgress(false);
+            setCurrentStep("");
             
             // Give a moment for the state to update, then refresh page
             setTimeout(() => {
@@ -431,11 +475,15 @@ export default function MealPlanGenerator({
             }, 500);
           } catch (error) {
             console.error("Auto-refresh failed, proceeding with page reload:", error);
+            setShowProgress(false);
+            setCurrentStep("");
             window.location.reload();
           }
         }, 2000); // Refresh after 2 seconds to show the toast first
       } catch (error: any) {
         console.error("❌ Meal plan generation error:", error);
+        setShowProgress(false);
+        setCurrentStep("");
         let errorMessage = "Failed to generate meal plan.";
         let toastTitle = "Generation Failed";
         let toastVariant: "default" | "destructive" = "destructive";
@@ -551,6 +599,26 @@ export default function MealPlanGenerator({
                 </div>
               </div>
 
+              {/* Progress Bar */}
+              {showProgress && (
+                <div className="space-y-4 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold text-primary">
+                      Generating Your AI Meal Plan
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Please wait while we create your personalized meal plan...
+                    </p>
+                  </div>
+                  <ProgressBar
+                    steps={MEAL_PLAN_GENERATION_STEPS}
+                    currentStep={currentStep}
+                    className="mx-auto max-w-2xl"
+                  />
+                </div>
+              )}
+              
+
               {/* Generate button */}
               <Button
                 onClick={handleGeneratePlan}
@@ -581,11 +649,15 @@ export default function MealPlanGenerator({
                     try {
                       console.log("Refreshing meal plan...");
                       const newMealPlan = await loadMealPlan();
-                      console.log(
-                        "Refreshed meal plan:",
-                        JSON.stringify(newMealPlan, null, 2),
-                      );
-                      setGeneratedPlan(newMealPlan);
+                      if (newMealPlan) {
+                        console.log(
+                          "Refreshed meal plan:",
+                          JSON.stringify(newMealPlan, null, 2),
+                        );
+                        setGeneratedPlan(newMealPlan);
+                      } else {
+                        console.log("No AI plan found to refresh");
+                      }
                     } catch (e) {
                       const errorMessage =
                         e instanceof Error

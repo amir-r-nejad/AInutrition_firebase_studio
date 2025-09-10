@@ -66,7 +66,6 @@ HEALTH & MEDICAL INFORMATION:
 - Injuries/Limitations: ${preferences.injuries_or_limitations || "None"}
 - Current Medications: ${preferences.current_medications?.join(", ") || "None"}
 - Medications Other: ${preferences.current_medications_other || "None"}
-- Doctor Clearance: ${preferences.doctor_clearance ? "Yes" : "No"}
 
 FITNESS GOALS:
 - Primary Goal: ${preferences.primary_goal || "General fitness"}

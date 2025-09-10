@@ -64,7 +64,6 @@ const exercisePlannerSchema = z.object({
   injuries_or_limitations: z.string().optional(),
   current_medications: z.array(z.string()).optional(),
   current_medications_other: z.string().optional(),
-  doctor_clearance: z.boolean(),
   primary_goal: z
     .enum([
       "Lose fat",
@@ -269,7 +268,6 @@ export default function ExercisePlannerPage() {
       injuries_or_limitations: "",
       current_medications: [],
       current_medications_other: "",
-      doctor_clearance: false,
       primary_goal: undefined,
       secondary_goal: "",
       goal_timeline_weeks: 1,
@@ -351,7 +349,6 @@ export default function ExercisePlannerPage() {
               current_medications: savedData.current_medications || [],
               current_medications_other:
                 savedData.current_medications_other || "",
-              doctor_clearance: savedData.doctor_clearance || false,
               primary_goal: savedData.primary_goal || undefined,
               secondary_goal: savedData.secondary_goal || "",
               goal_timeline_weeks: savedData.goal_timeline_weeks || 1,
@@ -489,10 +486,6 @@ export default function ExercisePlannerPage() {
       return;
     }
 
-    if (!data.doctor_clearance) {
-      alert("لطفاً تأیید کنید که مجوز پزشکی برای ورزش دارید");
-      return;
-    }
 
     setIsGenerating(true);
     try {
@@ -914,25 +907,6 @@ export default function ExercisePlannerPage() {
                         />
                       )}
 
-                      <FormField
-                        control={form.control}
-                        name="doctor_clearance"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                I have medical clearance to exercise *
-                              </FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
                     </CardContent>
                   </Card>
                 </AccordionContent>
