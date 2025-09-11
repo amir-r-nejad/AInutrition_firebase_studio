@@ -99,11 +99,13 @@ CRITICAL REQUIREMENTS:
 - Create EXACTLY ${preferences.exercise_days_per_week} workout days with isWorkoutDay: true
 - The remaining ${7 - preferences.exercise_days_per_week} days should have isWorkoutDay: false (rest days)
 - Use ONLY the available equipment: ${preferences.available_equipment?.join(", ") || "Bodyweight"}
+- IMPORTANT: You MUST use ALL available equipment types in EACH workout day - combine them all!
+- Mix different equipment types within the same workout session for maximum variety
 - Respect space limitations: ${preferences.space_availability}
 - Each workout should be ${preferences.available_time_per_session} minutes
 - Calculate appropriate number of exercises based on session duration:
   * 15-30 minutes: 3-4 exercises
-  * 30-45 minutes: 5-7 exercises  
+  * 30-60 minutes: 5-7 exercises  
   * 60+ minutes: 8-12 exercises
 - For this ${preferences.available_time_per_session}-minute session, include approximately ${exerciseCount} exercises
 - Consider fitness level: ${preferences.fitness_level}
@@ -111,14 +113,34 @@ CRITICAL REQUIREMENTS:
 - Account for medical conditions: ${preferences.existing_medical_conditions?.join(", ") || "None"}
 - Adjust exercise intensity based on difficulty level: ${preferences.preferred_difficulty_level}
 
+WORKOUT DIVERSITY REQUIREMENTS:
+- Each workout day MUST have a DIFFERENT focus to ensure balanced training
+- For 3-day plans: Use "Upper Body Strength", "Lower Body Strength", "Cardio & Core"
+- For 4-day plans: Use "Upper Body Strength", "Lower Body Strength", "Cardio & Core", "Full Body HIIT"
+- For 5+ day plans: Use "Upper Body Strength", "Lower Body Strength", "Cardio & Core", "Full Body HIIT", "Flexibility & Recovery"
+- Vary the focus field to reflect the specific muscle groups being targeted each day
+- Ensure exercises match the daily focus (e.g., Upper Body day should focus on chest, back, shoulders, arms)
+
+EQUIPMENT USAGE REQUIREMENTS:
+- You have access to: ${preferences.available_equipment?.join(", ") || "Bodyweight"}
+- MUST use ALL available equipment types in EACH workout day to maximize variety
+- Combine different equipment types within the same workout session
+- Example: If user has "Dumbbells, Resistance Bands, Yoga Mat":
+  * Each workout day should include exercises using dumbbells, resistance bands, AND yoga mat
+  * Mix equipment types throughout the workout (e.g., dumbbell squats, resistance band rows, yoga mat stretches)
+- Create exercises that specifically utilize each piece of available equipment in every workout
+- Don't limit yourself to one equipment type per day - use them all!
+
 Return JSON format with weeklyPlan containing 7 days, where each day has:
-- dayName (must be "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"), focus, isWorkoutDay, duration
+- dayName (must be "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"), focus, isWorkoutDay, duration (MUST be a NUMBER in minutes, e.g., 60)
 - warmup: {exercises: [{name, duration, instructions}]}
 - mainWorkout: [{exerciseName, targetMuscles (ARRAY), sets (NUMBER), reps (STRING), restSeconds (NUMBER), instructions, youtubeSearchTerm, alternatives (ARRAY of objects with name, instructions, youtubeSearchTerm)}]
 - cooldown: {exercises: [{name, duration, instructions}]}
 
 IMPORTANT: 
 - dayName must be the actual day name (Monday, Tuesday, etc.) NOT "Day1", "Day2"
+- duration must be a NUMBER in minutes (e.g., 60) NOT a string like "60 minutes"
+- focus must be DIFFERENT for each workout day (e.g., "Upper Body Strength", "Lower Body Strength", "Cardio & Core")
 - targetMuscles must be an ARRAY of strings (e.g., ["Chest", "Shoulders"])
 - sets must be a NUMBER (e.g., 3)
 - reps must be a STRING (e.g., "8-12")
@@ -126,6 +148,8 @@ IMPORTANT:
 - alternatives must be an ARRAY of objects with: {name: "Alternative Name", instructions: "How to do it", youtubeSearchTerm: "search term"}
 - ALWAYS include 2-3 alternative exercises for each main exercise
 - Alternatives should be easier or harder versions of the main exercise
+- VARY the exercises between days - don't repeat the same exercises on different days
+- Match exercises to the daily focus (Upper Body day = chest/back/shoulders, Lower Body day = legs/glutes, etc.)
 
 Also include progressionTips and safetyNotes arrays.`;
 
@@ -142,7 +166,7 @@ Also include progressionTips and safetyNotes arrays.`;
           messages: [
             {
               role: "system",
-              content: "You are a professional fitness trainer. Create personalized exercise plans in JSON format only. Use ONLY the equipment specified by the user. Respect their space limitations, fitness level, medical conditions, and time constraints. Focus on their specific goals. No explanations, just the JSON response."
+              content: "You are a professional fitness trainer. Create personalized exercise plans in JSON format only. Use ONLY the equipment specified by the user and make sure to use ALL available equipment types in EACH workout day. Combine different equipment types within the same workout session for maximum variety. Respect their space limitations, fitness level, medical conditions, and time constraints. Focus on their specific goals. No explanations, just the JSON response."
             },
             {
               role: "user",
@@ -217,6 +241,15 @@ Also include progressionTips and safetyNotes arrays.`;
           // Set dayName from the key if it's missing
           if (!day.dayName) {
             day.dayName = dayKey;
+          }
+          
+          // Ensure duration is always a number
+          if (day.duration) {
+            // Extract number from string like "60 minutes" or "60"
+            const durationMatch = day.duration.toString().match(/(\d+)/);
+            day.duration = durationMatch ? parseInt(durationMatch[1], 10) : 0;
+          } else {
+            day.duration = 0;
           }
           
           if (day.mainWorkout && Array.isArray(day.mainWorkout)) {
@@ -294,7 +327,7 @@ Also include progressionTips and safetyNotes arrays.`;
           for (let i = 0; i < expectedWorkoutDays && i < dayKeys.length; i++) {
             const dayKey = dayKeys[i];
             parsedPlan.weeklyPlan[dayKey].isWorkoutDay = true;
-            parsedPlan.weeklyPlan[dayKey].duration = preferences.available_time_per_session;
+            parsedPlan.weeklyPlan[dayKey].duration = parseInt(preferences.available_time_per_session.toString(), 10);
             
             // If no mainWorkout exists, create a basic one
             if (!parsedPlan.weeklyPlan[dayKey].mainWorkout || parsedPlan.weeklyPlan[dayKey].mainWorkout.length === 0) {
@@ -310,6 +343,65 @@ Also include progressionTips and safetyNotes arrays.`;
                 alternatives: [{ name: "Modified version", instructions: "Reduce intensity as needed" }]
               }];
             }
+          }
+        }
+        
+        // Ensure workout focuses are diverse
+        const workoutDaysWithFocus = Object.values(parsedPlan.weeklyPlan).filter((day: any) => day.isWorkoutDay);
+        const focuses = workoutDaysWithFocus.map((day: any) => day.focus);
+        const uniqueFocuses = [...new Set(focuses)];
+        
+        if (uniqueFocuses.length < workoutDaysWithFocus.length) {
+          console.log("Detected duplicate focuses, fixing diversity...");
+          
+          // Define focus templates based on number of workout days
+          const focusTemplates = {
+            3: ["Upper Body Strength", "Lower Body Strength", "Cardio & Core"],
+            4: ["Upper Body Strength", "Lower Body Strength", "Cardio & Core", "Full Body HIIT"],
+            5: ["Upper Body Strength", "Lower Body Strength", "Cardio & Core", "Full Body HIIT", "Flexibility & Recovery"],
+            6: ["Upper Body Strength", "Lower Body Strength", "Cardio & Core", "Full Body HIIT", "Flexibility & Recovery", "Functional Training"],
+            7: ["Upper Body Strength", "Lower Body Strength", "Cardio & Core", "Full Body HIIT", "Flexibility & Recovery", "Functional Training", "Active Recovery"]
+          };
+          
+          const template = focusTemplates[expectedWorkoutDays as keyof typeof focusTemplates] || focusTemplates[3];
+          const workoutDayKeys = Object.keys(parsedPlan.weeklyPlan).filter(key => parsedPlan.weeklyPlan[key].isWorkoutDay);
+          
+          workoutDayKeys.forEach((dayKey, index) => {
+            if (template[index]) {
+              parsedPlan.weeklyPlan[dayKey].focus = template[index];
+            }
+          });
+        }
+        
+        // Validate equipment usage
+        const availableEquipment = preferences.available_equipment || ["Bodyweight"];
+        if (availableEquipment.length > 1) {
+          console.log("Validating equipment usage across workout days...");
+          
+          // Check if all equipment types are being used
+          const allExercises = workoutDaysWithFocus.flatMap((day: any) => 
+            (day.mainWorkout || []).map((exercise: any) => exercise.exerciseName?.toLowerCase() || "")
+          );
+          
+          const equipmentUsage = availableEquipment.map((equipment: string) => {
+            const equipmentLower = equipment.toLowerCase();
+            return {
+              equipment,
+              used: allExercises.some(exercise => 
+                exercise.includes(equipmentLower) || 
+                (equipmentLower === "dumbbells" && (exercise.includes("dumbbell") || exercise.includes("weight"))) ||
+                (equipmentLower === "resistance bands" && (exercise.includes("band") || exercise.includes("resistance"))) ||
+                (equipmentLower === "yoga mat" && (exercise.includes("yoga") || exercise.includes("mat"))) ||
+                (equipmentLower === "kettlebell" && exercise.includes("kettlebell")) ||
+                (equipmentLower === "barbell" && exercise.includes("barbell")) ||
+                (equipmentLower === "pull-up bar" && (exercise.includes("pull") || exercise.includes("chin")))
+              )
+            };
+          });
+          
+          const unusedEquipment = equipmentUsage.filter((eq: any) => !eq.used);
+          if (unusedEquipment.length > 0) {
+            console.log(`Warning: Some equipment not being used: ${unusedEquipment.map((eq: any) => eq.equipment).join(", ")}`);
           }
         }
       }
