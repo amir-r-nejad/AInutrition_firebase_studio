@@ -12,8 +12,8 @@ import Link from 'next/link';
 
 export default async function LoginPage() {
   return (
-    <>
-      <Card className='w-full max-w-sm shadow-xl'>
+    <div className='w-full max-w-sm mx-auto'>
+      <Card className='w-full shadow-xl'>
         <CardHeader className='space-y-1 text-center'>
           <div className='flex justify-center items-center mb-4'>
             <Leaf className='h-10 w-10 text-primary' />
@@ -38,9 +38,9 @@ export default async function LoginPage() {
           </p>
         </CardFooter>
       </Card>
-      <p className='mt-4 text-center text-xs text-muted-foreground'>
+      <p className='mt-4 text-center text-sm text-muted-foreground'>
         AI Nutritionist Inc. 2025
       </p>
-    </>
+    </div>
   );
 }
